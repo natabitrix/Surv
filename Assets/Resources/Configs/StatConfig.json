@@ -1,0 +1,125 @@
+{
+  "stats": [
+    {
+      "statTypeString": "Health",
+      "displayName": "Здоровье",
+      "baseValue": 100.0,
+      "showPlusButton": true,
+      "affectsMaxValue": true,
+      "isDynamic": true,
+      "displayFormatString": "ValueSlashMax",
+      "progressDirectionString": "Decreasing"
+    },
+    {
+      "statTypeString": "Stamina",
+      "displayName": "Выносливость",
+      "baseValue": 100.0,
+      "showPlusButton": true,
+      "affectsMaxValue": true,
+      "isDynamic": true,
+      "displayFormatString": "ValueSlashMax",
+      "progressDirectionString": "Decreasing"
+    },
+    {
+      "statTypeString": "Oxygen",
+      "displayName": "Кислород",
+      "baseValue": 100.0,
+      "showPlusButton": true,
+      "affectsMaxValue": true,
+      "isDynamic": true,
+      "displayFormatString": "ValueSlashMax",
+      "progressDirectionString": "Decreasing"
+    },
+    {
+      "statTypeString": "Food",
+      "displayName": "Еда",
+      "baseValue": 100.0,
+      "showPlusButton": true,
+      "affectsMaxValue": true,
+      "isDynamic": true,
+      "displayFormatString": "ValueSlashMax",
+      "progressDirectionString": "Decreasing"
+    },
+    {
+      "statTypeString": "Water",
+      "displayName": "Вода",
+      "baseValue": 100.0,
+      "showPlusButton": true,
+      "affectsMaxValue": true,
+      "isDynamic": true,
+      "displayFormatString": "ValueSlashMax",
+      "progressDirectionString": "Decreasing"
+    },
+    {
+      "statTypeString": "Weight",
+      "displayName": "Вес",
+      "baseValue": 100.0,
+      "showPlusButton": true,
+      "affectsMaxValue": true,
+      "isDynamic": true,
+      "displayFormatString": "ValueSlashMax",
+      "progressDirectionString": "Decreasing"
+    },
+    {
+      "statTypeString": "MeleeDamage",
+      "displayName": "Урон в ближнем бою",
+      "baseValue": 100.0,
+      "showPlusButton": true,
+      "affectsMaxValue": true,
+      "isDynamic": false,
+      "displayFormatString": "Percentage",
+      "progressDirectionString": "Decreasing"
+    },
+    {
+      "statTypeString": "MovementSpeed",
+      "displayName": "Скорость передвижения",
+      "baseValue": 100.0,
+      "showPlusButton": true,
+      "affectsMaxValue": true,
+      "isDynamic": false,
+      "displayFormatString": "Percentage",
+      "progressDirectionString": "Decreasing"
+    },
+    {
+      "statTypeString": "CraftingSpeed",
+      "displayName": "Навык изготовления",
+      "baseValue": 100.0,
+      "showPlusButton": true,
+      "affectsMaxValue": true,
+      "isDynamic": false,
+      "displayFormatString": "Percentage",
+      "progressDirectionString": "Decreasing"
+    },
+    {
+      "statTypeString": "Fortitude",
+      "displayName": "Стойкость",
+      "baseValue": 0.0,
+      "showPlusButton": true,
+      "affectsMaxValue": true,
+      "isDynamic": false,
+      "displayFormatString": "DecimalOnly",
+      "progressDirectionString": "Decreasing"
+    },
+    {
+      "statTypeString": "Torpidity",
+      "displayName": "Оглушение",
+      "baseValue": 200.0,
+      "showPlusButton": false,
+      "affectsMaxValue": false,
+      "isDynamic": true,
+      "displayFormatString": "ValueSlashMax",
+      "progressDirectionString": "Increasing"
+    },
+    {
+      "statTypeString": "XP",
+      "displayName": "Опыт",
+      "baseValue": 0.0,
+      "showPlusButton": false,
+      "affectsMaxValue": false,
+      "isDynamic": false,
+      "displayFormatString": "ValueSlashMax",
+      "progressDirectionString": "Decreasing"
+    }
+
+  ]
+}

@@ -1,0 +1,54 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 383bd2bebfd18f94caca8ee490a36a78, type: 3}
+  m_Name: PlayerMovementSettings
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Player.Data.PlayerMovementSettings
+  LieCharacterColliderHeight: 0.5
+  MoveSpeed: 2
+  SprintSpeed: 6
+  RotationSmoothTime: 0.12
+  SpeedChangeRate: 10
+  InputSmoothingRate: 20
+  KeyboardTurnSpeed: 90
+  JumpHeight: 1.2
+  Gravity: -15
+  JumpTimeout: 0.5
+  FallTimeout: 0.15
+  TerminalVelocity: 53
+  LadderClimbSpeed: 3
+  SwimSpeed: 2
+  SwimSprintSpeed: 6
+  SwimVerticalSpeed: 1.5
+  ShiftIdleAboveWater: 0.3
+  DepthIdleDownSlow: 0.5
+  DiveUpJumpSpeed: 1.5
+  DiveDownCrouchSpeed: -1.5
+  DiveDownIdleSpeed: -0.2
+  DiveDownIdleSlowSpeed: -0.05
+  DiveCinemachineAngleUp: -10
+  DiveCinemachineAngleDown: 20
+  GroundedOffset: 0
+  GroundedRadius: 0.28
+  GroundLayers:
+    serializedVersion: 2
+    m_Bits: 1096
+  WaterLayers:
+    serializedVersion: 2
+    m_Bits: 16
+  TopClamp: 50
+  BottomClamp: -70
+  CameraAngleOverride: 0
+  LandingAudioClip: {fileID: 8300000, guid: 6a658e440e576b648ad9f688a0593813, type: 3}
+  FootstepAudioClips:
+  - {fileID: 8300000, guid: 7e45e470c47d0e14fba30b05cc6eef15, type: 3}
+  FootstepAudioVolume: 0.5
+  ShowCustomGizmo: 0

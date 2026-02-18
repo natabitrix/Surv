@@ -1,0 +1,6 @@
+﻿<Solution>
+  <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="KrisDevelopment.EnviroSpawn.Editor.csproj" />
+  <Project Path="KrisDevelopment.EnviroSpawn.csproj" />
+  <Project Path="Assembly-CSharp-Editor.csproj" />
+</Solution>

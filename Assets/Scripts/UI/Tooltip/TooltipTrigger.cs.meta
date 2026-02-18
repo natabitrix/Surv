@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 97df8636d54d6cb4295cd2a73e277741
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {fileID: 2800000, guid: faff25acf1213294b97dac5671330ff0, type: 3}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 329113
+  packageName: Easy Tooltip
+  packageVersion: 1.1
+  assetPath: Assets/Easy Tooltip/Scripts/TooltipTrigger.cs
+  uploadId: 789026
