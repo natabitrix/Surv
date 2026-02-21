@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Assets.Scripts.Building;
 using Assets.Scripts.Core;
+using Assets.Scripts.Items;
 using Assets.Scripts.Player;
 using Assets.Scripts.UI;
 using TMPro;
@@ -228,12 +229,7 @@ namespace Assets.Scripts.InventorySystem
                     equipment.Unequip();
                     buildMode.ExitBuildMode();
                     buildMode.StartBuildMode(slot.item, globalSlotIndex);
-                    // Debug.Log("StartBuildMode slot.item: " + slot.item.itemName);
-                    // Debug.Log("StartBuildMode globalSlotIndex: " + globalSlotIndex);
 
-                    // Debug.Log("StartBuildMode");
-                    // _selectedSlotIndex = -1;
-                    // _selectedSlotUI = null;
                     break;
             }
 

@@ -1,9 +1,9 @@
 using UnityEngine;
 using Assets.Scripts.Player;
 
-namespace Assets.Scripts.InventorySystem
+namespace Assets.Scripts.Items
 {
-    [CreateAssetMenu(fileName = "Item", menuName = "Inventory/Item")]
+    [CreateAssetMenu(fileName = "Item", menuName = "Items/Item")]
     public class Item : ScriptableObject
     {
         [SerializeField, HideInInspector]

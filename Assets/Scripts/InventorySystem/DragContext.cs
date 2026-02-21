@@ -1,3 +1,5 @@
+using Assets.Scripts.Items;
+
 namespace Assets.Scripts.InventorySystem
 {
     // В DragContext.cs (должен быть отдельный файл)

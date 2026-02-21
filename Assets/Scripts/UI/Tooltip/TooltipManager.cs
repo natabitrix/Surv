@@ -5,6 +5,7 @@ namespace Assets.Scripts.UI.Tooltip
     using UnityEngine;
     using UnityEngine.UI;
     using TMPro;
+    using UnityEngine.InputSystem;
 
     /// <summary>
     /// A singleton manager that controls the lifecycle of a single tooltip instance.
@@ -79,7 +80,7 @@ namespace Assets.Scripts.UI.Tooltip
             {
                 return; // не показываем пустой тултип
             }
-            
+
             // "Last Command Wins": Stop any previous coroutine.
             if (activeCoroutine != null) StopCoroutine(activeCoroutine);
             activeCoroutine = StartCoroutine(ShowRoutine(content, title, icon, titleColor, iconColor, delay));
@@ -169,7 +170,13 @@ namespace Assets.Scripts.UI.Tooltip
                 outlineSize = outline.effectDistance.x;
             }
 
-            Vector3 mousePos = Input.mousePosition + (Vector3)positionOffset;
+            // Vector3 mousePos = Input.mousePosition + (Vector3)positionOffset;
+
+            // Получаем позицию курсора из новой системы
+            Vector2 mousePos2D = Mouse.current?.position.ReadValue() ?? Vector2.zero;
+            // Преобразуем в Vector3 и добавляем смещение
+            Vector3 mousePos = (Vector3)mousePos2D + (Vector3)positionOffset;
+            
             float scale = tooltipRect.lossyScale.x;
 
             float totalWidth = (tooltipRect.rect.width + outlineSize) * scale;

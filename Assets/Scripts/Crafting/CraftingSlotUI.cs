@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using Assets.Scripts.UI;
 using Assets.Scripts.UI.Tooltip;
 using Assets.Scripts.Core;
+using Assets.Scripts.Items;
 
 namespace Assets.Scripts.Crafting
 {

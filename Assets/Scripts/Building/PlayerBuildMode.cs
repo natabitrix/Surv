@@ -4,8 +4,10 @@ using System.Net.Http.Headers;
 using Assets.Scripts.Core;
 using Assets.Scripts.Interactables;
 using Assets.Scripts.InventorySystem;
+using Assets.Scripts.Items;
 using Assets.Scripts.Player;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace Assets.Scripts.Building
 {
@@ -26,6 +28,8 @@ namespace Assets.Scripts.Building
         [Header("Placement Parameters")]
         public float wallThickness = 0.1f;
         public float ceilingThickness = 0.1f;
+
+        [SerializeField] private PlayerInputHandler _inputHandler;
 
         // === КЭШИРОВАНИЕ ВЫСОТ ===
         private float _cachedFoundationHeight = 0.7f;
@@ -63,6 +67,19 @@ namespace Assets.Scripts.Building
             Foundation, Wall, Ceiling, Door, DoorFrame, Gate, GateFrame
         }
 
+        void Awake()
+        {
+            // Попытка найти обработчик ввода автоматически, если не назначен в инспекторе
+            if (_inputHandler == null)
+            {
+                _inputHandler = FindFirstObjectByType<PlayerInputHandler>();
+                if (_inputHandler == null)
+                {
+                    Debug.LogError("[PlayerBuildMode] PlayerInputHandler not found in scene!");
+                }
+            }
+        }
+
         void Update()
         {
             if (!_isActive || _currentBlueprint == null || _currentBlueprint.placeablePrefab == null)
@@ -80,11 +97,16 @@ namespace Assets.Scripts.Building
             UpdatePreviewColor(_isPositionValid);
             HandleInput();
 
+            // Читаем дельту мыши из НОВОЙ системы ввода
+            // Mouse.current.delta возвращает вектор смещения за кадр
+            Vector2 mouseDelta = Mouse.current?.delta.ReadValue() ?? Vector2.zero;
+
             // Ручное вращение превью мышью (только для фундамента/ворот)
             if (_placementState == PlacementState.Rotating && IsRotationModeStructure())
             {
-                float mouseXDelta = Input.GetAxis("Mouse X");
-                _currentRotationY += mouseXDelta * _rotationSensitivity * 100f;
+                // float mouseXDelta = Input.GetAxis("Mouse X");
+                float mouseXDelta = mouseDelta.x; // ДЕРГАНИЕ!
+                _currentRotationY += mouseXDelta * _rotationSensitivity;
                 _currentRotationY = Mathf.Repeat(_currentRotationY, 360f);
 
                 _previewPosition = _fixedPosition;
@@ -110,7 +132,15 @@ namespace Assets.Scripts.Building
 
         private void CalculatePreviewPlacement(StructureType type)
         {
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+
+            // Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition); // старая система
+
+            // Получаем позицию курсора из новой системы
+            Vector2 mousePos2D = Mouse.current?.position.ReadValue() ?? Vector2.zero;
+            // Преобразуем в Vector3 и добавляем смещение
+            Vector3 mousePos = (Vector3)mousePos2D;
+
+            Ray ray = Camera.main.ScreenPointToRay(mousePos);
             Ray viewRay = new(Camera.main.transform.position, Camera.main.transform.forward);
 
             _activeSnapPoint = null;
@@ -593,10 +623,10 @@ namespace Assets.Scripts.Building
 
             foreach (Transform child in _previewInstance.transform)
             {
-                if(_previewInstance.CompareTag("Door")) continue;
+                if (_previewInstance.CompareTag("Door")) continue;
                 Destroy(child.gameObject);
             }
-                
+
 
 
             ApplyPreviewMaterial(_previewInstance);
@@ -637,7 +667,9 @@ namespace Assets.Scripts.Building
 
         private void HandleInput()
         {
-            if (Input.GetMouseButtonDown(1))
+            bool mouseLBClick = _inputHandler.attack;
+            bool mouseRBClick = _inputHandler.rightClick;
+            if (mouseRBClick)
             {
                 ExitBuildMode();
                 return;
@@ -645,7 +677,7 @@ namespace Assets.Scripts.Building
 
             // Фундамент/ворота вращаем первым кликом
             if (_placementState == PlacementState.Positioning &&
-                Input.GetMouseButtonDown(0) &&
+                mouseLBClick &&
                 _isPositionValid &&
                 _previewInstance != null &&
                 IsRotationModeStructure())
@@ -657,7 +689,7 @@ namespace Assets.Scripts.Building
             }
 
             // Устанавливаем вторым кликом после поворота 
-            if (_placementState == PlacementState.Rotating && Input.GetMouseButtonDown(0))
+            if (_placementState == PlacementState.Rotating && mouseLBClick)
             {
                 PlaceStructure();
                 _placementState = PlacementState.Positioning;
@@ -666,7 +698,7 @@ namespace Assets.Scripts.Building
 
             // Структуры одним кликом
             if (_placementState == PlacementState.Positioning &&
-                Input.GetMouseButtonDown(0) &&
+                mouseLBClick &&
                 _isPositionValid &&
                 _previewInstance != null &&
                 !IsRotationModeStructure())
@@ -727,20 +759,6 @@ namespace Assets.Scripts.Building
                 _previewInstance.transform.rotation
             );
 
-            // Двери остаются дочерними объектами (как в оригинале)
-            // if (_baseObject != null && _baseObject.CompareTag("DoorFrame") && placed.CompareTag("Door"))
-            // {
-            //     GameObject doorHinge = FindChildWithTag(_baseObject, "DoorHinge");
-            //     if (doorHinge != null)
-            //     {
-            //         placed.transform.SetParent(doorHinge.transform, true);
-            //     }
-            // }
-
-            // Стены/потолки НЕ становятся дочерними объектами — только сохраняем ссылку для логики разрушения
-            // if (_baseObject != null && (_currentBlueprint.placeablePrefab.CompareTag("Wall") ||
-            //                             _currentBlueprint.placeablePrefab.CompareTag("DoorFrame") ||
-            // 
             if (_baseObject != null)
             {
                 StructureAttachment attachment = placed.AddComponent<StructureAttachment>();
@@ -775,6 +793,11 @@ namespace Assets.Scripts.Building
         }
 
         public bool IsActive() => _isActive;
+        // НОВОЕ СВОЙСТВО: Возвращает true ТОЛЬКО когда мы вращаем фундамент мышью
+        public bool IsRotatingPreview()
+        {
+            return _isActive && _placementState == PlacementState.Rotating;
+        }
         public Item GetCurrentItem() => _currentBlueprint;
     }
 

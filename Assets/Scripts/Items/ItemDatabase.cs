@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
-namespace Assets.Scripts.InventorySystem
+
+namespace Assets.Scripts.Items
 {
     public class ItemDatabase : MonoBehaviour
     {

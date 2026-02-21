@@ -1,4 +1,5 @@
 using Assets.Scripts.InventorySystem;
+using Assets.Scripts.Items;
 using UnityEngine;
 
 namespace Assets.Scripts.Interactables

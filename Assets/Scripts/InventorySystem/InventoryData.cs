@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Assets.Scripts.Core;
 using Assets.Scripts.Crafting;
+using Assets.Scripts.Items;
 using Assets.Scripts.UI;
 using UnityEngine;
 

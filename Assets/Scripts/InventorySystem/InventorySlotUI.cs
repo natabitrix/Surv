@@ -8,6 +8,7 @@ using UnityEngine.EventSystems;
 using Assets.Scripts.UI.Tooltip;
 using Assets.Scripts.Core;
 using System.Collections;
+using Assets.Scripts.Items;
 
 
 namespace Assets.Scripts.InventorySystem
@@ -48,14 +49,21 @@ namespace Assets.Scripts.InventorySystem
         // External services inventoryUI
         private InventoryManager _inventoryManager;
         private TooltipTrigger _tooltipTrigger;
+        [SerializeField] private PlayerInputHandler _inputHandler;
+
+        private void Awake()
+        {
+            if (_inputHandler == null)
+            {
+                _inputHandler = FindFirstObjectByType<PlayerInputHandler>();
+            }
+        }
 
         // Заменяем ссылки на MonoBehaviour индексами и флагами
         private bool IsChestSlot => owner == SlotOwner.Chest;
         private bool IsHotBarSlot => owner == SlotOwner.Hotbar;
         private bool IsMainInventorySlot => owner == SlotOwner.Inventory;
         private bool IsPlayerSlot => IsMainInventorySlot || owner == SlotOwner.Hotbar;
-
-        // public void SetInventoryController(InventoryController ic) => _inventoryController = ic;
 
         public void Setup(int slotIndex, InventoryUI ui)
         {
@@ -184,14 +192,18 @@ namespace Assets.Scripts.InventorySystem
             if (slot == null || slot.IsEmpty) return;
 
             int amount;
+            // 1. Правая кнопка мыши - берем 1 шт
             if (eventData.button == PointerEventData.InputButton.Right)
             {
                 amount = 1;
             }
-            else if (Input.GetKey(KeyCode.LeftShift))
+            // 2. Проверка клавиши модификатора ЧЕРЕЗ КОНФИГ (вместо жесткого LeftShift)
+            // else if (Input.GetKey(InventoryConfig.Instance.splitStackKey))
+            else if (_inputHandler.leftShift)
             {
                 amount = Mathf.CeilToInt(slot.count / 2f);
             }
+            // 3. Иначе весь стак
             else
             {
                 amount = slot.count;

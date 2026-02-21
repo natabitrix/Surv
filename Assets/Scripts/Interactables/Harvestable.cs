@@ -1,5 +1,6 @@
 // Assets/Scripts/Interactables/Harvestable.cs
 using Assets.Scripts.InventorySystem;
+using Assets.Scripts.Items;
 using Assets.Scripts.Player;
 using UnityEngine;
 

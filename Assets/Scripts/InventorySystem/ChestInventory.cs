@@ -1,4 +1,5 @@
 // Assets/Scripts/InventorySystem/ChestInventory.cs
+using Assets.Scripts.Items;
 using Newtonsoft.Json;
 using UnityEngine;
 

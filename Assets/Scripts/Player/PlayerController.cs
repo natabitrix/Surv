@@ -12,6 +12,7 @@ using Assets.Scripts.UI.Tooltip;
 using Assets.Scripts.Utils;
 using Assets.Scripts.Core;
 using Assets.Scripts.Building;
+using Assets.Scripts.UI;
 
 namespace Assets.Scripts.Player
 {
@@ -42,7 +43,7 @@ namespace Assets.Scripts.Player
         public PlayerBuildMode buildMode;
         public ItemUsageSystem itemUsageSystem;
         private PlayerSurvivalSystem _playerSurvivalSystem;
-        [SerializeField] private PlayerPanelsUIController _panelsController;
+        [SerializeField] private PanelsUIController _panelsController;
 
         [Header("Player Transforms")]
         public Transform Head; // Ссылка на объект головы (должен быть дочерним элементом тела)
@@ -706,6 +707,9 @@ namespace Assets.Scripts.Player
         private void CameraRotation()
         {
             if (!Application.isFocused || LockCameraOnEsc || _isInSelfieMode) return; // Не вращать камеру, если позиция заблокирована
+
+            if (buildMode != null && buildMode.IsActive() && buildMode.IsRotatingPreview()) return; // Не вращать камеру если вращаем фундамент
+
 
             // Камера должна следовать глазам, но не должна применяться анимация персонажа к камере, 
             // поэтому прикрепим ее к EyeCenterForCamera, которую установим посредине глаз

@@ -9,6 +9,7 @@ using Assets.Scripts.Building;
 using Assets.Scripts.Player;
 using Assets.Scripts.InventorySystem;
 using System.Collections;
+using Assets.Scripts.Items;
 
 namespace Assets.Scripts.Core
 {
@@ -52,46 +53,8 @@ namespace Assets.Scripts.Core
             Instance = this;
             DontDestroyOnLoad(gameObject);
 
-            // // Попробуем подписаться, если доступно
-            // // Проверяем, загружен ли прогресс
-            // if (PlayerProgress.Instance != null)
-            // {
-            //     // Если уже загружен - загружаем мир СРАЗУ
-            //     if (PlayerProgress.Instance.IsLoaded)
-            //     {
-            //         OnPlayerLoadedHandler();
-            //     }
-            //     // Если ещё не загружен - подписываемся
-            //     else
-            //     {
-            //         PlayerProgress.Instance.OnPlayerLoaded += OnPlayerLoadedHandler;
-            //     }
-            // }
-            // else
-            // {
-            //     StartCoroutine(WaitForPlayerProgress());
-            // }
         }
 
-        // private IEnumerator WaitForPlayerProgress()
-        // {
-        //     // Ждём, пока PlayerProgress не инициализируется
-        //     yield return new WaitUntil(() => PlayerProgress.Instance != null);
-
-        //     // 🔑 КРИТИЧЕСКИ ВАЖНО: Проверяем флаг ПОСЛЕ ожидания
-        //     if (PlayerProgress.Instance.IsLoaded)
-        //     {
-        //         // PlayerProgress уже загрузился — вызываем обработчик СРАЗУ
-        //         OnPlayerLoadedHandler();
-        //         Debug.Log("[WorldManager] PlayerProgress уже загружен. Мир загружен немедленно через корутину.");
-        //     }
-        //     else
-        //     {
-        //         // PlayerProgress ещё не загружен — подписываемся на событие
-        //         PlayerProgress.Instance.OnPlayerLoaded += OnPlayerLoadedHandler;
-        //         Debug.Log("[WorldManager] Подписка на событие OnPlayerLoaded выполнена.");
-        //     }
-        // }
 
         void Start()
         {

@@ -1,6 +1,7 @@
 // Assets/Scripts/InventorySystem/InventoryUI.cs
 using System.Collections.Generic;
 using Assets.Scripts.Core;
+using Assets.Scripts.Items;
 using Assets.Scripts.Player;
 using UnityEngine;
 

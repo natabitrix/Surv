@@ -89,6 +89,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!114 &6108799060464999296
 MonoBehaviour:
@@ -194,6 +195,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!114 &6857510905807704343
 MonoBehaviour:
@@ -299,6 +301,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!114 &7651125862475675417
 MonoBehaviour:
@@ -404,6 +407,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!114 &5098950482709695213
 MonoBehaviour:
@@ -509,6 +513,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!114 &4527694197207409609
 MonoBehaviour:
@@ -614,6 +619,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!114 &7651246438463497064
 MonoBehaviour:
@@ -719,6 +725,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!114 &2846630296882331216
 MonoBehaviour:
@@ -824,6 +831,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!114 &1100556198432400102
 MonoBehaviour:
@@ -939,6 +947,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 555c11267c5cc4d48aa352cce845023a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 3471272973389730041}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 555c11267c5cc4d48aa352cce845023a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: -6633922332667878367}
   m_SourcePrefab: {fileID: 100100000, guid: 555c11267c5cc4d48aa352cce845023a, type: 3}
 --- !u!1 &6162902790616000211 stripped
 GameObject:
@@ -966,6 +977,18 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1.95, y: 0.7, z: 1.95}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &-6633922332667878367
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6162902790616000211}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e4fd1ea77d25d2645838ef83642d540d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Interactables.RadialMenu
 --- !u!4 &6831071967758417001 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 555c11267c5cc4d48aa352cce845023a, type: 3}

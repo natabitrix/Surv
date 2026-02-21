@@ -134,7 +134,9 @@ namespace Assets.Scripts.Player
 
         private void HandleSelfieZoom()
         {
-            float scroll = Input.mouseScrollDelta.y;
+            
+            // float scroll = Input.mouseScrollDelta.y;
+            float scroll = _input.mouseScrollDelta;
             if (scroll == 0f) return;
 
             _currentSelfieDistance -= scroll * 0.5f;

@@ -1,5 +1,6 @@
 // Assets/Scripts/InventorySystem/PlayerPanelsUIController.cs
 using Assets.Scripts.Core;
+using Assets.Scripts.InventorySystem;
 using Assets.Scripts.Player;
 using Assets.Scripts.UI;
 using Assets.Scripts.UI.Tooltip;
@@ -8,9 +9,9 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Assets.Scripts.InventorySystem
+namespace Assets.Scripts.UI
 {
-    public class PlayerPanelsUIController : MonoBehaviour
+    public class PanelsUIController : MonoBehaviour
     {
         [SerializeField] private PlayerInputHandler _input;
         [SerializeField] private PlayerController _playerController;
@@ -19,11 +20,13 @@ namespace Assets.Scripts.InventorySystem
         public GameObject TopButtons;
         public GameObject EngramsPanel;
         public GameObject InventoryPanel;
+        public GameObject RadialMenuPanel;
 
         [Header("Panels Switch Buttons")]
         public Button EngramsPanelButton;
         public Button InventoryPanelButton;
         public Button CloseAllButton;
+        public Button CloseRadialMenuButton;
 
         [Header("Slots Switch Buttons")]
         public Button InventorySlotsButton;
@@ -104,6 +107,19 @@ namespace Assets.Scripts.InventorySystem
             PlayerInventoryMoveButton.interactable = true;
             if (previewManager != null) previewManager.ClosePreview();
             PanelMode(true);
+        }
+
+        public void OpenRadialMenu(string instanceId)
+        {
+            RadialMenuPanel.SetActive(true);
+            PanelMode(true);
+        }
+
+        public void CloseRadialMenu()
+        {
+            RadialMenuPanel.SetActive(false);
+            PanelMode(false);
+            if (tooltipManager != null) tooltipManager.HideTooltip();
         }
 
         // Закрытие панелей инвентаря
@@ -231,6 +247,10 @@ namespace Assets.Scripts.InventorySystem
             CloseAllButton.onClick.AddListener(() => CloseAllPanels());
             TooltipTrigger.AddTooltip(CloseAllButton.gameObject, "Закрыть");
             CloseAllButton.AddComponent<ButtonScaleEffect>();
+
+            CloseRadialMenuButton.onClick.AddListener(() => CloseRadialMenu());
+            TooltipTrigger.AddTooltip(CloseRadialMenuButton.gameObject, "Закрыть");
+            CloseRadialMenuButton.AddComponent<ButtonScaleEffect>();
 
             // Left Header Buttons
             InventorySlotsButton.onClick.AddListener(() => ShowInventorySlots());

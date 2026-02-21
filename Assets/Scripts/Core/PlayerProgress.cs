@@ -6,6 +6,7 @@ using Assets.Scripts.Crafting;
 using Assets.Scripts.UI;
 using Newtonsoft.Json;
 using Assets.Scripts.Player;
+using Assets.Scripts.Items;
 
 namespace Assets.Scripts.Core
 {

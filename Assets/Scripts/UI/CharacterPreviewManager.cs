@@ -1,26 +1,79 @@
+// Assets/Scripts/UI/CharacterPreviewManager.cs
+using System.Collections;
+using Assets.Scripts.Player;
+using UnityEngine;
+using UnityEngine.InputSystem; // Подключаем новый инпут
+
 namespace Assets.Scripts.UI
 {
-    using System.Collections;
-    using Assets.Scripts.Player;
-    using UnityEngine;
-
     public class CharacterPreviewManager : MonoBehaviour
     {
         [Header("References")]
         public GameObject previewCamera;
-
         public GameObject playerModel; // текущая модель персонажа
-        public RectTransform previewImageRect; // RawImage RectTransform
+        public RectTransform previewImageRect; // RawImage RectTransform для проверки попадания
 
         [Header("Rotation Settings")]
-        public float horizontalSensitivity = 1.5f;
-        public float verticalSensitivity = 1.5f;
+        public float horizontalSensitivity = 0.5f; // Чувствительность по горизонтали
+        public float verticalSensitivity = 0.5f;   // Чувствительность по вертикали
 
         private Transform previewParent;
         private GameObject previewInstance;
         private Transform rotationTarget;
+        
         private bool isRotating = false;
         private Vector2 rotationAngles = new Vector2(0f, 180f); // X — вертикаль, Y — горизонталь
+
+        [SerializeField] private PlayerInputHandler _inputHandler;
+
+        private void Awake()
+        {
+            if (_inputHandler == null)
+            {
+                _inputHandler = FindFirstObjectByType<PlayerInputHandler>();
+            }
+        }
+
+        // ========================
+        // SUBSCRIPTION TO INPUT EVENTS
+        // ========================
+        private void OnEnable()
+        {
+            if (_inputHandler != null)
+            {
+                // Подписываемся на событие начала "огня" (ЛКМ)
+                _inputHandler.OnFireTriggered += StartRotationCheck;
+                // Подписываемся на событие окончания "огня"
+                _inputHandler.OnFireEnded += StopRotation;
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (_inputHandler != null)
+            {
+                _inputHandler.OnFireTriggered -= StartRotationCheck;
+                _inputHandler.OnFireEnded -= StopRotation;
+            }
+            // Сбрасываем вращение при закрытии панели
+            isRotating = false;
+        }
+
+        // Вызывается событием при нажатии ЛКМ
+        private void StartRotationCheck()
+        {
+            // Проверяем, находится ли курсор над областью превью ТОЛЬКО в момент нажатия
+            if (IsMouseOverPreview())
+            {
+                isRotating = true;
+            }
+        }
+
+        // Вызывается событием при отпускании ЛКМ
+        private void StopRotation()
+        {
+            isRotating = false;
+        }
 
         // ========================
         // PREVIEW MANAGEMENT
@@ -33,11 +86,10 @@ namespace Assets.Scripts.UI
 
             previewCamera.SetActive(true);
 
-            // Создаём previewParent, если ещё не создан
             if (previewParent == null)
             {
                 var parentObj = new GameObject("CharacterPreviewParent");
-                parentObj.transform.SetParent(transform, false); // делаем дочерним текущему объекту (например, UI-панели)
+                parentObj.transform.SetParent(transform, false);
                 parentObj.layer = LayerMask.NameToLayer("PreviewCharacter");
                 previewParent = parentObj.transform;
             }
@@ -87,34 +139,29 @@ namespace Assets.Scripts.UI
                 previewInstance = null;
                 rotationTarget = null;
             }
+            isRotating = false;
         }
 
         // ========================
-        // ROTATION LOGIC
+        // ROTATION LOGIC (UPDATE)
         // ========================
 
         void LateUpdate()
         {
-            if (rotationTarget == null) return;
+            if (rotationTarget == null || !isRotating) return;
 
-            // Начать вращение: ЛКМ + курсор над превью
-            if (Input.GetMouseButtonDown(0) && IsMouseOverPreview())
+            // Читаем дельту мыши из НОВОЙ системы ввода
+            // Mouse.current.delta возвращает вектор смещения за кадр
+            Vector2 mouseDelta = Mouse.current?.delta.ReadValue() ?? Vector2.zero;
+
+            if (mouseDelta != Vector2.zero)
             {
-                isRotating = true;
-            }
+                // Вращаем: Mouse X влияет на Y угол (горизонт), Mouse Y на X угол (вертикаль)
+                rotationAngles.y += mouseDelta.x * horizontalSensitivity;
+                rotationAngles.x -= mouseDelta.y * verticalSensitivity;
 
-            if (Input.GetMouseButtonUp(0))
-            {
-                isRotating = false;
-            }
-
-            if (isRotating && Input.GetMouseButton(0))
-            {
-                rotationAngles.y -= Input.GetAxis("Mouse X") * horizontalSensitivity * 100f * Time.deltaTime;
-                rotationAngles.x -= Input.GetAxis("Mouse Y") * verticalSensitivity * 100f * Time.deltaTime;
-
-                // Опционально: ограничение по вертикали
-                // rotationAngles.x = Mathf.Clamp(rotationAngles.x, -60f, 80f);
+                // Ограничение по вертикали (чтобы не перевернуть модель вверх ногами)
+                rotationAngles.x = Mathf.Clamp(rotationAngles.x, -80f, 80f);
             }
 
             rotationTarget.localEulerAngles = new Vector3(rotationAngles.x, rotationAngles.y, 0f);
@@ -122,7 +169,7 @@ namespace Assets.Scripts.UI
 
         public void ResetRotation()
         {
-            rotationAngles = new Vector2(0f, 180f); // или (0, 0), если модель смотрит вперёд
+            rotationAngles = new Vector2(0f, 180f);
             if (rotationTarget != null)
             {
                 rotationTarget.localEulerAngles = new Vector3(rotationAngles.x, rotationAngles.y, 0f);
@@ -136,8 +183,10 @@ namespace Assets.Scripts.UI
 
         bool IsMouseOverPreview()
         {
-            return previewImageRect != null &&
-                   RectTransformUtility.RectangleContainsScreenPoint(previewImageRect, Input.mousePosition);
+            if (previewImageRect == null) return false;
+            
+            // Используем RectTransformUtility для проверки попадания точки в прямоугольник UI
+            return RectTransformUtility.RectangleContainsScreenPoint(previewImageRect, Mouse.current.position.ReadValue());
         }
 
         void SetLayerRecursively(GameObject obj, int layer)

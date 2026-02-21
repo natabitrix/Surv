@@ -193,6 +193,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 15787343cbaefcb4c82a59bf8e7cb694, type: 3}
       insertIndex: -1
       addedObject: {fileID: 7702639096243804650}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 15787343cbaefcb4c82a59bf8e7cb694, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2576333628590951549}
   m_SourcePrefab: {fileID: 100100000, guid: 15787343cbaefcb4c82a59bf8e7cb694, type: 3}
 --- !u!1 &8322178883101056840 stripped
 GameObject:
@@ -255,6 +258,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TryGameN.DoorController
   openAngle: -90
   smoothness: 5
+--- !u!114 &2576333628590951549
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8322178883101056840}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e4fd1ea77d25d2645838ef83642d540d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Interactables.RadialMenu
 --- !u!4 &8661971524809295346 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 15787343cbaefcb4c82a59bf8e7cb694, type: 3}

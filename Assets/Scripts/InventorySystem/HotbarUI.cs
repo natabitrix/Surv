@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Assets.Scripts.Core;
+using Assets.Scripts.Items;
 using Assets.Scripts.Player;
 using UnityEngine;
 
@@ -11,19 +12,35 @@ namespace Assets.Scripts.InventorySystem
     {
         public Transform slotParent;
         public GameObject slotPrefab;
-
         public RectTransform dragLayer;
         public Canvas rootCanvas;
         public InventoryManager InventoryManager;
+        
+        [SerializeField] private PlayerInputHandler _inputHandler;
 
         private List<InventorySlotUI> slotUIs;
-        private bool isInitialized = false; // Флаг инициализации
+        private bool isInitialized = false;
 
         private InventoryData GetData() => PlayerProgress.Instance?.hotbarInventoryData;
 
         void Awake()
         {
             InitializeSlots();
+
+            // Попытка найти обработчик ввода автоматически, если не назначен в инспекторе
+            if (_inputHandler == null)
+            {
+                _inputHandler = FindFirstObjectByType<PlayerInputHandler>();
+                if (_inputHandler == null)
+                {
+                    Debug.LogError("[HotbarUI] PlayerInputHandler not found in scene!");
+                }
+            }
+
+            if (InventoryManager == null)
+            {
+                InventoryManager = FindFirstObjectByType<InventoryManager>();
+            }
         }
 
         private void InitializeSlots()
@@ -45,62 +62,73 @@ namespace Assets.Scripts.InventorySystem
             isInitialized = true;
         }
 
-        void Update()
-        {
-            var data = GetData();
-            if (data == null) { Debug.Log("data is null!"); return; }
-            if (data.slots == null) { Debug.Log("data.slots is null!"); return; }
-            if (InventoryManager == null) { Debug.Log("InventoryManager is null!"); return; }
-
-            for (int i = 0; i < 9; i++)
-            {
-                if (Input.GetKeyDown(KeyCode.Alpha1 + i))
-                {
-                    if (i < data.slots.Count)
-                    {
-                        InventoryManager.SelectSlot(i, SlotOwner.Hotbar, slotUIs[i]);
-                        InventoryManager.UseItemFromSlot();
-                        return;
-                    }
-                }
-            }
-
-            if (Input.GetKeyDown(KeyCode.Alpha0))
-            {
-                int slotIndex = 9;
-                if (slotIndex < data.slots.Count)
-                {
-                    InventoryManager.SelectSlot(slotIndex, SlotOwner.Hotbar, slotUIs[slotIndex]);
-                    InventoryManager.UseItemFromSlot();
-                }
-            }
-        }
-
-
         private void OnEnable()
         {
+            // Подписка на событие ввода
+            if (_inputHandler != null)
+            {
+                _inputHandler.OnHotbarSlotPressed += HandleHotbarInput;
+            }
 
             var data = GetData();
             if (data == null)
             {
-                // Debug.LogError("HotbarUI.OnEnable: hotbarInventoryData is null!");
-                // Резерв: дождаться инициализации
                 StartCoroutine(WaitForInventoryData());
                 return;
             }
+            
             data.OnInventoryChanged += RefreshUI;
             RefreshUI();
         }
 
         private void OnDisable()
         {
- 
+            // Отписка от события (обязательно!)
+            if (_inputHandler != null)
+            {
+                _inputHandler.OnHotbarSlotPressed -= HandleHotbarInput;
+            }
+
             var data = GetData();
             if (data != null)
             {
                 data.OnInventoryChanged -= RefreshUI;
             }
         }
+
+        /// <summary>
+        /// Этот метод вызывается событием из PlayerInputHandler при нажатии или удержании клавиши.
+        /// </summary>
+        private void HandleHotbarInput(int slotIndex)
+        {
+            var data = GetData();
+            if (data == null || data.slots == null)
+            {
+                Debug.LogWarning("[HotbarUI] Data or slots are null.");
+                return;
+            }
+
+            if (InventoryManager == null)
+            {
+                Debug.LogError("[HotbarUI] InventoryManager is null!");
+                return;
+            }
+
+            if (slotIndex < data.slots.Count)
+            {
+                InventorySlotUI targetSlotUI = null;
+                if (slotIndex < slotUIs.Count)
+                {
+                    targetSlotUI = slotUIs[slotIndex];
+                }
+
+                InventoryManager.SelectSlot(slotIndex, SlotOwner.Hotbar, targetSlotUI);
+                InventoryManager.UseItemFromSlot();
+            }
+        }
+
+        // Метод Update больше не нужен для обработки ввода!
+        // void Update() { ... старый код ... } <- УДАЛЕНО
 
         private IEnumerator WaitForInventoryData()
         {
@@ -118,24 +146,21 @@ namespace Assets.Scripts.InventorySystem
             var progress = PlayerProgress.Instance;
             if (progress == null || progress.hotbarInventoryData == null || slotUIs == null) return;
 
-            // Item equipped = equipment?.IsEquipped == true ? equipment.GetCurrentItem() : null;
-            // int equippedSlotIndex = equipment?.EquippedSlotIndex ?? -1;
-
             var equipment = InventoryManager.equipment;
             var buildMode = InventoryManager.buildMode;
             Item itemInHand = null;
             int itemInHandSlotIndex = -1;
-            if(equipment.IsEquipped == true)
+
+            if (equipment != null && equipment.IsEquipped)
             {
                 itemInHand = equipment.GetCurrentItem();
                 itemInHandSlotIndex = equipment.EquippedSlotIndex;
             }
-            else if(buildMode.IsActive() == true)
+            else if (buildMode != null && buildMode.IsActive())
             {
                 itemInHand = buildMode.GetCurrentItem();
                 itemInHandSlotIndex = buildMode.ActiveBuildSlotIndex;
             }
-
 
             for (int i = 0; i < Mathf.Min(10, slotUIs.Count); i++)
             {
@@ -153,8 +178,5 @@ namespace Assets.Scripts.InventorySystem
                 }
             }
         }
-
-
-
     }
 }

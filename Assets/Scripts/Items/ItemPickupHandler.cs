@@ -1,9 +1,9 @@
-// Assets/Scripts/InventorySystem/ItemPickupHandler.cs
+// Assets/Scripts/Items/ItemPickupHandler.cs
 using UnityEngine;
 using Assets.Scripts.UI;
 using Assets.Scripts.Core;
 
-namespace Assets.Scripts.InventorySystem
+namespace Assets.Scripts.Items
 {
     public class ItemPickupHandler : MonoBehaviour
     {

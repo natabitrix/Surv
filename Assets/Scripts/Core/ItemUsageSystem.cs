@@ -1,5 +1,6 @@
 // Assets/Scripts/Core/ItemUsageSystem.cs
 using Assets.Scripts.InventorySystem;
+using Assets.Scripts.Items;
 using Assets.Scripts.UI;
 using UnityEngine;
 

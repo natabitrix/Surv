@@ -1,6 +1,7 @@
 // Assets/Scripts/Interactables/ResourceNode.cs
 using Assets.Scripts.Effects;
 using Assets.Scripts.InventorySystem;
+using Assets.Scripts.Items;
 using Assets.Scripts.Player;
 using UnityEngine;
 

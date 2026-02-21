@@ -1,4 +1,5 @@
 using Assets.Scripts.InventorySystem;
+using Assets.Scripts.Items;
 using UnityEngine;
 using UnityEngine.EventSystems;
 

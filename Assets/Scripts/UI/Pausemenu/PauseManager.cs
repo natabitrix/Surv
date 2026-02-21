@@ -24,7 +24,7 @@ namespace Assets.Scripts.UI.Pausemenu
 
         [SerializeField] private PlayerInputHandler _input;
         [SerializeField] private PlayerController _playerController;
-        [SerializeField] private PlayerPanelsUIController _panelsController;
+        [SerializeField] private PanelsUIController _panelsController;
 
 
         private void Start()

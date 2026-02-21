@@ -1,20 +1,18 @@
-// Assets/Scripts/Player/PlayerInputEvents.cs
+// Assets/Scripts/Player/PlayerInputHandler.cs
 using UnityEngine;
 using UnityEngine.InputSystem;
-using Assets.Scripts.InventorySystem;
-using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using Assets.Scripts.UI.Pausemenu;
+using System;
 using System.Collections;
-
-
+using Assets.Scripts.InventorySystem;
+using Assets.Scripts.UI;
 
 namespace Assets.Scripts.Player
 {
     [RequireComponent(typeof(PlayerInput))]
     public class PlayerInputHandler : MonoBehaviour
     {
-
         [Header("Character Input Values")]
         public Vector2 move;
         public Vector2 look;
@@ -22,6 +20,7 @@ namespace Assets.Scripts.Player
         public bool selfieCamera;
         public bool jump;
         public bool sprint;
+        public bool leftShift;
         public bool crouch;
         public bool crawl;
         public bool interact;
@@ -35,25 +34,60 @@ namespace Assets.Scripts.Player
         public bool drop;
         public bool hideTool;
 
+        // Переменные хотбара удалены, так как мы используем события
+
         [Header("References")]
         [SerializeField] private PlayerController _playerController;
         [SerializeField] private PauseManager _pauseManager;
-        [SerializeField] private PlayerPanelsUIController _panelsController;
+        [SerializeField] private PanelsUIController _panelsController;
 
-        [Header("Interact Settings")]
         [SerializeField] private InputActionReference _fireAction;
         [SerializeField] private InputActionReference _interactAction;
         [SerializeField] private float _fireRepeatDelay = 0.4f;
         [SerializeField] private float _fireRepeatInterval = 0.1f;
-        [SerializeField] private float _interactRepeatDelay = 0.4f;
-        [SerializeField] private float _interactRepeatInterval = 0.1f;
+        [SerializeField] private float _holdingRepeatDelay = 0.4f;
+        [SerializeField] private float _holdingRepeatInterval = 0.1f;
 
-        // Событие, на которое можно подписаться (для зажатия)
-        public event System.Action OnInteractTriggered;
-        public event System.Action OnInteractEnded;
-        public event System.Action OnFireTriggered;
-        public event System.Action OnFireEnded; 
-        private Coroutine _repeatCoroutine;
+
+        // События для Interact/Fire
+        public event Action OnInteractTriggered;
+        public event Action OnInteractEnded;
+        public event Action OnFireTriggered;
+        public event Action OnFireEnded;
+
+        // СОБЫТИЕ ДЛЯ ХОТБАРА: передает индекс слота (0-9)
+        public event Action<int> OnHotbarSlotPressed;
+
+        private Coroutine _repeatCoroutine; // Для интеракта и огня
+        private Coroutine[] _hotbarCoroutines; // Массив корутин для каждого слота (0-9)
+        private InputAction[] _hotbarActions; // Массив ссылок на действия хотбара
+
+        private bool _isInventoryOpen;
+        private bool _isPauseOpen;
+        private bool _attackPressedThisFrame = false;
+
+        private void Awake()
+        {
+            _hotbarCoroutines = new Coroutine[10];
+            _hotbarActions = new InputAction[10];
+
+            // Инициализация ссылок на действия хотбара
+            var playerInput = GetComponent<PlayerInput>();
+            if (playerInput != null)
+            {
+                for (int i = 0; i < 10; i++)
+                {
+                    // Ожидаем имена действий: Hotbar1, Hotbar2, ... Hotbar10
+                    string actionName = $"Hotbar{i + 1}";
+                    _hotbarActions[i] = playerInput.actions.FindAction(actionName);
+
+                    if (_hotbarActions[i] == null)
+                    {
+                        Debug.LogWarning($"[PlayerInputHandler] Action '{actionName}' not found. Check your .inputactions file.");
+                    }
+                }
+            }
+        }
 
         private void OnEnable()
         {
@@ -64,6 +98,12 @@ namespace Assets.Scripts.Player
             _fireAction.action.Enable();
             _fireAction.action.started += OnFireStarted;
             _fireAction.action.canceled += OnFireCanceled;
+
+            // Включаем действия хотбара
+            foreach (var action in _hotbarActions)
+            {
+                if (action != null) action.Enable();
+            }
         }
 
         private void OnDisable()
@@ -75,18 +115,26 @@ namespace Assets.Scripts.Player
             _fireAction.action.Disable();
             _fireAction.action.started -= OnFireStarted;
             _fireAction.action.canceled -= OnFireCanceled;
+
             StopRepeat();
+            StopAllHotbarRepeats();
+
+            foreach (var action in _hotbarActions)
+            {
+                if (action != null) action.Disable();
+            }
         }
 
+        #region Interact & Fire Logic (Existing)
         private void OnInteractStarted(InputAction.CallbackContext context)
         {
-            TriggerInteract(); // первое мгновенное действие
+            TriggerInteract();
             _repeatCoroutine = StartCoroutine(RepeatInteract());
         }
 
         private void OnFireStarted(InputAction.CallbackContext context)
         {
-            TriggerFire(); // первое мгновенное действие
+            TriggerFire();
             _repeatCoroutine = StartCoroutine(RepeatFire());
         }
 
@@ -95,6 +143,7 @@ namespace Assets.Scripts.Player
             StopRepeat();
             OnInteractEnded?.Invoke();
         }
+
         private void OnFireCanceled(InputAction.CallbackContext context)
         {
             StopRepeat();
@@ -103,13 +152,14 @@ namespace Assets.Scripts.Player
 
         private IEnumerator RepeatInteract()
         {
-            yield return new WaitForSeconds(_interactRepeatDelay);
+            yield return new WaitForSeconds(_holdingRepeatDelay);
             while (true)
             {
                 TriggerInteract();
-                yield return new WaitForSeconds(_interactRepeatInterval);
+                yield return new WaitForSeconds(_holdingRepeatInterval);
             }
         }
+
         private IEnumerator RepeatFire()
         {
             yield return new WaitForSeconds(_fireRepeatDelay);
@@ -129,80 +179,123 @@ namespace Assets.Scripts.Player
             }
         }
 
-        private void TriggerInteract()
-        {
-            OnInteractTriggered?.Invoke(); // Уведомляем всех подписчиков
-        }
-        private void TriggerFire()
-        {
-            OnFireTriggered?.Invoke(); // Уведомляем всех подписчиков
-        }
-
-
-        private bool _isInventoryOpen;
-        private bool _isPauseOpen;
-        private bool _attackPressedThisFrame = false; // флаг "клик был"
+        private void TriggerInteract() => OnInteractTriggered?.Invoke();
+        private void TriggerFire() => OnFireTriggered?.Invoke();
+        #endregion
 
         private void Update()
         {
             _isInventoryOpen = _panelsController != null && _panelsController.IsInventoryOpened();
-
-            if (_pauseManager != null)
-            {
-                _isPauseOpen = _pauseManager.IsPauseOpen;
-            }
+            if (_pauseManager != null) _isPauseOpen = _pauseManager.IsPauseOpen;
 
             // --- Обработка атаки ---
             if (_attackPressedThisFrame)
             {
-                // Атака разрешена ТОЛЬКО если:
-                // - курсор НЕ над UI
-                // - инвентарь закрыт (опционально)
                 if (!_isInventoryOpen && !IsPointerOverUI())
                 {
                     attack = true;
                 }
                 else
                 {
-                    attack = false; // явно сбрасываем
+                    attack = false;
                 }
-
-                _attackPressedThisFrame = false; // сбрасываем флаг
+                _attackPressedThisFrame = false;
             }
             else
             {
-                attack = false; // или оставь как есть, если атака "мгновенная"
+                attack = false;
             }
 
-            // ЛКМ разблокирует камеру, ТОЛЬКО если курсор НЕ над UI
-            if (Input.GetMouseButtonDown(0) &&
-                !_isInventoryOpen &&
-                !_isPauseOpen &&
-                Application.isFocused &&
-                !IsPointerOverUI())
+            if (_attackPressedThisFrame && !_isInventoryOpen && !_isPauseOpen && Application.isFocused && !IsPointerOverUI())
             {
                 LockCamera(false);
                 SetCursorVisible(false);
             }
 
+            // --- Обработка хотбара ---
+            HandleHotbarInput();
         }
 
+        private void HandleHotbarInput()
+        {
+
+            if (_isPauseOpen)
+            {
+                StopAllHotbarRepeats();
+                return;
+            }
+
+            for (int i = 0; i < 10; i++)
+            {
+                if (_hotbarActions[i] == null) continue;
+
+                InputAction action = _hotbarActions[i];
+
+                // 1. Если кнопка только что нажата (сработала один раз)
+                if (action.triggered)
+                {
+                    FireHotbarEvent(i);
+
+                    // Если корутина еще не запущена, запускаем её для обработки удержания
+                    if (_hotbarCoroutines[i] == null)
+                    {
+                        _hotbarCoroutines[i] = StartCoroutine(RepeatHotbarUse(i));
+                    }
+                }
+                // 2. Если кнопка отпущена, а корутина работает — останавливаем
+                else if (!action.IsPressed() && _hotbarCoroutines[i] != null)
+                {
+                    StopCoroutine(_hotbarCoroutines[i]);
+                    _hotbarCoroutines[i] = null;
+                }
+            }
+        }
+
+        private IEnumerator RepeatHotbarUse(int slotIndex)
+        {
+            // Ждем начальную задержку перед повтором
+            yield return new WaitForSeconds(_holdingRepeatDelay);
+
+            // Пока кнопка нажата, повторяем действие
+            while (_hotbarActions[slotIndex].IsPressed())
+            {
+                FireHotbarEvent(slotIndex);
+                yield return new WaitForSeconds(_holdingRepeatInterval);
+            }
+
+            _hotbarCoroutines[slotIndex] = null;
+        }
+
+        private void FireHotbarEvent(int slotIndex)
+        {
+            // Вызываем событие. Кто подписан (HotbarUI), тот и реагирует.
+            OnHotbarSlotPressed?.Invoke(slotIndex);
+        }
+
+        private void StopAllHotbarRepeats()
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                if (_hotbarCoroutines[i] != null)
+                {
+                    StopCoroutine(_hotbarCoroutines[i]);
+                    _hotbarCoroutines[i] = null;
+                }
+            }
+        }
+
+        #region Input Callbacks (Standard)
         public void OnMove(InputValue value) => move = value.Get<Vector2>();
         public void OnLook(InputValue value) => look = value.Get<Vector2>();
         public void OnJump(InputValue value) => jump = value.isPressed;
         public void OnSprint(InputValue value) => sprint = value.isPressed;
+        public void OnLeftShift(InputValue value) => leftShift = value.isPressed;
         public void OnCrouch(InputValue value) => crouch = value.isPressed;
         public void OnCrawl(InputValue value) => crawl = value.isPressed;
-        // public void OnInteract(InputValue value) => interact = value.isPressed;
 
-        public void OnSelfieCamera(InputValue value)
-        {
-            selfieCamera = !selfieCamera;
-        }
-        public void OnAttack(InputValue value)
-        {
-            _attackPressedThisFrame = value.isPressed;
-        }
+        public void OnSelfieCamera(InputValue value) => selfieCamera = !selfieCamera;
+
+        public void OnAttack(InputValue value) => _attackPressedThisFrame = value.isPressed;
         public void OnRightClick(InputValue value) => rightClick = value.isPressed;
         public void OnMouseScroll(InputValue value) => mouseScrollDelta = value.Get<Vector2>().y;
         public void OnTurnLeft(InputValue value) => turnLeft = value.isPressed;
@@ -211,6 +304,9 @@ namespace Assets.Scripts.Player
         public void OnOpenInventory(InputValue value) => openInventory = value.isPressed;
         public void OnHideTool(InputValue value) => hideTool = value.isPressed;
         public void OnCancel(InputValue value) => cancel = value.isPressed;
+
+        // Методы OnHotbar1..10 удалены!
+        #endregion
 
         public void ResetAttack() => attack = false;
         public void ResetCancel() => cancel = false;
@@ -222,11 +318,7 @@ namespace Assets.Scripts.Player
         public void ResetDrop() => drop = false;
         public void ResetHideTool() => hideTool = false;
 
-
-        public void LockCamera(bool isLock)
-        {
-            _playerController.LockCameraOnEsc = isLock;
-        }
+        public void LockCamera(bool isLock) => _playerController.LockCameraOnEsc = isLock;
 
         public void SetCursorVisible(bool isCursorVisible)
         {
@@ -234,16 +326,12 @@ namespace Assets.Scripts.Player
             Cursor.visible = isCursorVisible;
         }
 
-        // Вспомогательный метод
         private bool IsPointerOverUI()
         {
             return EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
         }
 
-        // Для совместимости с компонентами
         public bool GetTurnLeft() => turnLeft;
         public bool GetTurnRight() => turnRight;
-
-
     }
 }

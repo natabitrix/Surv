@@ -1,6 +1,7 @@
 // Assets/Scripts/Player/PlayerEquipment.cs
 using Assets.Scripts.Interactables;
 using Assets.Scripts.InventorySystem;
+using Assets.Scripts.Items;
 using UnityEngine;
 
 namespace Assets.Scripts.Player
