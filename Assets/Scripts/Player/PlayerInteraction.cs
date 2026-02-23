@@ -1,5 +1,6 @@
-using System.Collections;
+// Assets/Scripts/Player/PlayerInteraction.cs
 using System.Text;
+using System.Collections.Generic;
 using Assets.Scripts.Core;
 using Assets.Scripts.Interactables;
 using Assets.Scripts.InventorySystem;
@@ -9,6 +10,8 @@ using Assets.Scripts.Player.Data;
 using Assets.Scripts.UI;
 using TMPro;
 using UnityEngine;
+using Assets.Scripts.Utils;
+using Unity.VisualScripting;
 
 namespace Assets.Scripts.Player
 {
@@ -16,6 +19,7 @@ namespace Assets.Scripts.Player
     {
         [Header("UI")]
         public GameObject interactionUI;
+        public GameObject aim;
         public TextMeshProUGUI interactionText;
 
         [Header("References")]
@@ -23,34 +27,37 @@ namespace Assets.Scripts.Player
         [SerializeField] private PlayerController _playerController;
         [SerializeField] private PanelsUIController _panelsController;
         [SerializeField] private Camera _playerCamera;
+        [SerializeField] private Transform _playerInteractPoint;
 
         [Header("Raycast Settings")]
         [SerializeField] private LayerMask _interactableLayers;
-        [SerializeField] private float _raycastDistance = 5f;
+        [SerializeField] private float _playerInteractionRadius = 1f;
+
+        [Header("Hold Settings")]
+        [SerializeField] private float _holdThreshold = 0.5f; // Время удержания для меню
 
         private PlayerMovementSettings _settings;
         private LayerMask _waterLayers;
 
-        // === Trigger-based target (Двери, лут, сбор - по близости) ===
-        private IInteractable _triggerTarget;
-        private GameObject _triggerTargetGO;
+        // === Цели (теперь поддерживаем несколько) ===
+        private List<IInteractable> _allTargets = new List<IInteractable>();
+        private GameObject _targetGO;
 
-        // === Raycast-based target (Radial Menu - по прицеливанию) ===
-        private IInteractable _raycastTarget;
-        private GameObject _raycastTargetGO;
+        // === Логика удержания ===
+        private bool _isInteractHeld = false;
+        private float _interactionHoldTimer = 0f;
+        private bool _radialMenuOpenedThisHold = false;
 
         private Animator _playerAnimator;
+        private Transform _playerHead;
         private int _animIDPickup;
         private bool _hasAnimator;
-
-        // Radial Menu hold variables
-        private Coroutine _radialMenuHoldCoroutine;
-        private const float RADIAL_MENU_HOLD_DURATION = 0.5f;
-        private bool _isHoldingForRadialMenu = false;
+        private IInteractable _pendingInteractionTarget;
 
         private void Start()
         {
             _playerAnimator = _playerController?.PlayerAnimator;
+            _playerHead = _playerController?.Head;
             _hasAnimator = _playerAnimator != null;
             _animIDPickup = Animator.StringToHash("Pickup");
             _settings = _playerController.settings;
@@ -62,85 +69,227 @@ namespace Assets.Scripts.Player
 
         private void OnEnable()
         {
-            _input.OnInteractTriggered += HandleInteractTriggered;
-            _input.OnInteractEnded += HandleInteractEnded;
+            _input.OnInteractPressed += HandleInteractStarted;    // Старт таймера (1 раз)
+            _input.OnInteractTriggered += HandleInteractHeld;     // Повтор действия (еда)
+            _input.OnInteractStopPressed += HandleInteractEnded;  // Финал (меню или действие)
         }
 
         private void OnDisable()
         {
-            _input.OnInteractTriggered -= HandleInteractTriggered;
-            _input.OnInteractEnded -= HandleInteractEnded;
-
-            if (_radialMenuHoldCoroutine != null)
-                StopCoroutine(_radialMenuHoldCoroutine);
+            _input.OnInteractPressed -= HandleInteractStarted;
+            _input.OnInteractTriggered -= HandleInteractHeld;
+            _input.OnInteractStopPressed -= HandleInteractEnded;
+            HandleMenuClosed();
         }
 
         private void Update()
         {
-            // === Raycast для Radial Menu (каждый кадр) ===
-            PerformRadialMenuRaycast();
-
-            // === Обновление UI ===
+            PerformInteractionRaycast();
             UpdateInteractionUI();
+            HandleHoldLogic();
 
-            // === Обработка атаки (ЛКМ) для Harvest ===
-            if (_triggerTarget != null && _triggerTarget.GetInteractType() == InteractType.Harvest && _input.attack)
+            // Обработка атаки (ЛКМ) для Harvest
+            if (_targetGO != null && _input.attack)
             {
-                if (_hasAnimator)
-                    _playerController.Attack();
-                else
-                    Invoke(nameof(OnAttackInteractFinished), 0.7f);
-            }
-        }
-
-        // === Raycast логика ===
-        private void PerformRadialMenuRaycast()
-        {
-            Ray ray = new Ray(_playerCamera.transform.position, _playerCamera.transform.forward);
-
-            if (Physics.Raycast(ray, out RaycastHit hit, _raycastDistance, _interactableLayers))
-            {
-                if (hit.collider.TryGetComponent(out IInteractable interactable))
+                // Ищем Harvest среди всех целей
+                foreach (var target in _allTargets)
                 {
-                    if (interactable.GetInteractType() == InteractType.RadialMenu)
+                    if (target.GetInteractType() == InteractType.Harvest)
                     {
-                        _raycastTarget = interactable;
-                        _raycastTargetGO = hit.collider.gameObject;
-                        return;
+                        if (_hasAnimator)
+                            _playerController.Attack();
+                        else
+                            Invoke(nameof(OnAttackInteractFinished), 0.7f);
+                        break;
                     }
                 }
             }
-
-            // Если ничего не нашли или не RadialMenu
-            _raycastTarget = null;
-            _raycastTargetGO = null;
         }
 
-        // === Обновление UI (собираем все подсказки) ===
+        // === 1. ЛОГИКА УДЕРЖАНИЯ (Решение Проблемы 1) ===
+        private void HandleHoldLogic()
+        {
+            if (_isInteractHeld)
+            {
+                _interactionHoldTimer += Time.deltaTime;
+
+                // Если держим дольше порога и меню еще не открыто
+                if (_interactionHoldTimer >= _holdThreshold && !_radialMenuOpenedThisHold)
+                {
+                    OpenRadialMenuIfAvailable();
+                    _radialMenuOpenedThisHold = true;
+                }
+            }
+        }
+
+
+        // === 1. СТАРТ (Сброс таймера) ===
+        private void HandleInteractStarted()
+        {
+            _isInteractHeld = true;
+            _interactionHoldTimer = 0f;
+            _radialMenuOpenedThisHold = false;
+        }
+
+        // === 2. УДЕРЖАНИЕ (Повтор действия, например еда) ===
+        private void HandleInteractHeld()
+        {
+            // // Выполняем действие только если меню еще НЕ открылось
+            // if (!_radialMenuOpenedThisHold && _triggerTarget != null)
+            // {
+            // }
+        }
+
+        private void HandleInteractEnded()
+        {
+
+            _isInteractHeld = false;
+
+            // Если меню НЕ открылось за время удержания -> выполняем обычное действие
+            if (!_radialMenuOpenedThisHold)
+            {
+                ExecuteStandardInteractionIfAvailable();
+            }
+
+            // Закрываем меню при отпускании
+            HandleMenuClosed();
+
+            _interactionHoldTimer = 0f;
+            _radialMenuOpenedThisHold = false;
+        }
+
+        private void OpenRadialMenuIfAvailable()
+        {
+            // Ищем цель с типом RadialMenu среди всех найденных
+            foreach (var target in _allTargets)
+            {
+                if (target.GetInteractType() == InteractType.RadialMenu)
+                {
+                    HandleMenuOpened(_targetGO);
+                    return;
+                }
+            }
+        }
+
+        private void ExecuteStandardInteractionIfAvailable()
+        {
+            // Ищем первую цель НЕ меню и выполняем
+            foreach (var target in _allTargets)
+            {
+                if (target.GetInteractType() != InteractType.RadialMenu)
+                {
+                    ExecuteStandardInteraction(target);
+                    return;
+                }
+            }
+        }
+
+        // === 2. ПОИСК ВСЕХ ЦЕЛЕЙ (Решение Проблемы 2) ===
+        private void PerformInteractionRaycast()
+        {
+            _allTargets.Clear();
+            _targetGO = null;
+
+            float baseRadius = _playerInteractionRadius;
+            float maxDistance = 2.0f;
+            float angleMultiplier = 0.02f;
+
+            Vector3 headPos = _playerHead.position;
+            Vector3 headDir = _playerHead.forward;
+
+            float pitchAngle = Mathf.Asin(headDir.y) * Mathf.Rad2Deg;
+            float absAngle = Mathf.Abs(pitchAngle);
+
+            float currentInteractionDistance = baseRadius + (absAngle * angleMultiplier);
+            currentInteractionDistance = Mathf.Min(currentInteractionDistance, maxDistance);
+
+            Ray ray = new Ray(headPos, headDir);
+
+            if (Physics.Raycast(ray, out RaycastHit hit, currentInteractionDistance, _interactableLayers))
+            {
+                float distance = (headPos - hit.point).magnitude;
+                if (distance <= currentInteractionDistance)
+                {
+                    // 1. Ищем на самом коллайдере
+                    FindInteractablesOnObject(hit.collider.gameObject);
+
+                    // 2. Если не нашли, ищем в родителях
+                    if (_allTargets.Count == 0)
+                    {
+                        Transform parent = hit.collider.transform.parent;
+                        int depth = 0;
+                        while (parent != null && depth < 3)
+                        {
+                            FindInteractablesOnObject(parent.gameObject);
+                            if (_allTargets.Count > 0)
+                            {
+                                _targetGO = parent.gameObject;
+                                return;
+                            }
+                            parent = parent.parent;
+                            depth++;
+                        }
+                    }
+
+                    // 3. Если не нашли, ищем в детях
+                    if (_allTargets.Count == 0)
+                    {
+                        var childInteractables = hit.collider.gameObject.GetComponentsInChildren<IInteractable>();
+                        foreach (var child in childInteractables)
+                        {
+                            if (!_allTargets.Contains(child))
+                                _allTargets.Add(child);
+                        }
+                        if (_allTargets.Count > 0)
+                            _targetGO = hit.collider.gameObject;
+                    }
+
+                    if (_allTargets.Count > 0 && _targetGO == null)
+                        _targetGO = hit.collider.gameObject;
+
+                    return;
+                }
+            }
+        }
+
+        // Поиск всех компонентов IInteractable на объекте
+        private void FindInteractablesOnObject(GameObject obj)
+        {
+            var interactables = obj.GetComponents<IInteractable>();
+            foreach (var interactable in interactables)
+            {
+                if (!_allTargets.Contains(interactable))
+                    _allTargets.Add(interactable);
+            }
+        }
+
+        // === 3. ОБНОВЛЕНИЕ UI (Две надписи) ===
         private void UpdateInteractionUI()
         {
             StringBuilder sb = new StringBuilder();
             bool isInventoryOpened = _panelsController?.IsInventoryOpened() == true;
+            bool isMenuAlreadyOpen = _panelsController?.IsRadialMenuOpened() == true;
 
-            // Trigger-based подсказки (Дверь, Лут и т.д.)
-            if (_triggerTarget != null)
+            foreach (var target in _allTargets)
             {
-                string triggerText = GetActionText(_triggerTarget.GetInteractType(), _triggerTargetGO);
-                if (!string.IsNullOrEmpty(triggerText))
+                InteractType type = target.GetInteractType();
+
+                // 1. Надпись для действия (Открыть, Подобрать)
+                if (type != InteractType.RadialMenu)
                 {
-                    if (sb.Length > 0) sb.AppendLine();
-                    sb.Append(triggerText);
+                    string actionText = GetActionText(type, _targetGO);
+                    if (!string.IsNullOrEmpty(actionText))
+                    {
+                        if (sb.Length > 0) sb.AppendLine();
+                        sb.Append(actionText);
+                    }
                 }
-            }
 
-            // Raycast-based подсказки (Radial Menu)
-            if (_raycastTarget != null)
-            {
-                string raycastText = GetActionText(_raycastTarget.GetInteractType(), _raycastTargetGO);
-                if (!string.IsNullOrEmpty(raycastText))
+                // 2. Надпись для Меню
+                if (type == InteractType.RadialMenu && !isMenuAlreadyOpen)
                 {
                     if (sb.Length > 0) sb.AppendLine();
-                    sb.Append(raycastText);
+                    sb.Append("Удерживайте [E] для меню");
                 }
             }
 
@@ -151,89 +300,24 @@ namespace Assets.Scripts.Player
             }
         }
 
-        // === Обработка НАЧАЛА нажатия E ===
-        private void HandleInteractTriggered()
+        // === Остальные методы ===
+
+        private void HandleMenuOpened(GameObject targetGO)
         {
-            // 1. Приоритет: Trigger-based действия (Дверь, Лут и т.д.)
-            if (_triggerTarget != null)
+            if (_panelsController != null)
             {
-                InteractType type = _triggerTarget.GetInteractType();
-
-                if (type == InteractType.Pickup || type == InteractType.Gather ||
-                    type == InteractType.Open || type == InteractType.Drink)
-                {
-                    ExecuteStandardInteraction(_triggerTarget);
-                    return; // Выполняем и выходим
-                }
-            }
-
-            // 2. Если нет trigger-действий, проверяем Raycast для Radial Menu
-            if (_raycastTarget != null)
-            {
-                StartRadialMenuHold();
+                _panelsController.OpenRadialMenu(targetGO);
             }
         }
 
-        // === Обработка ОТПУСКАНИЯ E ===
-        private void HandleInteractEnded()
+        private void HandleMenuClosed()
         {
-            if (_isHoldingForRadialMenu)
+            if (_panelsController != null)
             {
-                _isHoldingForRadialMenu = false;
-
-                if (_radialMenuHoldCoroutine != null)
-                {
-                    StopCoroutine(_radialMenuHoldCoroutine);
-                    _radialMenuHoldCoroutine = null;
-                }
-
-                UpdateRadialMenuHoldProgress(0f);
+                _panelsController.CloseRadialMenu();
             }
         }
 
-        // === Запуск удержания для Radial Menu ===
-        private void StartRadialMenuHold()
-        {
-            if (_isHoldingForRadialMenu || _raycastTarget == null) return;
-
-            _isHoldingForRadialMenu = true;
-            _radialMenuHoldCoroutine = StartCoroutine(RadialMenuHoldCoroutine());
-        }
-
-        private IEnumerator RadialMenuHoldCoroutine()
-        {
-            float timer = 0f;
-
-            while (timer < RADIAL_MENU_HOLD_DURATION)
-            {
-                timer += Time.deltaTime;
-                float progress = timer / RADIAL_MENU_HOLD_DURATION;
-                UpdateRadialMenuHoldProgress(progress);
-
-                // Проверяем, не потеряли ли цель во время удержания
-                if (_raycastTarget == null)
-                {
-                    _isHoldingForRadialMenu = false;
-                    UpdateRadialMenuHoldProgress(0f);
-                    yield break;
-                }
-
-                yield return null;
-            }
-
-            // Удержание завершено
-            _isHoldingForRadialMenu = false;
-            var target = _raycastTarget;
-            _raycastTarget = null;
-            _radialMenuHoldCoroutine = null;
-
-            if (target != null)
-            {
-                OnInteractFinished(target);
-            }
-        }
-
-        // === Выполнение стандартного взаимодействия ===
         private void ExecuteStandardInteraction(IInteractable target)
         {
             if (_hasAnimator)
@@ -248,8 +332,6 @@ namespace Assets.Scripts.Player
             }
         }
 
-        private IInteractable _pendingInteractionTarget;
-
         public void OnInteractFinishedNoArg()
         {
             if (_pendingInteractionTarget != null)
@@ -259,10 +341,9 @@ namespace Assets.Scripts.Player
             }
         }
 
-        // === Финализация взаимодействия ===
         public void OnInteractFinished(IInteractable specificTarget = null)
         {
-            IInteractable target = specificTarget ?? _triggerTarget;
+            IInteractable target = specificTarget ?? (_allTargets.Count > 0 ? _allTargets[0] : null);
             if (target == null) return;
 
             var context = new InteractContext
@@ -275,81 +356,64 @@ namespace Assets.Scripts.Player
             target.Interact(context);
 
             if (target.HasInventory() && _panelsController != null)
-            {
                 _panelsController.OpenOtherInventory();
-            }
-
-            if (target.GetInteractType() == InteractType.RadialMenu && _panelsController != null)
-            {
-
-                if (_triggerTargetGO.TryGetComponent(out StructureIdentity identity))
-                {
-                    _panelsController.OpenRadialMenu(identity.instanceId);
-                }
-
-            }
 
             if (target.ShouldDetachAfterInteract())
             {
-                if (_triggerTarget == target)
-                    ClearTriggerTarget();
+                ClearTriggerTarget();
             }
         }
 
         public void OnAttackInteractFinished()
         {
-            if (_triggerTarget?.GetInteractType() != InteractType.Harvest) return;
+            foreach (var target in _allTargets)
+            {
+                if (target.GetInteractType() == InteractType.Harvest)
+                {
+                    AttackAnimationType tool = GetEquippedToolType();
+                    var context = new InteractContext { Tool = tool, IsAttack = true, PlayerInteraction = this };
+                    target.Interact(context);
 
-            AttackAnimationType tool = GetEquippedToolType();
-            var context = new InteractContext { Tool = tool, IsAttack = true, PlayerInteraction = this };
-            _triggerTarget.Interact(context);
-
-            if (_triggerTarget.ShouldDetachAfterInteract())
-                ClearTriggerTarget();
+                    if (target.ShouldDetachAfterInteract())
+                        ClearTriggerTarget();
+                    return;
+                }
+            }
         }
 
-        // === Trigger события (для дверей, лута и т.д.) ===
         private void OnTriggerEnter(Collider other)
         {
-            if (other.TryGetComponent(out IInteractable interactable))
-            {
-                // Игнорируем RadialMenu в триггерах — они через raycast
-                if (interactable.GetInteractType() == InteractType.RadialMenu)
-                    return;
-
-                _triggerTarget = interactable;
-                _triggerTargetGO = other.gameObject;
-            }
+            FindInteractablesOnObject(other.gameObject);
+            if (_allTargets.Count > 0)
+                _targetGO = other.gameObject;
         }
 
         private void OnTriggerExit(Collider other)
         {
-            if (_triggerTargetGO != null && other.gameObject == _triggerTargetGO)
+            if (_targetGO != null && other.gameObject == _targetGO)
             {
-                if (_triggerTarget?.HasInventory() == true && _panelsController != null)
-                    _panelsController.CloseAllPanels();
-
+                foreach (var target in _allTargets)
+                {
+                    if (target?.HasInventory() == true && _panelsController != null)
+                        _panelsController.CloseAllPanels();
+                }
                 ClearTriggerTarget();
             }
         }
 
         private void ClearTriggerTarget()
         {
-            _triggerTarget = null;
-            _triggerTargetGO = null;
+            _allTargets.Clear();
+            _targetGO = null;
         }
 
-        // === Утилиты ===
         private string GetActionText(InteractType type, GameObject targetGO)
         {
             bool isOpen = false;
-
             if (type == InteractType.Open && targetGO != null)
             {
                 if (targetGO.TryGetComponent(out DoorController doorController))
-                {
                     isOpen = doorController.IsVisuallyOpen();
-                }
             }
 
             return type switch
@@ -359,7 +423,7 @@ namespace Assets.Scripts.Player
                 InteractType.Gather => "[E] Собрать",
                 InteractType.Drink => "[E] Пить",
                 InteractType.Harvest => "[ЛКМ] Добывать",
-                InteractType.RadialMenu => "Удерживайте [E] для меню",
+                InteractType.RadialMenu => "", // Скрыто, обрабатывается отдельно
                 _ => "[E] Взаимодействовать"
             };
         }
@@ -371,16 +435,9 @@ namespace Assets.Scripts.Player
             {
                 var item = equipment.GetCurrentItem();
                 if (item != null && (item.itemType == ItemType.Tool || item.itemType == ItemType.Weapon))
-                {
                     return item.attackAnimation;
-                }
             }
             return AttackAnimationType.Fists;
-        }
-
-        private void UpdateRadialMenuHoldProgress(float progress)
-        {
-            // Опционально: визуализация прогресса удержания
         }
     }
 }

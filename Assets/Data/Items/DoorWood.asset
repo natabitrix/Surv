@@ -21,6 +21,6 @@ MonoBehaviour:
   foodRecoveryAmount: 0
   healthRecoveryAmount: 0
   model: {fileID: 0}
-  placeablePrefab: {fileID: 5270279275267175729, guid: 1095e078c8679af4ba8223e2a67531b9, type: 3}
+  placeablePrefab: {fileID: 2457779902201808527, guid: 6b66690f505054f4f85482ae7dfee8ca, type: 3}
   itemType: 6
   attackAnimation: 0

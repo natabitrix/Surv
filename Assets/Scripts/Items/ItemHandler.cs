@@ -5,15 +5,12 @@ using Assets.Scripts.Core;
 
 namespace Assets.Scripts.Items
 {
-    public class ItemPickupHandler : MonoBehaviour
+    public class ItemHandler : MonoBehaviour
     {
-        // public PlayerInventory playerInventory;
-
         public bool PickupItem(Item item, int amount = 1)
         {
             if (item == null) return false;
 
-            // bool added = playerInventory.AddItem(item, amount);
             int added = PlayerProgress.Instance.AddItemToPlayerInventory(item, amount);
 
             if (added > 0)
@@ -27,11 +24,6 @@ namespace Assets.Scripts.Items
                     {
                         PlayerProgress.Instance.AddExperience(xp * amount);
                     }
-                    // else
-                    // {
-                    //     // Или базовое значение: 1 XP за предмет
-                    //     PlayerProgress.Instance.AddExperience(amount);
-                    // }
                 }
 
                 // Уведомления
@@ -53,10 +45,34 @@ namespace Assets.Scripts.Items
             if (PlayerProgress.Instance != null)
             {
                 PlayerProgress.Instance.Save();
-                Debug.Log("[ItemPickupHandler] PickupItem Save!");
+                Debug.Log("[ItemHandler] PickupItem Save!");
             }
 
             return added > 0;
         }
+
+
+        public bool DestroyItem(GameObject obj)
+        {
+            if (obj == null) return false;
+
+            if (WorldManager.Instance != null)
+            {
+                WorldManager.Instance.UnregisterStructure(obj);
+            }
+            
+            Destroy(obj);
+
+            if (PlayerProgress.Instance != null)
+            {
+                PlayerProgress.Instance.Save();
+                Debug.Log("[ItemHandler] DestroyItem Save!");
+            }
+
+            // return destroyed > 0;
+            return true;
+        }
+
+
     }
 }

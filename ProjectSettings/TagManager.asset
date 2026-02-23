@@ -17,6 +17,7 @@ TagManager:
   - DoorHinge
   - DoorFrame
   - Gate
+  - Doorframe
   layers:
   - Default
   - TransparentFX
@@ -27,9 +28,9 @@ TagManager:
   - Buildings
   - Player
   - PreviewCharacter
-  - 
+  - Interactables
   - Rocks
-  - 
+  - Cliffs
   - 
   - 
   - 

@@ -31,7 +31,7 @@ namespace Assets.Scripts.Interactables
                 return;
             }
 
-            ItemPickupHandler pickupHandler = player.GetComponent<ItemPickupHandler>();
+            ItemHandler pickupHandler = player.GetComponent<ItemHandler>();
 
             if (pickupHandler != null && pickupHandler.PickupItem(item, amount))
             {

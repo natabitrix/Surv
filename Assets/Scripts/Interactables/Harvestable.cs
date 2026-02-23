@@ -94,9 +94,9 @@ namespace Assets.Scripts.Interactables
             {
                 switch (tool)
                 {
-                    case AttackAnimationType.Axe:       multiplier = 1.5f; break;
-                    case AttackAnimationType.Pickaxe:   multiplier = 0.3f; break;
-                    case AttackAnimationType.Fists:     multiplier = 0.0f; break; // нельзя
+                    case AttackAnimationType.Axe: multiplier = 1.5f; break;
+                    case AttackAnimationType.Pickaxe: multiplier = 0.3f; break;
+                    case AttackAnimationType.Fists: multiplier = 0.0f; break; // нельзя
                 }
             }
             // Пример: солома, трава, листья
@@ -104,9 +104,9 @@ namespace Assets.Scripts.Interactables
             {
                 switch (tool)
                 {
-                    case AttackAnimationType.Pickaxe:   multiplier = 1.4f; break;
-                    case AttackAnimationType.Axe:       multiplier = 0.7f; break;
-                    case AttackAnimationType.Fists:     multiplier = 1.0f; break; // можно руками
+                    case AttackAnimationType.Pickaxe: multiplier = 1.4f; break;
+                    case AttackAnimationType.Axe: multiplier = 0.7f; break;
+                    case AttackAnimationType.Fists: multiplier = 1.0f; break; // можно руками
                 }
             }
             // Пример: камень (только киркой)
@@ -114,8 +114,8 @@ namespace Assets.Scripts.Interactables
             {
                 switch (tool)
                 {
-                    case AttackAnimationType.Pickaxe:   multiplier = 1.6f; break;
-                    default:                            multiplier = 0.0f; break; // только кирка
+                    case AttackAnimationType.Pickaxe: multiplier = 1.6f; break;
+                    default: multiplier = 0.0f; break; // только кирка
                 }
             }
 
@@ -131,7 +131,7 @@ namespace Assets.Scripts.Interactables
             var player = GameObject.FindGameObjectWithTag("Player");
             if (player == null) return;
 
-            var pickupHandler = player.GetComponent<ItemPickupHandler>();
+            var pickupHandler = player.GetComponent<ItemHandler>();
             if (pickupHandler != null)
             {
                 pickupHandler.PickupItem(item, amount);
@@ -140,15 +140,15 @@ namespace Assets.Scripts.Interactables
 
         private void PlayHitFeedback()
         {
-            if(animator != null)
+            if (animator != null)
                 animator.SetTrigger("Hit");
         }
 
         private void PlayBreakEffect()
         {
-            if(breakEffect != null)
+            if (breakEffect != null)
                 breakEffect.Play();
-            if(animator != null)
+            if (animator != null)
                 animator.SetTrigger("Break");
         }
     }

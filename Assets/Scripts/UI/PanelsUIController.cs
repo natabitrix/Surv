@@ -1,6 +1,8 @@
 // Assets/Scripts/InventorySystem/PlayerPanelsUIController.cs
 using Assets.Scripts.Core;
+using Assets.Scripts.Interactables;
 using Assets.Scripts.InventorySystem;
+using Assets.Scripts.Items;
 using Assets.Scripts.Player;
 using Assets.Scripts.UI;
 using Assets.Scripts.UI.Tooltip;
@@ -15,6 +17,8 @@ namespace Assets.Scripts.UI
     {
         [SerializeField] private PlayerInputHandler _input;
         [SerializeField] private PlayerController _playerController;
+        // [SerializeField] private ItemDatabase _itemDatabase;
+
 
         [Header("Panels")]
         public GameObject TopButtons;
@@ -48,14 +52,27 @@ namespace Assets.Scripts.UI
         public GameObject OtherCenterPanel;
         public GameObject OtherRightPanel;
 
+        [Header("Radial Menu")]
+        public TMP_Text RadialMenuTargetName;
+        public Button RadialMenuPickupButton;
+        public Button RadialMenuDestroyButton;
+        public Button RadialMenuRepairButton;
+
         [Header("Other Managers")]
-        public CharacterPreviewManager previewManager;
-        public TooltipManager tooltipManager;
+        [SerializeField] private InventoryManager inventoryManager;
+        [SerializeField] private CharacterPreviewManager previewManager;
+        [SerializeField] private TooltipManager tooltipManager;
+        [SerializeField] private RadialMenuManager _radialMenuManager;
 
         private bool _isInventoryOpened = false;
+        private bool _isRadialMenuOpened = false;
 
-        // Ссылка на менеджер логики
-        public InventoryManager inventoryManager;
+        public Item RadialMenuCurrentTarget = null;
+        public GameObject RadialMenuCurrentTargetGO = null;
+
+
+
+
 
         // === TOGGLE PANELS ===
         // Управление состоянием панелей и курсора
@@ -66,10 +83,8 @@ namespace Assets.Scripts.UI
             _input.SetCursorVisible(on);
         }
 
-        public bool IsInventoryOpened()
-        {
-            return _isInventoryOpened;
-        }
+        public bool IsInventoryOpened() => _isInventoryOpened;
+        public bool IsRadialMenuOpened() => _isRadialMenuOpened;
 
         // Открытие инвентаря игрока
         public void OpenPlayerInventory()
@@ -92,7 +107,7 @@ namespace Assets.Scripts.UI
             }
 
             _input.OnInteractTriggered += inventoryManager.UseItemFromSlot;
-            _input.OnInteractEnded += inventoryManager.OnUseItemFinished;
+            _input.OnInteractStopPressed += inventoryManager.OnUseItemFinished;
         }
 
         // Открытие чужого инвентаря (сундука)
@@ -109,17 +124,64 @@ namespace Assets.Scripts.UI
             PanelMode(true);
         }
 
-        public void OpenRadialMenu(string instanceId)
+        public void OpenRadialMenu(GameObject targetGO)
         {
+            // ✅ ПРОВЕРКА: Не открывать если уже открыто
+            if (_isRadialMenuOpened)
+            {
+                // Debug.Log("[PanelsUIController] CloseRadialMenu: меню уже закрыто, пропускаем");
+                return;
+            }
+
+            if (targetGO == null)
+            {
+                Debug.LogError("[PanelsUIController] Target GameObject не найден!");
+                return;
+            }
+            Item targetItem = null;
+            if (targetGO.TryGetComponent(out RadialMenu menu))
+            {
+                targetItem = menu.item;
+            }
+            if (targetItem == null)
+            {
+                Debug.LogError("[PanelsUIController] item не найден!");
+                return;
+            }
+
+            RadialMenuCurrentTarget = targetItem;
+            RadialMenuCurrentTargetGO = targetGO;
+
+            if (RadialMenuTargetName != null)
+                RadialMenuTargetName.text = $"{targetItem.itemName}";
+
             RadialMenuPanel.SetActive(true);
+            _isRadialMenuOpened = true;
             PanelMode(true);
         }
 
         public void CloseRadialMenu()
         {
+            // ✅ ПРОВЕРКА: Не закрывать если уже закрыто
+            if (!_isRadialMenuOpened)
+            {
+                return;
+            }
+
+            RadialMenuCurrentTarget = null;
+            RadialMenuCurrentTargetGO = null;
+
+            if (RadialMenuTargetName != null)
+                RadialMenuTargetName.text = " ";
+
             RadialMenuPanel.SetActive(false);
+            _isRadialMenuOpened = false;
             PanelMode(false);
-            if (tooltipManager != null) tooltipManager.HideTooltip();
+
+            if (tooltipManager != null)
+                tooltipManager.HideTooltip();
+
+
         }
 
         // Закрытие панелей инвентаря
@@ -142,7 +204,7 @@ namespace Assets.Scripts.UI
             }
 
             _input.OnInteractTriggered -= inventoryManager.UseItemFromSlot;
-            _input.OnInteractEnded -= inventoryManager.OnUseItemFinished;
+            _input.OnInteractStopPressed -= inventoryManager.OnUseItemFinished;
         }
 
         // Закрытие панели энграмм
@@ -276,6 +338,38 @@ namespace Assets.Scripts.UI
             OtherInventoryMoveButton.onClick.AddListener(() => inventoryManager?.MoveAllToPlayer());
             TooltipTrigger.AddTooltip(OtherInventoryMoveButton.gameObject, "Забрать всё");
             OtherInventoryMoveButton.AddComponent<ButtonScaleEffect>();
+
+            // Radial Menu Buttons
+            RadialMenuPickupButton.onClick.AddListener(() => RadialMenuPickup());
+            RadialMenuPickupButton.AddComponent<ButtonScaleEffect>();
+
+            RadialMenuDestroyButton.onClick.AddListener(() => RadialMenuDestroy());
+            RadialMenuDestroyButton.AddComponent<ButtonScaleEffect>();
+        }
+
+        private void RadialMenuPickup()
+        {
+            if (_playerController.TryGetComponent(out ItemHandler itemHandler))
+            {
+                if (RadialMenuCurrentTarget != null)
+                {
+                    itemHandler.PickupItem(RadialMenuCurrentTarget);
+                    itemHandler.DestroyItem(RadialMenuCurrentTargetGO);
+                }
+            }
+            CloseRadialMenu();
+
+        }
+        private void RadialMenuDestroy()
+        {
+            if (_playerController.TryGetComponent(out ItemHandler itemHandler))
+            {
+                if (RadialMenuCurrentTarget != null)
+                {
+                    itemHandler.DestroyItem(RadialMenuCurrentTargetGO);
+                }
+            }
+            CloseRadialMenu();
         }
 
         private void Update()

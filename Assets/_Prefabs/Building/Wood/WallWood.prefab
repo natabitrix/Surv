@@ -440,6 +440,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e4fd1ea77d25d2645838ef83642d540d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Interactables.RadialMenu
+  item: {fileID: 11400000, guid: 696cc80a6b1d02449b35d6b933c2a758, type: 2}
 --- !u!4 &1873812312356815841 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 2031fe2e047328f40aacc4d2a2b92950, type: 3}

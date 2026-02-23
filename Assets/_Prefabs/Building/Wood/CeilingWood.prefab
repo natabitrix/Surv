@@ -558,3 +558,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e4fd1ea77d25d2645838ef83642d540d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Interactables.RadialMenu
+  item: {fileID: 11400000, guid: 97b53f75ae2582642b9830fef9f03977, type: 2}

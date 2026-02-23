@@ -19,12 +19,15 @@ namespace Assets.Scripts.UI.Pausemenu
 
         public float timeScale = 1f;
 
-        public bool IsMainMenu = false;
-        public bool IsPauseOpen = false;
+        // private bool _isMainMenu = false;
+        private bool _isPauseOpened = false;
+        
 
         [SerializeField] private PlayerInputHandler _input;
         [SerializeField] private PlayerController _playerController;
         [SerializeField] private PanelsUIController _panelsController;
+
+         public bool IsPauseOpened() => _isPauseOpened;
 
 
         private void Start()
@@ -37,11 +40,25 @@ namespace Assets.Scripts.UI.Pausemenu
         {
             if (_input.cancel)
             {
-                if (_panelsController != null && _panelsController.IsInventoryOpened())
+                bool anyPanelsOpened = false;
+                
+                if (_panelsController != null)
                 {
-                    _panelsController.CloseAllPanels();
+                    if (_panelsController.IsRadialMenuOpened())
+                    {
+                        anyPanelsOpened = true;
+                        Debug.Log("IsRadialMenuOpened");
+                        _panelsController.CloseRadialMenu();
+                    }
+                    if (_panelsController.IsInventoryOpened())
+                    {
+                        anyPanelsOpened = true;
+                        Debug.Log("IsInventoryOpened");
+                        _panelsController.CloseAllPanels();
+                    }
                 }
-                else
+
+                if (!anyPanelsOpened)
                 {
                     SetPause();
                 }
@@ -94,7 +111,7 @@ namespace Assets.Scripts.UI.Pausemenu
             PausePanel.SetActive(true);
             SettingsPanel.SetActive(false);
             LockCamera(true);
-            IsPauseOpen = true;
+            _isPauseOpened = true;
             SetRealPause(true);
             SetCursorVisible(true);
         }
@@ -106,7 +123,7 @@ namespace Assets.Scripts.UI.Pausemenu
             SettingsPanel.SetActive(false);
             SetCursorVisible(false);
             LockCamera(false);
-            IsPauseOpen = false;
+            _isPauseOpened = false;
             SetRealPause(false);
         }
 
@@ -131,7 +148,7 @@ namespace Assets.Scripts.UI.Pausemenu
         public void LoadGameScene()
         {
             SetRealPause(false);
-            IsPauseOpen = false;
+            _isPauseOpened = false;
             SetCursorVisible(false);
             SceneManager.LoadScene(GameScene);
         }

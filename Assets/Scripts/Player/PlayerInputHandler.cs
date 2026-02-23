@@ -24,7 +24,7 @@ namespace Assets.Scripts.Player
         public bool crouch;
         public bool crawl;
         public bool interact;
-        public bool interactHeld;
+        public bool interactHold;
         public bool openInventory;
         public bool cancel;
         public bool turnLeft;
@@ -40,6 +40,7 @@ namespace Assets.Scripts.Player
         [SerializeField] private PlayerController _playerController;
         [SerializeField] private PauseManager _pauseManager;
         [SerializeField] private PanelsUIController _panelsController;
+        [SerializeField] private RadialMenuManager _radialMenuManager;
 
         [SerializeField] private InputActionReference _fireAction;
         [SerializeField] private InputActionReference _interactAction;
@@ -50,19 +51,24 @@ namespace Assets.Scripts.Player
 
 
         // События для Interact/Fire
+        public event Action OnInteractPressed;
         public event Action OnInteractTriggered;
-        public event Action OnInteractEnded;
+        public event Action OnInteractStopPressed;
+
         public event Action OnFireTriggered;
         public event Action OnFireEnded;
+
+        private Coroutine _repeatFireCoroutine;
+        private Coroutine _repeatInteractCoroutine;
 
         // СОБЫТИЕ ДЛЯ ХОТБАРА: передает индекс слота (0-9)
         public event Action<int> OnHotbarSlotPressed;
 
-        private Coroutine _repeatCoroutine; // Для интеракта и огня
         private Coroutine[] _hotbarCoroutines; // Массив корутин для каждого слота (0-9)
         private InputAction[] _hotbarActions; // Массив ссылок на действия хотбара
 
         private bool _isInventoryOpen;
+        private bool _isRadialMenuOpen;
         private bool _isPauseOpen;
         private bool _attackPressedThisFrame = false;
 
@@ -116,7 +122,8 @@ namespace Assets.Scripts.Player
             _fireAction.action.started -= OnFireStarted;
             _fireAction.action.canceled -= OnFireCanceled;
 
-            StopRepeat();
+            StopRepeatFire();
+            StopRepeatInteract();
             StopAllHotbarRepeats();
 
             foreach (var action in _hotbarActions)
@@ -126,28 +133,19 @@ namespace Assets.Scripts.Player
         }
 
         #region Interact & Fire Logic (Existing)
+
         private void OnInteractStarted(InputAction.CallbackContext context)
         {
+            OnInteractPressed.Invoke();
             TriggerInteract();
-            _repeatCoroutine = StartCoroutine(RepeatInteract());
-        }
-
-        private void OnFireStarted(InputAction.CallbackContext context)
-        {
-            TriggerFire();
-            _repeatCoroutine = StartCoroutine(RepeatFire());
+            _repeatInteractCoroutine = StartCoroutine(RepeatInteract());
+            
         }
 
         private void OnInteractCanceled(InputAction.CallbackContext context)
         {
-            StopRepeat();
-            OnInteractEnded?.Invoke();
-        }
-
-        private void OnFireCanceled(InputAction.CallbackContext context)
-        {
-            StopRepeat();
-            OnFireEnded?.Invoke();
+            StopRepeatInteract();
+            OnInteractStopPressed?.Invoke();
         }
 
         private IEnumerator RepeatInteract()
@@ -155,9 +153,52 @@ namespace Assets.Scripts.Player
             yield return new WaitForSeconds(_holdingRepeatDelay);
             while (true)
             {
-                TriggerInteract();
+                bool shouldBlock = false;
+
+                if (_panelsController != null && _panelsController.IsRadialMenuOpened())
+                {
+                    shouldBlock = true;
+                }
+
+                if (_pauseManager != null && _pauseManager.IsPauseOpened())
+                {
+                    shouldBlock = true;
+                }
+
+                if (!shouldBlock)
+                {
+                    TriggerInteract();
+                }
                 yield return new WaitForSeconds(_holdingRepeatInterval);
             }
+        }
+
+        private void TriggerInteract()
+        {
+            OnInteractTriggered?.Invoke();
+        }
+
+        private void StopRepeatInteract()
+        {
+            if (_repeatInteractCoroutine != null)
+            {
+                StopCoroutine(_repeatInteractCoroutine);
+                _repeatInteractCoroutine = null;
+            }
+        }
+
+
+        // === FIRE ===
+        private void OnFireStarted(InputAction.CallbackContext context)
+        {
+            TriggerFire();
+            _repeatFireCoroutine = StartCoroutine(RepeatFire());
+        }
+
+        private void OnFireCanceled(InputAction.CallbackContext context)
+        {
+            StopRepeatFire();
+            OnFireEnded?.Invoke();
         }
 
         private IEnumerator RepeatFire()
@@ -170,28 +211,35 @@ namespace Assets.Scripts.Player
             }
         }
 
-        private void StopRepeat()
+        private void TriggerFire()
         {
-            if (_repeatCoroutine != null)
+            OnFireTriggered?.Invoke();
+        }
+
+        private void StopRepeatFire()
+        {
+            if (_repeatFireCoroutine != null)
             {
-                StopCoroutine(_repeatCoroutine);
-                _repeatCoroutine = null;
+                StopCoroutine(_repeatFireCoroutine);
+                _repeatFireCoroutine = null;
             }
         }
 
-        private void TriggerInteract() => OnInteractTriggered?.Invoke();
-        private void TriggerFire() => OnFireTriggered?.Invoke();
+
         #endregion
 
         private void Update()
         {
             _isInventoryOpen = _panelsController != null && _panelsController.IsInventoryOpened();
-            if (_pauseManager != null) _isPauseOpen = _pauseManager.IsPauseOpen;
+            _isRadialMenuOpen = _panelsController != null && _panelsController.IsRadialMenuOpened();
+            _isPauseOpen = _pauseManager != null && _pauseManager.IsPauseOpened();
+
+            bool isUIOpened = _isInventoryOpen || _isRadialMenuOpen || _isPauseOpen;
 
             // --- Обработка атаки ---
             if (_attackPressedThisFrame)
             {
-                if (!_isInventoryOpen && !IsPointerOverUI())
+                if (!isUIOpened && !IsPointerOverUI())
                 {
                     attack = true;
                 }
@@ -206,7 +254,10 @@ namespace Assets.Scripts.Player
                 attack = false;
             }
 
-            if (_attackPressedThisFrame && !_isInventoryOpen && !_isPauseOpen && Application.isFocused && !IsPointerOverUI())
+            if (_attackPressedThisFrame &&
+                !isUIOpened &&
+                Application.isFocused &&
+                !IsPointerOverUI())
             {
                 LockCamera(false);
                 SetCursorVisible(false);
@@ -285,6 +336,7 @@ namespace Assets.Scripts.Player
         }
 
         #region Input Callbacks (Standard)
+
         public void OnMove(InputValue value) => move = value.Get<Vector2>();
         public void OnLook(InputValue value) => look = value.Get<Vector2>();
         public void OnJump(InputValue value) => jump = value.isPressed;
@@ -292,9 +344,7 @@ namespace Assets.Scripts.Player
         public void OnLeftShift(InputValue value) => leftShift = value.isPressed;
         public void OnCrouch(InputValue value) => crouch = value.isPressed;
         public void OnCrawl(InputValue value) => crawl = value.isPressed;
-
         public void OnSelfieCamera(InputValue value) => selfieCamera = !selfieCamera;
-
         public void OnAttack(InputValue value) => _attackPressedThisFrame = value.isPressed;
         public void OnRightClick(InputValue value) => rightClick = value.isPressed;
         public void OnMouseScroll(InputValue value) => mouseScrollDelta = value.Get<Vector2>().y;
@@ -305,7 +355,6 @@ namespace Assets.Scripts.Player
         public void OnHideTool(InputValue value) => hideTool = value.isPressed;
         public void OnCancel(InputValue value) => cancel = value.isPressed;
 
-        // Методы OnHotbar1..10 удалены!
         #endregion
 
         public void ResetAttack() => attack = false;

@@ -216,7 +216,7 @@ namespace Assets.Scripts.Core
                 {
                     Debug.LogWarning("[PlayerProgress] playerController не назначен! Позиция не загружена.");
                 }
-                Debug.Log($"[PlayerProgress] Позиция загружена: {playerController.transform.position}");
+                // Debug.Log($"[PlayerProgress] Позиция загружена: {playerController.transform.position}");
                 
                 // IsLoaded = true;
 
@@ -284,7 +284,7 @@ namespace Assets.Scripts.Core
             if (amount <= 0) return;
             _experience += amount;
             Save();
-            Debug.Log("[PlayerProgress] AddExperience Save!");
+            // Debug.Log("[PlayerProgress] AddExperience Save!");
             ShowLevelUpNote();
             OnProgressChanged?.Invoke();
         }
@@ -328,7 +328,7 @@ namespace Assets.Scripts.Core
             _engramPoints += GetEngramPointsForLevel(_level - 1); // ОЭ за предыдущий уровень
 
             Save();
-            Debug.Log("[PlayerProgress] AllocateStatPoint Save!");
+            // Debug.Log("[PlayerProgress] AllocateStatPoint Save!");
 
             NotificationManager.Instance.ShowTopNote(
                 $"Улучшен {stat}. Новый уровень: {_level}, Энграмм: {_engramPoints}",
@@ -393,7 +393,7 @@ namespace Assets.Scripts.Core
                         }
                         remaining -= add;
                         hotbarInventoryData.NotifyChanged();
-                        Debug.Log($"[AddItem] Добавлено {add}x {item.itemName} в закреплённый слот хотбара {hotbarSlotIndex}");
+                        // Debug.Log($"[AddItem] Добавлено {add}x {item.itemName} в закреплённый слот хотбара {hotbarSlotIndex}");
                     }
                 }
             }
@@ -405,7 +405,7 @@ namespace Assets.Scripts.Core
                 remaining -= addedToMain;
                 if (addedToMain > 0)
                 {
-                    Debug.Log($"[AddItem] Добавлено {addedToMain}x {item.itemName} в основной инвентарь");
+                    // Debug.Log($"[AddItem] Добавлено {addedToMain}x {item.itemName} в основной инвентарь");
                 }
             }
 
@@ -437,7 +437,7 @@ namespace Assets.Scripts.Core
                 }
 
                 Save();
-                Debug.Log("[PlayerProgress] MarkItemAsHotbarPreferred Save!");
+                // Debug.Log("[PlayerProgress] MarkItemAsHotbarPreferred Save!");
             }
         }
 
@@ -445,7 +445,7 @@ namespace Assets.Scripts.Core
         {
             hotbarSlotMap.Remove(item.Id);
             Save();
-            Debug.Log("[PlayerProgress] UnmarkItemAsHotbarPreferred Save!");
+            // Debug.Log("[PlayerProgress] UnmarkItemAsHotbarPreferred Save!");
         }
 
         public void Save()

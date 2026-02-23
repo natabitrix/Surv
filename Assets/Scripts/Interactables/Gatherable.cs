@@ -67,7 +67,7 @@ namespace Assets.Scripts.Interactables
             var player = GameObject.FindGameObjectWithTag("Player");
             if (player == null) return;
 
-            var pickupHandler = player.GetComponent<ItemPickupHandler>();
+            var pickupHandler = player.GetComponent<ItemHandler>();
             if (pickupHandler != null)
             {
                 pickupHandler.PickupItem(item, amount);

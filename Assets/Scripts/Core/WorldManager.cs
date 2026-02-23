@@ -93,11 +93,11 @@ namespace Assets.Scripts.Core
                 return;
             }
 
-            Debug.Log($"[WorldManager] Загрузка мира вокруг: {playerController.transform.position}");
+            // Debug.Log($"[WorldManager] Загрузка мира вокруг: {playerController.transform.position}");
 
             // Загружаем мир ВОКРУГ СОХРАНЁННОЙ позиции игрока
             LoadWorld(playerController.transform.position);
-            Debug.Log($"[WorldManager] Мир загружен вокруг позиции игрока: {playerController.transform.position}");
+            // Debug.Log($"[WorldManager] Мир загружен вокруг позиции игрока: {playerController.transform.position}");
 
 
         }
@@ -147,6 +147,43 @@ namespace Assets.Scripts.Core
             _lastSaveTime = Time.time; // Сбрасываем таймер для быстрого сохранения
         }
 
+
+        public void UnregisterStructure(GameObject structure)
+        {
+            if (structure == null)
+            {
+                Debug.LogError("[WorldManager] UnregisterStructure: structure is null");
+                return;
+            }
+
+            // Получаем ID структуры
+            var identity = structure.GetComponent<StructureIdentity>();
+            if (identity == null || string.IsNullOrEmpty(identity.instanceId))
+            {
+                Debug.LogError("[WorldManager] UnregisterStructure: No StructureIdentity found");
+                return;
+            }
+
+            string instanceId = identity.instanceId;
+            Vector2Int chunkKey = GetChunkKey(structure.transform.position);
+
+            // Удаляем из чанка
+            if (_chunks.TryGetValue(chunkKey, out var structures))
+            {
+                structures.RemoveAll(s => s.instanceId == instanceId);
+                // Debug.Log($"[WorldManager] Удалена структура {instanceId} из чанка {chunkKey}");
+            }
+
+            // Удаляем из мапы инстансов
+            _instanceMap.Remove(instanceId);
+
+            // Помечаем чанк как грязный для сохранения
+            _dirtyChunks.Add(chunkKey);
+            _lastSaveTime = Time.time;
+
+            // Debug.Log($"[WorldManager] Чанк {chunkKey} помечен для сохранения");
+        }
+
         // ===== ЗАГРУЗКА МИРА =====
         public void LoadWorld(Vector3 playerPosition)
         {
@@ -173,7 +210,7 @@ namespace Assets.Scripts.Core
                     {
                         _chunks[chunkKey] = chunkData.structures;
                         totalStructures += chunkData.structures.Count;
-                        Debug.Log($"[WorldManager] Загружен чанк {chunkKey} ({chunkData.structures.Count} структур)");
+                        // Debug.Log($"[WorldManager] Загружен чанк {chunkKey} ({chunkData.structures.Count} структур)");
                     }
                 }
                 catch (Exception e)
@@ -188,7 +225,7 @@ namespace Assets.Scripts.Core
             // Восстанавливаем иерархию ДВЕРЕЙ (только после полной загрузки)
             // RestoreDoorHierarchy();
 
-            Debug.Log($"[WorldManager] Загружено {totalStructures} структур из {chunksToLoad.Count} чанков");
+            // Debug.Log($"[WorldManager] Загружено {totalStructures} структур из {chunksToLoad.Count} чанков");
         }
 
         // ===== ИНСТАНЦИРОВАНИЕ СТРУКТУР =====
@@ -246,7 +283,23 @@ namespace Assets.Scripts.Core
                 {
                     var saveData = new ChunkSaveData { structures = structures };
                     string json = JsonConvert.SerializeObject(saveData, Formatting.None);
-                    File.WriteAllText(GetChunkSavePath(chunkKey), json);
+
+                    // ✅ Если структур нет — удаляем файл чанка
+                    if (structures.Count == 0)
+                    {
+                        string path = GetChunkSavePath(chunkKey);
+                        if (File.Exists(path))
+                        {
+                            File.Delete(path);
+                            // Debug.Log($"[WorldManager] Удалён пустой чанк {chunkKey}");
+                        }
+                        _chunks.Remove(chunkKey); // Удаляем из памяти
+                    }
+                    else
+                    {
+                        File.WriteAllText(GetChunkSavePath(chunkKey), json);
+                    }
+
                     savedCount++;
                 }
                 catch (Exception e)
@@ -256,7 +309,7 @@ namespace Assets.Scripts.Core
             }
 
             if (savedCount > 0)
-                Debug.Log($"[WorldManager] Сохранено {_dirtyChunks.Count} чанков");
+                // Debug.Log($"[WorldManager] Сохранено {savedCount} чанков");
 
             _dirtyChunks.Clear();
         }
@@ -268,7 +321,7 @@ namespace Assets.Scripts.Core
                 _dirtyChunks.Add(chunkKey); // Помечаем все чанки как грязные
             }
             SaveDirtyChunks(); // Сохраняем всё
-            Debug.Log("[WorldManager] Все чанки сохранены перед выходом");
+            // Debug.Log("[WorldManager] Все чанки сохранены перед выходом");
         }
 
         // ===== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ =====
@@ -319,7 +372,7 @@ namespace Assets.Scripts.Core
             }
 
             _instanceMap.Clear();
-            Debug.Log("[WorldManager] Существующие постройки очищены перед загрузкой");
+            // Debug.Log("[WorldManager] Существующие постройки очищены перед загрузкой");
         }
 
         // ===== ОТЛАДКА =====

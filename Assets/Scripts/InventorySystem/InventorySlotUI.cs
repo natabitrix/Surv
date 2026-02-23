@@ -549,7 +549,7 @@ namespace Assets.Scripts.InventorySystem
                         slot.item,
                         () =>
                         {
-                            _inventoryManager.UseItemFromSlot();
+                            _inventoryManager.UseItemFromSlot();//!!!!!
                             HighLightHoverSlot(false);
                         },
                         () =>

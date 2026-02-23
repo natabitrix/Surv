@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace Assets.Scripts.Interactables
 {
-    [RequireComponent(typeof(Collider))]
+    // [RequireComponent(typeof(Collider))]
     public class ResourceNode : MonoBehaviour, IInteractable
     {
         // === Типы взаимодействия ===
@@ -222,7 +222,7 @@ namespace Assets.Scripts.Interactables
         {
             if (amount <= 0 || item == null) return;
             var player = GameObject.FindGameObjectWithTag("Player");
-            player?.GetComponent<ItemPickupHandler>()?.PickupItem(item, amount);
+            player?.GetComponent<ItemHandler>()?.PickupItem(item, amount);
         }
 
         void PlayHitFeedback()
