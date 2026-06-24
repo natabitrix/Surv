@@ -16,8 +16,9 @@ namespace Assets.Scripts.InventorySystem
     public enum SlotOwner
     {
         Inventory,
-        Chest,
         Hotbar,
+        Chest,
+        
     }
 
     public class InventorySlotUI : MonoBehaviour,
@@ -72,7 +73,7 @@ namespace Assets.Scripts.InventorySystem
             inventoryUI = ui;
             hotbarUI = null;
             chestUI = null;
-            _inventoryManager = ui.InventoryManager;
+            _inventoryManager = ui.inventoryManager;
         }
 
         public void SetupHotbar(int slotIndex, HotbarUI ui)
@@ -82,7 +83,7 @@ namespace Assets.Scripts.InventorySystem
             hotbarUI = ui;
             inventoryUI = null;
             chestUI = null;
-            _inventoryManager = ui.InventoryManager;
+            _inventoryManager = ui.inventoryManager;
         }
 
         public void SetupChest(int slotIndex, ChestUI ui)
@@ -92,7 +93,7 @@ namespace Assets.Scripts.InventorySystem
             chestUI = ui;
             inventoryUI = null;
             hotbarUI = null;
-            _inventoryManager = ui.InventoryManager;
+            _inventoryManager = ui.inventoryManager;
         }
 
         // Получаем слот безопасно

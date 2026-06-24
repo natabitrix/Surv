@@ -14,7 +14,7 @@ namespace Assets.Scripts.InventorySystem
         public GameObject slotPrefab;
         public RectTransform dragLayer;
         public Canvas rootCanvas;
-        public InventoryManager InventoryManager;
+        public InventoryManager inventoryManager;
         
         [SerializeField] private PlayerInputHandler _inputHandler;
 
@@ -37,9 +37,9 @@ namespace Assets.Scripts.InventorySystem
                 }
             }
 
-            if (InventoryManager == null)
+            if (inventoryManager == null)
             {
-                InventoryManager = FindFirstObjectByType<InventoryManager>();
+                inventoryManager = FindFirstObjectByType<InventoryManager>();
             }
         }
 
@@ -108,7 +108,7 @@ namespace Assets.Scripts.InventorySystem
                 return;
             }
 
-            if (InventoryManager == null)
+            if (inventoryManager == null)
             {
                 Debug.LogError("[HotbarUI] InventoryManager is null!");
                 return;
@@ -122,8 +122,8 @@ namespace Assets.Scripts.InventorySystem
                     targetSlotUI = slotUIs[slotIndex];
                 }
 
-                InventoryManager.SelectSlot(slotIndex, SlotOwner.Hotbar, targetSlotUI);
-                InventoryManager.UseItemFromSlot();
+                inventoryManager.SelectSlot(slotIndex, SlotOwner.Hotbar, targetSlotUI);
+                inventoryManager.UseItemFromSlot();
             }
         }
 
@@ -146,8 +146,8 @@ namespace Assets.Scripts.InventorySystem
             var progress = PlayerProgress.Instance;
             if (progress == null || progress.hotbarInventoryData == null || slotUIs == null) return;
 
-            var equipment = InventoryManager.equipment;
-            var buildMode = InventoryManager.buildMode;
+            var equipment = inventoryManager.equipment;
+            var buildMode = inventoryManager.buildMode;
             Item itemInHand = null;
             int itemInHandSlotIndex = -1;
 

@@ -28,13 +28,13 @@ TagManager:
   - Buildings
   - Player
   - PreviewCharacter
-  - Interactables
+  - Interactable
   - Rocks
   - Cliffs
-  - 
-  - 
-  - 
-  - 
+  - Creature
+  - Gatherable
+  - Trees
+  - Pickable
   - 
   - 
   - 
@@ -64,3 +64,4 @@ TagManager:
   - Light Layer 5
   - Light Layer 6
   - Light Layer 7
+  - Receive Resource Decals

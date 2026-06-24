@@ -36,10 +36,10 @@ namespace Assets.Scripts.InventorySystem
         public NotificationManager notificationManager;
 
         private List<StatUI> _statRows = new List<StatUI>();
-        private SlotOwner _selectedSlotOwner = SlotOwner.Inventory;
         private PlayerProgress _playerProgress;
 
         private int _selectedSlotIndex = -1;
+        private SlotOwner _selectedSlotOwner = SlotOwner.Inventory;
         private InventorySlotUI _selectedSlotUI = null;
 
         // Поля для отслеживания сессии поедания
@@ -132,37 +132,92 @@ namespace Assets.Scripts.InventorySystem
             _selectedSlotUI = slotUI;
         }
 
-        public void UseItemFromSlot()
+        public InventorySlot GetSlotByIndex(int index)
         {
-            if (_selectedSlotIndex < 0 || _selectedSlotUI == null) return;
+            if (index < 0) return null;
+
             var progress = PlayerProgress.Instance;
-            if (progress == null) return;
+            if (progress == null) return null;
 
             InventorySlot slot = null;
-            int globalSlotIndex = -1;
 
             // Получаем слот из правильного контейнера
             if (_selectedSlotOwner == SlotOwner.Hotbar)
             {
-                if (_selectedSlotIndex < progress.hotbarInventoryData.slots.Count)
+                if (index < progress.hotbarInventoryData.slots.Count)
                 {
-                    slot = progress.hotbarInventoryData.slots[_selectedSlotIndex];
-                    globalSlotIndex = _selectedSlotIndex; // 0-9
+                    slot = progress.hotbarInventoryData.slots[index];
                 }
             }
             else if (_selectedSlotOwner == SlotOwner.Inventory)
             {
-                if (_selectedSlotIndex < progress.mainInventoryData.slots.Count)
+                if (index < progress.mainInventoryData.slots.Count)
                 {
-                    slot = progress.mainInventoryData.slots[_selectedSlotIndex];
-                    globalSlotIndex = _selectedSlotIndex + 10; // 10-109
+                    slot = progress.mainInventoryData.slots[index];
                 }
             }
 
+            return slot;
+        }
+
+        public int GetGlobalSlotIndex(int index)
+        {
+            var progress = PlayerProgress.Instance;
+            if (progress == null) return -1;
+
+            int globalSlotIndex = -1;
+
+            if (_selectedSlotOwner == SlotOwner.Hotbar)
+            {
+                if (index < progress.hotbarInventoryData.slots.Count)
+                {
+                    globalSlotIndex = index; // 0-9
+                }
+            }
+            else if (_selectedSlotOwner == SlotOwner.Inventory)
+            {
+                if (index < progress.mainInventoryData.slots.Count)
+                {
+                    globalSlotIndex = index + 10; // 10-109
+                }
+            }
+
+            return globalSlotIndex;
+        }
+
+        public int GetLocalSlotIndex(int globalSlotIndex, SlotOwner owner)
+        {
+
+            int localSlotIndex = -1;
+
+            if (owner == SlotOwner.Hotbar)
+            {
+                localSlotIndex = globalSlotIndex; // 0-9
+            }
+            else if (owner == SlotOwner.Inventory)
+            {
+                localSlotIndex = globalSlotIndex - 10; // 10-109
+            }
+
+            return localSlotIndex;
+        }
+
+
+        public void UseItemFromSlot()
+        {
+            if (_selectedSlotIndex < 0) return;
+
+            var progress = PlayerProgress.Instance;
+            if (progress == null) return;
+
+            // Получаем слот
+            InventorySlot slot = GetSlotByIndex(_selectedSlotIndex);
             if (slot.IsEmpty || slot.item == null)
             {
                 return;
             }
+
+            int globalSlotIndex = GetGlobalSlotIndex(_selectedSlotIndex);
 
             // Если уже экипирован — снимаем
             // Если навели и нажали Е на другом — снимаем этот и экипируем другой 
@@ -221,7 +276,8 @@ namespace Assets.Scripts.InventorySystem
                     }
                     _accumulatedFoodCount++;
 
-                    _selectedSlotUI.SetVisualState(true, false, true); // flash
+                    if (_selectedSlotUI != null)
+                        _selectedSlotUI.SetVisualState(true, false, true); // flash
 
                     break;
 
@@ -233,10 +289,9 @@ namespace Assets.Scripts.InventorySystem
                     break;
             }
 
-            progress.Save();
+            progress.Save("InventoryManager.UseItemFromSlot");
 
         }
-
 
         private void HandleStructurePlaced()
         {
@@ -256,7 +311,7 @@ namespace Assets.Scripts.InventorySystem
                 progress.mainInventoryData.NotifyChanged();
             }
 
-            progress.Save();
+            progress.Save("InventoryManager.HandleStructurePlaced");
         }
 
         public void OnUseItemFinished()
@@ -311,7 +366,7 @@ namespace Assets.Scripts.InventorySystem
                 progress.mainInventoryData.NotifyChanged();
             }
 
-            progress.Save();
+            progress.Save("InventoryManager.DropItemFromSlot");
 
             if (NotificationManager.Instance != null)
             {
@@ -357,7 +412,7 @@ namespace Assets.Scripts.InventorySystem
 
             // Обновляем UI и сохраняем прогресс
             mainInventory.NotifyChanged();
-            progress.Save();
+            progress.Save("InventoryManager.DropItemsFromInventory");
 
 
         }
@@ -447,6 +502,34 @@ namespace Assets.Scripts.InventorySystem
             }
         }
 
+
+        // === Экипирует сохраненный инструмент при загрузке ===
+        public void EquipSavedEquippedItem(PlayerSaveData saveData)
+        {
+            int savedIndex = saveData.equippedSlotIndex; //globalSlotIndex
+
+            if (savedIndex > -1 && equipment != null)
+            {
+                SlotOwner owner = saveData.equippedSlotOwner;
+                int localSlotIndex = GetLocalSlotIndex(savedIndex, owner);
+                SelectSlot(localSlotIndex, owner);
+
+                InventorySlot slot = GetSlotByIndex(localSlotIndex);
+                if (!slot.IsEmpty && slot.item != null)
+                {
+                    equipment.Equip(slot.item, savedIndex); //globalSlotIndex
+                }
+            }
+        }
+
+        public void SaveEquippedItem(PlayerSaveData saveData)
+        {
+            if (equipment != null && equipment.IsEquipped)
+            {
+                saveData.equippedSlotIndex = equipment.EquippedSlotIndex; //globalSlotIndex
+                saveData.equippedSlotOwner = _selectedSlotOwner;
+            }
+        }
 
         // === Жизненный цикл ===
         private void Start()

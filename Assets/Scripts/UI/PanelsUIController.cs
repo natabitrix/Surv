@@ -1,5 +1,6 @@
 // Assets/Scripts/InventorySystem/PlayerPanelsUIController.cs
 using Assets.Scripts.Core;
+using Assets.Scripts.Creatures;
 using Assets.Scripts.Interactables;
 using Assets.Scripts.InventorySystem;
 using Assets.Scripts.Items;
@@ -57,22 +58,18 @@ namespace Assets.Scripts.UI
         public Button RadialMenuPickupButton;
         public Button RadialMenuDestroyButton;
         public Button RadialMenuRepairButton;
+        public Button RadialMenuDragCorpseButton;
 
         [Header("Other Managers")]
         [SerializeField] private InventoryManager inventoryManager;
         [SerializeField] private CharacterPreviewManager previewManager;
         [SerializeField] private TooltipManager tooltipManager;
-        [SerializeField] private RadialMenuManager _radialMenuManager;
 
         private bool _isInventoryOpened = false;
         private bool _isRadialMenuOpened = false;
 
         public Item RadialMenuCurrentTarget = null;
         public GameObject RadialMenuCurrentTargetGO = null;
-
-
-
-
 
         // === TOGGLE PANELS ===
         // Управление состоянием панелей и курсора
@@ -85,6 +82,7 @@ namespace Assets.Scripts.UI
 
         public bool IsInventoryOpened() => _isInventoryOpened;
         public bool IsRadialMenuOpened() => _isRadialMenuOpened;
+        public bool IsPanelOpened() => _isInventoryOpened || _isRadialMenuOpened;
 
         // Открытие инвентаря игрока
         public void OpenPlayerInventory()
@@ -139,13 +137,18 @@ namespace Assets.Scripts.UI
                 return;
             }
             Item targetItem = null;
+            Creature targetCreature = null;
+            Corpse targetCorpse = null;
             if (targetGO.TryGetComponent(out RadialMenu menu))
             {
-                targetItem = menu.item;
+                if (menu.item != null) targetItem = menu.item;
+                else if (menu.creature != null) targetCreature = menu.creature;
+                else if (menu.corpse != null) targetCorpse = menu.corpse;
             }
-            if (targetItem == null)
+
+            if (targetItem == null && targetCreature == null && targetCorpse == null)
             {
-                Debug.LogError("[PanelsUIController] item не найден!");
+                Debug.LogError("[PanelsUIController] item, creature и corpse не найдены!");
                 return;
             }
 
@@ -153,7 +156,17 @@ namespace Assets.Scripts.UI
             RadialMenuCurrentTargetGO = targetGO;
 
             if (RadialMenuTargetName != null)
-                RadialMenuTargetName.text = $"{targetItem.itemName}";
+            {
+                if (targetItem != null)
+                    RadialMenuTargetName.text = $"{targetItem.itemName}";
+
+                if (targetCreature != null)
+                    RadialMenuTargetName.text = $"СУЩЕСТВО {targetCreature.gameObject.name}";
+
+                if (targetCorpse != null)
+                    RadialMenuTargetName.text = $"ТЕЛО {targetCorpse.gameObject.name}";
+            }
+
 
             RadialMenuPanel.SetActive(true);
             _isRadialMenuOpened = true;
@@ -345,6 +358,9 @@ namespace Assets.Scripts.UI
 
             RadialMenuDestroyButton.onClick.AddListener(() => RadialMenuDestroy());
             RadialMenuDestroyButton.AddComponent<ButtonScaleEffect>();
+
+            RadialMenuDragCorpseButton.onClick.AddListener(() => RadialMenuDragCorpse());
+            RadialMenuDragCorpseButton.AddComponent<ButtonScaleEffect>();
         }
 
         private void RadialMenuPickup()
@@ -358,7 +374,6 @@ namespace Assets.Scripts.UI
                 }
             }
             CloseRadialMenu();
-
         }
         private void RadialMenuDestroy()
         {
@@ -369,6 +384,15 @@ namespace Assets.Scripts.UI
                     itemHandler.DestroyItem(RadialMenuCurrentTargetGO);
                 }
             }
+            CloseRadialMenu();
+        }
+        private void RadialMenuDragCorpse()
+        {
+
+            // _playerInteraction = context.PlayerInteraction;
+            // if (IsDragging) StopDragging();
+            // else StartDragging();
+
             CloseRadialMenu();
         }
 

@@ -2,7 +2,7 @@ import os
 import shutil
 
 # Укажи здесь свои пути 15:34
-SOURCE_DIR = r"F:\NBNG\Xyark\Assets\Scripts\Core"      # ← замени на свой путь
+SOURCE_DIR = r"F:\NBNG\Surv\Assets\Scripts\Core"      # ← замени на свой путь
 # SOURCE_DIR = r"F:\NBNG\Xyark\Assets\Scripts\UI"      # ← замени на свой путь
 # SOURCE_DIR = r"F:\NBNG\Xyark\Assets\Scripts\Crafting"      # ← замени на свой путь
 # SOURCE_DIR = r"F:\NBNG\Xyark\Assets\Scripts\InventorySystem"      # ← замени на свой путь

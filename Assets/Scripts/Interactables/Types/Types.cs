@@ -8,6 +8,7 @@ namespace Assets.Scripts.Interactables
         Harvest,
         Open,
         Drink,
-        RadialMenu
+        RadialMenu,
+        Creature
     }
 }

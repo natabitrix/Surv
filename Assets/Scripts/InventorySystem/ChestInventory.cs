@@ -17,33 +17,9 @@ namespace Assets.Scripts.InventorySystem
             Load();
         }
 
-        // public void Save()
-        // {
-        //     string json = Data.ToJson();
-        //     string path = System.IO.Path.Combine(Application.persistentDataPath, $"Chest_{saveKey}.save");
-        //     System.IO.File.WriteAllText(path, json);
-        // }
-
 
         public void Save()
         {
-            // Создаём объект для сериализации
-            // var serializable = new SerializableInventory
-            // {
-            //     slots = new SerializableInventorySlot[size]
-            // };
-
-            // for (int i = 0; i < size; i++)
-            // {
-            //     var slot = Data.slots[i];
-            //     serializable.slots[i] = new SerializableInventorySlot
-            //     {
-            //         itemId = slot.item?.id ?? -1,
-            //         count = slot.count
-            //     };
-            // }
-
-
             SerializableInventory inventory = new SerializableInventory();
 
             inventory = Data.ToSerializable(size);
@@ -54,18 +30,6 @@ namespace Assets.Scripts.InventorySystem
             System.IO.File.WriteAllText(path, json);
         }
 
-        // public void Load()
-        // {
-        //     var db = FindFirstObjectByType<ItemDatabase>();
-        //     if (db == null) return;
-
-        //     string path = System.IO.Path.Combine(Application.persistentDataPath, $"Chest_{saveKey}.save");
-        //     if (System.IO.File.Exists(path))
-        //     {
-        //         string json = System.IO.File.ReadAllText(path);
-        //         Data.FromJson(json, db.ItemLookup, size);
-        //     }
-        // }
 
         public void Load()
         {

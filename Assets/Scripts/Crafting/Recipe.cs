@@ -10,7 +10,7 @@ namespace Assets.Scripts.Crafting
     {
         public string recipeName;
         public string description;
-        public Sprite icon;
+        // public Sprite icon;
         
         public Item craftedItem;
         public int craftedAmount = 1;

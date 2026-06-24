@@ -13,7 +13,7 @@ namespace Assets.Scripts.InventorySystem
         public GameObject slotPrefab;
         public RectTransform dragLayer;
         public Canvas rootCanvas;
-        public InventoryManager InventoryManager;
+        public InventoryManager inventoryManager;
 
         private List<InventorySlotUI> slotUIs;
         private bool isInitialized = false; // Флаг инициализации
@@ -73,8 +73,8 @@ namespace Assets.Scripts.InventorySystem
             var progress = PlayerProgress.Instance;
             if (progress == null || progress.hotbarInventoryData == null || slotUIs == null) return;
 
-            var equipment = InventoryManager.equipment;
-            var buildMode = InventoryManager.buildMode;
+            var equipment = inventoryManager.equipment;
+            var buildMode = inventoryManager.buildMode;
 
             // Item equipped = equipment?.IsEquipped == true ? equipment.GetCurrentItem() : null;
             // int equippedSlotIndex = equipment.EquippedSlotIndex;

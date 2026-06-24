@@ -1,4 +1,5 @@
 // Assets/Scripts/Player/PlayerEquipment.cs
+using Assets.Scripts.Core;
 using Assets.Scripts.Interactables;
 using Assets.Scripts.InventorySystem;
 using Assets.Scripts.Items;
@@ -12,11 +13,13 @@ namespace Assets.Scripts.Player
 
         [Header("References")]
         public Transform toolAttachPoint;
+        public Transform corpseDragAnchor;
 
         private GameObject _currentModel;
         private Item _currentItem;
 
         // События для подписки извне (например, InventoryManager RefreshUI)
+
         public event System.Action OnEquipped;
         public event System.Action OnUnequipped;
 
@@ -54,10 +57,13 @@ namespace Assets.Scripts.Player
             {
                 _currentModel = Instantiate(item.model, toolAttachPoint);
                 _currentModel.transform.localPosition = Vector3.zero;
-                _currentModel.transform.localRotation = Quaternion.identity;
+                Vector3 modelScale = _currentModel.transform.localScale;
+                // _currentModel.transform.localScale = modelScale * 1.6f;
+                // _currentModel.transform.localRotation = Quaternion.identity;
+                _currentModel.name = $"{item.model.name}_equipped";
 
                 Destroy(_currentModel.GetComponent<Pickable>());
-                Destroy(_currentModel.GetComponent<Collider>());
+                // Destroy(_currentModel.GetComponent<Collider>());
             }
 
             // Вызываем событие
@@ -81,5 +87,6 @@ namespace Assets.Scripts.Player
         }
 
         public Item GetCurrentItem() => _currentItem;
+
     }
 }

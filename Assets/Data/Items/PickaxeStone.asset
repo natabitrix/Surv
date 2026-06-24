@@ -12,14 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3ff61b209cfdd7449b5b3cd474dc0c52, type: 3}
   m_Name: PickaxeStone
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.InventorySystem.Item
-  id: 2
+  _id: PickaxeStone
   itemName: "\u041A\u0430\u043C\u0435\u043D\u043D\u0430\u044F \u043A\u0438\u0440\u043A\u0430"
   description: 
   icon: {fileID: 21300000, guid: b5bf9eedfdaee7a4b9aef7fc0f95e707, type: 3}
   maxStack: 1
   experienceOnPickup: 0
-  model: {fileID: 2651747729594002529, guid: e0734cdb97e354b45985b2dce77e3b9d, type: 3}
-  previewModel: {fileID: 0}
+  foodRecoveryAmount: 0
+  healthRecoveryAmount: 0
+  damage: 10
+  model: {fileID: 7402911502439942770, guid: 58368ced1dcc064449fe738a9f5da20e, type: 3}
   placeablePrefab: {fileID: 0}
   itemType: 3
   attackAnimation: 1

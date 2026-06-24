@@ -253,12 +253,37 @@ namespace Assets.Scripts.Player
             _input.OnFireTriggered -= Attack;
         }
 
+        public float GetAttackDamage()
+        {
+            if (equipment != null && equipment.IsEquipped)
+            {
+                var item = equipment.GetCurrentItem();
+                if (item != null)
+                {
+                    // Предполагаем, что в классе Item есть поле damage.
+                    // Если нет, добавьте public float damage; в класс Item.
+                    // Для примера используем заглушку или реальное поле:
+                    float damage = item.damage > 0 ? item.damage : 10f;
+                    // Debug.Log($"[PlayerController] Урон от экипированного предмета ({item.itemName}): {damage}");
+                    return damage;
+                }
+                else
+                {
+                    Debug.Log("[PlayerController] Экипирован предмет, но GetCurrentItem() вернул null");
+                }
+            }
+            else
+            {
+                Debug.Log("[PlayerController] Оборудование отсутствует или не экипировано, урон кулаками: 10f");
+            }
+            return 10f; // Урон кулаками по умолчанию
+        }
+
         public void Attack()
         {
-            bool IsInventoryOpeneded = _panelsController != null && _panelsController.IsInventoryOpened();
+            bool IsPanelOpened = _panelsController != null && _panelsController.IsPanelOpened();
 
-            // if (_input.attack && !LockCameraOnEsc && !IsInventoryOpeneded)
-            if (!LockCameraOnEsc && !IsInventoryOpeneded)
+            if (!LockCameraOnEsc && !IsPanelOpened)
             {
                 if (_hasAnimator)
                 {
@@ -285,10 +310,10 @@ namespace Assets.Scripts.Player
                         equipment.UseCurrentTool();
                     }
 
-                    if (!_isMoving)
-                    {
-                        _animator.SetTrigger(animToPlay);
-                    }
+                    // if (!_isMoving)
+                    // {
+                    _animator.SetTrigger(animToPlay);
+                    // }
                 }
                 // _input.ResetAttack();
             }
@@ -559,7 +584,7 @@ namespace Assets.Scripts.Player
                 {
                     _verticalVelocity = -2f;
                 }
-
+                // Debug.Log("_jumpTimeoutDelta: " + _jumpTimeoutDelta);
                 // Jump
                 if (_input.jump && _jumpTimeoutDelta <= 0.0f)
                 {

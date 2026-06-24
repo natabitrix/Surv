@@ -1,5 +1,6 @@
 using Assets.Scripts.InventorySystem;
 using Assets.Scripts.Items;
+using Assets.Scripts.Player;
 using UnityEngine;
 
 namespace Assets.Scripts.Interactables
@@ -15,6 +16,7 @@ namespace Assets.Scripts.Interactables
 
         public InteractType GetInteractType() => InteractType.Pickup;
         public ChestInventory GetInventory() => null;
+        public PlayerController playerController; // Назначь в инспекторе
 
         private bool _isPickedUp = false;
         public bool HasInventory() => false;
@@ -24,14 +26,18 @@ namespace Assets.Scripts.Interactables
             if (_isPickedUp) return;
 
             // Находим игрока и его ItemPickupHandler
-            var player = GameObject.FindGameObjectWithTag("Player");
-            if (player == null)
+            // var player = GameObject.FindGameObjectWithTag("Player");
+            // if (player == null)
+            // {
+            //     Debug.LogError("Player not found!");
+            //     return;
+            // }
+            if (playerController == null)
             {
-                Debug.LogError("Player not found!");
-                return;
+                playerController = FindFirstObjectByType<PlayerController>(); // Найти автоматически, если не назначен
             }
 
-            ItemHandler pickupHandler = player.GetComponent<ItemHandler>();
+            ItemHandler pickupHandler = playerController.GetComponent<ItemHandler>();
 
             if (pickupHandler != null && pickupHandler.PickupItem(item, amount))
             {

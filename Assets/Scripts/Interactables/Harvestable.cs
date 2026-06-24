@@ -115,6 +115,7 @@ namespace Assets.Scripts.Interactables
                 switch (tool)
                 {
                     case AttackAnimationType.Pickaxe: multiplier = 1.6f; break;
+                    case AttackAnimationType.Axe: multiplier = 0.7f; break;
                     default: multiplier = 0.0f; break; // только кирка
                 }
             }

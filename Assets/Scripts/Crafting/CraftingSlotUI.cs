@@ -181,7 +181,7 @@ namespace Assets.Scripts.Crafting
 
             // Опыт за крафт
             progress.AddExperience(_recipe.experienceReward);
-            progress.Save();
+            progress.Save("CraftingSlotUI.TryCraft");
         }
 
         // Важно: отписаться при уничтожении, чтобы избежать ошибок

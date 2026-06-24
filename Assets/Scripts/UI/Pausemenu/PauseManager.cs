@@ -21,13 +21,15 @@ namespace Assets.Scripts.UI.Pausemenu
 
         // private bool _isMainMenu = false;
         private bool _isPauseOpened = false;
-        
+
 
         [SerializeField] private PlayerInputHandler _input;
         [SerializeField] private PlayerController _playerController;
         [SerializeField] private PanelsUIController _panelsController;
+        [SerializeField] private SettingsPanelController _settingsController;
 
-         public bool IsPauseOpened() => _isPauseOpened;
+
+        public bool IsPauseOpened() => _isPauseOpened;
 
 
         private void Start()
@@ -41,19 +43,19 @@ namespace Assets.Scripts.UI.Pausemenu
             if (_input.cancel)
             {
                 bool anyPanelsOpened = false;
-                
+
                 if (_panelsController != null)
                 {
                     if (_panelsController.IsRadialMenuOpened())
                     {
                         anyPanelsOpened = true;
-                        Debug.Log("IsRadialMenuOpened");
+                        // Debug.Log("IsRadialMenuOpened");
                         _panelsController.CloseRadialMenu();
                     }
                     if (_panelsController.IsInventoryOpened())
                     {
                         anyPanelsOpened = true;
-                        Debug.Log("IsInventoryOpened");
+                        // Debug.Log("IsInventoryOpened");
                         _panelsController.CloseAllPanels();
                     }
                 }
@@ -112,7 +114,7 @@ namespace Assets.Scripts.UI.Pausemenu
             SettingsPanel.SetActive(false);
             LockCamera(true);
             _isPauseOpened = true;
-            SetRealPause(true);
+            // SetRealPause(true);
             SetCursorVisible(true);
         }
 
@@ -131,16 +133,33 @@ namespace Assets.Scripts.UI.Pausemenu
         {
             PausePanel.SetActive(false);
             SettingsPanel.SetActive(true);
+
+            // Уведомляем контроллер настроек, что панель открыта
+            if (_settingsController != null)
+            {
+                _settingsController.OnSettingsOpened();
+            }
         }
 
         public void ApplySettings()
         {
+            // Сначала выполняем логику сохранения
+            if (_settingsController != null)
+            {
+                _settingsController.OnSaveButtonClicked();
+            }
             PausePanel.SetActive(true);
             SettingsPanel.SetActive(false);
         }
 
         public void CancelSettings()
         {
+            // Сначала выполняем логику отмены
+            if (_settingsController != null)
+            {
+                _settingsController.OnCancelButtonClicked();
+            }
+
             PausePanel.SetActive(true);
             SettingsPanel.SetActive(false);
         }

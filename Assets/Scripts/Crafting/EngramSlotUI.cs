@@ -139,13 +139,12 @@ namespace Assets.Scripts.Crafting
             _engramUI?.OnEngramPointsChanged();
 
             // Сохраняем прогресс
-            _playerProgress.Save();
-            Debug.Log("[EngramSlotUI] TryUnlock Save!");
+            _playerProgress.Save("EngramSlotUI.TryUnlock");
 
             // Уведомление
             NotificationManager.Instance?.Show(
                 $"Изучено: {_data.recipe.recipeName}",
-                _data.recipe.icon
+                _data.recipe.craftedItem.icon
             );
 
             // Обновляем визуал (убираем замок)

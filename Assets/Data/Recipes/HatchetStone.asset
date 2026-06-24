@@ -14,14 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Crafting.CraftingRecipe
   recipeName: 
   description: 
-  icon: {fileID: 0}
   craftedItem: {fileID: 11400000, guid: a7087fa9748f15842bb064737cb55cc8, type: 2}
   craftedAmount: 1
   requiredLevel: 2
   engramPointsCost: 5
-  experienceReward: 100
+  experienceReward: 10
   ingredients:
   - item: {fileID: 11400000, guid: 711784597c887ec488d4c7417899ae02, type: 2}
-    amount: 1
+    amount: 2
   - item: {fileID: 11400000, guid: d0928dd4dbf983940a49f62daefab75f, type: 2}
-    amount: 1
+    amount: 2
+  - item: {fileID: 11400000, guid: 7572a88102426e7488ae3f506ea445e0, type: 2}
+    amount: 2

@@ -21,6 +21,7 @@ namespace Assets.Scripts.Environment
         public void SetUnderwater(bool isUnder)
         {
             float duration = 0.1f;
+            Debug.Log("isUnder: " + isUnder);
 
             if (isUnder)
             {

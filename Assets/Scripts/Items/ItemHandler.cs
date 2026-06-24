@@ -44,8 +44,7 @@ namespace Assets.Scripts.Items
             }
             if (PlayerProgress.Instance != null)
             {
-                PlayerProgress.Instance.Save();
-                Debug.Log("[ItemHandler] PickupItem Save!");
+                PlayerProgress.Instance.Save("ItemHandler.PickupItem");
             }
 
             return added > 0;
@@ -65,8 +64,7 @@ namespace Assets.Scripts.Items
 
             if (PlayerProgress.Instance != null)
             {
-                PlayerProgress.Instance.Save();
-                Debug.Log("[ItemHandler] DestroyItem Save!");
+                PlayerProgress.Instance.Save("ItemHandler.DestroyItem");
             }
 
             // return destroyed > 0;

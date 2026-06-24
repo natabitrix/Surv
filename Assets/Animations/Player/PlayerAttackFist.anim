@@ -16095,7 +16095,7 @@ AnimationClip:
     m_KeepOriginalPositionY: 0
     m_KeepOriginalPositionXZ: 1
     m_HeightFromFeet: 1
-    m_Mirror: 0
+    m_Mirror: 1
   m_EditorCurves:
   - serializedVersion: 2
     curve:

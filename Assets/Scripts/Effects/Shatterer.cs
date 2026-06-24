@@ -24,10 +24,12 @@ namespace Assets.Scripts.Effects
         private float destroyTimeBig = 10f;
         private bool _isLastBreak = false;
         private bool _pitchOnLastHit = false;
+
         public void SetPitchOnLastHit(bool enable)
         {
             _pitchOnLastHit = enable;
         }
+        
         public void LastBreak()
         {
             _isLastBreak = true;

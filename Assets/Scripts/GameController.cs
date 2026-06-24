@@ -37,8 +37,7 @@ namespace Assets.Scripts
             // Единая точка сохранения
             if (PlayerProgress.Instance != null)
             {
-                PlayerProgress.Instance.Save();
-                Debug.Log("[GameController] SaveAll Save!");
+                PlayerProgress.Instance.Save("GameController.SaveAll");
             }
             else
             {

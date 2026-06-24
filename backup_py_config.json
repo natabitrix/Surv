@@ -1,0 +1,29 @@
+{
+    "backup_destination": "F:\\NBNG\\Backups",
+    "full_sources": [
+        "F:\\NBNG\\Surv\\Assets",
+        "F:\\NBNG\\Surv\\Packages",
+        "F:\\NBNG\\Surv\\ProjectSettings",
+        "F:\\NBNG\\Surv\\UserSettings",
+        "F:\\NBNG\\Surv\\Assembly-CSharp.csproj",
+        "F:\\NBNG\\Surv\\Assembly-CSharp-Editor.csproj",
+        "F:\\NBNG\\Surv\\.gitignore",
+        "F:\\NBNG\\Surv\\backup.py",
+        "F:\\NBNG\\Surv\\backup_py_config.json"
+    ],
+    "quick_sources": [
+        "F:\\NBNG\\Surv\\Assets",
+        "F:\\NBNG\\Surv\\Packages",
+        "F:\\NBNG\\Surv\\ProjectSettings",
+        "F:\\NBNG\\Surv\\UserSettings",
+        "F:\\NBNG\\Surv\\Assembly-CSharp.csproj",
+        "F:\\NBNG\\Surv\\Assembly-CSharp-Editor.csproj",
+        "F:\\NBNG\\Surv\\.gitignore",
+        "F:\\NBNG\\Surv\\backup.py",
+        "F:\\NBNG\\Surv\\backup_py_config.json"
+    ],
+    "quick_exclusions": [
+        "_ExternalPackages",
+        "_Models"
+    ]
+}

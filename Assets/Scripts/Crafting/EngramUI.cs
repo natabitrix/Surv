@@ -56,8 +56,7 @@ namespace Assets.Scripts.Crafting
         public void UnlockRecipe(Recipe recipe)
         {
             _engramData.UnlockRecipe(recipe);
-            PlayerProgress.Instance.Save(); // ← сохраняем ВЕСЬ прогресс
-            Debug.Log("[EngramUI] UnlockRecipe Save!");
+            PlayerProgress.Instance.Save("EngramUI.UnlockRecipe");
         }
     }
 }

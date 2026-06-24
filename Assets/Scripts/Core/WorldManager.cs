@@ -30,7 +30,7 @@ namespace Assets.Scripts.Core
         public int loadRadiusInChunks = 2;
 
         [Tooltip("Интервал автосохранения изменённых чанков (сек)")]
-        public float saveInterval = 30f;
+        public float saveInterval = 5f;
 
         [Header("Системные ссылки")]
         public ItemDatabase itemDatabase; // Назначьте в инспекторе
@@ -145,6 +145,9 @@ namespace Assets.Scripts.Core
             // Помечаем чанк как "грязный"
             _dirtyChunks.Add(chunkKey);
             _lastSaveTime = Time.time; // Сбрасываем таймер для быстрого сохранения
+
+            // ✅ ДОБАВИТЬ: Мгновенное сохранение при постройке
+            SaveDirtyChunks();
         }
 
 
@@ -272,35 +275,53 @@ namespace Assets.Scripts.Core
 
 
         // ===== СОХРАНЕНИЕ =====
+        // ===== СОХРАНЕНИЕ =====
         private void SaveDirtyChunks()
         {
             int savedCount = 0;
+
+            // Создаем копию списка, чтобы избежать ошибок при изменении коллекции
             foreach (var chunkKey in _dirtyChunks.ToList())
             {
                 if (!_chunks.TryGetValue(chunkKey, out var structures)) continue;
 
                 try
                 {
-                    var saveData = new ChunkSaveData { structures = structures };
-                    string json = JsonConvert.SerializeObject(saveData, Formatting.None);
+                    string path = GetChunkSavePath(chunkKey);
+                    string backupPath = path + ".bak";
 
-                    // ✅ Если структур нет — удаляем файл чанка
+                    // ✅ 1. Если структур нет — удаляем файл чанка и бэкап
                     if (structures.Count == 0)
                     {
-                        string path = GetChunkSavePath(chunkKey);
                         if (File.Exists(path))
                         {
                             File.Delete(path);
                             // Debug.Log($"[WorldManager] Удалён пустой чанк {chunkKey}");
                         }
+
+                        // Удаляем старый бэкап, если он остался
+                        if (File.Exists(backupPath))
+                        {
+                            File.Delete(backupPath);
+                        }
+
                         _chunks.Remove(chunkKey); // Удаляем из памяти
                     }
                     else
                     {
-                        File.WriteAllText(GetChunkSavePath(chunkKey), json);
-                    }
+                        // ✅ 2. Создаем резервную копию перед записью
+                        if (File.Exists(path))
+                        {
+                            File.Copy(path, backupPath, true); // true = перезаписать старый бэкап
+                        }
 
-                    savedCount++;
+                        // ✅ 3. Сериализуем и записываем данные
+                        var saveData = new ChunkSaveData { structures = structures };
+                        string json = JsonConvert.SerializeObject(saveData, Formatting.None);
+                        File.WriteAllText(path, json);
+
+                        savedCount++;
+                    }
                 }
                 catch (Exception e)
                 {
@@ -309,8 +330,11 @@ namespace Assets.Scripts.Core
             }
 
             if (savedCount > 0)
+            {
                 // Debug.Log($"[WorldManager] Сохранено {savedCount} чанков");
+            }
 
+            // Очищаем список грязных чанков только после успешной попытки записи
             _dirtyChunks.Clear();
         }
 

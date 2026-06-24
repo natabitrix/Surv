@@ -728,6 +728,7 @@ namespace Assets.Scripts.Building
             _isActive = true;
             _placementState = PlacementState.Positioning;
             EnsurePreviewExists();
+
             OnBuildActive?.Invoke();
         }
 

@@ -20,13 +20,16 @@ namespace Assets.Scripts.Items
         public float foodRecoveryAmount = 0f; // сколько восстанавливается еды за 1ед
         public float healthRecoveryAmount = 0f; // сколько восстанавливается здоровья за 1ед
 
+        public float damage;
+
         public GameObject model;
         // public GameObject previewPlaceableModel; // для Placeable
         public GameObject placeablePrefab; // для Placeable
 
         [Header("Item Type")]
         public ItemType itemType; // Опционально: перечисление для типа (оружие, еда и т.д.)
-
+        [Header("Animation & Sound")]
+        [Tooltip("Используется также в PlayerInteraction.OnAttackInteractFinished для определения издаваемого инструментом звука")]
         public AttackAnimationType attackAnimation = AttackAnimationType.Fists;
 
         // Автоматическая генерация ID при сохранении (требует редакторного скрипта)

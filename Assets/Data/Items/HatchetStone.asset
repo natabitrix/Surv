@@ -12,14 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3ff61b209cfdd7449b5b3cd474dc0c52, type: 3}
   m_Name: HatchetStone
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.InventorySystem.Item
-  id: 22
+  _id: HatchetStone
   itemName: "\u041A\u0430\u043C\u0435\u043D\u043D\u044B\u0439 \u0442\u043E\u043F\u043E\u0440"
   description: 
   icon: {fileID: 21300000, guid: fcaa31ed9e1dc5c4995b219d8397ff81, type: 3}
   maxStack: 1
   experienceOnPickup: 0
-  model: {fileID: 2651747729594002529, guid: e0734cdb97e354b45985b2dce77e3b9d, type: 3}
-  previewModel: {fileID: 0}
+  foodRecoveryAmount: 0
+  healthRecoveryAmount: 0
+  damage: 10
+  model: {fileID: 7509021140767754602, guid: 3bb16237a45fbd2438c97ad7cbb147a2, type: 3}
   placeablePrefab: {fileID: 0}
   itemType: 3
   attackAnimation: 1

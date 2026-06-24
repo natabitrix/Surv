@@ -40,7 +40,6 @@ namespace Assets.Scripts.Player
         [SerializeField] private PlayerController _playerController;
         [SerializeField] private PauseManager _pauseManager;
         [SerializeField] private PanelsUIController _panelsController;
-        [SerializeField] private RadialMenuManager _radialMenuManager;
 
         [SerializeField] private InputActionReference _fireAction;
         [SerializeField] private InputActionReference _interactAction;
@@ -67,9 +66,8 @@ namespace Assets.Scripts.Player
         private Coroutine[] _hotbarCoroutines; // Массив корутин для каждого слота (0-9)
         private InputAction[] _hotbarActions; // Массив ссылок на действия хотбара
 
-        private bool _isInventoryOpen;
-        private bool _isRadialMenuOpen;
-        private bool _isPauseOpen;
+        private bool _isPanelOpened;
+        private bool _isPauseOpened;
         private bool _attackPressedThisFrame = false;
 
         private void Awake()
@@ -139,7 +137,7 @@ namespace Assets.Scripts.Player
             OnInteractPressed.Invoke();
             TriggerInteract();
             _repeatInteractCoroutine = StartCoroutine(RepeatInteract());
-            
+
         }
 
         private void OnInteractCanceled(InputAction.CallbackContext context)
@@ -192,6 +190,7 @@ namespace Assets.Scripts.Player
         private void OnFireStarted(InputAction.CallbackContext context)
         {
             TriggerFire();
+
             _repeatFireCoroutine = StartCoroutine(RepeatFire());
         }
 
@@ -230,11 +229,10 @@ namespace Assets.Scripts.Player
 
         private void Update()
         {
-            _isInventoryOpen = _panelsController != null && _panelsController.IsInventoryOpened();
-            _isRadialMenuOpen = _panelsController != null && _panelsController.IsRadialMenuOpened();
-            _isPauseOpen = _pauseManager != null && _pauseManager.IsPauseOpened();
+            _isPanelOpened = _panelsController != null && _panelsController.IsPanelOpened();
+            _isPauseOpened = _pauseManager != null && _pauseManager.IsPauseOpened();
 
-            bool isUIOpened = _isInventoryOpen || _isRadialMenuOpen || _isPauseOpen;
+            bool isUIOpened = _isPanelOpened || _isPauseOpened;
 
             // --- Обработка атаки ---
             if (_attackPressedThisFrame)
@@ -270,7 +268,7 @@ namespace Assets.Scripts.Player
         private void HandleHotbarInput()
         {
 
-            if (_isPauseOpen)
+            if (_isPauseOpened)
             {
                 StopAllHotbarRepeats();
                 return;

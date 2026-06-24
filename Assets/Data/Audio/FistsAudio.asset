@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f31f5699122b3d4e9a7dff43ed2bb01, type: 3}
+  m_Name: FistsAudio
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Core.WeaponAudioConfig
+  impactSounds:
+  - impactType: 3
+    clips:
+    - {fileID: 8300000, guid: 2c8159b67655947458048ac8095aeeac, type: 3}
+    volume: 0.5
+    pitchRandomness: 0
+  - impactType: 2
+    clips:
+    - {fileID: 8300000, guid: ae4d6a4496f25534f82e28ff7ef7fb27, type: 3}
+    volume: 0.5
+    pitchRandomness: 0
+  - impactType: 4
+    clips:
+    - {fileID: 8300000, guid: ae4d6a4496f25534f82e28ff7ef7fb27, type: 3}
+    volume: 0.5
+    pitchRandomness: 0
+  - impactType: 1
+    clips:
+    - {fileID: 8300000, guid: acec64d0119c98f45baa217578b91ea3, type: 3}
+    volume: 0.5
+    pitchRandomness: 0
+  - impactType: 0
+    clips:
+    - {fileID: 8300000, guid: 5aa1dbd229c21c643b6b67af76afab3f, type: 3}
+    volume: 1
+    pitchRandomness: 0
+  defaultClip: {fileID: 8300000, guid: 98d6ac2e4c15597448f565d8432f9fd8, type: 3}
+  defaultVolume: 0.5

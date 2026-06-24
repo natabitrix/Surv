@@ -19,8 +19,8 @@ MonoBehaviour:
   SpeedChangeRate: 10
   InputSmoothingRate: 20
   KeyboardTurnSpeed: 90
-  JumpHeight: 2
-  Gravity: -10
+  JumpHeight: 4
+  Gravity: -15
   JumpTimeout: 0.5
   FallTimeout: 0.15
   TerminalVelocity: 53
@@ -40,7 +40,7 @@ MonoBehaviour:
   GroundedRadius: 0.28
   GroundLayers:
     serializedVersion: 2
-    m_Bits: 3144
+    m_Bits: 7240
   WaterLayers:
     serializedVersion: 2
     m_Bits: 16
@@ -49,6 +49,6 @@ MonoBehaviour:
   CameraAngleOverride: 0
   LandingAudioClip: {fileID: 8300000, guid: 6a658e440e576b648ad9f688a0593813, type: 3}
   FootstepAudioClips:
-  - {fileID: 8300000, guid: 7e45e470c47d0e14fba30b05cc6eef15, type: 3}
+  - {fileID: 8300000, guid: 2800b098d89a1f54cb32487a4d8423f5, type: 3}
   FootstepAudioVolume: 0.5
   ShowCustomGizmo: 0

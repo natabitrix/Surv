@@ -14,7 +14,7 @@ namespace Assets.Scripts.InventorySystem
         // === СТАТИЧЕСКАЯ ССЫЛКА НА ОТКРЫТЫЙ СУНДУК ===
         public static ChestUI CurrentOpenChest { get; private set; }
 
-        public InventoryManager InventoryManager;
+        public InventoryManager inventoryManager;
 
         public Transform playerSlotParent;
         public Transform chestSlotParent;

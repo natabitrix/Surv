@@ -61,11 +61,11 @@ crashlytics-build.properties
 Assets/TextMesh\ Pro/
 Assets/_Recovery/
 Assets/_ExternalPackages/
+Assets/_Creatures/
+Assets/_Models/
 
 Assets/Animations_Pack/
-Assets/Audio/*
-Assets/Materials/*
-Assets/Models/*
-Assets/_Models/*
-Assets/Art/*
-Assets/Audio/*
+Assets/Audio/
+Assets/Materials/
+Assets/Art/
+Assets/Audio/
