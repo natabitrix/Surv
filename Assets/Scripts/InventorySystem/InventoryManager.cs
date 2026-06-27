@@ -34,6 +34,7 @@ namespace Assets.Scripts.InventorySystem
 
         [Header("Other Managers")]
         public NotificationManager notificationManager;
+        [SerializeField] private PanelsUIController _panelsController;
 
         private List<StatUI> _statRows = new List<StatUI>();
         private PlayerProgress _playerProgress;
@@ -286,6 +287,7 @@ namespace Assets.Scripts.InventorySystem
                     buildMode.ExitBuildMode();
                     buildMode.StartBuildMode(slot.item, globalSlotIndex);
 
+                    _panelsController.CloseAllPanels();
                     break;
             }
 

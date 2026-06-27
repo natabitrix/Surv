@@ -112,19 +112,14 @@ namespace Assets.Scripts.Creatures
         // ==========================================
         // === ИНТЕРФЕЙС IInteractable ===
         // ==========================================
-        public InteractType GetInteractType()
-        {
-            // return _inventory != null ? InteractType.Open : InteractType.Pickup;
-            return _inventory != null ? InteractType.Open : InteractType.Harvest;
-        }
-
+        public InteractType GetInteractType() => InteractType.OpenTargetInventory;  // F - Инвентарь 
+        public InteractType GetInteractType2() => InteractType.Interact;     // E - Тащить тело
         public ChestInventory GetInventory() => _inventory;
         public bool HasInventory() => _inventory != null;
         public bool ShouldDetachAfterInteract() => _isDepleted;
 
         public void Interact(InteractContext context)
         {
-
             if (_isDepleted && context.IsAttack) return;
 
             if (context.IsAttack)
@@ -133,7 +128,7 @@ namespace Assets.Scripts.Creatures
             }
             else
             {
-                if (_inventory != null)
+                if (context.isTargetInventory)
                 {
                     OpenInventory();
                 }
@@ -246,7 +241,7 @@ namespace Assets.Scripts.Creatures
 
             if (allDepleted || _harvestHits >= _maxHarvestHits)
             {
-                // Deplete(hitPos);
+                Deplete(hitPos);
             }
         }
 

@@ -97,6 +97,7 @@ namespace Assets.Scripts.Player
             _input.OnInteractPressed += HandleInteractStarted;    // Старт таймера (1 раз)
             _input.OnInteractTriggered += HandleInteractHeld;     // Повтор действия (еда)
             _input.OnInteractStopPressed += HandleInteractEnded;  // Финал (меню или действие)
+            _input.OnTargetInventoryPressed += HandleInteractEnded;
         }
 
         private void OnDisable()
@@ -104,6 +105,7 @@ namespace Assets.Scripts.Player
             _input.OnInteractPressed -= HandleInteractStarted;
             _input.OnInteractTriggered -= HandleInteractHeld;
             _input.OnInteractStopPressed -= HandleInteractEnded;
+            _input.OnTargetInventoryPressed -= HandleInteractEnded;
 
             HandleMenuClosed();
         }
@@ -113,6 +115,14 @@ namespace Assets.Scripts.Player
             PerformInteractionRaycast();
             UpdateInteractionUI();
             HandleHoldLogic();
+            // HandleTargetInventory();
+            // Закрытие панелей по F или Cancel (Esc)
+            // if (_input.targetInventory)
+            // {
+            //     Debug.Log("_input.targetInventory");
+            //     TryClosePanels();
+            //     _input.ResetTargetInventory();
+            // }
         }
 
         // === ЛОГИКА УДЕРЖАНИЯ 
@@ -203,6 +213,7 @@ namespace Assets.Scripts.Player
             }
         }
 
+
         // === ПОИСК ВСЕХ ЦЕЛЕЙ
         // === 2. ПОИСК ВСЕХ ЦЕЛЕЙ (Raycast из головы игрока) ===
         private void PerformInteractionRaycast()
@@ -272,7 +283,8 @@ namespace Assets.Scripts.Player
             foreach (var target in _allTargets)
             {
                 InteractType type = target.GetInteractType();
-                
+                InteractType type2 = target.GetInteractType2();
+
                 // Проверка активности компонента, если он является MonoBehaviour
                 // Это скроет надпись и для Corpse, и для RadialMenu, если они disabled
                 bool isActive = true;
@@ -284,7 +296,7 @@ namespace Assets.Scripts.Player
                 // Если компонент не активен, пропускаем его отображение в UI
                 if (!isActive) continue;
 
-                // 1. Надпись для действия (Открыть, Подобрать)
+                // 1. Надпись для действия (Открыть, Подобрать, Тащить тело)
                 if (type != InteractType.RadialMenu)
                 {
                     string actionText = GetActionText(type, _targetGO);
@@ -295,7 +307,18 @@ namespace Assets.Scripts.Player
                     }
                 }
 
-                // 2. Надпись для Меню
+                // 2. Надпись для второго действия (Открыть инвентарь)
+                if (type2 != InteractType.None && type2 != InteractType.RadialMenu)
+                {
+                    string actionText2 = GetActionText(type2, _targetGO);
+                    if (!string.IsNullOrEmpty(actionText2))
+                    {
+                        if (sb.Length > 0) sb.AppendLine();
+                        sb.Append(actionText2);
+                    }
+                }
+
+                // 3. Надпись для Меню
                 if (type == InteractType.RadialMenu && !isMenuAlreadyOpen)
                 {
                     if (sb.Length > 0) sb.AppendLine();
@@ -434,6 +457,12 @@ namespace Assets.Scripts.Player
             }
         }
 
+        /// <summary>
+        /// Запускает процесс взаимодействия с целью. 
+        /// Если есть аниматор — проигрывает анимацию. 
+        /// Если нет — устанавливает задержку (0.5с для Open, 0.7с для остальных) 
+        /// и планирует завершение через Invoke.
+        /// </summary>
         private void ExecuteStandardInteraction(IInteractable target)
         {
             if (_hasAnimator)
@@ -442,12 +471,30 @@ namespace Assets.Scripts.Player
             }
             else
             {
-                float delay = (target.GetInteractType() == InteractType.Open) ? 0.5f : 0.7f;
+                float delay = 0.5f;
                 _pendingInteractionTarget = target;
                 Invoke(nameof(OnInteractFinishedNoArg), delay);
             }
         }
 
+        private void HandleTargetInventory(IInteractable target)
+        {
+            if (_hasAnimator)
+            {
+                _playerAnimator.SetTrigger(_animIDPickup);
+            }
+            else
+            {
+                float delay = 0.5f;
+                _pendingInteractionTarget = target;
+                Invoke(nameof(OnTargetInventoryNoArg), delay);
+            }
+        }
+
+        /// <summary>
+        /// Обертка для Invoke (так как Invoke не поддерживает параметры). 
+        /// Вызывает основной метод завершения с сохраненной целью и очищает кэш.
+        /// </summary>
         public void OnInteractFinishedNoArg()
         {
             if (_pendingInteractionTarget != null)
@@ -456,28 +503,117 @@ namespace Assets.Scripts.Player
                 _pendingInteractionTarget = null;
             }
         }
+        public void OnTargetInventoryNoArg()
+        {
+            if (_pendingInteractionTarget != null)
+            {
+                OnTargetInventory(_pendingInteractionTarget);
+                _pendingInteractionTarget = null;
+            }
+        }
 
+        /// <summary>
+        /// Финальное выполнение взаимодействия: создает контекст, вызывает Interact у цели, 
+        /// открывает инвентарь (если есть) и удаляет цель из триггера (если нужно от detachment).
+        /// Может быть вызван напрямую с конкретной целью или без параметров (берет первую из списка).
+        /// </summary>
         public void OnInteractFinished(IInteractable specificTarget = null)
         {
             IInteractable target = specificTarget ?? (_allTargets.Count > 0 ? _allTargets[0] : null);
             if (target == null) return;
 
+            bool isTargetInventory = target.GetInteractType() == InteractType.OpenTargetInventory;
+
             var context = new InteractContext
             {
                 Tool = AttackAnimationType.Fists,
                 IsAttack = false,
+                isTargetInventory = false,
+                // isTargetInventory = isTargetInventory,
                 PlayerInteraction = this
             };
 
             target.Interact(context);
 
-            if (target.HasInventory() && _panelsController != null)
+            if (isTargetInventory && target.HasInventory() && _panelsController != null)
                 _panelsController.OpenOtherInventory();
 
             if (target.ShouldDetachAfterInteract())
                 ClearTriggerTarget();
         }
 
+        public void OnTargetInventory(IInteractable specificTarget = null)
+        {
+            IInteractable target = specificTarget ?? (_allTargets.Count > 0 ? _allTargets[0] : null);
+            if (target == null) return;
+
+            bool isTargetInventory = target.GetInteractType() == InteractType.OpenTargetInventory;
+
+            var context = new InteractContext
+            {
+                Tool = AttackAnimationType.Fists,
+                IsAttack = false,
+                isTargetInventory = false,
+                // isTargetInventory = isTargetInventory,
+                PlayerInteraction = this
+            };
+
+            target.Interact(context);
+
+            if (isTargetInventory && target.HasInventory() && _panelsController != null)
+                _panelsController.OpenOtherInventory();
+
+            if (target.ShouldDetachAfterInteract())
+                ClearTriggerTarget();
+        }
+
+        private void HandleTargetInventory_()
+        {
+            // 1. ЛОГИКА ЗАКРЫТИЯ (Если панель уже открыта — закрываем её)
+            if (_panelsController.IsInventoryOpened())
+            {
+                _panelsController.CloseAllPanels();
+
+                // Синхронизируем состояние объектов (сундуки/трупы)
+                foreach (var target in _allTargets)
+                {
+                    if (target is ChestController chest) chest.Close();
+                    if (target is Corpse corpse) corpse.CloseInventory();
+                }
+                return;
+            }
+
+            // 2. Если открыто другое меню (пауза, радиальное) — игнорируем F
+            if (_panelsController.IsPanelOpened()) return;
+
+            // 3. Ищем цель, которая реагирует на F
+            foreach (var target in _allTargets)
+            {
+                bool isFTarget = target.GetInteractType() == InteractType.OpenTargetInventory ||
+                                 target.GetInteractType2() == InteractType.OpenTargetInventory;
+
+                if (target.HasInventory() && isFTarget)
+                {
+                    // Создаем контекст с явным указанием "открыть инвентарь"
+                    var context = new InteractContext
+                    {
+                        Tool = AttackAnimationType.Fists,
+                        IsAttack = false,
+                        isTargetInventory = true, // Критически важно для Corpse!
+                        PlayerInteraction = this
+                    };
+
+                    // Вызываем взаимодействие напрямую
+                    target.Interact(context);
+
+                    // Открываем UI панель
+                    if (_panelsController != null)
+                        _panelsController.OpenOtherInventory();
+
+                    return; // Обрабатываем только первую подходящую цель
+                }
+            }
+        }
 
         /// <summary>
         /// Вызывается в конце анимации атаки (через Animation Event).
@@ -758,7 +894,6 @@ namespace Assets.Scripts.Player
 
         private string GetActionText(InteractType type, GameObject targetGO)
         {
-
             // 🆕 Проверка тела (луч попадёт в кость, но Corpse висит на корне)
             if (targetGO != null)
             {
@@ -769,18 +904,20 @@ namespace Assets.Scripts.Player
                 }
             }
 
-
-            bool isOpen = false;
-
-            if (type == InteractType.Open && targetGO != null)
+            if (type == InteractType.Interact && targetGO != null)
             {
                 if (targetGO.TryGetComponent(out DoorController doorController))
-                    isOpen = doorController.IsVisuallyOpen();
+                {
+                    return doorController.IsVisuallyOpen() ? "[E] Закрыть" : "[E] Открыть";
+                }
+
             }
 
             return type switch
             {
-                InteractType.Open => isOpen ? "[E] Закрыть" : "[E] Открыть",
+                InteractType.None => "", // Явная обработка None
+                InteractType.OpenTargetInventory => "[F] Открыть",
+                InteractType.Interact => "[E] Использовать",
                 InteractType.Pickup => "[E] Подобрать",
                 InteractType.Gather => "[E] Собрать",
                 InteractType.Drink => "[E] Пить",
@@ -855,5 +992,18 @@ namespace Assets.Scripts.Player
 
         // Проверка: тащим ли мы сейчас тело?
         public bool IsDraggingCorpse() => _currentlyDraggingCorpse != null;
+
+        public void TryClosePanels()
+        {
+            if (_panelsController != null && _panelsController.IsPanelOpened())
+            {
+                Debug.Log("PanelOpened");
+                // Если открыт инвентарь цели или радиальное меню - закрываем
+                if (_panelsController.IsInventoryOpened() || _panelsController.IsRadialMenuOpened())
+                {
+                    _panelsController.CloseAllPanels();
+                }
+            }
+        }
     }
 }

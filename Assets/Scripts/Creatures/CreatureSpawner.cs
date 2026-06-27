@@ -93,7 +93,8 @@ namespace Assets.Scripts.Core
                     creatureScript.OnDeath -= OnCreatureDied;
                 }
 
-                Destroy(go);
+                // Вынести в конфиг!
+                Destroy(go, 30f);
             }
         }
 

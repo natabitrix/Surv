@@ -508,7 +508,7 @@ namespace Assets.Scripts.InventorySystem
                 Debug.Log("_inventoryManager is null!");
                 return;
             }
-            
+
             if (index < 0)
             {
                 Debug.Log("index is < 0!");
@@ -561,8 +561,10 @@ namespace Assets.Scripts.InventorySystem
                         slot.item,
                         () =>
                         {
+                            _inventoryManager.SelectSlot(index, owner, this);
+                            HighLightHoverSlot(true);
                             _inventoryManager.UseItemFromSlot();//!!!!!
-                            HighLightHoverSlot(false);
+                            // HighLightHoverSlot(false);
                         },
                         () =>
                         {

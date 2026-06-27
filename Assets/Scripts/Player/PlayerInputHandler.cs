@@ -24,6 +24,7 @@ namespace Assets.Scripts.Player
         public bool crouch;
         public bool crawl;
         public bool interact;
+        public bool targetInventory;
         public bool interactHold;
         public bool openInventory;
         public bool cancel;
@@ -43,6 +44,7 @@ namespace Assets.Scripts.Player
 
         [SerializeField] private InputActionReference _fireAction;
         [SerializeField] private InputActionReference _interactAction;
+        [SerializeField] private InputActionReference _targetInventoryAction;
         [SerializeField] private float _fireRepeatDelay = 0.4f;
         [SerializeField] private float _fireRepeatInterval = 0.1f;
         [SerializeField] private float _holdingRepeatDelay = 0.4f;
@@ -52,6 +54,7 @@ namespace Assets.Scripts.Player
         // События для Interact/Fire
         public event Action OnInteractPressed;
         public event Action OnInteractTriggered;
+        public event Action OnTargetInventoryPressed;
         public event Action OnInteractStopPressed;
 
         public event Action OnFireTriggered;
@@ -99,6 +102,10 @@ namespace Assets.Scripts.Player
             _interactAction.action.started += OnInteractStarted;
             _interactAction.action.canceled += OnInteractCanceled;
 
+            _targetInventoryAction.action.Enable();
+            _targetInventoryAction.action.started += OnTargetInventoryStarted;
+            _targetInventoryAction.action.canceled += OnTargetInventoryCanceled;
+
             _fireAction.action.Enable();
             _fireAction.action.started += OnFireStarted;
             _fireAction.action.canceled += OnFireCanceled;
@@ -115,6 +122,10 @@ namespace Assets.Scripts.Player
             _interactAction.action.Disable();
             _interactAction.action.started -= OnInteractStarted;
             _interactAction.action.canceled -= OnInteractCanceled;
+
+            _targetInventoryAction.action.Disable();
+            _targetInventoryAction.action.started -= OnTargetInventoryStarted;
+            _targetInventoryAction.action.canceled -= OnTargetInventoryCanceled;
 
             _fireAction.action.Disable();
             _fireAction.action.started -= OnFireStarted;
@@ -145,6 +156,18 @@ namespace Assets.Scripts.Player
             StopRepeatInteract();
             OnInteractStopPressed?.Invoke();
         }
+
+        private void OnTargetInventoryStarted(InputAction.CallbackContext context)
+        {
+            // targetInventory = true;
+            OnTargetInventoryPressed?.Invoke(); 
+        }
+
+        private void OnTargetInventoryCanceled(InputAction.CallbackContext context)
+        {
+            // targetInventory = false;
+        }
+
 
         private IEnumerator RepeatInteract()
         {
@@ -359,6 +382,7 @@ namespace Assets.Scripts.Player
         public void ResetCancel() => cancel = false;
         public void ResetOpenInventory() => openInventory = false;
         public void ResetInteract() => interact = false;
+        public void ResetTargetInventory() => targetInventory = false;
         public void ResetJump() => jump = false;
         public void ResetCrouch() => crouch = false;
         public void ResetCrawl() => crawl = false;

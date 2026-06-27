@@ -193,6 +193,8 @@ namespace Assets.Scripts.Interactables
 
                 int give = Random.Range(minPossibleNow, maxPossibleNow + 1);
                 // give = 1; //for tests
+                // give = remaining; //for tests
+                // give = avg; //for tests
 
                 if (give > remaining) give = remaining;
 
@@ -205,7 +207,6 @@ namespace Assets.Scripts.Interactables
                 {
                     _remainingAmounts[i] -= give;
                     GiveResource(drops[i].item, give);
-                    // gaveSomething = true;
                 }
             }
 
@@ -232,25 +233,48 @@ namespace Assets.Scripts.Interactables
             float mult = 1f;
             string name = item.itemName.ToLower();
 
-            if (name.Contains("wood") || name.Contains("дерево"))
+            if (name.Contains("wood") || name.Contains("дерево") || name.Contains("древесина"))
             {
-                mult = tool == AttackAnimationType.Axe ? 1.5f : 0.6f;
+                if (tool == AttackAnimationType.Axe)
+                    mult = 2.0f;
+                else if (tool == AttackAnimationType.Pickaxe)
+                    mult = 1.0f;
+                else if (tool == AttackAnimationType.Fists)
+                    mult = 0.3f;
+            }
+            else if (name.Contains("thatch") || name.Contains("солома"))
+            {
+                if (tool == AttackAnimationType.Axe)
+                    mult = 0.5f;
+                else if (tool == AttackAnimationType.Pickaxe)
+                    mult = 2.0f;
+                else if (tool == AttackAnimationType.Fists)
+                    mult = 1.0f;
             }
             else if (name.Contains("stone") || name.Contains("камень"))
             {
-                mult = tool == AttackAnimationType.Pickaxe ? 1.6f : 0.2f;
-            }
-            else if (name.Contains("stick") || name.Contains("thatch") || name.Contains("ветка") || name.Contains("солома"))
-            {
-                if (tool == AttackAnimationType.Pickaxe)
-                    mult = 1.4f;
-                else if (tool == AttackAnimationType.Fists)
+                if (tool == AttackAnimationType.Axe)
+                    mult = 2.0f;
+                else if (tool == AttackAnimationType.Pickaxe)
                     mult = 1.0f;
-                else
-                    mult = 0.7f;
+            }
+            else if (name.Contains("flint") || name.Contains("кремень"))
+            {
+                if (tool == AttackAnimationType.Axe)
+                    mult = 0.5f;
+                else if (tool == AttackAnimationType.Pickaxe)
+                    mult = 2.0f;
+            }
+            else if (name.Contains("metal") || name.Contains("металл"))
+            {
+                if (tool == AttackAnimationType.Axe)
+                    mult = 0.5f;
+                else if (tool == AttackAnimationType.Pickaxe)
+                    mult = 2.0f;
             }
 
             return Mathf.Max(0, Mathf.RoundToInt(baseAmount * mult));
+
         }
 
         void GiveResource(Item item, int amount)
@@ -314,7 +338,6 @@ namespace Assets.Scripts.Interactables
             if (renderer != null)
             {
                 Color currentColor = renderer.material.color;
-                Debug.Log("currentColor: " + currentColor);
 
                 float destructionСolorStep = 0.02f;
                 float destructionСolorFinal = 0.5f;
@@ -327,8 +350,6 @@ namespace Assets.Scripts.Interactables
                 if (destructionB < destructionСolorFinal) destructionB = destructionСolorFinal;
 
                 Color newColor = new(destructionR, destructionG, destructionB);
-                Debug.Log("newColor: " + newColor);
-
                 renderer.material.color = newColor;
             }
         }

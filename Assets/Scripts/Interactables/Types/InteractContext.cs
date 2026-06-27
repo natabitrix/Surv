@@ -9,6 +9,7 @@ namespace Assets.Scripts.Interactables
         // public ToolType Tool;
         public AttackAnimationType Tool;
         public bool IsAttack;
+        public bool isTargetInventory;
         public PlayerInteraction PlayerInteraction;
     }
 }

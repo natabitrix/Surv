@@ -13,7 +13,7 @@ namespace Assets.Scripts.Interactables
         public bool HasInventory() => false;
         public ChestInventory GetInventory() => null;
         public bool ShouldDetachAfterInteract() => false;
-        public InteractType GetInteractType() => InteractType.Open;
+        public InteractType GetInteractType() => InteractType.Interact;
 
         private Collider _targetCollider;
         private float _currentAngle;
@@ -28,7 +28,7 @@ namespace Assets.Scripts.Interactables
         {
             _targetCollider = GetComponent<Collider>();
             _startRotation = transform.rotation;
-            
+
             _currentAngle = 0f;
             _targetAngle = 0f;
         }
