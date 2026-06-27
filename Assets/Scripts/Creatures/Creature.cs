@@ -6,6 +6,7 @@ using Assets.Scripts.Player.Data;
 using Assets.Scripts.Interactables;
 using Assets.Scripts.Utils;
 using UnityEngine.Localization.SmartFormat.Utilities;
+using Assets.Scripts.InventorySystem;
 
 namespace Assets.Scripts.Creatures
 {
@@ -34,17 +35,28 @@ namespace Assets.Scripts.Creatures
         [SerializeField] private float _maxHealth = 100f; // Добавляем поле для инспектора
         [SerializeField] private float _maxStamina = 50f;
 
-        // [Header("Colliders")]
-        // [SerializeField] private Collider _aliveCollider;   // Основной коллайдер при жизни
-        // [SerializeField] private Collider _corpseCollider;  // Коллайдер для перетаскивания/интеракта
+        [System.Serializable]
+        public class LootEntry
+        {
+            public Item item;
+            public int minAmount = 1;
+            public int maxAmount = 1;
+            [Range(0f, 1f)] public float dropChance = 1f; // Шанс от 0 до 1
+        }
 
-        // [Header("Corpse System")]
-        // [SerializeField] private GameObject corpseObject; // Перетащи дочерний "Corpse"
+        [Header("Loot & Harvesting")]
+        [Tooltip("Предметы, которые рандомно попадут в инвентарь трупа (мясо, шкуры, детали)")]
+        public LootEntry[] inventoryLootTable;
 
-        [Header("Drop")]
-        public Item dropItem;
-        public int dropMinCount = 1;
-        public int dropMaxCount = 1;
+        [Tooltip("Ресурсы, которые выпадают при РАЗБИВАНИИ тела (железо, электроника, кости)")]
+        public Corpse.ResourceDrop[] harvestDrops;
+
+        [Tooltip("Сколько ударов нужно, чтобы полностью разобрать тело")]
+        public int maxHarvestHits = 5;
+
+        [Header("Corpse UI")]
+        [Tooltip("Ссылка на UI инвентаря (тот же, что используется для сундуков)")]
+        [SerializeField] private ChestUI _chestUI;
 
         [Header("Audio")]
         public AudioClip FootstepAudioClip;
@@ -55,8 +67,6 @@ namespace Assets.Scripts.Creatures
         [Range(0, 1)] public float TakeDamageAudioVolume = 0.5f;
         public AudioClip DeathAudioClip;
         [Range(0, 1)] public float DeathAudioVolume = 0.5f;
-
-        // private bool _ragdollActive = false;
 
         private NavMeshAgent agent;
         private Transform playerTransform;
@@ -96,7 +106,7 @@ namespace Assets.Scripts.Creatures
             }
 
             // Подписка на смерть
-            OnDeath += HandleDeath;
+            // OnDeath += HandleDeath;
         }
 
         public void SetTarget(Transform target)
@@ -190,24 +200,24 @@ namespace Assets.Scripts.Creatures
 
         protected override void Die()
         {
-            // 🔥 1. Сначала отменяем всё, что может помешать
+            // 1. Сначала отменяем всё, что может помешать
             CancelInvoke();
 
-            // 🔥 2. Отключаем аниматор ДО включения физики
+            // 2. Отключаем аниматор ДО включения физики
             // if (animator != null)
             // {
             //     animator.enabled = false;
             //     animator.Update(0f); // Принудительно обновляем, чтобы сбросить позу
             // }
 
-            // 🔥 3. Отключаем навмеш и коллайдер тела
+            // 3. Отключаем навмеш и коллайдер тела
             var agent = GetComponent<NavMeshAgent>();
             if (agent != null) agent.enabled = false;
 
-            var mainCollider = GetComponent<Collider>();
-            if (mainCollider != null) mainCollider.enabled = false;
+            // var mainCollider = GetComponent<Collider>();
+            // if (mainCollider != null) mainCollider.enabled = false;
 
-            // 🔥 4. Активируем рэгдолл с гашением скоростей
+            // 4. Активируем рэгдолл с гашением скоростей
             ActivateRagdoll();
             StartCoroutine(StopMovingRagdoll());
 
@@ -259,9 +269,6 @@ namespace Assets.Scripts.Creatures
 
         public void DeactivateRagdoll()
         {
-            // var mainCollider = GetComponent<Collider>();
-            // if (mainCollider != null) mainCollider.enabled = true;
-
             foreach (var part in ragdollSettings.ragdollParts)
             {
                 if (part == null) continue;
@@ -295,18 +302,9 @@ namespace Assets.Scripts.Creatures
             yield return new WaitForSeconds(2.5f);
 
             DeactivateRagdoll();
+            CreateCorpseInventory();
 
-            // Активируем тело
-            // if (corpseObject != null) corpseObject.SetActive(true);
-
-            // var mainCollider = GetComponent<Collider>();
-            // if (mainCollider != null) mainCollider.enabled = false;
-
-            // 🔥 Включаем интерактивность тела
-            var corpse = GetComponent<Corpse>();
-            if (corpse != null) corpse.enabled = true;
-
-            // 🔥 Включаем меню
+            // Включаем меню
             var menu = GetComponent<RadialMenu>();
             if (menu != null) menu.enabled = true;
         }
@@ -409,45 +407,86 @@ namespace Assets.Scripts.Creatures
             }
         }
 
-        private void HandleDeath(BaseLivingEntity entity)
+        // private void HandleDeath(BaseLivingEntity entity)
+        // {
+        //     Debug.Log("[Creature] Существо умерло. Создаем инвентарь...");
+
+        //     // 1. Создаем инвентарь
+        //     var chestInv = gameObject.AddComponent<ChestInventory>();
+        //     string corpseKey = $"Corpse_{System.Guid.NewGuid().ToString()}";
+        //     chestInv.Initialize(12, corpseKey);
+
+        //     Debug.Log($"[Creature] Инвентарь создан. Размер Data: {chestInv.Data?.slots.Count ?? 0}");
+
+        //     // 2. Заполняем случайным лутом
+        //     PopulateInventory(chestInv);
+
+        //     // 3. Настраиваем Corpse
+        //     var corpse = GetComponent<Corpse>();
+        //     if (corpse == null)
+        //     {
+        //         corpse = gameObject.AddComponent<Corpse>();
+        //     }
+
+        //     // 🔥 Инициализируем данные, но НЕ включаем компонент!
+        //     var chestUI = FindAnyObjectByType<ChestUI>();
+        //     corpse.Initialize(chestInv, chestUI, harvestDrops, maxHarvestHits);
+
+        //     // 🔥 ВАЖНО: Отключаем Corpse до конца анимации смерти
+        //     corpse.enabled = false;
+        // }
+
+        private void CreateCorpseInventory()
         {
-            if (dropItem != null)
+            // 1. Создаем инвентарь
+            var chestInv = gameObject.AddComponent<ChestInventory>();
+            string corpseKey = $"Corpse_{System.Guid.NewGuid().ToString()}";
+            chestInv.Initialize(12, corpseKey);
+
+            // 2. Заполняем случайным лутом
+            PopulateInventory(chestInv);
+
+            // 3. Настраиваем Corpse
+            var corpse = GetComponent<Corpse>();
+            if (corpse == null)
             {
-                int dropCount = Random.Range(dropMinCount, dropMaxCount + 1);
-                SpawnDrop(dropItem, dropCount);
+                corpse = gameObject.AddComponent<Corpse>();
             }
+            corpse.enabled = true;
 
-            // 1. Добавляем интерактивное тело
-            // var corpse = gameObject.AddComponent<Corpse>();
-            // corpse.enabled = true;
-
-            // 2. Гарантируем коллайдер для луча взаимодействия
-            // (OnDeathAnimationFinished удалит старый, поэтому создаём новый)
-            // if (GetComponent<Collider>() == null)
-            // {
-            //     var col = gameObject.AddComponent<BoxCollider>();
-            //     col.size = new Vector3(0.8f, 1.2f, 0.8f);
-            //     col.center = new Vector3(0, 0.6f, 0);
-            //     // col.isTrigger = false; // Оставляем false, чтобы работал Physics.Raycast
-            // }
-
-            // 3. Опционально: добавляем RadialMenu для удержания E
-            // var menu = gameObject.AddComponent<RadialMenu>();
-            // menu.creature = this; // Ссылка на существо (если нужно для логики меню)
-
-
+            // Передаем настройки из Creature в Corpse
+            var chestUI = FindAnyObjectByType<ChestUI>();
+            corpse.Initialize(chestInv, chestUI, harvestDrops, maxHarvestHits);
         }
 
-        private void SpawnDrop(Item item, int count)
+        private void PopulateInventory(ChestInventory inv)
         {
-            if (item.placeablePrefab != null)
+            if (inventoryLootTable == null || inv == null)
             {
-                GameObject dropGO = Instantiate(item.placeablePrefab, transform.position + Vector3.up * 0.5f, Quaternion.identity);
-                // Настройка компонента дропа...
+                Debug.LogWarning("[Creature] inventoryLootTable или inv равны null!");
+                return;
+            }
+
+            var data = inv.Data;
+            if (data == null)
+            {
+                Debug.LogError("[Creature] inv.Data равна null! Ячейки не созданы.");
+                return;
+            }
+
+            foreach (var entry in inventoryLootTable)
+            {
+                if (entry.item == null) continue;
+
+                float roll = Random.value;
+
+                if (roll <= entry.dropChance)
+                {
+                    int amount = Random.Range(entry.minAmount, entry.maxAmount + 1);
+                    data.AddItemAnywhere(entry.item, amount);
+                }
             }
         }
-
-
         protected override float GetMaxHealthFromConfiguration()
         {
             return _maxHealth;
@@ -524,10 +563,10 @@ namespace Assets.Scripts.Creatures
             }
         }
 
-        void OnDestroy()
-        {
-            OnDeath -= HandleDeath;
-        }
+        // void OnDestroy()
+        // {
+        //     OnDeath -= HandleDeath;
+        // }
     }
 
     [System.Serializable]

@@ -12,10 +12,10 @@ namespace Assets.Scripts.InventorySystem
     public class ChestUI : MonoBehaviour
     {
         // === СТАТИЧЕСКАЯ ССЫЛКА НА ОТКРЫТЫЙ СУНДУК ===
+        public static ChestUI Instance { get; private set; }
         public static ChestUI CurrentOpenChest { get; private set; }
 
         public InventoryManager inventoryManager;
-
         public Transform playerSlotParent;
         public Transform chestSlotParent;
         public GameObject slotPrefab;
@@ -23,13 +23,24 @@ namespace Assets.Scripts.InventorySystem
         public RectTransform dragLayer;
 
         private ChestInventory _currentChest;
-
         private List<InventorySlotUI> slotUIs;
 
         // ✅ Прямой доступ к данным инвентаря сундука
         public InventoryData Data => _currentChest?.Data;
 
+        // Поддержка как ChestController, так и Corpse (или любого IInteractable)
         public ChestController SourceChest { get; private set; }
+        public IInteractable SourceInteractable { get; private set; }
+
+        void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+        }
 
         void CreateChestSlots()
         {
@@ -56,7 +67,8 @@ namespace Assets.Scripts.InventorySystem
             }
         }
 
-        public void OpenWith(ChestInventory chest)
+        // ✅ Универсальный метод открытия (работает и с сундуками, и с трупами)
+        public void OpenWith(ChestInventory chest, IInteractable source = null)
         {
             // Отписываемся от старого
             if (_currentChest?.Data != null)
@@ -65,8 +77,11 @@ namespace Assets.Scripts.InventorySystem
             }
 
             _currentChest = chest;
-            SourceChest = chest.GetComponent<ChestController>(); // ← сохраняем
-            CurrentOpenChest = this; // ← ЗАПОМИНАЕМ ТЕКУЩИЙ ОТКРЫТЫЙ
+            CurrentOpenChest = this;
+
+            // Сохраняем источник (может быть ChestController или Corpse)
+            SourceInteractable = source;
+            SourceChest = source as ChestController; // Будет null, если это Corpse
 
             // Подписываемся на новый
             if (_currentChest?.Data != null)
@@ -79,14 +94,15 @@ namespace Assets.Scripts.InventorySystem
 
         public void Close()
         {
-            if (_currentChest.Data != null)
+            if (_currentChest?.Data != null)
             {
                 _currentChest.Data.OnInventoryChanged -= RefreshUI;
             }
 
             _currentChest = null;
-            CurrentOpenChest = null; // ← ОБНУЛЯЕМ
-
+            SourceChest = null;
+            SourceInteractable = null;
+            CurrentOpenChest = null;
         }
 
         public InventorySlot GetSlot(int index)
@@ -98,17 +114,16 @@ namespace Assets.Scripts.InventorySystem
             return null;
         }
 
-        // игрок — это не один InventoryData, а инвентарь + хотбар + логика закрепления.
+        // Игрок — это не один InventoryData, а инвентарь + хотбар + логика закрепления.
         public Dictionary<Item, int> MoveAllToPlayer()
         {
             var summary = new Dictionary<Item, int>();
 
-            if (_currentChest?.Data == null) 
+            if (_currentChest?.Data == null)
                 return summary;
 
             var chestData = _currentChest.Data;
             var progress = PlayerProgress.Instance;
-            
 
             for (int i = chestData.slots.Count - 1; i >= 0; i--)
             {
@@ -150,7 +165,7 @@ namespace Assets.Scripts.InventorySystem
             // 🔸 Сохраняем данные ДО удаления
             string itemName = slot.item.itemName;
             Sprite icon = slot.item.icon;
-            int countBefore = slot.count; // ← важно!
+            int countBefore = slot.count;
 
             // Удаляем ВЕСЬ слот
             _currentChest.Data.RemoveItemFromSlot(slotIndex);
@@ -185,6 +200,13 @@ namespace Assets.Scripts.InventorySystem
                 slotUIs[i].SetSlot(slots[i]);
             }
         }
+
+        void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
+        }
+
+
     }
 
 }

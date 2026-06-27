@@ -34,7 +34,7 @@ namespace Assets.Scripts.Interactables
             // }
             if (playerController == null)
             {
-                playerController = FindFirstObjectByType<PlayerController>(); // Найти автоматически, если не назначен
+                playerController = FindAnyObjectByType<PlayerController>(); // Найти автоматически, если не назначен
             }
 
             ItemHandler pickupHandler = playerController.GetComponent<ItemHandler>();

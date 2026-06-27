@@ -18,7 +18,7 @@ namespace Assets.Scripts.InventorySystem
         Inventory,
         Hotbar,
         Chest,
-        
+
     }
 
     public class InventorySlotUI : MonoBehaviour,
@@ -56,7 +56,7 @@ namespace Assets.Scripts.InventorySystem
         {
             if (_inputHandler == null)
             {
-                _inputHandler = FindFirstObjectByType<PlayerInputHandler>();
+                _inputHandler = FindAnyObjectByType<PlayerInputHandler>();
             }
         }
 
@@ -503,6 +503,17 @@ namespace Assets.Scripts.InventorySystem
 
         public void OnPointerEnter(PointerEventData eventData)
         {
+            if (_inventoryManager == null)
+            {
+                Debug.Log("_inventoryManager is null!");
+                return;
+            }
+            
+            if (index < 0)
+            {
+                Debug.Log("index is < 0!");
+            }
+
             _inventoryManager.SelectSlot(index, owner, this);
             HighLightHoverSlot(true);
         }

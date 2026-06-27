@@ -8,7 +8,9 @@ namespace Assets.Scripts.InventorySystem
     public class ChestInventory : MonoBehaviour
     {
         [SerializeField] private string saveKey = "Chest_001"; // уникальный ID сундука
-        [SerializeField] private int size = 12;
+        [SerializeField] public int size = 12;
+
+
         public InventoryData Data { get; private set; }
 
         private void Awake()
@@ -17,6 +19,20 @@ namespace Assets.Scripts.InventorySystem
             Load();
         }
 
+        // ✅ НОВЫЙ МЕТОД для создания инвентаря трупа (без загрузки сохранения)
+        public void Initialize(int newSize, string newSaveKey = null)
+        {
+            size = newSize;
+            if (!string.IsNullOrEmpty(newSaveKey))
+            {
+                saveKey = newSaveKey;
+            }
+            
+            // 🔥 Пересоздаём Data с новым размером
+            Data = new InventoryData(size);
+            
+            // Load() НЕ вызываем — труп должен быть пустым!
+        }
 
         public void Save()
         {
@@ -33,7 +49,7 @@ namespace Assets.Scripts.InventorySystem
 
         public void Load()
         {
-            var db = FindFirstObjectByType<ItemDatabase>();
+            var db = FindAnyObjectByType<ItemDatabase>();
             if (db == null) return;
 
             string path = System.IO.Path.Combine(Application.persistentDataPath, $"Chest_{saveKey}.save");
@@ -47,7 +63,12 @@ namespace Assets.Scripts.InventorySystem
 
         private void OnDestroy()
         {
-            Save(); // сохраняем при уничтожении сундука (если он временный)
+            // сохраняем при уничтожении сундука (если он временный)
+            // Сохраняем только если это сундук (не труп)
+            if (!saveKey.StartsWith("Corpse_"))
+            {
+                Save();
+            }
         }
     }
 }

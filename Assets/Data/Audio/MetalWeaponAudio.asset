@@ -16,7 +16,7 @@ MonoBehaviour:
   - impactType: 3
     clips:
     - {fileID: 8300000, guid: 2c8159b67655947458048ac8095aeeac, type: 3}
-    volume: 0.5
+    volume: 1
     pitchRandomness: 0
   - impactType: 2
     clips:

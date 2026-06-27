@@ -675,93 +675,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 3863180775055238245}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &2141833030667499531
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 6456747111027115270}
-  - component: {fileID: 3233351094179431996}
-  - component: {fileID: 2271188059986138180}
-  - component: {fileID: 8510449444438227973}
-  m_Layer: 9
-  m_Name: Corpse
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &6456747111027115270
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2141833030667499531}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 6824948828111263205}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!65 &3233351094179431996
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2141833030667499531}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 3.08, y: 2.76, z: 5.77}
-  m_Center: {x: 0, y: 1.5, z: 0}
---- !u!114 &2271188059986138180
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2141833030667499531}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a58cd31a1b2f00848bf1cbc7cca71af0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Creatures.Corpse
-  _dragRigidbody: {fileID: 0}
-  dragDistance: 1.2
-  springForce: 180
-  springDamper: 18
-  maxSpringDistance: 0.3
---- !u!114 &8510449444438227973
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2141833030667499531}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e4fd1ea77d25d2645838ef83642d540d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Interactables.RadialMenu
-  item: {fileID: 0}
-  corpse: {fileID: 2271188059986138180}
-  creature: {fileID: 0}
 --- !u!1 &2286532469562125796
 GameObject:
   m_ObjectHideFlags: 0
@@ -1105,7 +1018,6 @@ Transform:
   m_Children:
   - {fileID: 7800861425328578397}
   - {fileID: 9074923633069766907}
-  - {fileID: 6456747111027115270}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!95 &337595715133242841
@@ -1170,11 +1082,24 @@ MonoBehaviour:
   attackRange: 2
   attackDamage: 10
   attackCooldown: 2
-  _maxHealth: 300
+  _maxHealth: 600
   _maxStamina: 50
-  dropItem: {fileID: 0}
-  dropMinCount: 1
-  dropMaxCount: 1
+  inventoryLootTable:
+  - item: {fileID: 11400000, guid: c1d5dfbb9928d324a8c04f9ad5e2eee6, type: 2}
+    minAmount: 1
+    maxAmount: 1
+    dropChance: 0.518
+  - item: {fileID: 11400000, guid: a7087fa9748f15842bb064737cb55cc8, type: 2}
+    minAmount: 1
+    maxAmount: 1
+    dropChance: 0.747
+  harvestDrops:
+  - item: {fileID: 11400000, guid: 7572a88102426e7488ae3f506ea445e0, type: 2}
+    totalAmount: 50
+  - item: {fileID: 11400000, guid: 5b2aeb1461a89434dab6751adb6301c6, type: 2}
+    totalAmount: 50
+  maxHarvestHits: 5
+  _chestUI: {fileID: 0}
   FootstepAudioClip: {fileID: 8300000, guid: 4aba2b70bf550d74d9905d0982f22892, type: 3}
   FootstepAudioVolume: 0.3
   AttackAudioClip: {fileID: 8300000, guid: 1d76b790e8eee784db9cf8ae161300af, type: 3}
@@ -1200,7 +1125,7 @@ CapsuleCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 2
   m_Radius: 2
   m_Height: 6
@@ -1262,6 +1187,19 @@ MonoBehaviour:
   springForce: 500
   springDamper: 0
   maxSpringDistance: 0
+  _inventory: {fileID: 0}
+  _chestUI: {fileID: 0}
+  allowHarvest: 1
+  allowFists: 1
+  allowAxe: 1
+  allowPickaxe: 1
+  allowSword: 1
+  allowSickle: 0
+  breakEffect: {fileID: 0}
+  shatterer: {fileID: 0}
+  hitDecaler: {fileID: 0}
+  animator: {fileID: 0}
+  _impactType: 2
 --- !u!114 &6664605108390037155
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1275,7 +1213,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Interactables.RadialMenu
   item: {fileID: 0}
-  corpse: {fileID: 2271188059986138180}
+  corpse: {fileID: 9082038157994323712}
   creature: {fileID: 0}
 --- !u!1 &3432639262796062961
 GameObject:

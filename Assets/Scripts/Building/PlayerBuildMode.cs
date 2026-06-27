@@ -72,7 +72,7 @@ namespace Assets.Scripts.Building
             // Попытка найти обработчик ввода автоматически, если не назначен в инспекторе
             if (_inputHandler == null)
             {
-                _inputHandler = FindFirstObjectByType<PlayerInputHandler>();
+                _inputHandler = FindAnyObjectByType<PlayerInputHandler>();
                 if (_inputHandler == null)
                 {
                     Debug.LogError("[PlayerBuildMode] PlayerInputHandler not found in scene!");

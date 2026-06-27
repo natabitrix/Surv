@@ -81,12 +81,12 @@ namespace Assets.Scripts.InventorySystem
 
             Item itemInHand = null;
             int itemInHandSlotIndex = -1;
-            if(equipment.IsEquipped == true)
+            if (equipment.IsEquipped == true)
             {
                 itemInHand = equipment.GetCurrentItem();
                 itemInHandSlotIndex = equipment.EquippedSlotIndex;
             }
-            else if(buildMode.IsActive() == true)
+            else if (buildMode.IsActive() == true)
             {
                 itemInHand = buildMode.GetCurrentItem();
                 itemInHandSlotIndex = buildMode.ActiveBuildSlotIndex;

@@ -375,21 +375,21 @@ namespace Assets.Scripts.Player
                 }
 
                 // Если не нашли — ищем в родителях (макс. 3 уровня вверх)
-                // if (creature == null)
-                // {
-                //     Transform parent = hitObject.transform.parent;
-                //     int depth = 0;
-                //     while (parent != null && depth < 3)
-                //     {
-                //         creature = parent.gameObject.GetComponent<BaseLivingEntity>();
-                //         if (creature != null)
-                //         {
-                //             break;
-                //         }
-                //         parent = parent.parent;
-                //         depth++;
-                //     }
-                // }
+                if (creature == null)
+                {
+                    Transform parent = hitObject.transform.parent;
+                    int depth = 0;
+                    while (parent != null && depth < 3)
+                    {
+                        creature = parent.gameObject.GetComponent<BaseLivingEntity>();
+                        if (creature != null)
+                        {
+                            break;
+                        }
+                        parent = parent.parent;
+                        depth++;
+                    }
+                }
 
                 // Сохраняем, если нашли
                 if (creature != null)
@@ -567,8 +567,8 @@ namespace Assets.Scripts.Player
             // === Обработка ресурсов (Harvest) ===
             foreach (var target in _allTargets)
             {
-
-                if (target.GetInteractType() == InteractType.Harvest)
+                // Debug.Log("target.GetInteractType(): " + target.GetInteractType());
+                if (target.GetInteractType() == InteractType.Harvest || target is Corpse)
                 {
                     var context = new InteractContext
                     {
@@ -734,7 +734,6 @@ namespace Assets.Scripts.Player
             if (_allTargets.Count > 0)
             {
                 _targetGO = other.gameObject;
-                Debug.Log($"Find Interactable!:  {_targetGO}");
             }
         }
 
