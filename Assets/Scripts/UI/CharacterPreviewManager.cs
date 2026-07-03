@@ -30,7 +30,7 @@ namespace Assets.Scripts.UI
         {
             if (_inputHandler == null)
             {
-                _inputHandler = FindFirstObjectByType<PlayerInputHandler>();
+                Debug.LogError("[CharacterPreviewManager] PlayerInputHandler not found in scene!");
             }
         }
 

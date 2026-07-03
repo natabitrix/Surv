@@ -24,7 +24,7 @@ namespace Assets.Scripts.Core
         {
             if (playerController == null)
             {
-                playerController = FindFirstObjectByType<PlayerController>();
+                Debug.LogError("[CreatureSpawner] PlayerInputHandler not found in scene!");
             }
 
             // Проверка на случай, если список пуст в инспекторе

@@ -59,7 +59,8 @@ public class AudioManager : MonoBehaviour
 
     private void ApplyVolumeToAllSources()
     {
-        AudioSource[] sources = FindObjectsByType<AudioSource>(FindObjectsSortMode.None);
+        // AudioSource[] sources = FindObjectsByType<AudioSource>(FindObjectsSortMode.None);
+        AudioSource[] sources = FindObjectsByType<AudioSource>();
         foreach (var source in sources)
         {
             source.volume = masterVolume;

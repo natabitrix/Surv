@@ -77,11 +77,8 @@ namespace Assets.Scripts.Player
         }
 
         private void OnInteractFinished() => _playerInteraction.OnInteractFinished();
+        private void OnOpenInventoryFinished() => _playerInteraction.OnOpenInventoryFinished();
+        private void OnAttackInteractFinished() => _playerInteraction.OnAttackInteractFinished();
 
-        private void OnAttackInteractFinished() { 
-
-            _playerInteraction.OnAttackInteractFinished(); 
-        }
-        
     }
 }

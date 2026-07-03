@@ -159,13 +159,11 @@ namespace Assets.Scripts.Player
 
         private void OnTargetInventoryStarted(InputAction.CallbackContext context)
         {
-            // targetInventory = true;
             OnTargetInventoryPressed?.Invoke(); 
         }
 
         private void OnTargetInventoryCanceled(InputAction.CallbackContext context)
         {
-            // targetInventory = false;
         }
 
 

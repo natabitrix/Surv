@@ -2,17 +2,37 @@ using UnityEngine;
 using Assets.Scripts.Core;
 using Assets.Scripts.Audio;
 using Assets.Scripts.Player;
-using Assets.Scripts.Effects; // Для StatType, PlayerProgress, PlayerSurvivalSystem
+using Assets.Scripts.Effects;
+using Assets.Scripts.Interactables;
+using Assets.Scripts.InventorySystem; // Для StatType, PlayerProgress, PlayerSurvivalSystem
 
 namespace Assets.Scripts.Creatures // Или другой namespace
 {
-    public abstract class BaseLivingEntity : MonoBehaviour, IImpactSoundProvider
+    public abstract class BaseLivingEntity : MonoBehaviour, IInteractable, IImpactSoundProvider
     {
         [Header("Audio")]
         [SerializeField] private ImpactType _impactType = ImpactType.Flesh; // ← Новое поле в инспекторе
         public virtual ImpactType GetImpactType() => _impactType;
         [Header("ParticleSystem for Damage Effect")]
         public ParticleSystem damageEffect;
+
+        public bool tamed = false; // прирученное существо
+        public bool tamable = false; // приручаемое существо
+        public bool tamableKO = false; // приручаемое оглушением
+        public bool knockedOut = false; // оглушенное существ
+        public bool tamablePassive = false; // приручаемое пассивным (кормлением, другими механиками)
+
+        [Header("Interaction")]
+        [SerializeField] private Collider _interactionCollider;
+        public Collider InteractionCollider => _interactionCollider;
+
+        // ==========================================
+        // === ИНВЕНТАРЬ (Открытие по F) ===
+        // ==========================================
+        // [Header("Inventory")]
+        [SerializeField] private ChestInventory _inventory;
+        [SerializeField] private ChestUI _chestUI;
+        private bool _isOpen = false;
 
         // Используем ссылки на системы, возможно, через Singleton, как у тебя в PlayerSurvivalSystem
         protected PlayerProgress playerProgress; // Для получения максимальных значений статов
@@ -51,6 +71,57 @@ namespace Assets.Scripts.Creatures // Или другой namespace
             InitializeStats();
         }
 
+        // ==========================================
+        // === ИНТЕРФЕЙС IInteractable ===
+        // ==========================================
+        public InteractType GetInteractType() => tamed || (tamableKO && knockedOut) ? InteractType.OpenTargetInventory : InteractType.None;
+        public InteractType GetInteractType2() => tamable && tamablePassive ? InteractType.Interact : InteractType.None;
+
+        public void Interact(InteractContext context)
+        {
+            // Инвентарь доступен если прирученный или оглушенный
+            if ((tamed || (tamableKO && knockedOut)) && context.isTargetInventory)
+            {
+                OpenInventory();
+            }
+        }
+
+        // ==========================================
+        // === ИНВЕНТАРЬ ===
+        // ==========================================
+        public ChestInventory GetInventory() => _inventory;
+        public bool HasInventory() => _inventory != null;
+        public bool ShouldDetachAfterInteract() => false;
+
+        public void OpenInventory()
+        {
+            if (_isOpen) CloseInventory();
+            else if (_chestUI != null)
+            {
+                _chestUI.OpenWith(_inventory);
+                _isOpen = true;
+            }
+            else
+            {
+                Debug.LogError("[Corpse] _chestUI не назначен! Инвентарь не откроется.");
+            }
+        }
+
+        public void CloseInventory()
+        {
+            if (_isOpen && _chestUI != null)
+            {
+                _chestUI.Close();
+                _isOpen = false;
+            }
+        }
+
+        public void SetInventory(ChestInventory inventory)
+        {
+            _inventory = inventory;
+        }
+
+        // Статы
         protected virtual void InitializeStats()
         {
             // Пример: получаем базовые значения из PlayerProgress или из конфигурации конкретного существа
@@ -70,8 +141,6 @@ namespace Assets.Scripts.Creatures // Или другой namespace
         // Общий метод получения урона
         public virtual void TakeDamage(float damage, PlayerInteraction playerInteraction)
         {
-            // Debug.Log($"[BaseLivingEntity] {gameObject.name} получил урон: {damage}, текущее здоровье до: {health}");
-
             health -= damage;
             if (animator != null && damage > 0)
             {
@@ -83,12 +152,8 @@ namespace Assets.Scripts.Creatures // Или другой namespace
             Vector3 targetHitNormal = playerInteraction.GetTargetHitNormal();
             PlayDamageEffect(targetHitPosition);
 
-            // Debug.Log($"[BaseLivingEntity] {gameObject.name} после урона, текущее здоровье: {health}, maxHealth: {maxHealth}");
-            // Debug.Log($"[BaseLivingEntity.TakeDamage] {gameObject.name} здоровье: {health}");
-
             if (health <= 0)
             {
-                // Debug.Log($"[BaseLivingEntity] {gameObject.name} умирает, здоровье: {health}");
                 Die();
             }
         }
@@ -118,21 +183,17 @@ namespace Assets.Scripts.Creatures // Или другой namespace
         {
             health = 0;
 
-            CancelInvoke(); 
+            CancelInvoke();
 
             // Отключить NavMeshAgent, чтобы не пыталось двигаться во время смерти
             var agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
             if (agent != null) agent.enabled = false;
-
-
-            // Debug.Log($"[BaseLivingEntity] {gameObject.name} умер, вызов анимации смерти");
             if (animator != null)
             {
                 animator.SetTrigger(animIDDeath);
             }
 
             // Вызываем событие смерти
-            // Debug.Log($"[BaseLivingEntity] Вызов события смерти для {gameObject.name}");
             OnDeath?.Invoke(this);
 
             // Уничтожить объект через задержку, чтобы анимация смерти проигралась
@@ -157,10 +218,6 @@ namespace Assets.Scripts.Creatures // Или другой namespace
             }
         }
 
-
-
-
-
         // Метод для восстановления здоровья (если нужно)
         public virtual void Heal(float amount)
         {
@@ -175,7 +232,6 @@ namespace Assets.Scripts.Creatures // Или другой namespace
         public bool IsAlive()
         {
             bool alive = health > 0;
-            // Debug.Log($"[BaseLivingEntity] {gameObject.name} жив: {alive}, здоровье: {health}");
             return alive;
         }
     }

@@ -12,4 +12,5 @@ namespace Assets.Scripts.Interactables
         Drink,  // E - пить 
         RadialMenu // hold E
     }
+
 }

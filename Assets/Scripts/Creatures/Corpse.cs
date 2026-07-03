@@ -9,7 +9,7 @@ using Assets.Scripts.Core;
 
 namespace Assets.Scripts.Creatures
 {
-    [RequireComponent(typeof(Collider))]
+    // [RequireComponent(typeof(Collider))]
     public class Corpse : MonoBehaviour, IInteractable, IImpactSoundProvider
     {
         public bool IsDragging { get; private set; }
@@ -29,8 +29,12 @@ namespace Assets.Scripts.Creatures
         private Rigidbody _anchorRb;
         private Creature creature;
 
+        [Header("Interaction")]
+        [SerializeField] private Collider _interactionCollider;
+        public Collider InteractionCollider => _interactionCollider;
+
         // ==========================================
-        // === ИНВЕНТАРЬ (Открытие по E) ===
+        // === ИНВЕНТАРЬ (Открытие по F) ===
         // ==========================================
         [Header("Inventory")]
         [SerializeField] private ChestInventory _inventory;
@@ -112,15 +116,19 @@ namespace Assets.Scripts.Creatures
         // ==========================================
         // === ИНТЕРФЕЙС IInteractable ===
         // ==========================================
-        public InteractType GetInteractType() => InteractType.OpenTargetInventory;  // F - Инвентарь 
-        public InteractType GetInteractType2() => InteractType.Interact;     // E - Тащить тело
+        public InteractType GetInteractType() => InteractType.OpenTargetInventory;
+        public InteractType GetInteractType2() => InteractType.Interact;
+
         public ChestInventory GetInventory() => _inventory;
         public bool HasInventory() => _inventory != null;
         public bool ShouldDetachAfterInteract() => _isDepleted;
 
         public void Interact(InteractContext context)
         {
+
             if (_isDepleted && context.IsAttack) return;
+
+            if (IsDragging) StopDragging(context.PlayerInteraction);
 
             if (context.IsAttack)
             {
@@ -134,8 +142,9 @@ namespace Assets.Scripts.Creatures
                 }
                 else
                 {
-                    if (IsDragging) StopDragging(context.PlayerInteraction);
-                    else StartDragging(context.PlayerInteraction);
+                    // if (IsDragging) StopDragging(context.PlayerInteraction);
+                    // else StartDragging(context.PlayerInteraction);
+                    StartDragging(context.PlayerInteraction);
                 }
             }
         }

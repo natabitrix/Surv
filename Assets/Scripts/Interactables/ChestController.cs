@@ -28,12 +28,9 @@ namespace Assets.Scripts.Interactables
 
         public void Close()
         {
-            if (_isOpen)
-            {
-                if (chestAnim != null) chestAnim.SetTrigger("close");
-                _isOpen = false;
-                _chestUI.Close();
-            }
+            if (chestAnim != null) chestAnim.SetTrigger("close");
+            _isOpen = false;
+            _chestUI.Close();
         }
 
         public void Interact(InteractContext context)
@@ -44,10 +41,9 @@ namespace Assets.Scripts.Interactables
             }
             else
             {
-                Debug.Log("chestAnim: " + chestAnim);
                 if (chestAnim != null) chestAnim.SetTrigger("open");
                 var chestInventory = GetComponent<ChestInventory>();
-                _chestUI.OpenWith(chestInventory);
+                _chestUI.OpenWith(chestInventory, this);
                 _isOpen = true;
             }
         }

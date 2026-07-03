@@ -16,7 +16,7 @@ namespace Assets.Scripts.InventorySystem
             {
                 if (_instance == null)
                 {
-                    _instance = FindFirstObjectByType<InventoryConfig>();
+                    _instance = FindAnyObjectByType<InventoryConfig>();
                     if (_instance == null)
                     {
                         var go = new GameObject("InventoryConfig");

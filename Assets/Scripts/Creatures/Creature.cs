@@ -32,7 +32,7 @@ namespace Assets.Scripts.Creatures
         public float attackCooldown = 2f;
 
         [Header("Stats")]
-        [SerializeField] private float _maxHealth = 100f; // Добавляем поле для инспектора
+        [SerializeField] private float _maxHealth = 100f;
         [SerializeField] private float _maxStamina = 50f;
 
         [System.Serializable]
@@ -53,10 +53,6 @@ namespace Assets.Scripts.Creatures
 
         [Tooltip("Сколько ударов нужно, чтобы полностью разобрать тело")]
         public int maxHarvestHits = 5;
-
-        [Header("Corpse UI")]
-        [Tooltip("Ссылка на UI инвентаря (тот же, что используется для сундуков)")]
-        [SerializeField] private ChestUI _chestUI;
 
         [Header("Audio")]
         public AudioClip FootstepAudioClip;
@@ -104,9 +100,6 @@ namespace Assets.Scripts.Creatures
                 GameObject player = GameObject.FindGameObjectWithTag("Player");
                 if (player != null) playerTransform = player.transform;
             }
-
-            // Подписка на смерть
-            // OnDeath += HandleDeath;
         }
 
         public void SetTarget(Transform target)
@@ -294,21 +287,31 @@ namespace Assets.Scripts.Creatures
             }
         }
 
-
-
         private System.Collections.IEnumerator StopMovingRagdoll()
         {
             // Ждем, пока робот упадет и немного подергается
             yield return new WaitForSeconds(2.5f);
 
             DeactivateRagdoll();
+
+            // if (corpseCollider != null)
+            // {
+            //     corpseCollider.size *= 1.5f;
+            //     corpseCollider.isTrigger = true;
+            //     var mainCollider = GetComponent<BoxCollider>();
+            //     if (mainCollider != null)
+            //     {
+            //         mainCollider.size = corpseCollider.size * 100;
+            //         mainCollider.center = corpseCollider.center;
+            //     }
+            // }
+
             CreateCorpseInventory();
 
             // Включаем меню
             var menu = GetComponent<RadialMenu>();
             if (menu != null) menu.enabled = true;
         }
-
 
         private void HandleChasing()
         {
@@ -407,35 +410,6 @@ namespace Assets.Scripts.Creatures
             }
         }
 
-        // private void HandleDeath(BaseLivingEntity entity)
-        // {
-        //     Debug.Log("[Creature] Существо умерло. Создаем инвентарь...");
-
-        //     // 1. Создаем инвентарь
-        //     var chestInv = gameObject.AddComponent<ChestInventory>();
-        //     string corpseKey = $"Corpse_{System.Guid.NewGuid().ToString()}";
-        //     chestInv.Initialize(12, corpseKey);
-
-        //     Debug.Log($"[Creature] Инвентарь создан. Размер Data: {chestInv.Data?.slots.Count ?? 0}");
-
-        //     // 2. Заполняем случайным лутом
-        //     PopulateInventory(chestInv);
-
-        //     // 3. Настраиваем Corpse
-        //     var corpse = GetComponent<Corpse>();
-        //     if (corpse == null)
-        //     {
-        //         corpse = gameObject.AddComponent<Corpse>();
-        //     }
-
-        //     // 🔥 Инициализируем данные, но НЕ включаем компонент!
-        //     var chestUI = FindAnyObjectByType<ChestUI>();
-        //     corpse.Initialize(chestInv, chestUI, harvestDrops, maxHarvestHits);
-
-        //     // 🔥 ВАЖНО: Отключаем Corpse до конца анимации смерти
-        //     corpse.enabled = false;
-        // }
-
         private void CreateCorpseInventory()
         {
             // 1. Создаем инвентарь
@@ -487,6 +461,7 @@ namespace Assets.Scripts.Creatures
                 }
             }
         }
+
         protected override float GetMaxHealthFromConfiguration()
         {
             return _maxHealth;
@@ -563,10 +538,7 @@ namespace Assets.Scripts.Creatures
             }
         }
 
-        // void OnDestroy()
-        // {
-        //     OnDeath -= HandleDeath;
-        // }
+
     }
 
     [System.Serializable]

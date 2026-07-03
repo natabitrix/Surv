@@ -991,7 +991,6 @@ GameObject:
   - component: {fileID: 6824948828111263205}
   - component: {fileID: 337595715133242841}
   - component: {fileID: 4670970197717847591}
-  - component: {fileID: 6968272798848824778}
   - component: {fileID: 4437516736137761238}
   - component: {fileID: -1271382759831575572}
   - component: {fileID: 9082038157994323712}
@@ -1056,6 +1055,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Creatures.BasicCreature
   _impactType: 2
   damageEffect: {fileID: 1503726256431937902, guid: a712d1db095d33740bea793cc4816dd5, type: 3}
+  tamed: 0
+  _interactionCollider: {fileID: 727287208118847912}
+  _inventory: {fileID: 0}
   ragdollSettings:
     ragdollParts:
     - {fileID: 9074923633069766907}
@@ -1108,29 +1110,6 @@ MonoBehaviour:
   TakeDamageAudioVolume: 0.5
   DeathAudioClip: {fileID: 8300000, guid: 179635a251657814dabefb0f9316634e, type: 3}
   DeathAudioVolume: 0.5
---- !u!136 &6968272798848824778
-CapsuleCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3036685186262367339}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 0
-  serializedVersion: 2
-  m_Radius: 2
-  m_Height: 6
-  m_Direction: 1
-  m_Center: {x: 0, y: 2.64, z: 0}
 --- !u!195 &4437516736137761238
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -1187,6 +1166,7 @@ MonoBehaviour:
   springForce: 500
   springDamper: 0
   maxSpringDistance: 0
+  _interactionCollider: {fileID: 727287208118847912}
   _inventory: {fileID: 0}
   _chestUI: {fileID: 0}
   allowHarvest: 1
@@ -1200,6 +1180,8 @@ MonoBehaviour:
   hitDecaler: {fileID: 0}
   animator: {fileID: 0}
   _impactType: 2
+  destroyAfterDepleted: 1
+  destroyDelay: 2
 --- !u!114 &6664605108390037155
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1460,8 +1442,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.02, y: 0.02, z: 0.055}
-  m_Center: {x: 0.0022221375, y: 0.0018116524, z: 0.025}
+  m_Size: {x: 0.025, y: 0.025, z: 0.05}
+  m_Center: {x: 0.0022221375, y: -0.005, z: 0.025}
 --- !u!54 &2779674309850324546
 Rigidbody:
   m_ObjectHideFlags: 0

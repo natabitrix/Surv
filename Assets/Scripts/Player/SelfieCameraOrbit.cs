@@ -24,7 +24,7 @@ namespace Assets.Scripts.Player
         void Awake()
         {
             // Пытаемся найти обработчик ввода автоматически
-            _inputHandler = FindFirstObjectByType<PlayerInputHandler>();
+            _inputHandler = FindAnyObjectByType<PlayerInputHandler>();
         }
 
         void LateUpdate()

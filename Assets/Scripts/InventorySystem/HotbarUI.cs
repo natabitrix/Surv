@@ -15,7 +15,7 @@ namespace Assets.Scripts.InventorySystem
         public RectTransform dragLayer;
         public Canvas rootCanvas;
         public InventoryManager inventoryManager;
-        
+
         [SerializeField] private PlayerInputHandler _inputHandler;
 
         private List<InventorySlotUI> slotUIs;
@@ -30,16 +30,7 @@ namespace Assets.Scripts.InventorySystem
             // Попытка найти обработчик ввода автоматически, если не назначен в инспекторе
             if (_inputHandler == null)
             {
-                _inputHandler = FindFirstObjectByType<PlayerInputHandler>();
-                if (_inputHandler == null)
-                {
-                    Debug.LogError("[HotbarUI] PlayerInputHandler not found in scene!");
-                }
-            }
-
-            if (inventoryManager == null)
-            {
-                inventoryManager = FindFirstObjectByType<InventoryManager>();
+                Debug.LogError("[HotbarUI] PlayerInputHandler not found in scene!");
             }
         }
 
@@ -76,7 +67,7 @@ namespace Assets.Scripts.InventorySystem
                 StartCoroutine(WaitForInventoryData());
                 return;
             }
-            
+
             data.OnInventoryChanged += RefreshUI;
             RefreshUI();
         }

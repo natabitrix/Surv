@@ -117,7 +117,7 @@
         #region Private Helper Methods
         private static void EnsureManagerExists()
         {
-            if (TooltipManager.Instance != null || FindFirstObjectByType<TooltipManager>() != null)
+            if (TooltipManager.Instance != null || FindAnyObjectByType<TooltipManager>() != null)
             {
                 return;
             }
