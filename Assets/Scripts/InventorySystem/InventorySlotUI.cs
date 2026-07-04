@@ -350,7 +350,7 @@ namespace Assets.Scripts.InventorySystem
                     // === ВАЖНО: помечаем ТОЛЬКО при дропе в хотбар ===
                     if (IsHotBarSlot)
                     {
-                        Debug.Log($"[Hotbar] Item '{item.itemName}' marked for slot {index}");
+                        // Debug.Log($"[Hotbar] Item '{item.itemName}' marked for slot {index}");
                         PlayerProgress.Instance.MarkItemAsHotbarPreferred(item, index);
                     }
 

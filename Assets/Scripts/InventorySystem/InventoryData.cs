@@ -12,9 +12,7 @@ namespace Assets.Scripts.InventorySystem
     public class InventoryData
     {
         public int size;
-
         public event System.Action OnInventoryChanged;
-
         public List<InventorySlot> slots;
 
         public InventoryData(int size)

@@ -23537,8 +23537,10 @@ MonoBehaviour:
   _engramPoints: 0
   hotbarInventoryData:
     size: 0
+    slots: []
   mainInventoryData:
     size: 0
+    slots: []
   engramData:
     slots: []
   recipeDatabase: {fileID: 618370319}
@@ -56360,63 +56362,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 3271910899072668962, guid: af43153991420fe4fac16a0543fd9e2d, type: 3}
   m_PrefabInstance: {fileID: 1133107017}
   m_PrefabAsset: {fileID: 0}
---- !u!1001 &1133664348
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 3036685186262367339, guid: 0c2e9d48789cd304e8a63e95e6562219, type: 3}
-      propertyPath: m_Name
-      value: George
-      objectReference: {fileID: 0}
-    - target: {fileID: 6824948828111263205, guid: 0c2e9d48789cd304e8a63e95e6562219, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 157.0014
-      objectReference: {fileID: 0}
-    - target: {fileID: 6824948828111263205, guid: 0c2e9d48789cd304e8a63e95e6562219, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 8.809704
-      objectReference: {fileID: 0}
-    - target: {fileID: 6824948828111263205, guid: 0c2e9d48789cd304e8a63e95e6562219, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -5.415999
-      objectReference: {fileID: 0}
-    - target: {fileID: 6824948828111263205, guid: 0c2e9d48789cd304e8a63e95e6562219, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6824948828111263205, guid: 0c2e9d48789cd304e8a63e95e6562219, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6824948828111263205, guid: 0c2e9d48789cd304e8a63e95e6562219, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6824948828111263205, guid: 0c2e9d48789cd304e8a63e95e6562219, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6824948828111263205, guid: 0c2e9d48789cd304e8a63e95e6562219, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6824948828111263205, guid: 0c2e9d48789cd304e8a63e95e6562219, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6824948828111263205, guid: 0c2e9d48789cd304e8a63e95e6562219, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 0c2e9d48789cd304e8a63e95e6562219, type: 3}
 --- !u!1001 &1135780124
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -60252,6 +60197,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 1366074213}
   - {fileID: 1447780336}
   - {fileID: 604052220}
   m_Father: {fileID: 0}
@@ -65681,6 +65627,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 1928207494437659676, guid: d0ba186e72690984794044cf9a82dd2e, type: 3}
   m_PrefabInstance: {fileID: 1363618439}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &1366074213 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7680632545582971422, guid: 40d8ff941b6e7164381243c3974a6149, type: 3}
+  m_PrefabInstance: {fileID: 1473457108}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1368796110
 GameObject:
   m_ObjectHideFlags: 0
@@ -68797,7 +68748,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 0}
+    m_TransformParent: {fileID: 1233830587}
     m_Modifications:
     - target: {fileID: 3352911441247036408, guid: 40d8ff941b6e7164381243c3974a6149, type: 3}
       propertyPath: m_Name
@@ -197596,9 +197547,7 @@ MonoBehaviour:
   _playerCamera: {fileID: 6695067766044362763}
   _interactableLayers:
     serializedVersion: 2
-    m_Bits: 45648
-  _playerInteractionRadius: 0.7
-  _targetLockDuration: 0.3
+    m_Bits: 111184
   _harvestableLayers:
     serializedVersion: 2
     m_Bits: 17408
@@ -250390,5 +250339,3 @@ SceneRoots:
   - {fileID: 306940422015198382}
   - {fileID: 2144853123}
   - {fileID: 1233830587}
-  - {fileID: 1473457108}
-  - {fileID: 1133664348}

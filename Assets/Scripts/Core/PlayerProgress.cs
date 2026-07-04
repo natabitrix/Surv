@@ -35,8 +35,8 @@ namespace Assets.Scripts.Core
         [SerializeField] private int _engramPoints = 0;
 
         // Статы: сколько раз улучшали каждый параметр
-        [SerializeField]
-        private Dictionary<StatType, int> _statLevels = new Dictionary<StatType, int>();
+        // [SerializeField]
+        private Dictionary<StatType, int> _statLevels = new();
 
         public int Level => _level;
         public float Experience => _experience;
@@ -47,7 +47,7 @@ namespace Assets.Scripts.Core
         public InventoryData mainInventoryData;   // 100 слотов
 
         public EngramData engramData;
-        public Dictionary<string, int> hotbarSlotMap = new Dictionary<string, int>();
+        private Dictionary<string, int> hotbarSlotMap = new();
 
         // Ссылки на базы данных
         public RecipeDatabase recipeDatabase;
@@ -58,7 +58,7 @@ namespace Assets.Scripts.Core
         public bool GiveBeginnerItemsToPlayer = false;
 
         public PlayerController playerController; // ← Назначить в инспекторе!
-        private Vector3 defaultPlayerSpawnPoint = new Vector3(28.53f, 22.7f, 33.36f);
+        private Vector3 defaultPlayerSpawnPoint = new(28.53f, 22.7f, 33.36f);
 
         public InventoryManager inventoryManager;
 
@@ -480,21 +480,21 @@ namespace Assets.Scripts.Core
         }
     }
 
-    [System.Serializable]
+    // [System.Serializable]
     public class PlayerSaveData
     {
         public int level = 1;
         public float experience = 0f;
         public int engramPoints = 0;
-        public Dictionary<StatType, int> statLevels = new Dictionary<StatType, int>();
-        public Dictionary<string, int> hotbarSlotMap = new Dictionary<string, int>();
+        public Dictionary<StatType, int> statLevels = new();
+        public Dictionary<string, int> hotbarSlotMap = new();
         public SerializableInventory hotbar;         // 10 слотов
         public SerializableInventory mainInventory;  // 100 слотов
-        public SerializableEngramData engrams = new SerializableEngramData();
-        public Dictionary<StatType, float> survivalStats = new Dictionary<StatType, float>();
+        public SerializableEngramData engrams = new();
+        public Dictionary<StatType, float> survivalStats = new();
 
         // Для позиции
-        Vector3 defaultPlayerSpawnPoint = new Vector3(187.5f, 5.26f, 110.9f);
+        Vector3 defaultPlayerSpawnPoint = new(187.5f, 5.26f, 110.9f);
         public float playerPositionX = 187.5f;
         public float playerPositionY = 5.26f;
         public float playerPositionZ = 110.9f;

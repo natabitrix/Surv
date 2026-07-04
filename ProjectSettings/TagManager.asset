@@ -35,7 +35,7 @@ TagManager:
   - Gatherable
   - Trees
   - Pickable
-  - 
+  - WalkableInteractable
   - 
   - 
   - 
@@ -65,3 +65,4 @@ TagManager:
   - Light Layer 6
   - Light Layer 7
   - Receive Resource Decals
+  m_MigratedRenderPipelines: []

@@ -19,7 +19,7 @@ MonoBehaviour:
   SpeedChangeRate: 10
   InputSmoothingRate: 20
   KeyboardTurnSpeed: 90
-  JumpHeight: 4
+  JumpHeight: 2
   Gravity: -15
   JumpTimeout: 0.5
   FallTimeout: 0.15
@@ -40,7 +40,7 @@ MonoBehaviour:
   GroundedRadius: 0.28
   GroundLayers:
     serializedVersion: 2
-    m_Bits: 7240
+    m_Bits: 72776
   WaterLayers:
     serializedVersion: 2
     m_Bits: 16
