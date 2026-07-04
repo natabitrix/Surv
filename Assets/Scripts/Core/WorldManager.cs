@@ -400,7 +400,7 @@ namespace Assets.Scripts.Core
         }
 
         // ===== ОТЛАДКА =====
-        void OnDrawGizmos()
+        void OnDrawGizmos_()
         {
             if (!Application.isPlaying || _chunks == null) return;
 

@@ -19,7 +19,7 @@ namespace Assets.Scripts.Interactables
         private float _currentAngle;
         private float _targetAngle;
         private float _angleVelocity;
-        private bool _isOpen = false;
+        private bool _isLogicallyOpen = false;
 
         // Запоминаем начальную ротацию, чтобы дверь не сбивала ориентацию в мире
         private Quaternion _startRotation;
@@ -50,25 +50,44 @@ namespace Assets.Scripts.Interactables
                 _targetCollider.isTrigger = isMoving;
             }
 
-            _isOpen = IsVisuallyOpen();
+            // _isOpen = IsVisuallyOpen();
         }
 
         public bool IsVisuallyOpen(float thresholdDegrees = 2f)
         {
-            float angleDiff = Mathf.Abs(_currentAngle - openAngle);
-            return angleDiff < thresholdDegrees;
+            // float angleDiff = Mathf.Abs(_currentAngle - openAngle);
+            // return angleDiff < thresholdDegrees;
+            return _isLogicallyOpen;
         }
 
         public void Interact(InteractContext context)
         {
-            if (IsVisuallyOpen())
+            // if (IsVisuallyOpen())
+            // {
+            //     _targetAngle = 0f; // Закрыть
+            // }
+            // else
+            // {
+            //     _targetAngle = openAngle; // Открыть
+            // }
+
+
+            // Защита от спама: если дверь уже едет к цели, игнорируем нажатие
+            if (Mathf.Abs(_currentAngle - _targetAngle) > 1f) return;
+
+            if (_isLogicallyOpen)
             {
-                _targetAngle = 0f; // Закрыть
+                _targetAngle = 0f; 
+                _isLogicallyOpen = false; // Сразу меняем состояние
             }
             else
             {
-                _targetAngle = openAngle; // Открыть
+                _targetAngle = openAngle; 
+                _isLogicallyOpen = true; // Сразу меняем состояние
             }
+
+
+
         }
     }
 }

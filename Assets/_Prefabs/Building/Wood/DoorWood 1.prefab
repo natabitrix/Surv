@@ -1,58 +1,5 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &5881514876072494164
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 154966544777810023}
-  - component: {fileID: 6660767679267953606}
-  m_Layer: 6
-  m_Name: InteractTriggerCollider
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &154966544777810023
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5881514876072494164}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2976907254007405621}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!65 &6660767679267953606
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5881514876072494164}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 1
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 2, y: 3, z: 1}
-  m_Center: {x: -0.5, y: 0, z: 0}
 --- !u!1001 &3376186919008893918
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -101,10 +48,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: -5754084199372789682, guid: 15787343cbaefcb4c82a59bf8e7cb694, type: 3}
-      propertyPath: m_Mesh
-      value: 
-      objectReference: {fileID: 2619086233303812490, guid: 15787343cbaefcb4c82a59bf8e7cb694, type: 3}
     - target: {fileID: 919132149155446097, guid: 15787343cbaefcb4c82a59bf8e7cb694, type: 3}
       propertyPath: m_Name
       value: DoorWood
@@ -119,10 +62,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: 15787343cbaefcb4c82a59bf8e7cb694, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 154966544777810023}
+    m_AddedGameObjects: []
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 15787343cbaefcb4c82a59bf8e7cb694, type: 3}
       insertIndex: -1
@@ -133,6 +73,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 15787343cbaefcb4c82a59bf8e7cb694, type: 3}
       insertIndex: -1
       addedObject: {fileID: 8628499989131037282}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 15787343cbaefcb4c82a59bf8e7cb694, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7835824046790395526}
   m_SourcePrefab: {fileID: 100100000, guid: 15787343cbaefcb4c82a59bf8e7cb694, type: 3}
 --- !u!1 &2457779902201808527 stripped
 GameObject:
@@ -189,8 +132,24 @@ MonoBehaviour:
   item: {fileID: 11400000, guid: 8ab54a15b63aba94c8e4fb196e37544b, type: 2}
   corpse: {fileID: 0}
   creature: {fileID: 0}
---- !u!4 &2976907254007405621 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 15787343cbaefcb4c82a59bf8e7cb694, type: 3}
-  m_PrefabInstance: {fileID: 3376186919008893918}
+--- !u!65 &7835824046790395526
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2457779902201808527}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 2, z: 0.099999994}
+  m_Center: {x: 0, y: 0, z: 0}

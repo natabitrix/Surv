@@ -30,6 +30,7 @@ namespace Assets.Scripts.Building
         public float ceilingThickness = 0.1f;
 
         [SerializeField] private PlayerInputHandler _inputHandler;
+        [SerializeField] private InventoryManager _inventoryManager;
 
         // === КЭШИРОВАНИЕ ВЫСОТ ===
         private float _cachedFoundationHeight = 0.7f;
@@ -77,6 +78,12 @@ namespace Assets.Scripts.Building
                 {
                     Debug.LogError("[PlayerBuildMode] PlayerInputHandler not found in scene!");
                 }
+
+                _inventoryManager = FindAnyObjectByType<InventoryManager>();
+                if (_inventoryManager == null)
+                {
+                    Debug.LogError("[PlayerBuildMode] InventoryManager not found in scene!");
+                }
             }
         }
 
@@ -96,6 +103,7 @@ namespace Assets.Scripts.Building
             _isPositionValid = IsPositionValid(buildType);
             UpdatePreviewColor(_isPositionValid);
             HandleInput();
+            CheckItemCountAndExit();
 
             // Читаем дельту мыши из НОВОЙ системы ввода
             // Mouse.current.delta возвращает вектор смещения за кадр
@@ -769,18 +777,26 @@ namespace Assets.Scripts.Building
 
             // === СОХРАНЕНИЕ ===
             string parentId = null;
-            // if (_baseObject != null && _baseObject.CompareTag("DoorFrame") && placed.CompareTag("Door"))
-            // {
-            //     var identity = _baseObject.GetComponent<StructureIdentity>();
-            //     parentId = identity?.instanceId;
-            // }
             WorldManager.Instance.RegisterStructure(placed, _currentBlueprint.Id, parentId);
 
 
             OnStructurePlaced?.Invoke();
         }
 
+        private void CheckItemCountAndExit()
+        {
+            if (_inventoryManager == null || ActiveBuildSlotIndex < 0) return;
 
+            // Получаем текущий слот через менеджер
+            var slot = _inventoryManager.GetSlotByIndex(_inventoryManager.GetLocalSlotIndex(ActiveBuildSlotIndex,
+                ActiveBuildSlotIndex < 10 ? SlotOwner.Hotbar : SlotOwner.Inventory));
+
+            // Если слот пуст или предмета нет — выходим из режима стройки
+            if (slot == null || slot.IsEmpty || slot.count <= 0)
+            {
+                ExitBuildMode();
+            }
+        }
 
         public static GameObject FindChildWithTag(GameObject parent, string tag)
         {

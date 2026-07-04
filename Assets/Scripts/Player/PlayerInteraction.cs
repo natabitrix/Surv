@@ -456,6 +456,12 @@ namespace Assets.Scripts.Player
 
                 float score = (1f - (angle / 90f)) * 0.7f + (1f - (dist / currentInteractionDistance)) * 0.3f;
 
+                // Если это дверь, даем ей огромный бонус, чтобы она "перебивала" стены
+                // if (foundInteractable is DoorController)
+                // {
+                //     score += 0.5f;
+                // }
+
                 if (score > bestScore)
                 {
                     bestScore = score;
@@ -469,6 +475,24 @@ namespace Assets.Scripts.Player
             {
                 ProcessHitObject(bestTargetGO);
             }
+
+
+            // === ВИЗУАЛИЗАЦИЯ ДЛЯ ОТЛАДКИ ===
+#if UNITY_EDITOR
+
+            // Рисуем основной луч взаимодействия (Красный)
+            Debug.DrawRay(headPos, headDir * 2.0f, Color.orange);
+
+            // Если есть цель, рисуем линию до неё (Зеленый)
+            if (_targetGO != null)
+            {
+                Debug.DrawLine(headPos, _targetGO.transform.position, Color.cyan);
+            }
+#endif
+
+
+
+
         }
 
         // Поиск всех компонентов IInteractable на объекте
@@ -531,6 +555,7 @@ namespace Assets.Scripts.Player
                 if (type == InteractType.RadialMenu && !isMenuAlreadyOpen)
                 {
                     if (sb.Length > 0) sb.AppendLine();
+                    // sb.Append("Удерживайте [E] для меню " + _targetGO.name);
                     sb.Append("Удерживайте [E] для меню");
                 }
             }
@@ -892,38 +917,36 @@ namespace Assets.Scripts.Player
 
         private string GetActionText(InteractType type, GameObject targetGO)
         {
-            // Проверка тела (луч попадёт в кость, но Corpse висит на корне)
+            string targetName = "";
             if (targetGO != null)
             {
-
+                // targetName = " " + targetGO.name;
                 if (type == InteractType.Interact)
                 {
                     if (targetGO.TryGetComponent(out DoorController doorController))
                     {
-                        return doorController.IsVisuallyOpen() ? "[E] Закрыть" : "[E] Открыть";
+                        return doorController.IsVisuallyOpen() ? "[E] Закрыть" + targetName : "[E] Открыть" + targetName;
                     }
 
                     var corpse = targetGO.GetComponent<Corpse>() ?? targetGO.GetComponentInParent<Corpse>();
                     if (corpse != null && corpse.enabled)
                     {
-                        return corpse.IsDragging ? "[E] Отпустить тело" : "[E] Тащить тело";
+                        return corpse.IsDragging ? "[E] Отпустить тело" + targetName : "[E] Тащить тело" + targetName;
                     }
                 }
             }
 
-
-
             return type switch
             {
                 InteractType.None => "", // Явная обработка None
-                InteractType.OpenTargetInventory => "[F] Открыть",
-                InteractType.Interact => "[E] Использовать",
-                InteractType.Pickup => "[E] Подобрать",
-                InteractType.Gather => "[E] Собрать",
-                InteractType.Drink => "[E] Пить",
-                InteractType.Harvest => "[ЛКМ] Добывать",
+                InteractType.OpenTargetInventory => "[F] Открыть" + targetName,
+                InteractType.Interact => "[E] Использовать" + targetName,
+                InteractType.Pickup => "[E] Подобрать" + targetName,
+                InteractType.Gather => "[E] Собрать" + targetName,
+                InteractType.Drink => "[E] Пить" + targetName,
+                InteractType.Harvest => "[ЛКМ] Добывать" + targetName,
                 InteractType.RadialMenu => "", // Скрыто, обрабатывается отдельно
-                _ => "[E] Взаимодействовать"
+                _ => "[E] Взаимодействовать" + targetName
             };
         }
 
