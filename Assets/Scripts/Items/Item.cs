@@ -7,6 +7,7 @@ namespace Assets.Scripts.Items
     public class Item : ScriptableObject
     {
         [SerializeField, HideInInspector]
+        // [SerializeField]
         private string _id; // Автоматически генерируется из имени файла
         public string Id => string.IsNullOrEmpty(_id) ? name : _id;
 
@@ -14,7 +15,7 @@ namespace Assets.Scripts.Items
         public string itemName;
         public string description;
         public Sprite icon;
-        
+
         public int maxStack = 1;
         public int experienceOnPickup = 0; // сколько опыта дается за подбор
         public float foodRecoveryAmount = 0f; // сколько восстанавливается еды за 1ед
@@ -23,8 +24,8 @@ namespace Assets.Scripts.Items
         public float damage;
 
         public GameObject model;
-        // public GameObject previewPlaceableModel; // для Placeable
         public GameObject placeablePrefab; // для Placeable
+        public bool isLeftHand = false; // будет лежать в левой руке
 
         [Header("Item Type")]
         public ItemType itemType; // Опционально: перечисление для типа (оружие, еда и т.д.)
@@ -36,9 +37,14 @@ namespace Assets.Scripts.Items
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            if (string.IsNullOrEmpty(_id))
+            // name = имя файла .asset без расширения
+            // if (string.IsNullOrEmpty(_id))
+            // {
+            //     _id = name;
+            // }
+            if (_id != name)
             {
-                _id = name; // name = имя файла .asset без расширения
+                _id = name;
             }
         }
 #endif

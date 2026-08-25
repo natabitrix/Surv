@@ -13,6 +13,7 @@ namespace Assets.Scripts.Player
 
         [Header("References")]
         public Transform toolAttachPoint;
+        public Transform toolAttachPointLeft;
         public Transform corpseDragAnchor;
 
         private GameObject _currentModel;
@@ -55,7 +56,8 @@ namespace Assets.Scripts.Player
 
             if (item != null && item.model != null)
             {
-                _currentModel = Instantiate(item.model, toolAttachPoint);
+                Transform toolParent = item.isLeftHand ? toolAttachPointLeft : toolAttachPoint;
+                _currentModel = Instantiate(item.model, toolParent);
                 _currentModel.transform.localPosition = Vector3.zero;
                 Vector3 modelScale = _currentModel.transform.localScale;
                 // _currentModel.transform.localScale = modelScale * 1.6f;

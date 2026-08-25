@@ -20,7 +20,8 @@ MonoBehaviour:
   experienceOnPickup: 0
   foodRecoveryAmount: 0
   healthRecoveryAmount: 0
+  damage: 0
   model: {fileID: 0}
-  placeablePrefab: {fileID: 5962437681947366887, guid: 30f9b5b3c68503b40a29e3bc163be958, type: 3}
+  placeablePrefab: {fileID: 5317264996503273539, guid: baae37f3462f6e44380abf03960b5186, type: 3}
   itemType: 6
   attackAnimation: 0

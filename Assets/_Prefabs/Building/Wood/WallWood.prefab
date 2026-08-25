@@ -369,7 +369,7 @@ PrefabInstance:
     - target: {fileID: -7511558181221131132, guid: 2031fe2e047328f40aacc4d2a2b92950, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: b0f2a681409f02148b54a5c9d935765d, type: 2}
+      objectReference: {fileID: 2100000, guid: 93766229a14c21b4e8cfe3863d19ff6d, type: 2}
     - target: {fileID: 919132149155446097, guid: 2031fe2e047328f40aacc4d2a2b92950, type: 3}
       propertyPath: m_Name
       value: WallWood
@@ -441,6 +441,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Interactables.RadialMenu
   item: {fileID: 11400000, guid: 696cc80a6b1d02449b35d6b933c2a758, type: 2}
+  corpse: {fileID: 0}
+  creature: {fileID: 0}
 --- !u!4 &1873812312356815841 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 2031fe2e047328f40aacc4d2a2b92950, type: 3}

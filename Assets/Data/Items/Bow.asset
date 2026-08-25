@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ff61b209cfdd7449b5b3cd474dc0c52, type: 3}
+  m_Name: Bow
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Items.Item
+  _id: Bow
+  itemName: "\u041B\u0443\u043A"
+  description: 
+  icon: {fileID: 21300000, guid: 8feb04a6358d5fc4a97fb996896cd756, type: 3}
+  maxStack: 1
+  experienceOnPickup: 0
+  foodRecoveryAmount: 0
+  healthRecoveryAmount: 0
+  damage: 200
+  model: {fileID: 4099206960519170807, guid: 70bee847d83a9c04aacf06d9fca89210, type: 3}
+  placeablePrefab: {fileID: 0}
+  isLeftHand: 1
+  itemType: 4
+  attackAnimation: 5

@@ -8,6 +8,7 @@ namespace Assets.Scripts.Player
         Pickaxe,    // кирка
         Sickle,    // серп
         Sword,      // меч
+        Bow,      // лук
 
     }
 }

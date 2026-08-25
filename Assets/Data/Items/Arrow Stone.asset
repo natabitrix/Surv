@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ff61b209cfdd7449b5b3cd474dc0c52, type: 3}
+  m_Name: Arrow Stone
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Items.Item
+  _id: Arrow Stone
+  itemName: "\u041A\u0430\u043C\u0435\u043D\u043D\u0430\u044F \u0441\u0442\u0440\u0435\u043B\u0430"
+  description: 
+  icon: {fileID: 21300000, guid: c45e9fafc37130943a1615c2923f58c3, type: 3}
+  maxStack: 100
+  experienceOnPickup: 0
+  foodRecoveryAmount: 0
+  healthRecoveryAmount: 0
+  damage: 0
+  model: {fileID: 5594435687386807671, guid: f738262e8242e2a45aeb5c39ea6c9ca6, type: 3}
+  placeablePrefab: {fileID: 0}
+  itemType: 0
+  attackAnimation: 0

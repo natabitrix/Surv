@@ -903,7 +903,7 @@ PrefabInstance:
     - target: {fileID: -7511558181221131132, guid: 555c11267c5cc4d48aa352cce845023a, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: b0f2a681409f02148b54a5c9d935765d, type: 2}
+      objectReference: {fileID: 2100000, guid: 93766229a14c21b4e8cfe3863d19ff6d, type: 2}
     - target: {fileID: 919132149155446097, guid: 555c11267c5cc4d48aa352cce845023a, type: 3}
       propertyPath: m_Name
       value: FoundationWood
@@ -990,6 +990,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Interactables.RadialMenu
   item: {fileID: 11400000, guid: 7fba259edd806e145b7fda6019d0ad58, type: 2}
+  corpse: {fileID: 0}
+  creature: {fileID: 0}
 --- !u!4 &6831071967758417001 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 555c11267c5cc4d48aa352cce845023a, type: 3}

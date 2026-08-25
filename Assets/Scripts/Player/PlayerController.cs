@@ -80,6 +80,7 @@ namespace Assets.Scripts.Player
         private int _animIDAttackFist;
         private int _animIDAttackAxe;
         private int _animIDAttackSword;
+        private int _animIDAttackBow;
 
         private PlayerInput _playerInput;
         [SerializeField] private Animator _animator; // назначен в инспекторе
@@ -300,6 +301,9 @@ namespace Assets.Scripts.Player
                                 break;
                             case AttackAnimationType.Sword:
                                 animToPlay = _animIDAttackSword;
+                                break;
+                            case AttackAnimationType.Bow:
+                                animToPlay = _animIDAttackBow;
                                 break;
                             default:
                                 animToPlay = _animIDAttackFist;
@@ -952,6 +956,8 @@ namespace Assets.Scripts.Player
             _animIDAttackFist = Animator.StringToHash("AttackFist");
             _animIDAttackAxe = Animator.StringToHash("AttackAxe");
             _animIDAttackSword = Animator.StringToHash("AttackSword");
+            _animIDAttackBow = Animator.StringToHash("ShootingBow");
+            // _animIDAttackBow = Animator.StringToHash("AttackBow");
         }
     }
 }
