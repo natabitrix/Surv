@@ -14,14 +14,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.InventorySystem.Item
   _id: PickaxeStone
   itemName: "\u041A\u0430\u043C\u0435\u043D\u043D\u0430\u044F \u043A\u0438\u0440\u043A\u0430"
-  description: 
+  description: "\u041F\u0440\u0438\u043C\u0438\u0432\u043D\u044B\u0439 \u0438\u043D\u0441\u0442\u0440\u0443\u043C\u0435\u043D\u0442
+    \u0434\u043B\u044F \u0440\u0443\u0431\u043A\u0438 \u0434\u0435\u0440\u0435\u0432\u044C\u0435\u0432
+    \u0438 \u043A\u0430\u043C\u043D\u0435\u0439"
   icon: {fileID: 21300000, guid: b5bf9eedfdaee7a4b9aef7fc0f95e707, type: 3}
   maxStack: 1
   experienceOnPickup: 0
   foodRecoveryAmount: 0
   healthRecoveryAmount: 0
   damage: 10
+  hasDurability: 1
+  maxDurability: 50
   model: {fileID: 7402911502439942770, guid: 58368ced1dcc064449fe738a9f5da20e, type: 3}
   placeablePrefab: {fileID: 0}
+  isLeftHand: 0
   itemType: 3
   attackAnimation: 1

@@ -133,9 +133,10 @@ namespace Assets.Scripts.InventorySystem
                 // Сохраняем item ДО любых изменений слота!
                 Item item = slot.item;
                 int countToMove = slot.count;
+                float originalDurability = slot.currentDurability;
 
                 // Переносим столько, сколько возможно
-                int actuallyMoved = progress.AddItemToPlayerInventory(item, countToMove);
+                int actuallyMoved = progress.AddItemToPlayerInventory(item, countToMove, originalDurability);
 
                 if (actuallyMoved > 0)
                 {
@@ -199,6 +200,9 @@ namespace Assets.Scripts.InventorySystem
             {
                 slotUIs[i].SetSlot(slots[i]);
             }
+
+            _currentChest.Save("ChestUI.RefreshUI");
+
         }
 
         void OnDestroy()

@@ -22,7 +22,10 @@ MonoBehaviour:
   foodRecoveryAmount: 0
   healthRecoveryAmount: 0
   damage: 30
+  hasDurability: 1
+  maxDurability: 100
   model: {fileID: 2488915889958085675, guid: a5b7d0e0757646b4789791e23cc21eea, type: 3}
   placeablePrefab: {fileID: 0}
+  isLeftHand: 0
   itemType: 3
   attackAnimation: 1

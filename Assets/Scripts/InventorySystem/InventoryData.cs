@@ -26,7 +26,7 @@ namespace Assets.Scripts.InventorySystem
             }
         }
 
-        public int AddItemAnywhere(Item item, int amount = 1)
+        public int AddItemAnywhere(Item item, int amount = 1, float durability = -2f)
         {
             if (item == null || amount <= 0) return 0;
 
@@ -53,6 +53,10 @@ namespace Assets.Scripts.InventorySystem
                     int add = Mathf.Min(item.maxStack, remaining);
                     slots[i].item = item;
                     slots[i].count = add;
+
+                    // Если durability == -2f, берем из item (новое), иначе берем переданное (существующее)
+                    slots[i].currentDurability = (durability == -2f) ? (item.itemType == ItemType.Tool ? item.maxDurability : -1f) : durability;
+
                     remaining -= add;
                 }
             }
@@ -63,54 +67,62 @@ namespace Assets.Scripts.InventorySystem
                 NotifyChanged();
             }
 
+            var progress = PlayerProgress.Instance;
+            progress.Save("InventoryData.AddItemAnywhere");
+
             return added;
         }
 
-        public void MoveOrSwap(int from, int to)
+        // public void MoveOrSwap(int from, int to)
+        // {
+        //     if (from == to) return;
+
+        //     var slotFrom = slots[from];
+        //     var slotTo = slots[to];
+
+        //     // Сохраняем значения из первого слота
+        //     var tmpItem = slotFrom.item;
+        //     var tmpCount = slotFrom.count;
+        //     var tmpDurability = slotFrom.currentDurability; // ОБЯЗАТЕЛЬНО сохраняем прочность
+
+        //     // Переносим данные из второго в первый
+        //     slotFrom.item = slotTo.item;
+        //     slotFrom.count = slotTo.count;
+        //     slotFrom.currentDurability = slotTo.currentDurability; // Переносим прочность
+
+        //     // Переносим сохраненные данные во второй
+        //     slotTo.item = tmpItem;
+        //     slotTo.count = tmpCount;
+        //     slotTo.currentDurability = tmpDurability; // Переносим прочность
+
+        //     Debug.Log("MoveOrSwap");
+
+        //     NotifyChanged();
+        // }
+
+
+        public void ClearSlot(int index)
         {
-            if (from == to) return;
-
-            var slotFrom = slots[from];
-            var slotTo = slots[to];
-
-            // Move to Empty Slot
-            if (slotTo.IsEmpty)
-            {
-                slotTo.item = slotFrom.item;
-                slotTo.count = slotFrom.count;
-
-                slotFrom.item = null;
-                slotFrom.count = 0;
-            }
-            else
-            {
-                // Swap Items
-                var tmpItem = slotFrom.item;
-                var tmpCount = slotFrom.count;
-
-                slotFrom.item = slotTo.item;
-                slotFrom.count = slotTo.count;
-
-                slotTo.item = tmpItem;
-                slotTo.count = tmpCount;
-            }
-
-            NotifyChanged();
+            var slot = slots[index];
+            slot.item = null;
+            slot.count = 0;
+            slot.currentDurability = -1f; // ГЛАВНЫЙ ФИКС
         }
 
         // Выбрасывает все из слота
-        public void RemoveItemFromSlot(int slotIndex)
+        public void RemoveItemFromSlot(int index)
         {
-            if (slotIndex >= 0 && slotIndex < slots.Count)
+            if (index >= 0 && index < slots.Count)
             {
-                var slot = slots[slotIndex];
+                var slot = slots[index];
                 if (!slot.IsEmpty)
                 {
-                    slot.item = null;
-                    slot.count = 0;
+                    ClearSlot(index);
                     NotifyChanged();
                 }
             }
+
+            Debug.Log("RemoveItemFromSlot");
         }
 
         //overload: Выбрасывает указанное кол-во из слота
@@ -123,8 +135,7 @@ namespace Assets.Scripts.InventorySystem
             slot.count = Mathf.Max(0, slot.count - count);
             if (slot.count <= 0)
             {
-                slot.item = null;
-                slot.count = 0;
+                ClearSlot(index);
             }
             NotifyChanged();
         }
@@ -145,9 +156,10 @@ namespace Assets.Scripts.InventorySystem
 
                 Item item = slot.item;
                 int originalCount = slot.count;
+                float originalDurability = slot.currentDurability;
 
                 // Передаём ВЕСЬ стак за один вызов
-                int actuallyMoved = target.AddItemAnywhere(item, originalCount);
+                int actuallyMoved = target.AddItemAnywhere(item, originalCount, originalDurability);
 
                 if (actuallyMoved > 0)
                 {
@@ -229,6 +241,64 @@ namespace Assets.Scripts.InventorySystem
         }
 
 
+        // 1. Проверка наличия ресурсов с учетом множителя
+        public bool HasIngredientsForRepair(Recipe recipe, float multiplier)
+        {
+            foreach (var ing in recipe.ingredients)
+            {
+                int required = Mathf.CeilToInt(ing.amount * multiplier);
+                if (GetTotalCountOfItem(ing.item) < required) return false;
+            }
+            return true;
+        }
+
+        // 2. Потребление ресурсов
+        public void ConsumeRepairIngredients(Recipe recipe, float multiplier)
+        {
+            foreach (var ing in recipe.ingredients)
+            {
+                int toRemove = Mathf.CeilToInt(ing.amount * multiplier);
+                RemoveItemAmount(ing.item, toRemove);
+            }
+            NotifyChanged();
+        }
+
+        // 3. Исправленный метод RemoveItemAmount (универсальный для снятия любого количества)
+        private void RemoveItemAmount(Item item, int amount)
+        {
+            int remaining = amount;
+            for (int i = 0; i < slots.Count && remaining > 0; i++)
+            {
+                if (!slots[i].IsEmpty && slots[i].item == item)
+                {
+                    int remove = Mathf.Min(slots[i].count, remaining);
+                    slots[i].count -= remove;
+                    remaining -= remove;
+
+                    if (slots[i].count <= 0)
+                    {
+                        ClearSlot(i); // Используем наш метод очистки (с прочностью -1)
+                    }
+                }
+            }
+        }
+        
+        public int GetTotalCountOfItem(Item item)
+        {
+            if (item == null) return 0;
+
+            int total = 0;
+            foreach (var slot in slots)
+            {
+                // Проверяем: не пуст ли слот и совпадает ли ID предмета (или ссылка)
+                if (!slot.IsEmpty && slot.item == item)
+                {
+                    total += slot.count;
+                }
+            }
+            return total;
+        }
+
         // Методы сохранения/загрузки
 
         public void FromSerializable(SerializableInventory serializable, Dictionary<string, Item> itemDatabase)
@@ -249,7 +319,22 @@ namespace Assets.Scripts.InventorySystem
                 }
                 else if (itemDatabase.TryGetValue(saved.itemId, out var item))
                 {
-                    slots[i] = new InventorySlot { item = item, count = saved.count };
+                    slots[i] = new InventorySlot
+                    {
+                        item = item,
+                        count = saved.count,
+                        // Если прочность в файле < 0, принудительно ставим макс. прочность
+                        currentDurability = (saved.durability < 0 && (item.itemType == ItemType.Tool || item.itemType == ItemType.Weapon))
+                        ? item.maxDurability
+                        : saved.durability
+                    };
+
+                    // ФИКС: Если прочность -1, но предмет — инструмент, починим её
+                    if (slots[i].currentDurability < 0 && (item.itemType == ItemType.Tool || item.itemType == ItemType.Weapon))
+                    {
+                        slots[i].currentDurability = item.maxDurability;
+                    }
+
                 }
                 else
                 {
@@ -257,6 +342,8 @@ namespace Assets.Scripts.InventorySystem
                     Debug.LogError($"Item ID {saved.itemId} не найден!");
                 }
             }
+
+
 
             NotifyChanged();
         }
@@ -271,16 +358,12 @@ namespace Assets.Scripts.InventorySystem
             for (int i = 0; i < size; i++)
             {
                 var slot = slots[i];
-                // int itemId = -1;
-                string itemId = "";
-                if (slot.item != null)
-                {
-                    itemId = slot.item.Id;
-                }
+                string itemId = slot.item != null ? slot.item.Id : "";
                 data.slots[i] = new SerializableInventorySlot
                 {
                     itemId = itemId,
-                    count = slot.count
+                    count = slot.count,
+                    durability = slot.currentDurability // СОХРАНЕНИЕ прочности
                 };
             }
 
@@ -300,6 +383,7 @@ namespace Assets.Scripts.InventorySystem
         // public int itemId = -1; // -1 = empty
         public string itemId = "";
         public int count = 0;
+        public float durability = -1f;
     }
 
     [System.Serializable]

@@ -7,11 +7,11 @@ namespace Assets.Scripts.Items
 {
     public class ItemHandler : MonoBehaviour
     {
-        public bool PickupItem(Item item, int amount = 1)
+        public bool PickupItem(Item item, int amount = 1, float durability = -2f)
         {
             if (item == null) return false;
 
-            int added = PlayerProgress.Instance.AddItemToPlayerInventory(item, amount);
+            int added = PlayerProgress.Instance.AddItemToPlayerInventory(item, amount, durability);
 
             if (added > 0)
             {

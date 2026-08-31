@@ -168,6 +168,8 @@ namespace Assets.Scripts.InventorySystem
                     slotUIs[i].HighLightSelectedSlot(isSelected);
                 }
             }
+
+            // progress.Save("HotbarUI.RefreshUI");
         }
     }
 }

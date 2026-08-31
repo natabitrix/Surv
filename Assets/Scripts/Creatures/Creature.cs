@@ -130,6 +130,17 @@ namespace Assets.Scripts.Creatures
                 return;
             }
 
+            // Восстановление/снижение торпора
+            if (torpor > 0) torpor = Mathf.Max(0, torpor - torporRecoveryRate * Time.deltaTime);
+
+            // Если переборщили с торпором
+            if (torpor >= maxTorpor && !knockedOut)
+            {
+                knockedOut = true;
+                agent.isStopped = true;
+                // Здесь можно включить анимацию сна
+            }
+            
             float distanceToPlayer = Vector3.Distance(transform.position, playerTransform.position);
 
             if (isAttacking)

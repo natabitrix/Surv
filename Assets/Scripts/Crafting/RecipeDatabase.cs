@@ -1,55 +1,63 @@
 using System.Collections.Generic;
+using Assets.Scripts.Items;
 using UnityEngine;
+
 namespace Assets.Scripts.Crafting
 {
     public class RecipeDatabase : MonoBehaviour
     {
         [SerializeField] private Recipe[] _allRecipes;
 
-        // Кэш для быстрого поиска по имени
         private Dictionary<string, Recipe> _recipeByName;
+        private Dictionary<Item, Recipe> _recipeByItem; // <--- НОВЫЙ КЭШ
 
         public Recipe[] AllRecipes => _allRecipes;
 
-        public Dictionary<string, Recipe> RecipeByName
+        // Инициализируем словари при первом обращении
+        private void EnsureInitialized()
         {
-            get
+            if (_recipeByName != null) return;
+
+            _recipeByName = new Dictionary<string, Recipe>();
+            _recipeByItem = new Dictionary<Item, Recipe>();
+
+            if (_allRecipes != null)
             {
-                if (_recipeByName == null)
+                foreach (var recipe in _allRecipes)
                 {
-                    _recipeByName = new Dictionary<string, Recipe>();
-                    if (_allRecipes != null)
+                    if (recipe != null)
                     {
-                        foreach (var recipe in _allRecipes)
+                        // Поиск по имени ассета
+                        string name = recipe.name;
+                        if (!_recipeByName.ContainsKey(name))
+                            _recipeByName[name] = recipe;
+
+                        // Поиск по результату крафта (Item)
+                        if (recipe.craftedItem != null && !_recipeByItem.ContainsKey(recipe.craftedItem))
                         {
-                            if (recipe != null)
-                            {
-                                string name = recipe.name; // ← имя ассета (не recipe.recipeName!)
-                                if (_recipeByName.ContainsKey(name))
-                                {
-                                    Debug.LogWarning($"Duplicate recipe asset name: {name}");
-                                }
-                                else
-                                {
-                                    _recipeByName[name] = recipe;
-                                }
-                            }
+                            _recipeByItem[recipe.craftedItem] = recipe;
                         }
                     }
                 }
-                return _recipeByName;
             }
         }
 
-        // Удобный метод поиска
         public Recipe GetRecipeByName(string name)
         {
-            return RecipeByName.TryGetValue(name, out var r) ? r : null;
+            EnsureInitialized();
+            return _recipeByName.TryGetValue(name, out var r) ? r : null;
+        }
+
+        public Recipe GetRecipeForItem(Item item)
+        {
+            EnsureInitialized();
+            return _recipeByItem.TryGetValue(item, out var r) ? r : null;
         }
 
         private void Awake()
         {
             DontDestroyOnLoad(gameObject);
+            EnsureInitialized(); // Инициализируем сразу при старте
         }
     }
 }

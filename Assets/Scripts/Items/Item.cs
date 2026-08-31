@@ -23,6 +23,11 @@ namespace Assets.Scripts.Items
 
         public float damage;
 
+        // В Item.cs
+        [Header("Durability")]
+        public bool hasDurability;
+        public float maxDurability;
+
         public GameObject model;
         public GameObject placeablePrefab; // для Placeable
         public bool isLeftHand = false; // будет лежать в левой руке

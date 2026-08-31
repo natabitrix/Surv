@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Assets.Scripts.Building;
 using Assets.Scripts.Core;
+using Assets.Scripts.Crafting;
 using Assets.Scripts.Items;
 using Assets.Scripts.Player;
 using Assets.Scripts.UI;
@@ -246,7 +247,9 @@ namespace Assets.Scripts.InventorySystem
                 case ItemType.Tool:
                 case ItemType.Weapon:
                     buildMode.ExitBuildMode();
-                    equipment.Equip(slot.item, globalSlotIndex);
+
+                    // Если предмет сломан запрещаем экипировку
+                    if (slot.currentDurability > 0) equipment.Equip(slot.item, globalSlotIndex);
                     break;
 
                 case ItemType.Food:
@@ -361,12 +364,23 @@ namespace Assets.Scripts.InventorySystem
             {
                 progress.hotbarInventoryData.RemoveItemFromSlot(localSlotIndex);
                 progress.hotbarInventoryData.NotifyChanged();
+
             }
             else if (owner == SlotOwner.Inventory)
             {
                 progress.mainInventoryData.RemoveItemFromSlot(localSlotIndex);
                 progress.mainInventoryData.NotifyChanged();
             }
+
+            //////////////////////////
+            // if (slot.item.itemType == ItemType.Tool || slot.item.itemType == ItemType.Weapon)
+            // {
+            //     int equippedSlotIndex = equipment.EquippedSlotIndex;
+            //     if (equipment.IsEquipped && slot.item == equipment.GetCurrentItem())
+            //     {
+            //         equipment.Unequip();
+            //     }
+            // }
 
             progress.Save("InventoryManager.DropItemFromSlot");
 
@@ -397,6 +411,7 @@ namespace Assets.Scripts.InventorySystem
                     // Очищаем слот
                     slot.item = null;
                     slot.count = 0;
+                    slot.currentDurability = -1f;
                 }
             }
 
@@ -532,6 +547,61 @@ namespace Assets.Scripts.InventorySystem
                 saveData.equippedSlotOwner = _selectedSlotOwner;
             }
         }
+
+        // ===  ===
+        // В Assets/Scripts/InventorySystem/InventoryManager.cs
+
+        public void TryRepairItem(int slotIndex, SlotOwner owner)
+        {
+            InventorySlot slot = GetSlotByIndex(slotIndex); // У тебя уже есть этот метод
+            if (slot == null || slot.IsEmpty || slot.currentDurability < 0) return;
+
+            // 1. Находим рецепт (убедись, что recipeDatabase доступен в InventoryManager)
+            Recipe recipe = PlayerProgress.Instance.recipeDatabase.GetRecipeForItem(slot.item);
+
+            if (recipe == null)
+            {
+                NotificationManager.Instance.Show("Этот предмет нельзя починить.", null);
+                return;
+            }
+
+            // 2. Проверяем ресурсы (умножаем стоимость крафта на 0.5f)
+            if (PlayerProgress.Instance.mainInventoryData.HasIngredientsForRepair(recipe, 0.5f))
+            {
+                // 3. Расходуем ресурсы
+                PlayerProgress.Instance.mainInventoryData.ConsumeRepairIngredients(recipe, 0.5f);
+
+                // 4. Чиним
+                slot.currentDurability = slot.item.maxDurability;
+
+                NotificationManager.Instance.Show($"{slot.item.itemName} починен!", slot.item.icon);
+
+                // Собираем список удалённых ингредиентов
+                var removed = new List<string>();
+                foreach (var ing in recipe.ingredients)
+                {
+                    if (ing.item != null && ing.amount > 0)
+                    {
+                        removed.Add($"{ing.amount}x {ing.item.itemName}");
+                    }
+                }
+
+                // Уведомления
+                foreach (var line in removed)
+                {
+                    NotificationManager.Instance?.Show($"Удалено: {line}", null);
+                }
+
+                // 5. Обновляем UI
+                RefreshAllUIs();
+                PlayerProgress.Instance.Save("InventoryManager.Repair");
+            }
+            else
+            {
+                NotificationManager.Instance.Show("Недостаточно ресурсов для ремонта!", null);
+            }
+        }
+
 
         // === Жизненный цикл ===
         private void Start()

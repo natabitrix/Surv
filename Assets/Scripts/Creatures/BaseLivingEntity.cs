@@ -34,6 +34,11 @@ namespace Assets.Scripts.Creatures // Или другой namespace
         [SerializeField] private ChestUI _chestUI;
         private bool _isOpen = false;
 
+        [Header("Taming Stats")]
+        public float torpor = 0f;
+        public float maxTorpor = 100f;
+        public float torporRecoveryRate = 1f; // Как быстро просыпается
+
         // Используем ссылки на системы, возможно, через Singleton, как у тебя в PlayerSurvivalSystem
         protected PlayerProgress playerProgress; // Для получения максимальных значений статов
         protected PlayerSurvivalSystem survivalSystem; // Можно использовать для получения/изменения базовых статов, если они общие

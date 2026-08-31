@@ -25,6 +25,7 @@ namespace Assets.Scripts.UI
         private Item _currentItem;
         private System.Action _onUseCallback;
         private System.Action _onDropCallback;
+        private System.Action _onRepairCallback;
 
         void Awake()
         {
@@ -38,12 +39,13 @@ namespace Assets.Scripts.UI
             }
         }
 
-        public static void Show(Item item, System.Action onUse, System.Action onDrop, Vector2 position)
+        public static void Show(Item item, System.Action onUse, System.Action onDrop, System.Action onRepair, Vector2 position)
         {
             if (Instance == null) return;
             Instance._currentItem = item;
             Instance._onUseCallback = onUse;
             Instance._onDropCallback = onDrop;
+            Instance._onRepairCallback = onRepair;
             Instance._menuPosition = position;
             Instance.BuildAndShow();
         }
@@ -69,6 +71,7 @@ namespace Assets.Scripts.UI
             {
                 AddButton("Использовать", OnUseClicked);
                 AddButton("Выбросить", OnDropClicked);
+                AddButton("Ремонтировать", OnRepairClicked);
             }
 
             // Позиционирование
@@ -125,11 +128,17 @@ namespace Assets.Scripts.UI
             Hide();
         }
 
-        // Пример дополнительной кнопки (раскомментируй при необходимости)
         void OnDropClicked()
         {
             Debug.Log("Drop clicked");
             _onDropCallback?.Invoke();
+            Hide();
+        }
+
+        void OnRepairClicked()
+        {
+            Debug.Log("Repair clicked");
+            _onRepairCallback?.Invoke();
             Hide();
         }
 

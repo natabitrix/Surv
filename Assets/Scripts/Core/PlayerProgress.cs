@@ -282,10 +282,12 @@ namespace Assets.Scripts.Core
         }
 
         // Возвращает количество реально добавленных предметов (0..amount)
-        public int AddItemToPlayerInventory(Item item, int amount = 1)
+        public int AddItemToPlayerInventory(Item item, int amount = 1, float durability = -2f)
         {
             if (item == null || amount <= 0) return 0;
 
+            // Определяем прочность: если не передали, ставим макс. для инструментов
+            float finalDurability = (durability == -2f) ? (item.itemType == ItemType.Tool || item.itemType == ItemType.Weapon ? item.maxDurability : -1f) : durability;
             int remaining = amount;
 
             // === ШАГ 1: Закреплённый слот в хотбаре ===
@@ -303,6 +305,7 @@ namespace Assets.Scripts.Core
                         {
                             slot.item = item;
                             slot.count = add;
+                            slot.currentDurability = finalDurability;
                         }
                         else
                         {
@@ -318,7 +321,7 @@ namespace Assets.Scripts.Core
             // === ШАГ 2: Остаток — в основной инвентарь ===
             if (remaining > 0)
             {
-                int addedToMain = mainInventoryData.AddItemAnywhere(item, remaining);
+                int addedToMain = mainInventoryData.AddItemAnywhere(item, remaining, finalDurability);
                 remaining -= addedToMain;
                 if (addedToMain > 0)
                 {
@@ -329,7 +332,7 @@ namespace Assets.Scripts.Core
             int actuallyAdded = amount - remaining;
             if (actuallyAdded > 0)
             {
-                Save("PlayerProgress.AddItemToPlayerInventory");
+                // Save("PlayerProgress.AddItemToPlayerInventory");
                 OnProgressChanged?.Invoke();
             }
             else
@@ -475,7 +478,7 @@ namespace Assets.Scripts.Core
             File.WriteAllText(path, json);
 
             // Debug.Log($"[PlayerProgress] Сохранено в {path}");
-            // Debug.Log($"Сохранено из [{noteFrom}]");
+            Debug.Log($"Сохранено из [{noteFrom}]");
 
         }
     }

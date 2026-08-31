@@ -32,6 +32,7 @@ namespace Assets.Scripts.InventorySystem
         public GameObject hoverBackground;
         public TextMeshProUGUI countText;
         public TextMeshProUGUI keyText;
+        public Image durabilityBarFill;
 
         // UI references
         // public InventoryManager InventoryManager;
@@ -166,6 +167,30 @@ namespace Assets.Scripts.InventorySystem
 
             if (isValid)
             {
+                if (durabilityBarFill != null)
+                {
+                    bool isTool = slot.item.itemType == ItemType.Tool || slot.item.itemType == ItemType.Weapon;
+
+                    if (isTool)
+                    {
+                        float currentValue = slot.currentDurability;
+                        float maxValue = slot.item.maxDurability;
+                        durabilityBarFill.fillAmount = (maxValue > 0) ? Mathf.Clamp01(currentValue / maxValue) : 0f;
+
+                        // Опционально: можно задать цвет (полная - зеленая, почти сломанная - красная)
+                        durabilityBarFill.color = durabilityBarFill.fillAmount < 0.2f ? Color.red : Color.green;
+                        if (durabilityBarFill.fillAmount == 0)
+                        {
+                            icon.color = Color.red;
+                        }
+                    }
+                    else
+                    {
+                        // Просто скрываем заливку, если это не инструмент
+                        durabilityBarFill.fillAmount = 0f;
+                    }
+                }
+
                 _tooltipTrigger = TooltipTrigger.AddTooltip(
                     gameObject,
                     slot.item.description,
@@ -182,6 +207,8 @@ namespace Assets.Scripts.InventorySystem
                     trigger.Icon = null;
                 }
                 _tooltipTrigger = null;
+
+                if (durabilityBarFill != null) durabilityBarFill.fillAmount = 0f;
             }
         }
 
@@ -213,6 +240,7 @@ namespace Assets.Scripts.InventorySystem
             // Сохраняем контекст без ссылок на MonoBehaviour
             DragContext.draggedItem = slot.item;
             DragContext.draggedCount = amount;
+            DragContext.draggedDurability = slot.currentDurability;
             DragContext.isDragFromChest = IsChestSlot;
             DragContext.fromOwner = owner;
             DragContext.fromSlotIndex = index;
@@ -223,6 +251,7 @@ namespace Assets.Scripts.InventorySystem
             {
                 slot.item = null;
                 slot.count = 0;
+                slot.currentDurability = -1f;
             }
 
             // Определяем drag layer
@@ -354,6 +383,12 @@ namespace Assets.Scripts.InventorySystem
                         PlayerProgress.Instance.MarkItemAsHotbarPreferred(item, index);
                     }
 
+                    if (DragContext.fromOwner == SlotOwner.Hotbar && !IsHotBarSlot)
+                    {
+                        // Мы утащили предмет с хотбара в инвентарь (или сундук)
+                        PlayerProgress.Instance.UnmarkItemAsHotbarPreferred(DragContext.draggedItem);
+                    }
+
                     string action = null;
                     if (IsChestSlot && !DragContext.isDragFromChest)
                     {
@@ -381,19 +416,27 @@ namespace Assets.Scripts.InventorySystem
 
             CleanupDragContext();
             RefreshAllUIs();
+
+            var progress = PlayerProgress.Instance;
+            progress.Save("InventorySlotUI.OnDrop");
+
         }
 
         private bool MoveItemToSlot(InventorySlot targetSlot, Item item, int count)
         {
             if (targetSlot == null) return false;
 
+            // ВАЖНО: Добавим параметр прочности в метод или берем из DragContext
+            float droppedDurability = DragContext.draggedDurability; // Нужно добавить в DragContext!
+
             if (targetSlot.IsEmpty)
             {
                 targetSlot.item = item;
                 targetSlot.count = count;
+                targetSlot.currentDurability = droppedDurability;
                 return true;
             }
-            else if (targetSlot.item == item)
+            else if (targetSlot.item == item && targetSlot.item.maxStack > 1) // Стакаем
             {
                 int space = item.maxStack - targetSlot.count;
                 if (space >= count)
@@ -413,15 +456,18 @@ namespace Assets.Scripts.InventorySystem
                 // Swap
                 var tempItem = targetSlot.item;
                 var tempCount = targetSlot.count;
+                var tempDurability = targetSlot.currentDurability; // <--- ПЕРЕНОС
 
                 targetSlot.item = item;
                 targetSlot.count = count;
+                targetSlot.currentDurability = droppedDurability; // <--- ПЕРЕНОС
 
                 var originalSlot = GetOriginalSlot();
                 if (originalSlot != null)
                 {
                     originalSlot.item = tempItem;
                     originalSlot.count = tempCount;
+                    originalSlot.currentDurability = tempDurability; // <--- ПЕРЕНОС
                 }
                 return true;
             }
@@ -484,6 +530,7 @@ namespace Assets.Scripts.InventorySystem
         {
             DragContext.draggedItem = null;
             DragContext.draggedCount = 0;
+            DragContext.draggedDurability = -1f;
             DragContext.isDragFromChest = false;
             DragContext.fromOwner = default;
             DragContext.fromSlotIndex = -1;
@@ -547,6 +594,7 @@ namespace Assets.Scripts.InventorySystem
                     ContextMenuManager.Show(
                         slot.item,
                         null,
+                        null,
                         () =>
                         {
                             _inventoryManager.DropItemFromSlot(index, owner);
@@ -571,8 +619,15 @@ namespace Assets.Scripts.InventorySystem
                             _inventoryManager.DropItemFromSlot(index, owner);
                             HighLightHoverSlot(false);
                         },
+                        () =>
+                        {
+                            _inventoryManager.TryRepairItem(index, owner);
+                        },
                         clickPosition
                     );
+
+
+
                 }
             }
         }

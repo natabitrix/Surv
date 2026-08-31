@@ -699,6 +699,7 @@ namespace Assets.Scripts.Player
             Vector3? hitPosition = null;
             ImpactType? hitImpactType = null;
 
+
             // === Проверка попаданий ===
             if (equippedTool != null)
             {
@@ -762,6 +763,27 @@ namespace Assets.Scripts.Player
             // === Воспроизведение звука удара ===
             if (hitSomething && hitPosition.HasValue)
             {
+                var equipment = GetComponent<PlayerEquipment>();
+                var slot = equipment?.GetCurrentEquippedSlot();
+
+                if (slot != null && slot.item != null && slot.currentDurability > 0)
+                {
+                    // Уменьшаем прочность
+                    slot.currentDurability -= 10.0f; // Или значение из конфига предмета
+                    PlayerProgress.Instance.mainInventoryData.NotifyChanged(); 
+                    PlayerProgress.Instance.hotbarInventoryData.NotifyChanged(); 
+
+                    if (slot.currentDurability <= 0)
+                    {
+                        // Логика поломки:
+                        // 1. Убрать предмет из руки (Unequip)
+                        // 2. Возможно, удалить предмет из слота (slot.item = null)
+                        equipment.Unequip();
+                        // PlayerProgress.Instance.mainInventoryData.RemoveItemFromSlot(equipment.EquippedSlotIndex);
+                        NotificationManager.Instance.Show("Инструмент сломался!", null);
+                    }
+                }
+
                 var impactType = hitImpactType ?? ImpactType.Air;
                 CombatAudioManager.Instance?.PlayHitSound(weaponType, impactType, hitPosition.Value);
             }

@@ -3,6 +3,7 @@ using Assets.Scripts.Core;
 using Assets.Scripts.Interactables;
 using Assets.Scripts.InventorySystem;
 using Assets.Scripts.Items;
+using Assets.Scripts.UI;
 using UnityEngine;
 
 namespace Assets.Scripts.Player
@@ -15,6 +16,7 @@ namespace Assets.Scripts.Player
         public Transform toolAttachPoint;
         public Transform toolAttachPointLeft;
         public Transform corpseDragAnchor;
+        [SerializeField] private PanelsUIController _panelsController;
 
         private GameObject _currentModel;
         private Item _currentItem;
@@ -46,8 +48,15 @@ namespace Assets.Scripts.Player
             // Убираем старое
             if (_currentModel != null)
             {
-                // Destroy(_currentModel);
-                DestroyImmediate(_currentModel); // чтобы удалялся и из превью в инвентаре
+                bool isInventoryOpened = _panelsController?.IsInventoryOpened() == true;
+                if (isInventoryOpened)
+                {
+                    DestroyImmediate(_currentModel); // чтобы удалялся и из превью в инвентаре
+                }
+                else
+                {
+                    Destroy(_currentModel);
+                }
                 _currentModel = null;
             }
 
@@ -78,6 +87,7 @@ namespace Assets.Scripts.Player
         public void Unequip()
         {
             Equip(null, -1);
+
         }
 
         public void UseCurrentTool()
@@ -86,6 +96,27 @@ namespace Assets.Scripts.Player
             {
                 // Логика использования (анимация и т.д.)
             }
+        }
+
+        public InventorySlot GetCurrentEquippedSlot()
+        {
+            if (EquippedSlotIndex < 0) return null;
+
+            var progress = PlayerProgress.Instance;
+            if (progress == null) return null;
+
+            // Индексы 0-9 — это хотбар, 10 и выше — основной инвентарь
+            if (EquippedSlotIndex < 10)
+            {
+                return progress.hotbarInventoryData.slots[EquippedSlotIndex];
+            }
+            else
+            {
+                int mainIndex = EquippedSlotIndex - 10;
+                if (mainIndex < progress.mainInventoryData.slots.Count)
+                    return progress.mainInventoryData.slots[mainIndex];
+            }
+            return null;
         }
 
         public Item GetCurrentItem() => _currentItem;

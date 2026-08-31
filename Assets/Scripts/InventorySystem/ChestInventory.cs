@@ -34,7 +34,7 @@ namespace Assets.Scripts.InventorySystem
             // Load() НЕ вызываем — труп должен быть пустым!
         }
 
-        public void Save()
+        public void Save(string noteFrom = "")
         {
             SerializableInventory inventory = new SerializableInventory();
 
@@ -43,7 +43,12 @@ namespace Assets.Scripts.InventorySystem
             string json = JsonConvert.SerializeObject(inventory, Formatting.Indented);
 
             string path = System.IO.Path.Combine(Application.persistentDataPath, $"Chest_{saveKey}.save");
-            System.IO.File.WriteAllText(path, json);
+
+            bool isLootBox = saveKey == "LootBox";
+
+            if(!isLootBox) System.IO.File.WriteAllText(path, json);
+
+            Debug.Log($"Сохранено из [{noteFrom}]");
         }
 
 

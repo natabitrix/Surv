@@ -10,6 +10,7 @@ namespace Assets.Scripts.InventorySystem
         public static bool isDragFromChest;
         public static int fromSlotIndex;
         public static SlotOwner fromOwner;
+        public static float draggedDurability;
 
         // public static Inventory fromInventory;      // for player
         // public static ChestInventory fromChest;     // for chest
