@@ -48,7 +48,7 @@ namespace Assets.Scripts.InventorySystem
 
             if(!isLootBox) System.IO.File.WriteAllText(path, json);
 
-            Debug.Log($"Сохранено из [{noteFrom}]");
+            // Debug.Log($"Сохранено из [{noteFrom}]");
         }
 
 

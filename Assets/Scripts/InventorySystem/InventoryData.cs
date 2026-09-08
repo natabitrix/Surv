@@ -55,8 +55,7 @@ namespace Assets.Scripts.InventorySystem
                     slots[i].count = add;
 
                     // Если durability == -2f, берем из item (новое), иначе берем переданное (существующее)
-                    slots[i].currentDurability = (durability == -2f) ? (item.itemType == ItemType.Tool ? item.maxDurability : -1f) : durability;
-
+                    slots[i].currentDurability = (durability == -2f) ? (item.hasDurability ? item.maxDurability : -1f) : durability;
                     remaining -= add;
                 }
             }
@@ -324,13 +323,13 @@ namespace Assets.Scripts.InventorySystem
                         item = item,
                         count = saved.count,
                         // Если прочность в файле < 0, принудительно ставим макс. прочность
-                        currentDurability = (saved.durability < 0 && (item.itemType == ItemType.Tool || item.itemType == ItemType.Weapon))
+                        currentDurability = (saved.durability < 0 && item.hasDurability)
                         ? item.maxDurability
                         : saved.durability
                     };
 
                     // ФИКС: Если прочность -1, но предмет — инструмент, починим её
-                    if (slots[i].currentDurability < 0 && (item.itemType == ItemType.Tool || item.itemType == ItemType.Weapon))
+                    if (slots[i].currentDurability < 0 && item.hasDurability)
                     {
                         slots[i].currentDurability = item.maxDurability;
                     }

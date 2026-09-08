@@ -1,6 +1,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Assets.Scripts.Creatures;
+using Assets.Scripts.Interactables;
+using Assets.Scripts.InventorySystem;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace Assets.Scripts.Core
@@ -54,6 +58,8 @@ namespace Assets.Scripts.Core
         public float MaxWeight => PlayerProgress.Instance?.GetMaxValue(StatType.Weight) ?? 100f;
         public float MaxTorpidity => PlayerProgress.Instance?.GetMaxValue(StatType.Weight) ?? 100f;
 
+        private bool _isDead = false;
+        [SerializeField] private GameObject _playerCorpsePrefab;
 
         public event Action OnSurvivalStatsChanged; // ← новое событие
 
@@ -173,6 +179,16 @@ namespace Assets.Scripts.Core
                 }
                 // Иначе — здоровье не восстанавливается автоматически (может быть через еду/сон позже)
 
+                if (_health <= 0f && !_isDead)
+                {
+                    _isDead = true;
+                    _health = 0f;
+                    Debug.Log("Player Died!");
+
+                    OnPlayerDeath();
+                    StopCoroutine(UpdateSurvivalStats());
+                }
+
                 // ← ВСЕГДА вызываем событие после обновления
                 OnSurvivalStatsChanged?.Invoke();
             }
@@ -225,5 +241,43 @@ namespace Assets.Scripts.Core
         // - ResetTorpidity()
         // - Heal(float amount)
         // - SetUnderwater(bool state)
+
+        // [Tooltip("Ресурсы, которые выпадают при разбивании тела (железо, электроника, кости)")]
+        // public Corpse.ResourceDrop[] harvestDrops;
+
+        // [Tooltip("Сколько ударов нужно, чтобы полностью разобрать тело")]
+        // public int maxHarvestHits = 5;
+
+        private void OnPlayerDeath()
+        {
+            var playerController = PlayerProgress.Instance?.playerController;
+            if (playerController == null) return;
+
+            // Отключаем управление игроком
+            // playerController.enabled = false;
+
+            // Создаём труп игрока на его позиции
+            GameObject playerCorpseGO = Instantiate(_playerCorpsePrefab, playerController.transform.position, Quaternion.identity);
+            var corpse = playerCorpseGO.GetComponent<Corpse>();
+
+            // Передаём вещи игрока в труп
+            corpse.InitializePlayerCorpse(
+                PlayerProgress.Instance.mainInventoryData,
+                PlayerProgress.Instance.hotbarInventoryData,
+                FindAnyObjectByType<ChestUI>()
+            );
+
+            corpse.ActivateRagdoll();
+            StartCoroutine(corpse.StopMovingCorpse(true));            
+
+            // var menu = GetComponent<RadialMenu>();
+            // if (menu != null) menu.enabled = true;
+
+            // Debug.Log($"[Creature] Труп {gameObject.name} создан на {transform.position}");
+
+        }
+
+
+
     }
 }

@@ -6,13 +6,14 @@ using Assets.Scripts.Items;
 using Assets.Scripts.Effects;
 using Assets.Scripts.Audio;
 using Assets.Scripts.Core;
+using System.Collections;
 
 namespace Assets.Scripts.Creatures
 {
-    // [RequireComponent(typeof(Collider))]
     public class Corpse : MonoBehaviour, IInteractable, IImpactSoundProvider
     {
         public bool IsDragging { get; private set; }
+        public bool IsHarvested { get; private set; } = false;
 
         [Header("Drag Target")]
         [Tooltip("Кость, за которую тянем (Torso/Hips).")]
@@ -24,27 +25,23 @@ namespace Assets.Scripts.Creatures
         public float springDamper = 0f;
         public float maxSpringDistance = 0.3f;
 
-        private CharacterJoint _joint;
+        private CharacterJoint _jointToGrabPoint;
+        private CharacterJoint _jointToParentObj;
         private Transform _anchor;
         private Rigidbody _anchorRb;
+        private Rigidbody _parentObjRb;
         private Creature creature;
 
         [Header("Interaction")]
         [SerializeField] private Collider _interactionCollider;
         public Collider InteractionCollider => _interactionCollider;
 
-        // ==========================================
-        // === ИНВЕНТАРЬ (Открытие по F) ===
-        // ==========================================
         [Header("Inventory")]
         [SerializeField] private ChestInventory _inventory;
         [SerializeField] private ChestUI _chestUI;
         private bool _isOpen = false;
 
-        // ==========================================
-        // === ДОБЫЧА РЕСУРСОВ (Удары ЛКМ) ===
-        // ==========================================
-        [Header("Harvesting (Добыча ударами)")]
+        [Header("Harvesting")]
         public bool allowHarvest = true;
         public bool allowFists = false;
         public bool allowAxe = true;
@@ -52,16 +49,15 @@ namespace Assets.Scripts.Creatures
         public bool allowSword = true;
         public bool allowSickle = false;
 
+        [Tooltip("Предметы, которые рандомно попадут в инвентарь трупа (мясо, шкуры, детали)")]
+        public LootEntry[] inventoryLootTable;
+
         [System.Serializable]
         public struct ResourceDrop
         {
             public Item item;
             public int totalAmount;
         }
-
-        private LootEntry[] _lootTable;
-        private ResourceDrop[] _harvestDrops;
-        private int _maxHarvestHits;
 
         [Header("Harvest Visuals & Audio")]
         public ParticleSystem breakEffect;
@@ -71,18 +67,29 @@ namespace Assets.Scripts.Creatures
         [SerializeField] private ImpactType _impactType = ImpactType.Metal;
         public ImpactType GetImpactType() => _impactType;
 
-        [Header("Destruction")]
-        public bool destroyAfterDepleted = true;
-        public float destroyDelay = 2f; // Задержка перед уничтожением (чтобы эффекты проиграться)
+        [Tooltip("Ресурсы, которые выпадают при разбивании тела (железо, электроника, кости)")]
+        public ResourceDrop[] harvestDrops;
+        [Tooltip("Сколько ударов нужно, чтобы полностью разобрать тело")]
+        public int maxHarvestHits = 5;
+
+        [Header("Ragdoll")]
+        public RagdollSettings ragdollSettings;
+        private PlayerController _playerController = null;
+        private Transform playerTransform;
 
 
+
+
+        [Header("Despawn Settings")]
+        [SerializeField] private float _corpseDisappearTime = 300f;
+        [SerializeField] private GameObject _lootBagPrefab;
+
+        private float _creationTime = 0f;
         private int _harvestHits = 0;
         private int[] _remainingAmounts;
         private bool _isDepleted = false;
+        private Coroutine _despawnCoroutine;
 
-        // ==========================================
-        // === ИНИЦИАЛИЗАЦИЯ ===
-        // ==========================================
         private void Awake()
         {
             creature = GetComponent<Creature>();
@@ -96,26 +103,110 @@ namespace Assets.Scripts.Creatures
             if (hitDecaler == null) hitDecaler = GetComponent<HitDecaler>();
         }
 
-        public void Initialize(ChestInventory inventory, ChestUI chestUI, ResourceDrop[] drops, int maxHits)
+        private void Start()
+        {
+            _creationTime = Time.time;
+
+            if (_despawnCoroutine != null)
+                StopCoroutine(_despawnCoroutine);
+            _despawnCoroutine = StartCoroutine(DespawnAfterTime());
+
+        }
+
+        public void Initialize(
+            ChestInventory inventory,
+            ChestUI chestUI
+        // , 
+        // ResourceDrop[] drops, 
+        // int maxHits
+        )
         {
             _inventory = inventory;
             _chestUI = chestUI;
-            _harvestDrops = drops;
-            _maxHarvestHits = maxHits;
+            // harvestDrops = drops;
+            // maxHarvestHits = maxHits;
 
-            if (_harvestDrops != null && _harvestDrops.Length > 0)
+            if (harvestDrops != null && harvestDrops.Length > 0)
             {
-                _remainingAmounts = new int[_harvestDrops.Length];
-                for (int i = 0; i < _harvestDrops.Length; i++)
+                _remainingAmounts = new int[harvestDrops.Length];
+                for (int i = 0; i < harvestDrops.Length; i++)
                 {
-                    _remainingAmounts[i] = _harvestDrops[i].totalAmount;
+                    _remainingAmounts[i] = harvestDrops[i].totalAmount;
+                }
+            }
+
+            if (TryGetComponent<PlayerController>(out var pc))
+            {
+                _playerController = pc;
+                playerTransform = pc.transform;
+            }
+
+        }
+
+        public void InitializePlayerCorpse(
+            InventoryData mainInventory,
+            InventoryData hotbarInventory,
+            ChestUI chestUI
+        )
+        {
+            // _mainInventoryData = mainInventory;
+            // _hotbarInventoryData = hotbarInventory;
+            // _inventory = inventory;
+            _chestUI = chestUI;
+
+            if (harvestDrops != null && harvestDrops.Length > 0)
+            {
+                _remainingAmounts = new int[harvestDrops.Length];
+                for (int i = 0; i < harvestDrops.Length; i++)
+                {
+                    _remainingAmounts[i] = harvestDrops[i].totalAmount;
+                }
+            }
+
+            if (TryGetComponent<PlayerController>(out var pc))
+            {
+                _playerController = pc;
+                playerTransform = pc.transform;
+            }
+
+            // Создаём инвентарь трупа и копируем туда все вещи игрока
+            _inventory = gameObject.AddComponent<ChestInventory>();
+            string corpseKey = $"PlayerCorpse_{System.Guid.NewGuid().ToString()}";
+            _inventory.Initialize(110, corpseKey); // Больше слотов для всех вещей
+
+            CopyPlayerItemsToCorpse(mainInventory, hotbarInventory);
+
+        }
+
+        private void CopyPlayerItemsToCorpse(InventoryData mainInventory, InventoryData hotbarInventory)
+        {
+            if (_inventory?.Data == null) return;
+
+            // Копируем вещи из основного инвентаря
+            if (mainInventory?.slots != null)
+            {
+                foreach (var slot in mainInventory.slots)
+                {
+                    if (!slot.IsEmpty && slot.item != null)
+                    {
+                        _inventory.Data.AddItemAnywhere(slot.item, slot.count, slot.currentDurability);
+                    }
+                }
+            }
+
+            // Копируем вещи из хотбара
+            if (hotbarInventory?.slots != null)
+            {
+                foreach (var slot in hotbarInventory.slots)
+                {
+                    if (!slot.IsEmpty && slot.item != null)
+                    {
+                        _inventory.Data.AddItemAnywhere(slot.item, slot.count, slot.currentDurability);
+                    }
                 }
             }
         }
 
-        // ==========================================
-        // === ИНТЕРФЕЙС IInteractable ===
-        // ==========================================
         public InteractType GetInteractType() => InteractType.OpenTargetInventory;
         public InteractType GetInteractType2() => InteractType.Interact;
 
@@ -126,7 +217,7 @@ namespace Assets.Scripts.Creatures
         public void Interact(InteractContext context)
         {
 
-            if (_isDepleted && context.IsAttack) return;
+            if (!enabled || (_isDepleted && context.IsAttack)) return;
 
             if (IsDragging) StopDragging(context.PlayerInteraction);
 
@@ -142,16 +233,148 @@ namespace Assets.Scripts.Creatures
                 }
                 else
                 {
-                    // if (IsDragging) StopDragging(context.PlayerInteraction);
-                    // else StartDragging(context.PlayerInteraction);
                     StartDragging(context.PlayerInteraction);
                 }
             }
         }
 
-        // ==========================================
-        // === ЛОГИКА ИНВЕНТАРЯ ===
-        // ==========================================
+        public void ActivateRagdoll()
+        {
+
+            foreach (var part in ragdollSettings.ragdollParts)
+            {
+                if (part == null) continue;
+                var rb = part.GetComponent<Rigidbody>();
+                if (rb == null) continue;
+
+                rb.isKinematic = false;
+                rb.useGravity = true;
+                rb.interpolation = RigidbodyInterpolation.Interpolate;
+
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+                // rb.linearDamping = 5f;
+                rb.linearDamping = ragdollSettings.linearDamp;
+                // rb.angularDamping = 5f;
+                rb.angularDamping = ragdollSettings.angularDamp;
+                // rb.mass *= ragdollSettings.massMultiplier;
+
+                // rb.maxAngularVelocity = 5f;
+                rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+
+                foreach (var otherPart in ragdollSettings.ragdollParts)
+                {
+                    if (part != otherPart && otherPart.TryGetComponent<Collider>(out var otherCol))
+                    {
+                        Physics.IgnoreCollision(rb.GetComponent<Collider>(), otherCol, true);
+                    }
+                }
+
+                if (playerTransform != null)
+                {
+                    Debug.Log("ActivateRagdoll playerTransform: " + playerTransform);
+                    if (playerTransform.TryGetComponent<Collider>(out var playerCol))
+                    {
+                        Physics.IgnoreCollision(rb.GetComponent<Collider>(), playerCol, true);
+                    }
+                }
+            }
+        }
+
+        public void DeactivateRagdoll()
+        {
+            foreach (var part in ragdollSettings.ragdollParts)
+            {
+                if (part == null) continue;
+                var rb = part.GetComponent<Rigidbody>();
+                if (rb != null && rb.isKinematic == false)
+                {
+                    rb.isKinematic = true;
+
+                    if (rb.linearVelocity.magnitude < 0.1f && rb.angularVelocity.magnitude < 0.1f)
+                    {
+                        rb.Sleep();
+                    }
+                }
+
+                if (playerTransform != null)
+                {
+                    Debug.Log("DeactivateRagdoll playerTransform: " + playerTransform);
+                    if (playerTransform.TryGetComponent<Collider>(out var playerCol))
+                    {
+                        Physics.IgnoreCollision(rb.GetComponent<Collider>(), playerCol, false);
+                    }
+                }
+            }
+        }
+
+        public IEnumerator StopMovingRagdoll()
+        {
+            yield return new WaitForSeconds(5.5f);
+            DeactivateRagdoll();
+        }
+
+        public IEnumerator StopMovingCorpse(bool isPlayerCorpse = false)
+        {
+            yield return new WaitForSeconds(2.5f);
+
+            enabled = true;
+
+            Animator animator = GetComponent<Animator>();
+            if (animator != null) Destroy(animator);
+
+            DeactivateRagdoll();
+
+            if (!isPlayerCorpse) CreateCorpseInventory();
+
+            var menu = GetComponent<RadialMenu>();
+            if (menu != null) menu.enabled = true;
+        }
+
+        public void CreateCorpseInventory()
+        {
+            var chestInv = gameObject.AddComponent<ChestInventory>();
+            string corpseKey = $"Corpse_{System.Guid.NewGuid().ToString()}";
+            chestInv.Initialize(100, corpseKey);
+
+            PopulateInventory(chestInv);
+
+            var chestUI = FindAnyObjectByType<ChestUI>();
+            // Initialize(chestInv, chestUI, harvestDrops, maxHarvestHits);
+            Initialize(chestInv, chestUI);
+
+            // Debug.Log($"[Creature] Труп {gameObject.name} создан на {transform.position}");
+        }
+
+        private void PopulateInventory(ChestInventory inv)
+        {
+            if (inventoryLootTable == null || inv == null)
+            {
+                Debug.LogWarning("[Creature] inventoryLootTable или inv равны null!");
+                return;
+            }
+
+            var data = inv.Data;
+            if (data == null)
+            {
+                Debug.LogError("[Creature] inv.Data равна null! Ячейки не созданы.");
+                return;
+            }
+
+            foreach (var entry in inventoryLootTable)
+            {
+                if (entry.item == null) continue;
+
+                float roll = Random.value;
+
+                if (roll <= entry.dropChance)
+                {
+                    int amount = Random.Range(entry.minAmount, entry.maxAmount + 1);
+                    data.AddItemAnywhere(entry.item, amount);
+                }
+            }
+        }
+
         public void OpenInventory()
         {
             if (_isOpen) CloseInventory();
@@ -180,9 +403,6 @@ namespace Assets.Scripts.Creatures
             _inventory = inventory;
         }
 
-        // ==========================================
-        // === ЛОГИКА ДОБЫЧИ (Harvest) ===
-        // ==========================================
         private void HandleHarvest(InteractContext context)
         {
             if (!allowHarvest) return;
@@ -205,11 +425,11 @@ namespace Assets.Scripts.Creatures
 
             if (!toolAllowed)
             {
-                Debug.LogWarning($"[Corpse] Добыча запрещена для инструмента {tool}! Проверь галочки в инспекторе Corpse.");
+                Debug.LogWarning($"[Corpse] Добыча запрещена для инструмента {tool}!");
                 return;
             }
 
-            if (_harvestHits >= _maxHarvestHits) return;
+            if (_harvestHits >= maxHarvestHits) return;
             _harvestHits++;
 
             DistributeResources(tool, hitPos);
@@ -217,14 +437,14 @@ namespace Assets.Scripts.Creatures
 
         private void DistributeResources(AttackAnimationType tool, Vector3 hitPos)
         {
-            if (_harvestDrops == null || _harvestDrops.Length == 0) return;
+            if (harvestDrops == null || harvestDrops.Length == 0) return;
 
-            for (int i = 0; i < _harvestDrops.Length; i++)
+            for (int i = 0; i < harvestDrops.Length; i++)
             {
-                if (_harvestDrops[i].item == null || _remainingAmounts[i] <= 0) continue;
+                if (harvestDrops[i].item == null || _remainingAmounts[i] <= 0) continue;
 
                 int remaining = _remainingAmounts[i];
-                int actionsLeft = _maxHarvestHits - _harvestHits + 1;
+                int actionsLeft = maxHarvestHits - _harvestHits + 1;
 
                 int avg = Mathf.Max(1, Mathf.CeilToInt((float)remaining / actionsLeft));
                 int maxPossibleNow = Mathf.Min(remaining, (int)(avg * 1.5f));
@@ -233,12 +453,10 @@ namespace Assets.Scripts.Creatures
                 int give = Random.Range(minPossibleNow, maxPossibleNow + 1);
                 if (give > remaining) give = remaining;
 
-                // give = ApplyToolBonus(_harvestDrops[i].item, give, tool);
-
                 if (give > 0)
                 {
                     _remainingAmounts[i] -= give;
-                    GiveResource(_harvestDrops[i].item, give);
+                    GiveResource(harvestDrops[i].item, give);
                 }
             }
 
@@ -248,26 +466,11 @@ namespace Assets.Scripts.Creatures
                 if (amount > 0) { allDepleted = false; break; }
             }
 
-            if (allDepleted || _harvestHits >= _maxHarvestHits)
+            if (allDepleted || _harvestHits >= maxHarvestHits)
             {
-                Deplete(hitPos);
+                OnHarvestComplete(hitPos);
             }
         }
-
-        // private int ApplyToolBonus(Item item, int baseAmount, AttackAnimationType tool)
-        // {
-        //     float mult = 1f;
-        //     string name = item.itemName.ToLower();
-
-        //     if (name.Contains("iron") || name.Contains("железо") || name.Contains("metal"))
-        //         mult = tool == AttackAnimationType.Pickaxe ? 1.5f : 0.5f;
-        //     else if (name.Contains("electronic") || name.Contains("электрон") || name.Contains("circuit"))
-        //         mult = tool == AttackAnimationType.Pickaxe ? 1.2f : 0.8f;
-        //     else if (name.Contains("meat") || name.Contains("мясо") || name.Contains("flesh"))
-        //         mult = tool == AttackAnimationType.Axe ? 1.3f : 1.0f;
-
-        //     return Mathf.Max(0, Mathf.RoundToInt(baseAmount * mult));
-        // }
 
         private void GiveResource(Item item, int amount)
         {
@@ -307,46 +510,142 @@ namespace Assets.Scripts.Creatures
             }
         }
 
-        private void Deplete(Vector3 hitPos)
+        private void OnHarvestComplete(Vector3 hitPos)
         {
             if (_isDepleted) return;
             _isDepleted = true;
+            IsHarvested = true;
 
             if (animator != null) animator.SetTrigger("BreakLast");
             shatterer?.LastBreak();
 
-            if (destroyAfterDepleted)
+            bool hasLoot = HasLootInInventory();
+
+            if (hasLoot && _lootBagPrefab != null)
             {
-                Destroy(gameObject, destroyDelay);
+                CreateLootBag();
+            }
+
+            if (_despawnCoroutine != null)
+            {
+                StopCoroutine(_despawnCoroutine);
+                _despawnCoroutine = null;
+            }
+
+            // if (_inventory != null)
+            // {
+            //     _inventory.transform.SetParent(null);
+            // }
+
+
+            Destroy(gameObject, 0.5f);
+        }
+
+        private bool HasLootInInventory()
+        {
+            if (_inventory?.Data?.slots == null) return false;
+
+            foreach (var slot in _inventory.Data.slots)
+            {
+                if (!slot.IsEmpty && slot.item != null)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private void CreateLootBag()
+        {
+            if (_lootBagPrefab == null)
+            {
+                Debug.LogWarning("[Corpse] LootBag префаб не назначен!");
+                return;
+            }
+
+            // ✅ Создаём инвентарь как отдельный объект (не привязан к корпусу)
+            GameObject inventoryGO = new GameObject($"CorpseInventory_{System.Guid.NewGuid().ToString().Substring(0, 8)}");
+            ChestInventory portableInventory = inventoryGO.AddComponent<ChestInventory>();
+
+            // Копируем содержимое из инвентаря корпуса
+            if (_inventory?.Data?.slots != null)
+            {
+                portableInventory.Initialize(_inventory.Data.slots.Count, portableInventory.name);
+                foreach (var slot in _inventory.Data.slots)
+                {
+                    if (!slot.IsEmpty && slot.item != null)
+                    {
+                        portableInventory.Data.AddItemAnywhere(slot.item, slot.count);
+                    }
+                }
+            }
+
+            // Создаём сумку с новым инвентарём
+            GameObject bagGO = Instantiate(_lootBagPrefab, transform.position, Quaternion.identity);
+
+            var lootBag = bagGO.GetComponent<LootBag>();
+            if (lootBag != null)
+            {
+                lootBag.Initialize(portableInventory, _chestUI, _corpseDisappearTime);
+            }
+            else
+            {
+                Debug.LogWarning("[Corpse] На префабе сумки нет компонента LootBag!");
+                Destroy(bagGO);
+                Destroy(inventoryGO);
             }
         }
 
-        // ==========================================
-        // === ЛОГИКА ПЕРЕТАСКИВАНИЯ ===
-        // ==========================================
+        private IEnumerator DespawnAfterTime()
+        {
+            yield return new WaitForSeconds(_corpseDisappearTime);
+
+            if (!IsHarvested)
+            {
+                Debug.Log($"[Corpse] Труп исчез по таймеру на {transform.position}");
+                Destroy(gameObject);
+            }
+        }
+
         public void StartDragging(PlayerInteraction player)
         {
             if (IsDragging || _dragRigidbody == null) return;
             IsDragging = true;
 
             player.RegisterDraggingCorpse(this);
-            creature.ActivateRagdoll();
+            ActivateRagdoll();
 
             var equip = player.GetComponent<PlayerEquipment>();
             Transform grabPoint = equip ? equip.corpseDragAnchor : player.transform;
             if (grabPoint == null) grabPoint = player.transform;
 
+            // Помещаем точку перетаскивания _anchor в точку для перетаскивания персонажа grabPoint
             _anchor = new GameObject("CorpseDragAnchor").transform;
             _anchor.SetParent(grabPoint);
             _anchor.localPosition = new Vector3(0, 0, dragDistance);
+            // Добавляем точке перетаскивания _anchor Rigidbody
             _anchorRb = _anchor.gameObject.AddComponent<Rigidbody>();
             _anchorRb.isKinematic = true;
 
-            _joint = _dragRigidbody.gameObject.AddComponent<CharacterJoint>();
-            _joint.connectedBody = _anchorRb;
-            _joint.enablePreprocessing = true;
-            _joint.enableCollision = false;
+            // Получаем у главного объекта Rigidbody
+            _parentObjRb = gameObject.GetComponent<Rigidbody>();
+            _parentObjRb.isKinematic = false;
+            _dragRigidbody.isKinematic = false;
+            // Debug.Log("StartDragging _parentObjRb: " + _parentObjRb);
+
+            // Добавляем соединение c _anchor
+            _jointToGrabPoint = _parentObjRb.gameObject.AddComponent<CharacterJoint>();
+            _jointToGrabPoint.connectedBody = _anchorRb;
+            _jointToGrabPoint.enablePreprocessing = false;
+            _jointToGrabPoint.enableCollision = false;
+
+            // Добавляем соединение c _parentObjRb 
+            _jointToParentObj = _dragRigidbody.gameObject.AddComponent<CharacterJoint>();
+            _jointToParentObj.connectedBody = _parentObjRb;
+            _jointToParentObj.enablePreprocessing = false;
+            _jointToParentObj.enableCollision = false;
+
         }
+
 
         public void StopDragging(PlayerInteraction player)
         {
@@ -355,18 +654,41 @@ namespace Assets.Scripts.Creatures
 
             player.UnregisterDraggingCorpse(this);
 
-            if (_joint != null) { Destroy(_joint); _joint = null; }
+            if (_jointToParentObj != null) { Destroy(_jointToParentObj); _jointToParentObj = null; }
+            if (_jointToGrabPoint != null) { Destroy(_jointToGrabPoint); _jointToGrabPoint = null; }
             if (_anchor != null) { Destroy(_anchor.gameObject); _anchor = null; }
 
             if (_dragRigidbody != null)
             {
+
                 _dragRigidbody.linearVelocity *= 0.2f;
                 _dragRigidbody.angularVelocity *= 0.2f;
             }
 
-            creature.DeactivateRagdoll();
+            if (_parentObjRb != null)
+            {
+                _parentObjRb.isKinematic = true;
+            }
+            if (_dragRigidbody != null)
+            {
+                _dragRigidbody.isKinematic = true;
+            }
+
+            StartCoroutine(StopMovingRagdoll());
+
         }
 
         public void InterruptByAttack(PlayerInteraction player) => StopDragging(player);
+    }
+
+    [System.Serializable]
+    public class RagdollSettings
+    {
+        public Transform[] ragdollParts;
+        [Header("Физика после смерти")]
+        public float linearDamp = 0.5f;
+        public float angularDamp = 2f;
+        // public float massMultiplier = 0.5f;
+        [Range(0, 1)] public float velocityInherit = 0.1f;
     }
 }

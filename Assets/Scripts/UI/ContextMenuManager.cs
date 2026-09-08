@@ -123,21 +123,21 @@ namespace Assets.Scripts.UI
 
         void OnUseClicked()
         {
-            Debug.Log("Use clicked");
+            // Debug.Log("Use clicked");
             _onUseCallback?.Invoke();
             Hide();
         }
 
         void OnDropClicked()
         {
-            Debug.Log("Drop clicked");
+            // Debug.Log("Drop clicked");
             _onDropCallback?.Invoke();
             Hide();
         }
 
         void OnRepairClicked()
         {
-            Debug.Log("Repair clicked");
+            // Debug.Log("Repair clicked");
             _onRepairCallback?.Invoke();
             Hide();
         }

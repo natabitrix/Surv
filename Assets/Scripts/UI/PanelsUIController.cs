@@ -264,10 +264,7 @@ namespace Assets.Scripts.UI
                 // 2. Очищаем данные в UI
                 openChestUI.Close();
             }
-            else
-            {
-                Debug.LogWarning("CloseChestPanel: CurrentOpenChest равен null");
-            }
+
         }
 
         // Закрытие всех панелей

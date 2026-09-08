@@ -15,7 +15,7 @@ namespace Assets.Scripts.InventorySystem
         // Метод для инициализации прочности при первом получении предмета
         public void InitializeDurability(Item newItem)
         {
-            if (newItem != null && newItem.itemType == ItemType.Tool) // Или другое условие
+            if (newItem != null && newItem.hasDurability) // Или другое условие
             {
                 currentDurability = 100f; // Начальная прочность
             }
@@ -23,7 +23,7 @@ namespace Assets.Scripts.InventorySystem
 
         public void SyncDurability()
         {
-            if (item != null && (item.itemType == ItemType.Tool || item.itemType == ItemType.Weapon))
+            if (item != null && item.hasDurability)
             {
                 if (currentDurability < 0) currentDurability = item.maxDurability;
             }

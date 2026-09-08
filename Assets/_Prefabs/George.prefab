@@ -818,6 +818,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1185835447859981743}
+  - component: {fileID: 3615026558678584870}
+  - component: {fileID: 1607526246512716151}
+  - component: {fileID: 6059956177173956410}
   m_Layer: 12
   m_Name: MidLeg.L
   m_TagString: Untagged
@@ -841,6 +844,102 @@ Transform:
   - {fileID: 8755339035241366332}
   m_Father: {fileID: 6274796055854809566}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!136 &3615026558678584870
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2562018536431887384}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.002
+  m_Height: 0.02
+  m_Direction: 1
+  m_Center: {x: 0, y: 0.01, z: 0}
+--- !u!54 &1607526246512716151
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2562018536431887384}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
+--- !u!144 &6059956177173956410
+CharacterJoint:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2562018536431887384}
+  serializedVersion: 3
+  m_ConnectedBody: {fileID: 4352768560355162506}
+  m_ConnectedArticulationBody: {fileID: 0}
+  m_Anchor: {x: 0, y: 0, z: 0}
+  m_Axis: {x: -1, y: 0, z: 0}
+  m_AutoConfigureConnectedAnchor: 1
+  m_ConnectedAnchor: {x: 0, y: 0, z: 0}
+  m_SwingAxis: {x: 0, y: 1, z: 0}
+  m_TwistLimitSpring:
+    spring: 0
+    damper: 0
+  m_LowTwistLimit:
+    limit: -80
+    bounciness: 0
+    contactDistance: 0
+  m_HighTwistLimit:
+    limit: 0
+    bounciness: 0
+    contactDistance: 0
+  m_SwingLimitSpring:
+    spring: 0
+    damper: 0
+  m_Swing1Limit:
+    limit: 0
+    bounciness: 0
+    contactDistance: 0
+  m_Swing2Limit:
+    limit: 0
+    bounciness: 0
+    contactDistance: 0
+  m_EnableProjection: 0
+  m_ProjectionDistance: 0.1
+  m_ProjectionAngle: 180
+  m_BreakForce: Infinity
+  m_BreakTorque: Infinity
+  m_EnableCollision: 0
+  m_EnablePreprocessing: 0
+  m_MassScale: 1
+  m_ConnectedMassScale: 1
 --- !u!1 &2637077395979173463
 GameObject:
   m_ObjectHideFlags: 0
@@ -993,6 +1092,7 @@ GameObject:
   - component: {fileID: 4670970197717847591}
   - component: {fileID: 4437516736137761238}
   - component: {fileID: -1271382759831575572}
+  - component: {fileID: 7426754765140668190}
   - component: {fileID: 9082038157994323712}
   - component: {fileID: 6664605108390037155}
   m_Layer: 12
@@ -1056,25 +1156,16 @@ MonoBehaviour:
   _impactType: 2
   damageEffect: {fileID: 1503726256431937902, guid: a712d1db095d33740bea793cc4816dd5, type: 3}
   tamed: 0
+  tamable: 0
+  tamableKO: 0
+  knockedOut: 0
+  tamablePassive: 0
   _interactionCollider: {fileID: 727287208118847912}
   _inventory: {fileID: 0}
-  ragdollSettings:
-    ragdollParts:
-    - {fileID: 9074923633069766907}
-    - {fileID: 9023008670123064331}
-    - {fileID: 1846931639147623259}
-    - {fileID: 7730504955486670768}
-    - {fileID: 3958375421803967387}
-    - {fileID: 5003914002698101881}
-    - {fileID: 931998129611013396}
-    - {fileID: 6274796055854809566}
-    - {fileID: 8755339035241366332}
-    - {fileID: 1093549621812662614}
-    - {fileID: 3122436238962349250}
-    linearDamp: 0.5
-    angularDamp: 2
-    massMultiplier: 0.5
-    velocityInherit: 0.1
+  _chestUI: {fileID: 0}
+  torpor: 0
+  maxTorpor: 100
+  torporRecoveryRate: 1
   wanderRange: 20
   minWanderDelay: 2
   maxWanderDelay: 5
@@ -1086,22 +1177,6 @@ MonoBehaviour:
   attackCooldown: 2
   _maxHealth: 600
   _maxStamina: 50
-  inventoryLootTable:
-  - item: {fileID: 11400000, guid: c1d5dfbb9928d324a8c04f9ad5e2eee6, type: 2}
-    minAmount: 1
-    maxAmount: 1
-    dropChance: 0.518
-  - item: {fileID: 11400000, guid: a7087fa9748f15842bb064737cb55cc8, type: 2}
-    minAmount: 1
-    maxAmount: 1
-    dropChance: 0.747
-  harvestDrops:
-  - item: {fileID: 11400000, guid: 7572a88102426e7488ae3f506ea445e0, type: 2}
-    totalAmount: 50
-  - item: {fileID: 11400000, guid: 5b2aeb1461a89434dab6751adb6301c6, type: 2}
-    totalAmount: 50
-  maxHarvestHits: 5
-  _chestUI: {fileID: 0}
   FootstepAudioClip: {fileID: 8300000, guid: 4aba2b70bf550d74d9905d0982f22892, type: 3}
   FootstepAudioVolume: 0.3
   AttackAudioClip: {fileID: 8300000, guid: 1d76b790e8eee784db9cf8ae161300af, type: 3}
@@ -1149,6 +1224,33 @@ MonoBehaviour:
   intensityParameter: _DamageIntensity
   damageIntensity: 1.5
   checkInterval: 0.1
+--- !u!54 &7426754765140668190
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3036685186262367339}
+  serializedVersion: 5
+  m_Mass: 90
+  m_LinearDamping: 1.5
+  m_AngularDamping: 3
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!114 &9082038157994323712
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1175,13 +1277,48 @@ MonoBehaviour:
   allowPickaxe: 1
   allowSword: 1
   allowSickle: 0
+  inventoryLootTable:
+  - item: {fileID: 11400000, guid: 69fd5c78dc00af14d975536ced700dbc, type: 2}
+    minAmount: 1
+    maxAmount: 1
+    dropChance: 1
+  - item: {fileID: 11400000, guid: dc69f91a959d4494c9ba7b0b71c6b2ec, type: 2}
+    minAmount: 1
+    maxAmount: 1
+    dropChance: 1
+  - item: {fileID: 11400000, guid: 8b9c955bbc88e7641b672eda12a72976, type: 2}
+    minAmount: 1
+    maxAmount: 1
+    dropChance: 1
   breakEffect: {fileID: 0}
   shatterer: {fileID: 0}
   hitDecaler: {fileID: 0}
   animator: {fileID: 0}
   _impactType: 2
-  destroyAfterDepleted: 1
-  destroyDelay: 2
+  harvestDrops:
+  - item: {fileID: 11400000, guid: 5b2aeb1461a89434dab6751adb6301c6, type: 2}
+    totalAmount: 100
+  ragdollSettings:
+    ragdollParts:
+    - {fileID: 9074923633069766907}
+    - {fileID: 9023008670123064331}
+    - {fileID: 1846931639147623259}
+    - {fileID: 5003914002698101881}
+    - {fileID: 7730504955486670768}
+    - {fileID: 931998129611013396}
+    - {fileID: 3958375421803967387}
+    - {fileID: 1093549621812662614}
+    - {fileID: 6274796055854809566}
+    - {fileID: 8927116625628438990}
+    - {fileID: 1185835447859981743}
+    - {fileID: 3122436238962349250}
+    - {fileID: 8755339035241366332}
+    linearDamp: 5
+    angularDamp: 5
+    velocityInherit: 0.1
+  maxHarvestHits: 3
+  _corpseDisappearTime: 5000
+  _lootBagPrefab: {fileID: 4309089054926544229, guid: 27ea0d0c5535c3d47a83045f2d6eeb8a, type: 3}
 --- !u!114 &6664605108390037155
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1789,7 +1926,7 @@ CharacterJoint:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4966798870017915936}
   serializedVersion: 3
-  m_ConnectedBody: {fileID: 4352768560355162506}
+  m_ConnectedBody: {fileID: 1607526246512716151}
   m_ConnectedArticulationBody: {fileID: 0}
   m_Anchor: {x: 0, y: 0, z: 0}
   m_Axis: {x: -1, y: 0, z: 0}
@@ -2578,6 +2715,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8927116625628438990}
+  - component: {fileID: 1432429045692714896}
+  - component: {fileID: 3817553932767164188}
+  - component: {fileID: 843624303136871924}
   m_Layer: 12
   m_Name: MidLeg.R
   m_TagString: Untagged
@@ -2601,6 +2741,102 @@ Transform:
   - {fileID: 3122436238962349250}
   m_Father: {fileID: 1093549621812662614}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!136 &1432429045692714896
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8596266016364130038}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.002
+  m_Height: 0.02
+  m_Direction: 1
+  m_Center: {x: 0, y: 0.01, z: 0}
+--- !u!54 &3817553932767164188
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8596266016364130038}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
+--- !u!144 &843624303136871924
+CharacterJoint:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8596266016364130038}
+  serializedVersion: 3
+  m_ConnectedBody: {fileID: 1910771935616357490}
+  m_ConnectedArticulationBody: {fileID: 0}
+  m_Anchor: {x: 0, y: 0, z: 0}
+  m_Axis: {x: -1, y: 0, z: 0}
+  m_AutoConfigureConnectedAnchor: 1
+  m_ConnectedAnchor: {x: 0, y: 0, z: 0}
+  m_SwingAxis: {x: 0, y: 1, z: 0}
+  m_TwistLimitSpring:
+    spring: 0
+    damper: 0
+  m_LowTwistLimit:
+    limit: -80
+    bounciness: 0
+    contactDistance: 0
+  m_HighTwistLimit:
+    limit: 0
+    bounciness: 0
+    contactDistance: 0
+  m_SwingLimitSpring:
+    spring: 0
+    damper: 0
+  m_Swing1Limit:
+    limit: 0
+    bounciness: 0
+    contactDistance: 0
+  m_Swing2Limit:
+    limit: 0
+    bounciness: 0
+    contactDistance: 0
+  m_EnableProjection: 0
+  m_ProjectionDistance: 0.1
+  m_ProjectionAngle: 180
+  m_BreakForce: Infinity
+  m_BreakTorque: Infinity
+  m_EnableCollision: 0
+  m_EnablePreprocessing: 0
+  m_MassScale: 1
+  m_ConnectedMassScale: 1
 --- !u!1 &8678745640724708345
 GameObject:
   m_ObjectHideFlags: 0
@@ -2889,7 +3125,7 @@ CharacterJoint:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8960432574748711504}
   serializedVersion: 3
-  m_ConnectedBody: {fileID: 1910771935616357490}
+  m_ConnectedBody: {fileID: 3817553932767164188}
   m_ConnectedArticulationBody: {fileID: 0}
   m_Anchor: {x: 0, y: 0, z: 0}
   m_Axis: {x: -1, y: 0, z: 0}

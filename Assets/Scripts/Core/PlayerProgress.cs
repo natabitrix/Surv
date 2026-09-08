@@ -287,7 +287,7 @@ namespace Assets.Scripts.Core
             if (item == null || amount <= 0) return 0;
 
             // Определяем прочность: если не передали, ставим макс. для инструментов
-            float finalDurability = (durability == -2f) ? (item.itemType == ItemType.Tool || item.itemType == ItemType.Weapon ? item.maxDurability : -1f) : durability;
+            float finalDurability = (durability == -2f) ? (item.hasDurability ? item.maxDurability : -1f) : durability;
             int remaining = amount;
 
             // === ШАГ 1: Закреплённый слот в хотбаре ===
@@ -478,7 +478,7 @@ namespace Assets.Scripts.Core
             File.WriteAllText(path, json);
 
             // Debug.Log($"[PlayerProgress] Сохранено в {path}");
-            Debug.Log($"Сохранено из [{noteFrom}]");
+            // Debug.Log($"Сохранено из [{noteFrom}]");
 
         }
     }

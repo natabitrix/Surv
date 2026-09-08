@@ -169,9 +169,7 @@ namespace Assets.Scripts.InventorySystem
             {
                 if (durabilityBarFill != null)
                 {
-                    bool isTool = slot.item.itemType == ItemType.Tool || slot.item.itemType == ItemType.Weapon;
-
-                    if (isTool)
+                    if (slot.item.hasDurability)
                     {
                         float currentValue = slot.currentDurability;
                         float maxValue = slot.item.maxDurability;

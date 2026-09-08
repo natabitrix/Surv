@@ -13,8 +13,8 @@ namespace Assets.Scripts.Creatures
     public class Creature : BaseLivingEntity
     {
 
-        [Header("Ragdoll")]
-        public RagdollSettings ragdollSettings;
+        // [Header("Ragdoll")]
+        // public RagdollSettings ragdollSettings;
 
         [Header("Wandering")]
         public float wanderRange = 20f;
@@ -41,18 +41,18 @@ namespace Assets.Scripts.Creatures
             public Item item;
             public int minAmount = 1;
             public int maxAmount = 1;
-            [Range(0f, 1f)] public float dropChance = 1f; // Шанс от 0 до 1
+            [Range(0f, 1f)] public float dropChance = 1f;
         }
 
-        [Header("Loot & Harvesting")]
-        [Tooltip("Предметы, которые рандомно попадут в инвентарь трупа (мясо, шкуры, детали)")]
-        public LootEntry[] inventoryLootTable;
+        // [Header("Loot & Harvesting")]
+        // [Tooltip("Предметы, которые рандомно попадут в инвентарь трупа (мясо, шкуры, детали)")]
+        // public LootEntry[] inventoryLootTable;
 
-        [Tooltip("Ресурсы, которые выпадают при РАЗБИВАНИИ тела (железо, электроника, кости)")]
-        public Corpse.ResourceDrop[] harvestDrops;
+        // [Tooltip("Ресурсы, которые выпадают при разбивании тела (железо, электроника, кости)")]
+        // public Corpse.ResourceDrop[] harvestDrops;
 
-        [Tooltip("Сколько ударов нужно, чтобы полностью разобрать тело")]
-        public int maxHarvestHits = 5;
+        // [Tooltip("Сколько ударов нужно, чтобы полностью разобрать тело")]
+        // public int maxHarvestHits = 5;
 
         [Header("Audio")]
         public AudioClip FootstepAudioClip;
@@ -86,8 +86,6 @@ namespace Assets.Scripts.Creatures
             agent = GetComponent<NavMeshAgent>();
             _animator = GetComponent<Animator>();
 
-            // Debug.Log($"[Creature] {gameObject.name} инициализирован, здоровье: {GetHealth()}, maxHealth: {GetMaxHealth()}");
-
             if (_animator != null)
             {
                 _animIDSpeed = Animator.StringToHash("Speed");
@@ -111,15 +109,6 @@ namespace Assets.Scripts.Creatures
         {
             if (!IsAlive() || agent == null)
             {
-                // // Добавим логгирование для отладки
-                // if (!IsAlive())
-                // {
-                //     Debug.Log($"[Creature] {gameObject.name} мертв, обновление остановлено");
-                // }
-                // if (agent == null)
-                // {
-                //     Debug.Log($"[Creature] {gameObject.name} не имеет NavMeshAgent, обновление остановлено");
-                // }
                 return;
             }
 
@@ -130,15 +119,12 @@ namespace Assets.Scripts.Creatures
                 return;
             }
 
-            // Восстановление/снижение торпора
             if (torpor > 0) torpor = Mathf.Max(0, torpor - torporRecoveryRate * Time.deltaTime);
 
-            // Если переборщили с торпором
             if (torpor >= maxTorpor && !knockedOut)
             {
                 knockedOut = true;
                 agent.isStopped = true;
-                // Здесь можно включить анимацию сна
             }
             
             float distanceToPlayer = Vector3.Distance(transform.position, playerTransform.position);
@@ -146,7 +132,6 @@ namespace Assets.Scripts.Creatures
             if (isAttacking)
             {
                 // Во время атаки не меняем состояние
-                // Debug.Log($"[Creature] {gameObject.name} находится в состоянии атаки");
             }
             else if (distanceToPlayer <= attackRange && Time.time >= lastAttackTime + attackCooldown)
             {
@@ -167,14 +152,11 @@ namespace Assets.Scripts.Creatures
             UpdateAnimation();
         }
 
-
-        // Проверка достижения цели (вызывается в Update, если NavMeshAgent.enabled)
         void LateUpdate()
         {
             if (isWandering && agent != null && agent.isOnNavMesh && agent.remainingDistance < agent.stoppingDistance)
             {
                 isWandering = false;
-                // Debug.Log($"[{gameObject.name}] Остановился");
             }
         }
 
@@ -202,127 +184,94 @@ namespace Assets.Scripts.Creatures
             }
         }
 
-        protected override void Die()
-        {
-            // 1. Сначала отменяем всё, что может помешать
-            CancelInvoke();
+        // protected override void Die()
+        // {
+        //     CancelInvoke();
 
-            // 2. Отключаем аниматор ДО включения физики
-            // if (animator != null)
-            // {
-            //     animator.enabled = false;
-            //     animator.Update(0f); // Принудительно обновляем, чтобы сбросить позу
-            // }
+        //     // var agent = GetComponent<NavMeshAgent>();
+        //     // if (agent != null) agent.enabled = false;
 
-            // 3. Отключаем навмеш и коллайдер тела
-            var agent = GetComponent<NavMeshAgent>();
-            if (agent != null) agent.enabled = false;
+        //     ActivateRagdoll();
+        //     StartCoroutine(StopMovingRagdoll());
 
-            // var mainCollider = GetComponent<Collider>();
-            // if (mainCollider != null) mainCollider.enabled = false;
+        //     base.Die();
+        // }
 
-            // 4. Активируем рэгдолл с гашением скоростей
-            ActivateRagdoll();
-            StartCoroutine(StopMovingRagdoll());
+        // public void ActivateRagdoll()
+        // {
+        //     foreach (var part in ragdollSettings.ragdollParts)
+        //     {
+        //         if (part == null) continue;
+        //         var rb = part.GetComponent<Rigidbody>();
+        //         if (rb == null) continue;
 
+        //         rb.isKinematic = false;
+        //         rb.useGravity = true;
+        //         rb.interpolation = RigidbodyInterpolation.Interpolate;
 
-            base.Die(); // Вызываем базовую логику смерти
-        }
+        //         rb.linearVelocity = Vector3.zero;
+        //         rb.angularVelocity = Vector3.zero;
+        //         rb.linearDamping = 5f;
+        //         rb.angularDamping = 5f;
 
-        public void ActivateRagdoll()
-        {
-            foreach (var part in ragdollSettings.ragdollParts)
-            {
-                if (part == null) continue;
-                var rb = part.GetComponent<Rigidbody>();
-                if (rb == null) continue;
+        //         rb.maxAngularVelocity = 5f;
+        //         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
 
-                // Включаем физику
-                rb.isKinematic = false;
-                rb.useGravity = true;
-                rb.interpolation = RigidbodyInterpolation.Interpolate;
+        //         foreach (var otherPart in ragdollSettings.ragdollParts)
+        //         {
+        //             if (part != otherPart && otherPart.TryGetComponent<Collider>(out var otherCol))
+        //             {
+        //                 Physics.IgnoreCollision(rb.GetComponent<Collider>(), otherCol, true);
+        //             }
+        //         }
 
-                // Сбрасываем скорости
-                rb.linearVelocity = Vector3.zero;
-                rb.angularVelocity = Vector3.zero;
-                rb.linearDamping = 5f;
-                rb.angularDamping = 5f;
+        //         if (playerTransform != null)
+        //         {
+        //             if (playerTransform.TryGetComponent<Collider>(out var playerCol))
+        //             {
+        //                 Physics.IgnoreCollision(rb.GetComponent<Collider>(), playerCol, true);
+        //             }
+        //         }
+        //     }
+        // }
 
-                // Ограничения физики
-                rb.maxAngularVelocity = 5f;
-                rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        // public void DeactivateRagdoll()
+        // {
+        //     foreach (var part in ragdollSettings.ragdollParts)
+        //     {
+        //         if (part == null) continue;
+        //         var rb = part.GetComponent<Rigidbody>();
+        //         if (rb != null && rb.isKinematic == false)
+        //         {
+        //             rb.isKinematic = true;
 
-                // Игнорируем коллизии между частями робота
-                foreach (var otherPart in ragdollSettings.ragdollParts)
-                {
-                    if (part != otherPart && otherPart.TryGetComponent<Collider>(out var otherCol))
-                    {
-                        Physics.IgnoreCollision(rb.GetComponent<Collider>(), otherCol, true);
-                    }
-                }
+        //             if (rb.linearVelocity.magnitude < 0.1f && rb.angularVelocity.magnitude < 0.1f)
+        //             {
+        //                 rb.Sleep();
+        //             }
+        //         }
 
-                if (playerTransform != null)
-                {
-                    if (playerTransform.TryGetComponent<Collider>(out var playerCol))
-                    {
-                        Physics.IgnoreCollision(rb.GetComponent<Collider>(), playerCol, true);
-                    }
-                }
-            }
-        }
+        //         if (playerTransform != null)
+        //         {
+        //             if (playerTransform.TryGetComponent<Collider>(out var playerCol))
+        //             {
+        //                 Physics.IgnoreCollision(rb.GetComponent<Collider>(), playerCol, false);
+        //             }
+        //         }
+        //     }
+        // }
 
-        public void DeactivateRagdoll()
-        {
-            foreach (var part in ragdollSettings.ragdollParts)
-            {
-                if (part == null) continue;
-                var rb = part.GetComponent<Rigidbody>();
-                if (rb != null && rb.isKinematic == false)
-                {
-                    rb.isKinematic = true;
+        // private System.Collections.IEnumerator StopMovingRagdoll()
+        // {
+        //     yield return new WaitForSeconds(2.5f);
 
-                    // Если скорость маленькая, "замораживаем" физику полностью
-                    if (rb.linearVelocity.magnitude < 0.1f && rb.angularVelocity.magnitude < 0.1f)
-                    {
-                        rb.Sleep(); // Переводит Rigidbody в спящий режим (физика не просчитывается)
-                    }
-                }
+        //     DeactivateRagdoll();
 
-                if (playerTransform != null)
-                {
-                    if (playerTransform.TryGetComponent<Collider>(out var playerCol))
-                    {
-                        Physics.IgnoreCollision(rb.GetComponent<Collider>(), playerCol, false);
-                    }
-                }
-            }
-        }
+        //     CreateCorpseInventory();
 
-        private System.Collections.IEnumerator StopMovingRagdoll()
-        {
-            // Ждем, пока робот упадет и немного подергается
-            yield return new WaitForSeconds(2.5f);
-
-            DeactivateRagdoll();
-
-            // if (corpseCollider != null)
-            // {
-            //     corpseCollider.size *= 1.5f;
-            //     corpseCollider.isTrigger = true;
-            //     var mainCollider = GetComponent<BoxCollider>();
-            //     if (mainCollider != null)
-            //     {
-            //         mainCollider.size = corpseCollider.size * 100;
-            //         mainCollider.center = corpseCollider.center;
-            //     }
-            // }
-
-            CreateCorpseInventory();
-
-            // Включаем меню
-            var menu = GetComponent<RadialMenu>();
-            if (menu != null) menu.enabled = true;
-        }
+        //     var menu = GetComponent<RadialMenu>();
+        //     if (menu != null) menu.enabled = true;
+        // }
 
         private void HandleChasing()
         {
@@ -348,7 +297,6 @@ namespace Assets.Scripts.Creatures
 
         private void PerformAttack()
         {
-            // Debug.Log($"[Creature] {gameObject.name} начинает атаку игрока");
             isAttacking = true;
             lastAttackTime = Time.time;
 
@@ -364,7 +312,6 @@ namespace Assets.Scripts.Creatures
 
         private void DealDamageToPlayer()
         {
-            // Debug.Log($"[Creature] {gameObject.name} наносит урон игроку: {attackDamage}");
             PlayerSurvivalSystem.Instance?.TakeDamage(attackDamage);
         }
 
@@ -410,68 +357,59 @@ namespace Assets.Scripts.Creatures
             nextWanderTime = Time.time + delay;
         }
 
-        // Вызывается, когда NavMeshAgent достигает цели
         void OnDestinationReached()
         {
             if (agent.remainingDistance < agent.stoppingDistance)
             {
                 isWandering = false;
-                // Debug.Log($"[{gameObject.name}] Добрался до места");
-                // Здесь можно добавить анимацию остановки
             }
         }
 
-        private void CreateCorpseInventory()
-        {
-            // 1. Создаем инвентарь
-            var chestInv = gameObject.AddComponent<ChestInventory>();
-            string corpseKey = $"Corpse_{System.Guid.NewGuid().ToString()}";
-            chestInv.Initialize(12, corpseKey);
+        // void CreateCorpseInventory()
+        // {
+        //     var chestInv = gameObject.AddComponent<ChestInventory>();
+        //     string corpseKey = $"Corpse_{System.Guid.NewGuid().ToString()}";
+        //     chestInv.Initialize(100, corpseKey);
 
-            // 2. Заполняем случайным лутом
-            PopulateInventory(chestInv);
+        //     PopulateInventory(chestInv);
 
-            // 3. Настраиваем Corpse
-            var corpse = GetComponent<Corpse>();
-            if (corpse == null)
-            {
-                corpse = gameObject.AddComponent<Corpse>();
-            }
-            corpse.enabled = true;
+        //     var corpse = GetComponent<Corpse>();
+        //     corpse.enabled = true;
 
-            // Передаем настройки из Creature в Corpse
-            var chestUI = FindAnyObjectByType<ChestUI>();
-            corpse.Initialize(chestInv, chestUI, harvestDrops, maxHarvestHits);
-        }
+        //     var chestUI = FindAnyObjectByType<ChestUI>();
+        //     corpse.Initialize(chestInv, chestUI, harvestDrops, maxHarvestHits);
 
-        private void PopulateInventory(ChestInventory inv)
-        {
-            if (inventoryLootTable == null || inv == null)
-            {
-                Debug.LogWarning("[Creature] inventoryLootTable или inv равны null!");
-                return;
-            }
+        //     Debug.Log($"[Creature] Труп {gameObject.name} создан на {transform.position}");
+        // }
 
-            var data = inv.Data;
-            if (data == null)
-            {
-                Debug.LogError("[Creature] inv.Data равна null! Ячейки не созданы.");
-                return;
-            }
+        // private void PopulateInventory(ChestInventory inv)
+        // {
+        //     if (inventoryLootTable == null || inv == null)
+        //     {
+        //         Debug.LogWarning("[Creature] inventoryLootTable или inv равны null!");
+        //         return;
+        //     }
 
-            foreach (var entry in inventoryLootTable)
-            {
-                if (entry.item == null) continue;
+        //     var data = inv.Data;
+        //     if (data == null)
+        //     {
+        //         Debug.LogError("[Creature] inv.Data равна null! Ячейки не созданы.");
+        //         return;
+        //     }
 
-                float roll = Random.value;
+        //     foreach (var entry in inventoryLootTable)
+        //     {
+        //         if (entry.item == null) continue;
 
-                if (roll <= entry.dropChance)
-                {
-                    int amount = Random.Range(entry.minAmount, entry.maxAmount + 1);
-                    data.AddItemAnywhere(entry.item, amount);
-                }
-            }
-        }
+        //         float roll = Random.value;
+
+        //         if (roll <= entry.dropChance)
+        //         {
+        //             int amount = Random.Range(entry.minAmount, entry.maxAmount + 1);
+        //             data.AddItemAnywhere(entry.item, amount);
+        //         }
+        //     }
+        // }
 
         protected override float GetMaxHealthFromConfiguration()
         {
@@ -483,7 +421,6 @@ namespace Assets.Scripts.Creatures
             return _maxStamina;
         }
 
-        // Вызывается в событии анимации!
         private void SoundOnFootstep(AnimationEvent animationEvent)
         {
             if (animationEvent.animatorClipInfo.weight > 0.5f)
@@ -492,7 +429,6 @@ namespace Assets.Scripts.Creatures
             }
         }
 
-        // Вызывается в событии анимации!
         private void SoundOnAttack(AnimationEvent animationEvent)
         {
             if (animationEvent.animatorClipInfo.weight > 0.5f)
@@ -501,20 +437,16 @@ namespace Assets.Scripts.Creatures
             }
         }
 
-        // Вызывается в событии анимации!
         private void SoundOnTakeDamage(AnimationEvent animationEvent)
         {
-            // Debug.Log("SoundOnTakeDamage: " + animationEvent.animatorClipInfo.weight);
             if (animationEvent.animatorClipInfo.weight > 0.2f)
             {
                 PlaySound(TakeDamageAudioClip, TakeDamageAudioVolume);
             }
         }
 
-        // Вызывается в событии анимации!
         private void SoundOnDeath(AnimationEvent animationEvent)
         {
-            // Debug.Log("SoundOnDeath: " + animationEvent.animatorClipInfo.weight);
             if (animationEvent.animatorClipInfo.weight > 0.2f)
             {
                 PlaySound(DeathAudioClip, DeathAudioVolume);
@@ -525,17 +457,14 @@ namespace Assets.Scripts.Creatures
         {
             if (audioClip != null)
             {
-                // Получаем глобальную громкость
                 float globalVolume = 1f;
                 if (AudioManager.Instance != null)
                 {
                     globalVolume = AudioManager.Instance.masterVolume;
                 }
 
-                // Итоговая громкость = Глобальная * Настройка существа
                 float finalVolume = globalVolume * audioClipVolume;
 
-                // Создаем источник вручную с правильной громкостью
                 GameObject soundObj = new GameObject($"{audioClip.name}");
                 soundObj.transform.position = transform.position;
 
@@ -548,19 +477,16 @@ namespace Assets.Scripts.Creatures
                 Destroy(soundObj, audioClip.length + 0.1f);
             }
         }
-
-
     }
 
-    [System.Serializable]
-    public class RagdollSettings
-    {
-        public Transform[] ragdollParts; // Перетащи все кости рэгдолла в инспекторе
-        [Header("Физика после смерти")]
-        public float linearDamp = 0.5f;  // Гашение линейной скорости
-        public float angularDamp = 2f;   // Гашение вращения (важно!)
-        public float massMultiplier = 0.5f; // Уменьшаем массу для мягкого падения
-        [Range(0, 1)] public float velocityInherit = 0.1f; // 0 = игнорировать анимацию, 1 = сохранять
-    }
-
+    // [System.Serializable]
+    // public class RagdollSettings
+    // {
+    //     public Transform[] ragdollParts;
+    //     [Header("Физика после смерти")]
+    //     public float linearDamp = 0.5f;
+    //     public float angularDamp = 2f;
+    //     public float massMultiplier = 0.5f;
+    //     [Range(0, 1)] public float velocityInherit = 0.1f;
+    // }
 }

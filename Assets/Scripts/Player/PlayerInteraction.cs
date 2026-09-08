@@ -158,6 +158,7 @@ namespace Assets.Scripts.Player
             // ПРОВЕРКА: если тащим тело — отпускаем его, НЕЗАВИСИМО от рейкаста
             if (_currentlyDraggingCorpse != null)
             {
+                Debug.Log("HandleInteractEnded StopDragging");
                 _currentlyDraggingCorpse.StopDragging(this);
 
                 HandleMenuClosed();
@@ -363,7 +364,7 @@ namespace Assets.Scripts.Player
             return true;
         }
 
-        private void PerformInteractionRaycast()
+        private void PerformInteractionRaycast_()
         {
             _allTargets.Clear();
             _targetGO = null;
@@ -470,6 +471,7 @@ namespace Assets.Scripts.Player
                 }
             }
 
+            Debug.Log("bestTarget: " + bestTarget);
             // Добавляем в список ТОЛЬКО лучшую цель
             if (bestTarget != null)
             {
@@ -494,6 +496,119 @@ namespace Assets.Scripts.Player
 
 
         }
+
+private void PerformInteractionRaycast()
+{
+    _allTargets.Clear();
+    _targetGO = null;
+    _hitCreature = null;
+
+    float currentInteractionDistance = 5.0f; // увеличил диапазон
+    Vector3 headPos = _playerHead.position;
+    Vector3 headDir = _playerHead.forward;
+
+    // === 1. Raycast для существ (оставляем точным для боя) ===
+    if (Physics.Raycast(headPos, headDir, out RaycastHit hitCreature, 5.0f, _damageLayers))
+    {
+        TryFindCreature(hitCreature.collider);
+    }
+
+    // === 2. Поиск интерактивных объектов через OverlapSphere ===
+    Collider[] nearbyColliders = Physics.OverlapSphere(headPos, currentInteractionDistance, _interactableLayers);
+
+    IInteractable bestTarget = null;
+    GameObject bestTargetGO = null;
+    float bestScore = -1f;
+
+    foreach (var col in nearbyColliders)
+    {
+        // 🔑 ШАГ 1: Ищем КОРНЕВОЙ объект взаимодействия ВВЕРХ по иерархии
+        Transform current = col.transform;
+        GameObject candidateRoot = null;
+        IInteractable foundInteractable = null;
+
+        // Поднимаемся до 10 уровней вверх (был 5)
+        for (int i = 0; i < 10 && current != null; i++)
+        {
+            // ✅ ПРИОРИТЕТ 1: Сначала ищем CORPSE
+            if (current.TryGetComponent<Corpse>(out var corpse))
+            {
+                bool isCorrectCollider = corpse.InteractionCollider == null ||
+                                       corpse.InteractionCollider == col;
+
+                if (isCorrectCollider && corpse.enabled)
+                {
+                    candidateRoot = current.gameObject;
+                    foundInteractable = corpse;
+                    break;
+                }
+            }
+
+            // ✅ ПРИОРИТЕТ 2: BaseLivingEntity (живые существа)
+            if (current.TryGetComponent<BaseLivingEntity>(out var livingEntity))
+            {
+                bool isCorrectCollider = livingEntity.InteractionCollider == null ||
+                                       livingEntity.InteractionCollider == col;
+
+                if (isCorrectCollider && livingEntity.IsAlive())
+                {
+                    candidateRoot = current.gameObject;
+                    foundInteractable = livingEntity;
+                    break;
+                }
+            }
+
+            // ✅ ПРИОРИТЕТ 3: Обычные интерактаблы (сундуки, двери)
+            if (foundInteractable == null)
+            {
+                var interactable = current.GetComponent<IInteractable>();
+                if (interactable != null && !(interactable is Corpse) && !(interactable is BaseLivingEntity))
+                {
+                    candidateRoot = current.gameObject;
+                    foundInteractable = interactable;
+                    break;
+                }
+            }
+
+            current = current.parent;
+        }
+
+        // Если не нашли корневого объекта — пропускаем
+        if (candidateRoot == null || foundInteractable == null) continue;
+
+        // 🔑 ШАГ 2: УПРОЩЕННАЯ проверка видимости (БЕЗ LineCast)
+        // Просто проверяем дистанцию и общее направление
+        Vector3 toTarget = candidateRoot.transform.position - headPos;
+        float distToTarget = toTarget.magnitude;
+
+        if (distToTarget > currentInteractionDistance) continue;
+
+        // Проверяем: находится ли цель в пределах ~ 120 градусов от взгляда
+        // Это позволит видеть цели сбоку и даже немного сзади
+        float angle = Vector3.Angle(headDir, toTarget.normalized);
+        if (angle > 120f) continue; // был 90, теперь 120
+
+        // 🔑 ШАГ 3: Расчет приоритета (ближайшая цель выигрывает)
+        float score = (1f - (angle / 120f)) * 0.3f + (1f - (distToTarget / currentInteractionDistance)) * 0.7f;
+
+        if (score > bestScore)
+        {
+            bestScore = score;
+            bestTargetGO = candidateRoot;
+            bestTarget = foundInteractable;
+        }
+    }
+
+    // Добавляем в список ТОЛЬКО лучшую цель
+    if (bestTarget != null)
+    {
+        ProcessHitObject(bestTargetGO);
+    }
+
+}
+
+
+
 
         // Поиск всех компонентов IInteractable на объекте
         private void FindInteractablesOnObject(GameObject obj)
@@ -737,9 +852,12 @@ namespace Assets.Scripts.Player
             // === Нанесение урона существам ===
             if (_hitCreature != null)
             {
-                float damage = _playerController.GetAttackDamage();
-                // Debug.Log($"[PlayerInteraction] Атака по {_hitCreature.gameObject.name}, урон: {damage}");
-                _hitCreature.TakeDamage(damage, this);
+                if (_hitCreature.IsAlive())
+                {
+                    float damage = _playerController.GetAttackDamage();
+                    // Debug.Log($"[PlayerInteraction] Атака по {_hitCreature.gameObject.name}, урон: {damage}");
+                    _hitCreature.TakeDamage(damage, this);
+                }
 
                 // Получаем тип воздействия от существа
                 if (_hitCreature is IImpactSoundProvider provider)
@@ -770,8 +888,8 @@ namespace Assets.Scripts.Player
                 {
                     // Уменьшаем прочность
                     slot.currentDurability -= 10.0f; // Или значение из конфига предмета
-                    PlayerProgress.Instance.mainInventoryData.NotifyChanged(); 
-                    PlayerProgress.Instance.hotbarInventoryData.NotifyChanged(); 
+                    PlayerProgress.Instance.mainInventoryData.NotifyChanged();
+                    PlayerProgress.Instance.hotbarInventoryData.NotifyChanged();
 
                     if (slot.currentDurability <= 0)
                     {
@@ -1050,48 +1168,66 @@ namespace Assets.Scripts.Player
         }
 
 #if UNITY_EDITOR
-        // private void OnDrawGizmos()
-        // {
-        //     if (!Application.isPlaying) return;
+        private void OnDrawGizmos()
+        {
+            if (!Application.isPlaying) return;
 
-        //     Item equippedItem = GetEquippedTool();
-        //     if (equippedItem == null) return;
+    float currentInteractionDistance = 5.0f;
+    Vector3 headPos = _playerHead != null ? _playerHead.position : transform.position;
+    Vector3 headDir = _playerHead != null ? _playerHead.forward : transform.forward;
 
-        //     var equipment = GetComponent<PlayerEquipment>();
-        //     if (equipment == null || equipment.toolAttachPoint == null) return;
+    // Рисуем луч взгляда
+    Debug.DrawRay(headPos, headDir * 5.0f, Color.orange);
 
-        //     Transform toolParent = equipment.toolAttachPoint;
-        //     if (toolParent.childCount == 0) return;
-        //     Transform itemModel = toolParent.GetChild(0);
+    // Рисуем линию до целевого объекта
+    if (_targetGO != null)
+    {
+        Debug.DrawLine(headPos, _targetGO.transform.position, Color.green);
+    }
 
-        //     var meshFilter = itemModel.GetComponent<MeshFilter>();
-        //     if (meshFilter == null || meshFilter.sharedMesh == null) return;
+    // Рисуем сферу поиска
+    Gizmos.color = new Color(0, 1, 0, 0.1f);
+    Gizmos.DrawWireSphere(headPos, currentInteractionDistance);
 
-        //     Bounds localBounds = meshFilter.sharedMesh.bounds;
-        //     Vector3 boxCenterWorld = itemModel.TransformPoint(localBounds.center);
-        //     Vector3 boxExtents = Vector3.Scale(localBounds.extents, itemModel.lossyScale) * _equippedItemContactRadius;
 
-        //     itemModel.transform.GetPositionAndRotation(out Vector3 _, out Quaternion rot);
+            // Item equippedItem = GetEquippedTool();
+            // if (equippedItem == null) return;
 
-        //     // 🔹 Рисуем короб ровно там, где работает OverlapBox
-        //     Matrix4x4 oldMatrix = Gizmos.matrix;
-        //     Gizmos.matrix = Matrix4x4.TRS(boxCenterWorld, rot, Vector3.one);
+            // var equipment = GetComponent<PlayerEquipment>();
+            // if (equipment == null || equipment.toolAttachPoint == null) return;
 
-        //     Gizmos.color = new Color(1f, 0.4f, 0f, 0.5f);
-        //     Gizmos.DrawCube(Vector3.zero, boxExtents * 2f);
+            // Transform toolParent = equipment.toolAttachPoint;
+            // if (toolParent.childCount == 0) return;
+            // Transform itemModel = toolParent.GetChild(0);
 
-        //     Gizmos.color = Color.white;
-        //     Gizmos.DrawWireCube(Vector3.zero, boxExtents * 2f);
-        //     Gizmos.matrix = oldMatrix;
+            // var meshFilter = itemModel.GetComponent<MeshFilter>();
+            // if (meshFilter == null || meshFilter.sharedMesh == null) return;
 
-        //     // 🔹 Визуально покажем разницу: пивот (жёлтый) vs центр удара (голубой)
-        //     Gizmos.color = Color.yellow;
-        //     Gizmos.DrawSphere(itemModel.position, 0.05f); // пивот/рука
+            // Bounds localBounds = meshFilter.sharedMesh.bounds;
+            // Vector3 boxCenterWorld = itemModel.TransformPoint(localBounds.center);
+            // Vector3 boxExtents = Vector3.Scale(localBounds.extents, itemModel.lossyScale) * _equippedItemContactRadius;
 
-        //     Gizmos.color = Color.cyan;
-        //     Gizmos.DrawSphere(boxCenterWorld, 0.07f); // центр лезвия
-        //     Gizmos.DrawLine(itemModel.position, boxCenterWorld);
-        // }
+            // itemModel.transform.GetPositionAndRotation(out Vector3 _, out Quaternion rot);
+
+            // // 🔹 Рисуем короб ровно там, где работает OverlapBox
+            // Matrix4x4 oldMatrix = Gizmos.matrix;
+            // Gizmos.matrix = Matrix4x4.TRS(boxCenterWorld, rot, Vector3.one);
+
+            // Gizmos.color = new Color(1f, 0.4f, 0f, 0.5f);
+            // Gizmos.DrawCube(Vector3.zero, boxExtents * 2f);
+
+            // Gizmos.color = Color.white;
+            // Gizmos.DrawWireCube(Vector3.zero, boxExtents * 2f);
+            // Gizmos.matrix = oldMatrix;
+
+            // // 🔹 Визуально покажем разницу: пивот (жёлтый) vs центр удара (голубой)
+            // Gizmos.color = Color.yellow;
+            // Gizmos.DrawSphere(itemModel.position, 0.05f); // пивот/рука
+
+            // Gizmos.color = Color.cyan;
+            // Gizmos.DrawSphere(boxCenterWorld, 0.07f); // центр лезвия
+            // Gizmos.DrawLine(itemModel.position, boxCenterWorld);
+        }
 #endif
 
 

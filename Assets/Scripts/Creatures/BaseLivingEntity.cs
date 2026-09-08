@@ -6,12 +6,12 @@ using Assets.Scripts.Effects;
 using Assets.Scripts.Interactables;
 using Assets.Scripts.InventorySystem; // Для StatType, PlayerProgress, PlayerSurvivalSystem
 
-namespace Assets.Scripts.Creatures // Или другой namespace
+namespace Assets.Scripts.Creatures 
 {
     public abstract class BaseLivingEntity : MonoBehaviour, IInteractable, IImpactSoundProvider
     {
         [Header("Audio")]
-        [SerializeField] private ImpactType _impactType = ImpactType.Flesh; // ← Новое поле в инспекторе
+        [SerializeField] private ImpactType _impactType = ImpactType.Flesh; 
         public virtual ImpactType GetImpactType() => _impactType;
         [Header("ParticleSystem for Damage Effect")]
         public ParticleSystem damageEffect;
@@ -192,19 +192,31 @@ namespace Assets.Scripts.Creatures // Или другой namespace
 
             // Отключить NavMeshAgent, чтобы не пыталось двигаться во время смерти
             var agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
-            if (agent != null) agent.enabled = false;
-            if (animator != null)
-            {
-                animator.SetTrigger(animIDDeath);
-            }
+            // if (agent != null) agent.enabled = false;
+            if (agent != null) Destroy(agent);
+            
+            if (animator != null) animator.SetTrigger(animIDDeath);
 
+            var corpse = GetComponent<Corpse>();
+
+            // Вар. 1
+            // corpse.enabled = true;
+            // corpse.CreateCorpseInventory();
+            // var menu = GetComponent<RadialMenu>();
+            // if (menu != null) menu.enabled = true;
+
+            // Вар. 2
+            corpse.ActivateRagdoll();
+            StartCoroutine(corpse.StopMovingCorpse());
+
+ 
+            Debug.Log("Creature Died!");
             // Вызываем событие смерти
             OnDeath?.Invoke(this);
 
-            // Уничтожить объект через задержку, чтобы анимация смерти проигралась
-            // или передать управление другому скрипту (например, Spawner)
-            // Destroy(gameObject, 2.0f); // Пример
         }
+
+
 
 
         /// <summary>

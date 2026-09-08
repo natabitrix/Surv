@@ -275,7 +275,7 @@ namespace Assets.Scripts.Player
             }
             else
             {
-                Debug.Log("[PlayerController] Оборудование отсутствует или не экипировано, урон кулаками: 10f");
+                // Debug.Log("[PlayerController] Оборудование отсутствует или не экипировано, урон кулаками: 10f");
             }
             return 10f; // Урон кулаками по умолчанию
         }

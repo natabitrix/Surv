@@ -2516,7 +2516,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &57059579
 Transform:
   m_ObjectHideFlags: 0
@@ -24148,6 +24148,7 @@ MonoBehaviour:
   _staminaRecoveryPerSecond: 20
   _oxygenRecoveryPerSecond: 20
   _healthRecoveryPerSecond: 1
+  _playerCorpsePrefab: {fileID: 9016813870336318502, guid: 3048ca76b8a9ea74d88afed647d2357d, type: 3}
 --- !u!114 &504972941
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24190,7 +24191,7 @@ MonoBehaviour:
   recipeDatabase: {fileID: 618370319}
   itemDatabase: {fileID: 166704988}
   beginnerItems: []
-  GiveBeginnerItemsToPlayer: 1
+  GiveBeginnerItemsToPlayer: 0
   playerController: {fileID: 9106616251398040422}
   inventoryManager: {fileID: 504972947}
 --- !u!114 &504972943
@@ -26982,6 +26983,63 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 2532886251314913020, guid: 954b7a467a8ef9341bd209a76d738cb9, type: 3}
   m_PrefabInstance: {fileID: 530848786}
   m_PrefabAsset: {fileID: 0}
+--- !u!1001 &531558800
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 3036685186262367339, guid: 0c2e9d48789cd304e8a63e95e6562219, type: 3}
+      propertyPath: m_Name
+      value: George
+      objectReference: {fileID: 0}
+    - target: {fileID: 6824948828111263205, guid: 0c2e9d48789cd304e8a63e95e6562219, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 143.39214
+      objectReference: {fileID: 0}
+    - target: {fileID: 6824948828111263205, guid: 0c2e9d48789cd304e8a63e95e6562219, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 8.265919
+      objectReference: {fileID: 0}
+    - target: {fileID: 6824948828111263205, guid: 0c2e9d48789cd304e8a63e95e6562219, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -2.5808134
+      objectReference: {fileID: 0}
+    - target: {fileID: 6824948828111263205, guid: 0c2e9d48789cd304e8a63e95e6562219, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6824948828111263205, guid: 0c2e9d48789cd304e8a63e95e6562219, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6824948828111263205, guid: 0c2e9d48789cd304e8a63e95e6562219, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6824948828111263205, guid: 0c2e9d48789cd304e8a63e95e6562219, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6824948828111263205, guid: 0c2e9d48789cd304e8a63e95e6562219, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6824948828111263205, guid: 0c2e9d48789cd304e8a63e95e6562219, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6824948828111263205, guid: 0c2e9d48789cd304e8a63e95e6562219, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 0c2e9d48789cd304e8a63e95e6562219, type: 3}
 --- !u!1001 &532083788
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -66816,6 +66874,7 @@ GameObject:
   - component: {fileID: 1354937376}
   - component: {fileID: 1354937375}
   - component: {fileID: 1354937374}
+  - component: {fileID: 1354937378}
   m_Layer: 4
   m_Name: Ocean (1)
   m_TagString: Water
@@ -66928,6 +66987,22 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1354937372}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &1354937378
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1354937372}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ebdbb8f9b9622c4c84d5f29ec6104ba, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RippleEffect
+  TextureSize: 1024
+  ObjectsRT: {fileID: 8400000, guid: fea0f69b64fbc824a816c0760438ac1b, type: 2}
+  RippleShader: {fileID: 4800000, guid: 085e2f9ee242e0044938b4db9604caa8, type: 3}
+  AddShader: {fileID: 4800000, guid: 22fba074de65b3d4eb947e7be38dabc4, type: 3}
 --- !u!1001 &1355628127
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -68781,7 +68856,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
   m_AnchoredPosition: {x: 0, y: -500}
-  m_SizeDelta: {x: 460, y: 1000}
+  m_SizeDelta: {x: 550, y: 1000}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1411885039
 MonoBehaviour:
@@ -68803,7 +68878,7 @@ MonoBehaviour:
   m_ChildAlignment: 0
   m_StartCorner: 0
   m_StartAxis: 0
-  m_CellSize: {x: 57, y: 57}
+  m_CellSize: {x: 61, y: 61}
   m_Spacing: {x: 0, y: 0}
   m_Constraint: 0
   m_ConstraintCount: 6
@@ -238362,6 +238437,9 @@ GameObject:
   - component: {fileID: 9106616251398040424}
   - component: {fileID: 6173470279094547409}
   - component: {fileID: 9106616251398040422}
+  - component: {fileID: 9106616251398040429}
+  - component: {fileID: 9106616251398040431}
+  - component: {fileID: 9106616251398040430}
   m_Layer: 7
   m_Name: ---PlayerController---
   m_TagString: Player
@@ -250725,6 +250803,76 @@ MonoBehaviour:
   ceilingThickness: 0.1
   _inputHandler: {fileID: 0}
   _inventoryManager: {fileID: 0}
+--- !u!114 &9106616251398040429
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8344857757043659186}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a58cd31a1b2f00848bf1cbc7cca71af0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Creatures.Corpse
+  _dragRigidbody: {fileID: 2563879192178083166, guid: 3048ca76b8a9ea74d88afed647d2357d, type: 3}
+  dragDistance: 0
+  springForce: 500
+  springDamper: 0
+  maxSpringDistance: 0
+  _interactionCollider: {fileID: 3929813992448511383, guid: 3048ca76b8a9ea74d88afed647d2357d, type: 3}
+  _inventory: {fileID: 0}
+  _chestUI: {fileID: 0}
+  allowHarvest: 1
+  allowFists: 1
+  allowAxe: 1
+  allowPickaxe: 1
+  allowSword: 1
+  allowSickle: 0
+  inventoryLootTable: []
+  breakEffect: {fileID: 0}
+  shatterer: {fileID: 0}
+  hitDecaler: {fileID: 0}
+  animator: {fileID: 0}
+  _impactType: 1
+  harvestDrops: []
+  maxHarvestHits: 5
+  ragdollSettings:
+    ragdollParts: []
+    linearDamp: 0.5
+    angularDamp: 2
+    velocityInherit: 0.1
+  _corpseDisappearTime: 300
+  _lootBagPrefab: {fileID: 4309089054926544229, guid: 27ea0d0c5535c3d47a83045f2d6eeb8a, type: 3}
+--- !u!114 &9106616251398040430
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8344857757043659186}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5b2b8386aa72df4cb3a72c848294d3f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.InventorySystem.ChestInventory
+  saveKey: Player_LootBag
+  size: 110
+--- !u!114 &9106616251398040431
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8344857757043659186}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e4fd1ea77d25d2645838ef83642d540d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Interactables.RadialMenu
+  item: {fileID: 0}
+  corpse: {fileID: -7865009083241595473, guid: 3048ca76b8a9ea74d88afed647d2357d, type: 3}
+  creature: {fileID: 0}
 --- !u!224 &9118402365439869754
 RectTransform:
   m_ObjectHideFlags: 0
@@ -253037,3 +253185,4 @@ SceneRoots:
   - {fileID: 306940422015198382}
   - {fileID: 2144853123}
   - {fileID: 1233830587}
+  - {fileID: 531558800}
