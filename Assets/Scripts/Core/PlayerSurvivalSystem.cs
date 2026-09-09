@@ -183,7 +183,7 @@ namespace Assets.Scripts.Core
                 {
                     _isDead = true;
                     _health = 0f;
-                    Debug.Log("Player Died!");
+                    // Debug.Log("Player Died!");
 
                     OnPlayerDeath();
                     StopCoroutine(UpdateSurvivalStats());
@@ -261,19 +261,32 @@ namespace Assets.Scripts.Core
             var corpse = playerCorpseGO.GetComponent<Corpse>();
 
             // Передаём вещи игрока в труп
-            corpse.InitializePlayerCorpse(
-                PlayerProgress.Instance.mainInventoryData,
-                PlayerProgress.Instance.hotbarInventoryData,
-                FindAnyObjectByType<ChestUI>()
-            );
+            // corpse.InitializePlayerCorpse(
+            //     PlayerProgress.Instance.mainInventoryData,
+            //     PlayerProgress.Instance.hotbarInventoryData,
+            //     FindAnyObjectByType<ChestUI>()
+            // );
 
-            corpse.ActivateRagdoll();
-            StartCoroutine(corpse.StopMovingCorpse(true));            
+            // corpse.ActivateRagdoll();
+            // StartCoroutine(corpse.StopMovingCorpse(true));            
 
             // var menu = GetComponent<RadialMenu>();
             // if (menu != null) menu.enabled = true;
 
             // Debug.Log($"[Creature] Труп {gameObject.name} создан на {transform.position}");
+
+
+            corpse.CreateCorpseInventory(
+                "PlayerCorpse",
+                110,
+                PlayerProgress.Instance.mainInventoryData,
+                PlayerProgress.Instance.hotbarInventoryData,
+                FindAnyObjectByType<ChestUI>()
+            );
+
+            var menu = corpse.GetComponent<RadialMenu>();
+            if (menu != null) menu.enabled = true;
+
 
         }
 

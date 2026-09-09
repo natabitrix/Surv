@@ -1298,6 +1298,7 @@ MonoBehaviour:
   harvestDrops:
   - item: {fileID: 11400000, guid: 5b2aeb1461a89434dab6751adb6301c6, type: 2}
     totalAmount: 100
+  maxHarvestHits: 3
   ragdollSettings:
     ragdollParts:
     - {fileID: 9074923633069766907}
@@ -1316,7 +1317,6 @@ MonoBehaviour:
     linearDamp: 5
     angularDamp: 5
     velocityInherit: 0.1
-  maxHarvestHits: 3
   _corpseDisappearTime: 5000
   _lootBagPrefab: {fileID: 4309089054926544229, guid: 27ea0d0c5535c3d47a83045f2d6eeb8a, type: 3}
 --- !u!114 &6664605108390037155

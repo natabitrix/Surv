@@ -206,11 +206,25 @@ namespace Assets.Scripts.Creatures
             // if (menu != null) menu.enabled = true;
 
             // Вар. 2
-            corpse.ActivateRagdoll();
-            StartCoroutine(corpse.StopMovingCorpse());
+            // corpse.ActivateRagdoll();
+            // StartCoroutine(corpse.StopMovingCorpse());
+
+            // Вар. 3
+            corpse.enabled = true;
+            // corpse.CreateCorpseInventory();
+            corpse.CreateCorpseInventory(
+                "CreatureCorpse",
+                100,
+                null,
+                null,
+                FindAnyObjectByType<ChestUI>()
+            );
+
+            var menu = GetComponent<RadialMenu>();
+            if (menu != null) menu.enabled = true;
 
  
-            Debug.Log("Creature Died!");
+            // Debug.Log("Creature Died!");
             // Вызываем событие смерти
             OnDeath?.Invoke(this);
 

@@ -7,7 +7,7 @@ namespace Assets.Scripts.InventorySystem
 {
     public class ChestInventory : MonoBehaviour
     {
-        [SerializeField] private string saveKey = "Chest_001"; // уникальный ID сундука
+        [SerializeField] public string saveKey = "Chest_001"; // уникальный ID сундука
         [SerializeField] public int size = 12;
 
 

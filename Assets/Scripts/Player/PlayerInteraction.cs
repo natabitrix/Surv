@@ -158,7 +158,6 @@ namespace Assets.Scripts.Player
             // ПРОВЕРКА: если тащим тело — отпускаем его, НЕЗАВИСИМО от рейкаста
             if (_currentlyDraggingCorpse != null)
             {
-                Debug.Log("HandleInteractEnded StopDragging");
                 _currentlyDraggingCorpse.StopDragging(this);
 
                 HandleMenuClosed();

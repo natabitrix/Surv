@@ -827,7 +827,7 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
@@ -3592,8 +3592,12 @@ MonoBehaviour:
   hitDecaler: {fileID: 0}
   animator: {fileID: 0}
   _impactType: 1
-  harvestDrops: []
-  maxHarvestHits: 5
+  harvestDrops:
+  - item: {fileID: 11400000, guid: 14e07d6a5fa29dd469fc0ecd04bd0d01, type: 2}
+    totalAmount: 50
+  - item: {fileID: 11400000, guid: 1ad4a3a8b65eb0d41bd64511934ea685, type: 2}
+    totalAmount: 100
+  maxHarvestHits: 3
   ragdollSettings:
     ragdollParts:
     - {fileID: 3904660420918753148}

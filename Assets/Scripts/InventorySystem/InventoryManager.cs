@@ -525,11 +525,11 @@ namespace Assets.Scripts.InventorySystem
         {
             int savedIndex = saveData.equippedSlotIndex; //globalSlotIndex
 
-            Debug.Log("EquipSavedEquippedItem savedIndex: " + savedIndex);
+            // Debug.Log("EquipSavedEquippedItem savedIndex: " + savedIndex);
             if (savedIndex > -1 && equipment != null)
             {
                 SlotOwner owner = saveData.equippedSlotOwner;
-                Debug.Log("EquipSavedEquippedItem equippedSlotOwner: " + owner);
+                // Debug.Log("EquipSavedEquippedItem equippedSlotOwner: " + owner);
                 int localSlotIndex = GetLocalSlotIndex(savedIndex, owner);
                 SelectSlot(localSlotIndex, owner);
 
