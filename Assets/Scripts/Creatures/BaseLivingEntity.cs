@@ -210,8 +210,13 @@ namespace Assets.Scripts.Creatures
             // StartCoroutine(corpse.StopMovingCorpse());
 
             // Вар. 3
+            // Активируем компонента тела
             corpse.enabled = true;
-            // corpse.CreateCorpseInventory();
+
+            // Инициализируем труп для добычи ресурсов с него
+            corpse.InitializeCorpse();
+
+            // Созаем инвентарь трупа
             corpse.CreateCorpseInventory(
                 "CreatureCorpse",
                 100,

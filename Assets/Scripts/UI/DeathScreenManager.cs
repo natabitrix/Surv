@@ -9,19 +9,19 @@ namespace Assets.Scripts.UI
     public class DeathScreenManager : MonoBehaviour
     {
         public GameObject DeathSceenCanvas;
-        public GameObject PausePanel;
+        // public GameObject PausePanel;
 
         public String GameScene;
-        public String MainMenuScene;
+        // public String MainMenuScene;
 
         public float timeScale = 1f;
 
         private bool _isDeathSceenOpened = false;
 
 
-        [SerializeField] private PlayerInputHandler _input;
+        // [SerializeField] private PlayerInputHandler _input;
         [SerializeField] private PlayerController _playerController;
-        [SerializeField] private PanelsUIController _panelsController;
+        // [SerializeField] private PanelsUIController _panelsController;
 
         public bool IsDeathSceenOpened() => _isDeathSceenOpened;
 

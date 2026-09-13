@@ -247,6 +247,32 @@ namespace Assets.Scripts.Creatures
 
         }
 
+        public void CreateCorpseInventory(string corpseName, int invCapacity, InventoryData mainInventory, InventoryData hotbarInventory, ChestUI chestUI)
+        {
+
+            // Добавляем к трупу и инициализируем компонент ChestInventory
+            var chestInv = gameObject.AddComponent<ChestInventory>();
+            string corpseKey = $"{corpseName}_{System.Guid.NewGuid().ToString()}";
+            chestInv.Initialize(invCapacity, corpseKey);
+
+            _inventory = chestInv;
+            _chestUI = chestUI;
+            _corpseName = corpseName;
+
+            if (mainInventory != null)
+            {
+                // Копируем в труп все вещи игрока
+                CopyPlayerItemsToCorpse(mainInventory, hotbarInventory);
+            }
+            else
+            {
+                // Заполняем инвентарь существа
+                PopulateInventory(chestInv);
+            }
+
+
+        }
+
         private void PopulateInventory(ChestInventory inv)
         {
             if (inventoryLootTable == null || inv == null)
@@ -305,7 +331,6 @@ namespace Assets.Scripts.Creatures
             }
         }
 
-
         public void OpenInventory()
         {
 
@@ -335,33 +360,6 @@ namespace Assets.Scripts.Creatures
                 _chestUI.Close();
                 _isOpen = false;
             }
-        }
-
-        public void CreateCorpseInventory(string corpseName, int invCapacity, InventoryData mainInventory, InventoryData hotbarInventory, ChestUI chestUI)
-        {
-
-            // Добавляем к трупу и инициализируем компонент ChestInventory
-            var chestInv = gameObject.AddComponent<ChestInventory>();
-            string corpseKey = $"{corpseName}_{System.Guid.NewGuid().ToString()}";
-            chestInv.Initialize(invCapacity, corpseKey);
-
-            _inventory = chestInv;
-            _chestUI = chestUI;
-            _corpseName = corpseName;
-
-            if (mainInventory != null)
-            {
-                // Копируем в труп все вещи игрока
-                CopyPlayerItemsToCorpse(mainInventory, hotbarInventory);
-            }
-            else
-            {
-                // Заполняем инвентарь существа
-                PopulateInventory(chestInv);
-            }
-
-            // Инициализируем труп для добычи ресурсов с него
-            InitializeCorpse();
         }
 
         private void HandleHarvest(InteractContext context)

@@ -1,9 +1,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Assets.Scripts.Building;
 using Assets.Scripts.Creatures;
 using Assets.Scripts.Interactables;
 using Assets.Scripts.InventorySystem;
+using Assets.Scripts.Items;
+using Assets.Scripts.Player;
 using Assets.Scripts.UI;
 using Unity.Mathematics;
 using UnityEngine;
@@ -113,13 +116,23 @@ namespace Assets.Scripts.Core
         {
             var src = saveData.survivalStats ?? new Dictionary<StatType, float>();
 
-            _health = Get(src, StatType.Health, MaxHealth);
-            _stamina = Get(src, StatType.Stamina, MaxStamina);
-            _oxygen = Get(src, StatType.Oxygen, MaxOxygen);
-            _food = Get(src, StatType.Food, MaxFood);
-            _water = Get(src, StatType.Water, MaxWater);
+            // _health = Get(src, StatType.Health, MaxHealth);
+            // _stamina = Get(src, StatType.Stamina, MaxStamina);
+            // _oxygen = Get(src, StatType.Oxygen, MaxOxygen);
+            // _food = Get(src, StatType.Food, MaxFood);
+            // _water = Get(src, StatType.Water, MaxWater);
+            // _weight = Get(src, StatType.Weight, 0f);
+            // _torpidity = Get(src, StatType.Torpidity, 0f);
+
+            // _health = MaxHealth;
+            _health = 3;
+            _stamina = MaxStamina;
+            // _oxygen = MaxOxygen;
+            _oxygen = 0;
+            _food = MaxFood;
+            _water = MaxWater;
             _weight = Get(src, StatType.Weight, 0f);
-            _torpidity = Get(src, StatType.Torpidity, 0f);
+            _torpidity = 0f;
 
             OnSurvivalStatsChanged?.Invoke(); // обновить UI
         }
@@ -169,7 +182,7 @@ namespace Assets.Scripts.Core
                 }
 
                 // --- Здоровье (проверка критических условий) ---
-                bool isCritical = (_food <= 0f) || (_water <= 0f) || (_stamina <= 0f) || (_torpidity >= MaxTorpidity);
+                bool isCritical = (_oxygen <= 0f) || (_food <= 0f) || (_water <= 0f) || (_stamina <= 0f) || (_torpidity >= MaxTorpidity);
                 if (isCritical)
                 {
                     _health = Mathf.Max(0f, _health - _healthLossPerSecondWhenCritical * updateInterval);
@@ -255,16 +268,25 @@ namespace Assets.Scripts.Core
             if (playerController == null) return;
 
             // Отключаем управление игроком
-            // playerController.enabled = false;
-            // var character = playerController.VisualCharacter;
-            // if (character != null) character.SetActive(false);
+            playerController.enabled = false;
+            var character = playerController.VisualCharacter;
+            if (character != null) character.SetActive(false);
+
+            if (playerController.TryGetComponent<PlayerInteraction>(out var interact)) interact.enabled = false;
+            if (playerController.TryGetComponent<PlayerEquipment>(out var equipment)) equipment.enabled = false;
+            if (playerController.TryGetComponent<PlayerBuildMode>(out var buildMode)) buildMode.enabled = false;
+            if (playerController.TryGetComponent<ItemUsageSystem>(out var usage)) usage.enabled = false;
+            if (playerController.TryGetComponent<ItemHandler>(out var handler)) handler.enabled = false;
 
             // Создаём труп игрока на его позиции
             GameObject playerCorpseGO = Instantiate(_playerCorpsePrefab, playerController.transform.position, Quaternion.identity);
+
             var corpse = playerCorpseGO.GetComponent<Corpse>();
 
-            // Debug.Log($"[Creature] Труп {gameObject.name} создан на {transform.position}");
+            // Инициализируем труп для добычи ресурсов с него
+            corpse.InitializeCorpse();
 
+            // Созаем инвентарь трупа
             corpse.CreateCorpseInventory(
                 "PlayerCorpse",
                 110,
@@ -272,12 +294,17 @@ namespace Assets.Scripts.Core
                 PlayerProgress.Instance.hotbarInventoryData,
                 FindAnyObjectByType<ChestUI>()
             );
- 
-            // var deathScreenManager = FindAnyObjectByType<DeathScreenManager>();
-            // if (deathScreenManager != null)
-            // {
-            //     deathScreenManager.Show();
-            // }
+
+            var menu = corpse.GetComponent<RadialMenu>();
+            if (menu != null) menu.enabled = true;
+
+            // Показываем экран смери
+            var deathScreenManager = FindAnyObjectByType<DeathScreenManager>();
+            if (deathScreenManager != null)
+            {
+                deathScreenManager.Show();
+            }
+
         }
 
 

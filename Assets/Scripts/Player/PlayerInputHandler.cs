@@ -2,11 +2,10 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.EventSystems;
-using Assets.Scripts.UI.Pausemenu;
+using Assets.Scripts.UI;
 using System;
 using System.Collections;
 using Assets.Scripts.InventorySystem;
-using Assets.Scripts.UI;
 
 namespace Assets.Scripts.Player
 {

@@ -4,7 +4,7 @@ using Assets.Scripts.Player;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-namespace Assets.Scripts.UI.Pausemenu
+namespace Assets.Scripts.UI
 {
     public class PauseManager : MonoBehaviour
     {
@@ -35,7 +35,7 @@ namespace Assets.Scripts.UI.Pausemenu
         private void Start()
         {
             // Для разработки
-            SetPause();
+            // SetPause();
         }
 
         private void Update()

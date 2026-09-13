@@ -1,9 +1,9 @@
-// Assets/Scripts/Pausemenu/LanguageDropdownController.cs
+// Assets/Scripts/UI/LanguageDropdownController.cs
 using TMPro;
 using UnityEngine;
 using UnityEngine.Localization.Settings;
 
-namespace Assets.Scripts.UI.Pausemenu
+namespace Assets.Scripts.UI
 {
     public class LanguageDropdownController : MonoBehaviour
     {
