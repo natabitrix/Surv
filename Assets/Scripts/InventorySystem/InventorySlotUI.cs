@@ -645,25 +645,12 @@ namespace Assets.Scripts.InventorySystem
             if (hoverBackground != null) hoverBackground.SetActive(setSelected);
         }
 
-        // public void HighLightSelectedSlot(bool setSelected)
-        // {
-        //     StopAllCoroutines(); // ← важно!
-        //     if (selectedBackground != null) selectedBackground.SetActive(setSelected);
-        // }
-
         public void HighLightSelectedSlot(bool setSelected)
         {
             if (selectedBackground != null)
                 selectedBackground.SetActive(setSelected);
             // НЕ останавливаем корутины флеша!
         }
-
-        // public void FlashSlot(float duration = 0.2f)
-        // {
-        //     if (selectedBackground == null) return;
-        //     selectedBackground.SetActive(true);
-        //     StartCoroutine(DisableAfterDelay(selectedBackground, duration));
-        // }
 
         public void FlashSlot(float duration = 0.2f)
         {

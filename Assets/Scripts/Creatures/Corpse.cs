@@ -111,61 +111,8 @@ namespace Assets.Scripts.Creatures
 
         }
 
-        // public void InitializeCreatureCorpse(ChestInventory inventory, ChestUI chestUI)
-        // {
-        //     _inventory = inventory;
-        //     _chestUI = chestUI;
-        //     if (harvestDrops != null && harvestDrops.Length > 0)
-        //     {
-        //         _remainingAmounts = new int[harvestDrops.Length];
-        //         for (int i = 0; i < harvestDrops.Length; i++)
-        //         {
-        //             _remainingAmounts[i] = harvestDrops[i].totalAmount;
-        //         }
-        //     }
-
-        //     if (TryGetComponent<PlayerController>(out var pc))
-        //     {
-        //         _playerController = pc;
-        //         playerTransform = pc.transform;
-        //     }
-
-        // }
-
-        // public void InitializePlayerCorpse(InventoryData mainInventory, InventoryData hotbarInventory, ChestUI chestUI)
-        // {
-        //     _chestUI = chestUI;
-
-        //     if (harvestDrops != null && harvestDrops.Length > 0)
-        //     {
-        //         _remainingAmounts = new int[harvestDrops.Length];
-        //         for (int i = 0; i < harvestDrops.Length; i++)
-        //         {
-        //             _remainingAmounts[i] = harvestDrops[i].totalAmount;
-        //         }
-        //     }
-
-        //     if (TryGetComponent<PlayerController>(out var pc))
-        //     {
-        //         _playerController = pc;
-        //         playerTransform = pc.transform;
-        //     }
-
-        //     // Создаём инвентарь трупа и копируем туда все вещи игрока
-        //     _inventory = gameObject.AddComponent<ChestInventory>();
-        //     string corpseKey = $"PlayerCorpse_{System.Guid.NewGuid().ToString()}";
-        //     _inventory.Initialize(110, corpseKey); // Больше слотов для всех вещей
-
-        //     CopyPlayerItemsToCorpse(mainInventory, hotbarInventory);
-
-        // }
-
-
-
         public void InitializeCorpse()
         {
-
-            // _chestUI = chestUI;
 
             if (harvestDrops != null && harvestDrops.Length > 0)
             {
@@ -181,58 +128,10 @@ namespace Assets.Scripts.Creatures
                 _playerController = pc;
                 playerTransform = pc.transform;
             }
-
-            // if (creatureInventory != null)
-            // {
-            //     _inventory = creatureInventory;
-            // }
-            // else
-            // {
-            //     // Создаём инвентарь трупа и копируем туда все вещи игрока
-            //     _inventory = gameObject.AddComponent<ChestInventory>();
-            //     string corpseKey = $"PlayerCorpse_{System.Guid.NewGuid().ToString()}";
-            //     _inventory.Initialize(110, corpseKey); // Больше слотов для всех вещей
-            // }
-
-
-        }
-
-
-
-
-
-        private void CopyPlayerItemsToCorpse(InventoryData mainInventory, InventoryData hotbarInventory)
-        {
-            if (_inventory?.Data == null) return;
-
-            // Копируем вещи из основного инвентаря
-            if (mainInventory?.slots != null)
-            {
-                foreach (var slot in mainInventory.slots)
-                {
-                    if (!slot.IsEmpty && slot.item != null)
-                    {
-                        _inventory.Data.AddItemAnywhere(slot.item, slot.count, slot.currentDurability);
-                    }
-                }
-            }
-
-            // Копируем вещи из хотбара
-            if (hotbarInventory?.slots != null)
-            {
-                foreach (var slot in hotbarInventory.slots)
-                {
-                    if (!slot.IsEmpty && slot.item != null)
-                    {
-                        _inventory.Data.AddItemAnywhere(slot.item, slot.count, slot.currentDurability);
-                    }
-                }
-            }
         }
 
         public InteractType GetInteractType() => InteractType.OpenTargetInventory;
         public InteractType GetInteractType2() => InteractType.Interact;
-
         public ChestInventory GetInventory() => _inventory;
         public bool HasInventory() => _inventory != null;
         public bool ShouldDetachAfterInteract() => _isDepleted;
@@ -341,61 +240,12 @@ namespace Assets.Scripts.Creatures
         {
             yield return new WaitForSeconds(2.5f);
 
-            // enabled = true;
-
             Animator animator = GetComponent<Animator>();
             if (animator != null) Destroy(animator);
 
             DeactivateRagdoll();
 
-            // if (!isPlayerCorpse) CreateCorpseInventory();
-            // var menu = GetComponent<RadialMenu>();
-            // if (menu != null) menu.enabled = true;
         }
-
-        // public void CreateCorpseInventory()
-        // {
-        //     var chestInv = gameObject.AddComponent<ChestInventory>();
-        //     string corpseKey = $"Corpse_{System.Guid.NewGuid().ToString()}";
-        //     chestInv.Initialize(100, corpseKey);
-
-        //     PopulateInventory(chestInv);
-
-        //     var chestUI = FindAnyObjectByType<ChestUI>();
-        //     InitializeCreatureCorpse(chestInv, chestUI);
-
-        //     // Debug.Log($"[Creature] Труп {gameObject.name} создан на {transform.position}");
-        // }
-
-        public void CreateCorpseInventory_(string corpseName, int invCapacity, InventoryData mainInventory, InventoryData hotbarInventory, ChestUI chestUI)
-        {
-            // Добавляем к трупу и инициализируем компонент ChestInventory
-            var chestInv = gameObject.AddComponent<ChestInventory>();
-            string corpseKey = $"{corpseName}_{System.Guid.NewGuid().ToString()}";
-            chestInv.Initialize(invCapacity, corpseKey);
-
-            _inventory = chestInv;
-            _chestUI = chestUI;
-            _corpseName = corpseName;
-
-            if (mainInventory != null)
-            {
-                // Копируем в труп все вещи игрока
-                CopyPlayerItemsToCorpse(mainInventory, hotbarInventory);
-            }
-            else
-            {
-                // Заполняем инвентарь существа
-                PopulateInventory(chestInv);
-            }
-
-            // Инициализируем труп для добычи ресурсов с него
-            InitializeCorpse();
-
-            // Debug.Log($"[Creature] Труп {gameObject.name} создан на {transform.position}");
-        }
-
-
 
         private void PopulateInventory(ChestInventory inv)
         {
@@ -426,91 +276,93 @@ namespace Assets.Scripts.Creatures
             }
         }
 
+        private void CopyPlayerItemsToCorpse(InventoryData mainInventory, InventoryData hotbarInventory)
+        {
+            if (_inventory?.Data == null) return;
+
+            // Копируем вещи из основного инвентаря
+            if (mainInventory?.slots != null)
+            {
+                foreach (var slot in mainInventory.slots)
+                {
+                    if (!slot.IsEmpty && slot.item != null)
+                    {
+                        _inventory.Data.AddItemAnywhere(slot.item, slot.count, slot.currentDurability);
+                    }
+                }
+            }
+
+            // Копируем вещи из хотбара
+            if (hotbarInventory?.slots != null)
+            {
+                foreach (var slot in hotbarInventory.slots)
+                {
+                    if (!slot.IsEmpty && slot.item != null)
+                    {
+                        _inventory.Data.AddItemAnywhere(slot.item, slot.count, slot.currentDurability);
+                    }
+                }
+            }
+        }
 
 
-public void OpenInventory()
-{
-    Debug.Log($"[Corpse] ===== OPEN INVENTORY CALLED =====");
-    Debug.Log($"[Corpse] _isOpen: {_isOpen}");
-    Debug.Log($"[Corpse] _inventory: {(_inventory != null ? _inventory.name : "null")}");
-    Debug.Log($"[Corpse] _corpseName: {_corpseName}");
-    
-    // ✅ Если уже открыт - сначала закрываем
-    if (_isOpen)
-    {
-        Debug.Log($"[Corpse] Уже открыт, вызываем CloseInventory()");
-        CloseInventory();
-        // ✅ После закрытия продолжаем открывать заново!
-    }
-    
-    // ✅ Теперь открываем (даже если был закрыт)
-    if (_chestUI != null)
-    {
-        Debug.Log($"[Corpse] Вызываем _chestUI.OpenWith() с source = this (Corpse)");
-        _chestUI.OpenWith(_inventory, this);
-        _isOpen = true;
-        Debug.Log($"[Corpse] Инвентарь открыт, _isOpen = true");
-    }
-    else
-    {
-        Debug.LogError("[Corpse] _chestUI не назначен! Инвентарь не откроется.");
-    }
-    
-    Debug.Log($"[Corpse] ===== OPEN INVENTORY FINISHED =====");
-}
+        public void OpenInventory()
+        {
 
-public void CloseInventory()
-{
-    Debug.Log($"[Corpse] ===== CLOSE INVENTORY CALLED =====");
-    Debug.Log($"[Corpse] _isOpen: {_isOpen}");
-    
-    if (_isOpen && _chestUI != null)
-    {
-        Debug.Log($"[Corpse] Вызываем _chestUI.Close()");
-        _chestUI.Close();
-        _isOpen = false;
-        Debug.Log($"[Corpse] Инвентарь закрыт, _isOpen = false");
-    }
-    Debug.Log($"[Corpse] ===== CLOSE INVENTORY FINISHED =====");
-}
+            // Если уже открыт - сначала закрываем
+            if (_isOpen)
+            {
+                CloseInventory();
+            }
 
-public void CreateCorpseInventory(string corpseName, int invCapacity, InventoryData mainInventory, InventoryData hotbarInventory, ChestUI chestUI)
-{
-    // Debug.Log($"[Corpse] ===== CREATE CORPSE INVENTORY CALLED =====");
-    // Debug.Log($"[Corpse] corpseName: {corpseName}, invCapacity: {invCapacity}");
-    
-    // Добавляем к трупу и инициализируем компонент ChestInventory
-    var chestInv = gameObject.AddComponent<ChestInventory>();
-    string corpseKey = $"{corpseName}_{System.Guid.NewGuid().ToString()}";
-    chestInv.Initialize(invCapacity, corpseKey);
-    
-    // Debug.Log($"[Corpse] Создан ChestInventory с saveKey: {corpseKey}");
+            // Теперь открываем (даже если был закрыт)
+            if (_chestUI != null)
+            {
+                _chestUI.OpenWith(_inventory, this);
+                _isOpen = true;
+            }
+            else
+            {
+                Debug.LogError("[Corpse] _chestUI не назначен! Инвентарь не откроется.");
+            }
+        }
 
-    _inventory = chestInv;
-    _chestUI = chestUI;
-    _corpseName = corpseName;
+        public void CloseInventory()
+        {
 
-    if (mainInventory != null)
-    {
-        // Debug.Log($"[Corpse] Копируем инвентарь игрока");
-        // Копируем в труп все вещи игрока
-        CopyPlayerItemsToCorpse(mainInventory, hotbarInventory);
-    }
-    else
-    {
-        // Debug.Log($"[Corpse] Заполняем инвентарь существа");
-        // Заполняем инвентарь существа
-        PopulateInventory(chestInv);
-    }
+            if (_isOpen && _chestUI != null)
+            {
+                _chestUI.Close();
+                _isOpen = false;
+            }
+        }
 
-    // Инициализируем труп для добычи ресурсов с него
-    InitializeCorpse();
-    // Debug.Log($"[Corpse] ===== CREATE CORPSE INVENTORY FINISHED =====");
-}
+        public void CreateCorpseInventory(string corpseName, int invCapacity, InventoryData mainInventory, InventoryData hotbarInventory, ChestUI chestUI)
+        {
 
+            // Добавляем к трупу и инициализируем компонент ChestInventory
+            var chestInv = gameObject.AddComponent<ChestInventory>();
+            string corpseKey = $"{corpseName}_{System.Guid.NewGuid().ToString()}";
+            chestInv.Initialize(invCapacity, corpseKey);
 
+            _inventory = chestInv;
+            _chestUI = chestUI;
+            _corpseName = corpseName;
 
+            if (mainInventory != null)
+            {
+                // Копируем в труп все вещи игрока
+                CopyPlayerItemsToCorpse(mainInventory, hotbarInventory);
+            }
+            else
+            {
+                // Заполняем инвентарь существа
+                PopulateInventory(chestInv);
+            }
 
+            // Инициализируем труп для добычи ресурсов с него
+            InitializeCorpse();
+        }
 
         private void HandleHarvest(InteractContext context)
         {
@@ -641,12 +493,6 @@ public void CreateCorpseInventory(string corpseName, int invCapacity, InventoryD
                 _despawnCoroutine = null;
             }
 
-            // if (_inventory != null)
-            // {
-            //     _inventory.transform.SetParent(null);
-            // }
-
-
             Destroy(gameObject, 0.5f);
         }
 
@@ -662,7 +508,6 @@ public void CreateCorpseInventory(string corpseName, int invCapacity, InventoryD
 
             return false;
         }
-
 
         private void CreateLootBag()
         {

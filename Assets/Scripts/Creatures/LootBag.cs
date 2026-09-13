@@ -3,6 +3,7 @@ using Assets.Scripts.Interactables;
 using Assets.Scripts.InventorySystem;
 using Assets.Scripts.Core;
 using System.Collections;
+using Assets.Scripts.UI;
 
 namespace Assets.Scripts.Creatures
 {
@@ -18,7 +19,7 @@ namespace Assets.Scripts.Creatures
 
         [SerializeField] private ChestInventory _inventory;
         [SerializeField] private ChestUI _chestUI;
-        private IInteractable _source; // ← новое поле
+        private IInteractable _source;
         private bool _isOpen = false;
 
         [Header("Despawn Settings")]
@@ -28,9 +29,32 @@ namespace Assets.Scripts.Creatures
 
         private void Start()
         {
-            if (_despawnCoroutine != null)
-                StopCoroutine(_despawnCoroutine);
+            if (_despawnCoroutine != null) StopCoroutine(_despawnCoroutine);
             _despawnCoroutine = StartCoroutine(DespawnAfterTime());
+
+            if (_inventory?.Data != null)
+            {
+                _inventory.Data.OnInventoryChanged += OnInventoryChanged;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            // ✅ Отписываемся при уничтожении
+            if (_inventory?.Data != null)
+            {
+                _inventory.Data.OnInventoryChanged -= OnInventoryChanged;
+            }
+        }
+
+        private void OnInventoryChanged()
+        {
+            // ✅ Проверяем, не стал ли инвентарь пустым
+            if (IsInventoryEmpty())
+            {
+                Debug.Log($"[LootBag] Инвентарь стал пустым! Исчезаем немедленно.");
+                ForceDespawn();
+            }
         }
 
         /// <summary>
@@ -59,10 +83,14 @@ namespace Assets.Scripts.Creatures
             }
         }
 
-        public void OpenInventory_()
+        public void OpenInventory()
         {
-            if (_isOpen) CloseInventory();
-            else if (_chestUI != null)
+            if (_isOpen)
+            {
+                CloseInventory();
+            }
+
+            if (_chestUI != null)
             {
                 _chestUI.OpenWith(_inventory, _source);
                 _isOpen = true;
@@ -73,66 +101,14 @@ namespace Assets.Scripts.Creatures
             }
         }
 
-        public void CloseInventory_()
+        public void CloseInventory()
         {
             if (_isOpen && _chestUI != null)
             {
                 _chestUI.Close();
                 _isOpen = false;
             }
-            // if (IsInventoryEmpty())
-            // {
-            //     ForceDespawn();
-            // }
         }
-
-public void OpenInventory()
-{
-    Debug.Log($"[LootBag] ===== OPEN INVENTORY CALLED =====");
-    Debug.Log($"[LootBag] _isOpen: {_isOpen}");
-    Debug.Log($"[LootBag] _inventory: {(_inventory != null ? _inventory.name : "null")}");
-    Debug.Log($"[LootBag] _source: {(_source != null ? _source.GetType().Name : "null")}");
-    
-    // ✅ Если уже открыт - сначала закрываем
-    if (_isOpen)
-    {
-        Debug.Log($"[LootBag] Уже открыт, вызываем CloseInventory()");
-        CloseInventory();
-        // ✅ После закрытия продолжаем открывать заново!
-    }
-    
-    // ✅ Теперь открываем (даже если был закрыт)
-    if (_chestUI != null)
-    {
-        Debug.Log($"[LootBag] Вызываем _chestUI.OpenWith() с source = {(_source != null ? _source.GetType().Name : "null")}");
-        _chestUI.OpenWith(_inventory, _source);
-        _isOpen = true;
-        Debug.Log($"[LootBag] Инвентарь открыт, _isOpen = true");
-    }
-    else
-    {
-        Debug.LogError("[LootBag] _chestUI не назначен!");
-    }
-    
-    Debug.Log($"[LootBag] ===== OPEN INVENTORY FINISHED =====");
-}
-
-public void CloseInventory()
-{
-    Debug.Log($"[LootBag] ===== CLOSE INVENTORY CALLED =====");
-    Debug.Log($"[LootBag] _isOpen: {_isOpen}");
-    
-    if (_isOpen && _chestUI != null)
-    {
-        Debug.Log($"[LootBag] Вызываем _chestUI.Close()");
-        _chestUI.Close();
-        _isOpen = false;
-        Debug.Log($"[LootBag] Инвентарь закрыт, _isOpen = false");
-    }
-    Debug.Log($"[LootBag] ===== CLOSE INVENTORY FINISHED =====");
-}
-
-
 
         private bool IsInventoryEmpty()
         {
@@ -149,10 +125,6 @@ public void CloseInventory()
 
         private IEnumerator DespawnAfterTime()
         {
-            // yield return new WaitForSeconds(_bagDisappearTime);
-
-            // Debug.Log($"[LootBag] Сумка исчезла по таймеру на {transform.position}");
-
             float elapsed = 0f;
 
             while (elapsed < _bagDisappearTime)
@@ -174,16 +146,37 @@ public void CloseInventory()
             ForceDespawn();
         }
 
+        private bool _isDespawning = false;
+
         public void ForceDespawn()
         {
+            // ✅ Защита от повторного вызова
+            if (_isDespawning) return;
+            _isDespawning = true;
+
             if (_despawnCoroutine != null)
             {
                 StopCoroutine(_despawnCoroutine);
                 _despawnCoroutine = null;
             }
 
-            // CloseInventory();
+            // Отписываемся от событий
+            if (_inventory?.Data != null)
+            {
+                _inventory.Data.OnInventoryChanged -= OnInventoryChanged;
+            }
+
+            CloseInventory();
+            
+            // Закрываем панель в PanelsUIController
+            var panelsController = FindAnyObjectByType<PanelsUIController>();
+            if (panelsController != null)
+            {
+                panelsController.CloseAllPanels();
+            }
+
             Destroy(gameObject);
+            
         }
     }
 }

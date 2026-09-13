@@ -3510,7 +3510,7 @@ GameObject:
   - component: {fileID: -7865009083241595473}
   - component: {fileID: -2378009944230672539}
   m_Layer: 9
-  m_Name: LowPoly_Character_Corpse
+  m_Name: Character_Corpse
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

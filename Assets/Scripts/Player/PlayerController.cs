@@ -46,6 +46,7 @@ namespace Assets.Scripts.Player
         [SerializeField] private PanelsUIController _panelsController;
 
         [Header("Player Transforms")]
+        public GameObject VisualCharacter;
         public Transform Head; // Ссылка на объект головы (должен быть дочерним элементом тела)
         public Transform EyeCenterForCamera;
 

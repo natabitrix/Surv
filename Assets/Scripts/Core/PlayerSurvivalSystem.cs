@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Assets.Scripts.Creatures;
 using Assets.Scripts.Interactables;
 using Assets.Scripts.InventorySystem;
+using Assets.Scripts.UI;
 using Unity.Mathematics;
 using UnityEngine;
 
@@ -255,26 +256,14 @@ namespace Assets.Scripts.Core
 
             // Отключаем управление игроком
             // playerController.enabled = false;
+            // var character = playerController.VisualCharacter;
+            // if (character != null) character.SetActive(false);
 
             // Создаём труп игрока на его позиции
             GameObject playerCorpseGO = Instantiate(_playerCorpsePrefab, playerController.transform.position, Quaternion.identity);
             var corpse = playerCorpseGO.GetComponent<Corpse>();
 
-            // Передаём вещи игрока в труп
-            // corpse.InitializePlayerCorpse(
-            //     PlayerProgress.Instance.mainInventoryData,
-            //     PlayerProgress.Instance.hotbarInventoryData,
-            //     FindAnyObjectByType<ChestUI>()
-            // );
-
-            // corpse.ActivateRagdoll();
-            // StartCoroutine(corpse.StopMovingCorpse(true));            
-
-            // var menu = GetComponent<RadialMenu>();
-            // if (menu != null) menu.enabled = true;
-
             // Debug.Log($"[Creature] Труп {gameObject.name} создан на {transform.position}");
-
 
             corpse.CreateCorpseInventory(
                 "PlayerCorpse",
@@ -283,11 +272,12 @@ namespace Assets.Scripts.Core
                 PlayerProgress.Instance.hotbarInventoryData,
                 FindAnyObjectByType<ChestUI>()
             );
-
-            var menu = corpse.GetComponent<RadialMenu>();
-            if (menu != null) menu.enabled = true;
-
-
+ 
+            // var deathScreenManager = FindAnyObjectByType<DeathScreenManager>();
+            // if (deathScreenManager != null)
+            // {
+            //     deathScreenManager.Show();
+            // }
         }
 
 

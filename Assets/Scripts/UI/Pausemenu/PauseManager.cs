@@ -80,6 +80,7 @@ namespace Assets.Scripts.UI.Pausemenu
 
 
         }
+
         public void LockCamera(bool isLock)
         {
             if (_playerController != null)
@@ -91,12 +92,12 @@ namespace Assets.Scripts.UI.Pausemenu
                 Debug.Log("_playerController not found");
             }
         }
+
         public void SetCursorVisible(bool isCursorVisible)
         {
             Cursor.lockState = isCursorVisible ? CursorLockMode.None : CursorLockMode.Locked;
             Cursor.visible = isCursorVisible;
         }
-
 
         // Ставит на паузу полностью игру
         public void SetRealPause(bool on)

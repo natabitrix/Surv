@@ -2,6 +2,7 @@ using Assets.Scripts.InventorySystem;
 using Assets.Scripts.Items;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 namespace Assets.Scripts.UI
 {
@@ -71,8 +72,11 @@ namespace Assets.Scripts.UI
             {
                 AddButton("Использовать", OnUseClicked);
                 AddButton("Выбросить", OnDropClicked);
-                AddButton("Ремонтировать", OnRepairClicked);
+                if (_currentItem.hasDurability)
+                    AddButton("Ремонтировать", OnRepairClicked);
             }
+            // Пересчитываем размер Panel по содержимому
+            Canvas.ForceUpdateCanvases();
 
             // Позиционирование
             PositionMenu();
@@ -114,6 +118,31 @@ namespace Assets.Scripts.UI
                 // Смещение: вниз и вправо от курсора
                 // localPoint += new Vector2(10, -Panel.sizeDelta.y - 10);
                 localPoint += new Vector2(100, 0);
+
+
+                // Получаем размеры Canvas и Panel
+                RectTransform canvasRect = contextMenuCanvas.transform as RectTransform;
+                float canvasWidth = canvasRect.rect.width;
+                float canvasHeight = canvasRect.rect.height;
+                float panelWidth = Panel.rect.width;
+                float panelHeight = Panel.rect.height;
+
+                // Проверка: выходит ли меню за правый край
+                if (localPoint.x + panelWidth / 2 > canvasWidth / 2)
+                {
+                    localPoint.x = canvasWidth / 2 - panelWidth / 2 - 10;
+                }
+
+                // Проверка: выходит ли меню за нижний край
+                // (поднимаем меню выше, если кликнули в нижней части экрана)
+                if (localPoint.y - panelHeight / 2 < -canvasHeight / 2)
+                {
+                    localPoint.y = -canvasHeight / 2 + panelHeight / 2 + 10;
+                }
+
+
+
+
                 Panel.anchoredPosition = localPoint;
             }
 
