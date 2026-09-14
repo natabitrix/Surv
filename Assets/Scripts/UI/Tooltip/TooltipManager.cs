@@ -45,8 +45,15 @@ namespace Assets.Scripts.UI.Tooltip
         #region Unity Lifecycle
         private void Awake()
         {
-            if (Instance == null) { Instance = this; DontDestroyOnLoad(gameObject); }
-            else { Destroy(gameObject); }
+            if (Instance == null)
+            {
+                Instance = this;
+                // DontDestroyOnLoad(gameObject);
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
         }
 
 
@@ -176,7 +183,7 @@ namespace Assets.Scripts.UI.Tooltip
             Vector2 mousePos2D = Mouse.current?.position.ReadValue() ?? Vector2.zero;
             // Преобразуем в Vector3 и добавляем смещение
             Vector3 mousePos = (Vector3)mousePos2D + (Vector3)positionOffset;
-            
+
             float scale = tooltipRect.lossyScale.x;
 
             float totalWidth = (tooltipRect.rect.width + outlineSize) * scale;

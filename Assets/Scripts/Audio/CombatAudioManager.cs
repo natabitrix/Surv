@@ -29,7 +29,7 @@ namespace Assets.Scripts.Audio
             if (Instance == null)
             {
                 Instance = this;
-                DontDestroyOnLoad(gameObject);
+                // DontDestroyOnLoad(gameObject);
             }
             else
             {

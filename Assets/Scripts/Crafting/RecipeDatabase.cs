@@ -4,7 +4,8 @@ using UnityEngine;
 
 namespace Assets.Scripts.Crafting
 {
-    public class RecipeDatabase : MonoBehaviour
+    [CreateAssetMenu(fileName = "RecipeDatabase", menuName = "Game/Recipe Database")]
+    public class RecipeDatabase : ScriptableObject  // <-- Изменено
     {
         [SerializeField] private Recipe[] _allRecipes;
 
@@ -54,10 +55,10 @@ namespace Assets.Scripts.Crafting
             return _recipeByItem.TryGetValue(item, out var r) ? r : null;
         }
 
-        private void Awake()
-        {
-            DontDestroyOnLoad(gameObject);
-            EnsureInitialized(); // Инициализируем сразу при старте
-        }
+        // private void Awake()
+        // {
+        //     DontDestroyOnLoad(gameObject);
+        //     EnsureInitialized(); // Инициализируем сразу при старте
+        // }
     }
 }

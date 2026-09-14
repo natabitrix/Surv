@@ -139,6 +139,8 @@ namespace Assets.Scripts.Player
             }
 
             _playerInput = GetComponent<PlayerInput>();
+
+            PlayerProgress.Instance?.RegisterPlayerController(this);
         }
 
         private void Start()

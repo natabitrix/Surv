@@ -27,7 +27,7 @@ namespace Assets.Scripts.UI
                 return;
             }
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+            // DontDestroyOnLoad(gameObject);
         }
 
         private void SetNoteText(string text, GameObject noteUI)

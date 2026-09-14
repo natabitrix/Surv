@@ -124,15 +124,17 @@ namespace Assets.Scripts.Core
             // _weight = Get(src, StatType.Weight, 0f);
             // _torpidity = Get(src, StatType.Torpidity, 0f);
 
-            // _health = MaxHealth;
-            _health = 3;
+            _health = MaxHealth;
             _stamina = MaxStamina;
-            // _oxygen = MaxOxygen;
-            _oxygen = 0;
+            _oxygen = MaxOxygen;
             _food = MaxFood;
             _water = MaxWater;
             _weight = Get(src, StatType.Weight, 0f);
             _torpidity = 0f;
+
+            //для тестирования смерти
+            _health = 3;
+            _oxygen = 0;
 
             OnSurvivalStatsChanged?.Invoke(); // обновить UI
         }
@@ -295,8 +297,8 @@ namespace Assets.Scripts.Core
                 FindAnyObjectByType<ChestUI>()
             );
 
-            var menu = corpse.GetComponent<RadialMenu>();
-            if (menu != null) menu.enabled = true;
+            // var menu = corpse.GetComponent<RadialMenu>();
+            // if (menu != null) menu.enabled = true;
 
             // Показываем экран смери
             var deathScreenManager = FindAnyObjectByType<DeathScreenManager>();
@@ -307,7 +309,26 @@ namespace Assets.Scripts.Core
 
         }
 
+        public void Respawn()
+        {
+            Debug.Log("PlayerSurvivalSystem Respawn");
+            _isDead = false;
+            _health = MaxHealth;
+            _stamina = MaxStamina;
+            _oxygen = MaxOxygen;
+            _food = MaxFood;
+            _water = MaxWater;
+            _torpidity = 0f;
 
+            //для тестирования смерти
+            // _health = 3;
+            // _oxygen = 0;
+
+            OnSurvivalStatsChanged?.Invoke();
+
+            // Перезапускаем корутину
+            StartCoroutine(UpdateSurvivalStats());
+        }
 
     }
 }

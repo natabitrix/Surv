@@ -34,7 +34,9 @@ namespace Assets.Scripts.Core
 
         [Header("Системные ссылки")]
         public ItemDatabase itemDatabase; // Назначьте в инспекторе
-        public PlayerController playerController; // Назначьте в инспекторе
+        // PlayerController НЕ назначается в инспекторе!
+        // Он получается через событие OnPlayerLoaded.
+        private PlayerController _playerController;
 
         // ===== ВНУТРЕННИЕ ДАННЫЕ =====
         private Dictionary<Vector2Int, List<SerializableStructure>> _chunks = new();
@@ -55,17 +57,20 @@ namespace Assets.Scripts.Core
 
         }
 
-
-        void Start()
+        private IEnumerator Start()
         {
-            // Загружаем мир вокруг стартовой позиции игрока
-            if (playerController != null)
+            // Ждем, пока PlayerProgress появится
+            while (PlayerProgress.Instance == null)
+                yield return null;
+
+            // Подписываемся на событие
+            PlayerProgress.Instance.OnPlayerLoaded += OnPlayerLoadedHandler;
+
+            // Если игрок уже загружен (например, при прямом запуске GameWorld),
+            // вызываем загрузку мира сразу
+            if (PlayerProgress.Instance.playerController != null)
             {
-                LoadWorld(playerController.transform.position);
-            }
-            else
-            {
-                Debug.LogWarning("[WorldManager] PlayerController не найден. Загрузка мира отложена.");
+                OnPlayerLoadedHandler();
             }
         }
 
@@ -79,6 +84,18 @@ namespace Assets.Scripts.Core
             }
         }
 
+        void OnEnable()
+        {
+            if (PlayerProgress.Instance != null)
+                PlayerProgress.Instance.OnPlayerLoaded += OnPlayerLoadedHandler;
+        }
+
+        void OnDisable()
+        {
+            if (PlayerProgress.Instance != null)
+                PlayerProgress.Instance.OnPlayerLoaded -= OnPlayerLoadedHandler;
+        }
+
         void OnApplicationQuit()
         {
             _isQuitting = true;
@@ -87,17 +104,19 @@ namespace Assets.Scripts.Core
 
         private void OnPlayerLoadedHandler()
         {
-            if (playerController == null)
+            _playerController = PlayerProgress.Instance.playerController;
+
+            if (_playerController == null)
             {
-                Debug.LogError("[WorldManager] playerController не назначен в инспекторе!");
+                Debug.LogError("[WorldManager] PlayerController не найден!");
                 return;
             }
 
-            // Debug.Log($"[WorldManager] Загрузка мира вокруг: {playerController.transform.position}");
+            // Debug.Log($"[WorldManager] Загрузка мира вокруг: {_playerController.transform.position}");
 
             // Загружаем мир ВОКРУГ СОХРАНЁННОЙ позиции игрока
-            LoadWorld(playerController.transform.position);
-            // Debug.Log($"[WorldManager] Мир загружен вокруг позиции игрока: {playerController.transform.position}");
+            LoadWorld(_playerController.transform.position);
+            // Debug.Log($"[WorldManager] Мир загружен вокруг позиции игрока: {_playerController.transform.position}");
 
 
         }
@@ -149,7 +168,6 @@ namespace Assets.Scripts.Core
             // ✅ ДОБАВИТЬ: Мгновенное сохранение при постройке
             SaveDirtyChunks();
         }
-
 
         public void UnregisterStructure(GameObject structure)
         {

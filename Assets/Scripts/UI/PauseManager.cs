@@ -1,4 +1,5 @@
 using System;
+using Assets.Scripts.Core;
 using Assets.Scripts.InventorySystem;
 using Assets.Scripts.Player;
 using UnityEngine;
@@ -34,7 +35,7 @@ namespace Assets.Scripts.UI
 
         private void Start()
         {
-            // Для разработки
+            // Для разработки, чтобы по клику на Продолжить скрылся курсор
             // SetPause();
         }
 
@@ -165,16 +166,28 @@ namespace Assets.Scripts.UI
             SettingsPanel.SetActive(false);
         }
 
-        public void LoadGameScene()
-        {
-            SetRealPause(false);
-            _isPauseOpened = false;
-            SetCursorVisible(false);
-            SceneManager.LoadScene(GameScene);
-        }
+        // public void LoadGameScene()
+        // {
+        //     SetRealPause(false);
+        //     _isPauseOpened = false;
+        //     SetCursorVisible(false);
+        //     SceneManager.LoadScene(GameScene);
+        // }
 
         public void LoadMainMenuScene()
         {
+            // Debug.Log($"[PauseManager] LoadMainMenuScene вызван. PlayerProgress.Instance = {PlayerProgress.Instance}");
+
+            if (PlayerProgress.Instance != null)
+            {
+                PlayerProgress.Instance.Save("ReturnToMainMenu");
+                // Debug.Log("[PauseManager] Сохранение выполнено");
+            }
+            else
+            {
+                Debug.LogError("[PauseManager] PlayerProgress.Instance == null! Сохранение не выполнено.");
+            }
+
             SceneManager.LoadScene(MainMenuScene);
         }
 

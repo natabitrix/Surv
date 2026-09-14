@@ -1,0 +1,160 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &2098013993127847153
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5930965563779601349}
+  - component: {fileID: 4963310491301221465}
+  - component: {fileID: 9057286865047072866}
+  - component: {fileID: 5087374864759840938}
+  - component: {fileID: 4004378238529973370}
+  - component: {fileID: 4364371385934724142}
+  - component: {fileID: 5364997771890862532}
+  - component: {fileID: 4028022022288909564}
+  m_Layer: 0
+  m_Name: ===CoreManagers===
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5930965563779601349
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2098013993127847153}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4963310491301221465
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2098013993127847153}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2afeee12ab9dca448eadee660c147f9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.GameController
+  _gameSceneName: GameWorld
+--- !u!114 &9057286865047072866
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2098013993127847153}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc104592810eac244a36ed76e4db7bf6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Core.PlayerSurvivalSystem
+  _foodLossPerSecond: 0.05
+  _waterLossPerSecond: 0.07
+  _staminaLossPerSecondAtMaxSpeed: 2
+  _oxygenLossPerSecondUnderwater: 3
+  _healthLossPerSecondWhenCritical: 1
+  _staminaRecoveryPerSecond: 20
+  _oxygenRecoveryPerSecond: 20
+  _healthRecoveryPerSecond: 1
+  _playerCorpsePrefab: {fileID: 9016813870336318502, guid: 3048ca76b8a9ea74d88afed647d2357d, type: 3}
+--- !u!114 &5087374864759840938
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2098013993127847153}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 693204b5f6ba038408fe8db3039ce472, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Core.PlayerProgress
+  _level: 1
+  _experience: 0
+  _engramPoints: 0
+  hotbarInventoryData:
+    size: 0
+    slots: []
+  mainInventoryData:
+    size: 0
+    slots: []
+  engramData:
+    slots: []
+  recipeDatabase: {fileID: 11400000, guid: 08b9e5f407896124eafc5f3473a57a93, type: 2}
+  itemDatabase: {fileID: 11400000, guid: d19476d9c45a16640979d93431658db2, type: 2}
+  beginnerItems: []
+  GiveBeginnerItemsToPlayer: 0
+--- !u!114 &4004378238529973370
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2098013993127847153}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28699f3d721ea6b46b72c5f3ee13dc18, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Core.WorldManager
+  chunkSize: 32
+  loadRadiusInChunks: 2
+  saveInterval: 30
+  itemDatabase: {fileID: 11400000, guid: d19476d9c45a16640979d93431658db2, type: 2}
+--- !u!114 &4364371385934724142
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2098013993127847153}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 537a6057a2ada6a4ab72731407cf0955, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LanguageManager
+  availableLanguages:
+  - displayName: English
+    localeCode: en
+  - displayName: "\u0420\u0443\u0441\u0441\u043A\u0438\u0439"
+    localeCode: ru
+--- !u!114 &5364997771890862532
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2098013993127847153}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 156ae709317f474439dddb6888e180b8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.InventorySystem.InventoryConfig
+  splitStackKey: 304
+--- !u!114 &4028022022288909564
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2098013993127847153}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 332383b2b52eb154ca47bc7c391f6c24, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AudioManager
+  masterVolume: 1

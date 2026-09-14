@@ -1,4 +1,5 @@
 using System;
+using Assets.Scripts.Core;
 using Assets.Scripts.InventorySystem;
 using Assets.Scripts.Player;
 using UnityEngine;
@@ -21,7 +22,7 @@ namespace Assets.Scripts.UI
 
         // [SerializeField] private PlayerInputHandler _input;
         [SerializeField] private PlayerController _playerController;
-        // [SerializeField] private PanelsUIController _panelsController;
+        [SerializeField] private PanelsUIController _panelsController;
 
         public bool IsDeathSceenOpened() => _isDeathSceenOpened;
 
@@ -55,6 +56,13 @@ namespace Assets.Scripts.UI
 
         public void Show()
         {
+
+            if (_panelsController != null)
+            {
+                _panelsController.CloseRadialMenu();
+                _panelsController.CloseAllPanels();
+            }
+
             DeathSceenCanvas.SetActive(true);
             LockCamera(true);
             _isDeathSceenOpened = true;
@@ -77,7 +85,14 @@ namespace Assets.Scripts.UI
             SetRealPause(false);
             _isDeathSceenOpened = false;
             SetCursorVisible(false);
+            // Перечитываем файл перед загрузкой сцены
+            PlayerProgress.Instance?.ReloadFromFile();
             SceneManager.LoadScene(GameScene);
+
+            if (PlayerSurvivalSystem.Instance != null)
+            {
+                PlayerSurvivalSystem.Instance.Respawn();
+            }
         }
 
 

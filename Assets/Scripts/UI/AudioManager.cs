@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.Audio;
+using UnityEngine.SceneManagement;
 
 public class AudioManager : MonoBehaviour
 {
@@ -19,11 +20,26 @@ public class AudioManager : MonoBehaviour
         }
         _instance = this;
         DontDestroyOnLoad(gameObject);
-        
+
         LoadSavedVolume();
         ApplyVolumeToAllSources();
     }
+    
+    private void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
 
+    private void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        ApplyVolumeToAllSources();
+    }
+    
     private void LoadSavedVolume()
     {
         if (PlayerPrefs.HasKey("MasterVolume"))

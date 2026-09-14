@@ -7,6 +7,8 @@ using Assets.Scripts.UI;
 using Newtonsoft.Json;
 using Assets.Scripts.Player;
 using Assets.Scripts.Items;
+using System.Collections;
+using UnityEngine.SceneManagement;
 
 namespace Assets.Scripts.Core
 {
@@ -57,17 +59,20 @@ namespace Assets.Scripts.Core
         public BeginnerItems[] beginnerItems;
         public bool GiveBeginnerItemsToPlayer = false;
 
-        public PlayerController playerController; // ← Назначить в инспекторе!
         private Vector3 defaultPlayerSpawnPoint = new(28.53f, 22.7f, 33.36f);
 
-        public InventoryManager inventoryManager;
+        private PlayerController _playerController;
+        private InventoryManager _inventoryManager;
+
+        // Публичные свойства для доступа
+        public PlayerController playerController => _playerController;
+        public InventoryManager inventoryManager => _inventoryManager;
 
         public System.Action OnProgressChanged; // Событие обновления
         public System.Action OnPlayerLoaded; // Событие после полной загрузки
 
-
-        // public bool IsLoaded { get; private set; } = false;
-
+        private PlayerSaveData _loadedSaveData;
+        private bool _isNewPlayer = false;
 
         public int StatPointsAvailable
         {
@@ -94,6 +99,8 @@ namespace Assets.Scripts.Core
         public const int INVENTORY_SIZE = 100;
         public const float RATE = 0.1f;
         private static LevelTableData _levelTable;
+        private Vector3 _lastKnownPlayerPosition;
+        private bool _hasLastKnownPosition = false;
 
 
         void Awake()
@@ -109,14 +116,133 @@ namespace Assets.Scripts.Core
             StatConfigManager.Initialize();
             InitializeLevelTable();
             InitializeStats();
-            LoadOrCreate();
+            LoadData(); // <-- Загружаем данные, но НЕ применяем
         }
 
-        private void Start()
+
+        private IEnumerator Start()
         {
+            // Ждем, пока PlayerController зарегистрируется
+            while (_playerController == null)
+                yield return null;
+
             ShowLevelUpNote();
-            // IsLoaded = true;
             OnPlayerLoaded?.Invoke();
+        }
+
+        private void LateUpdate()
+        {
+            // Кэшируем позицию каждый кадр, пока PlayerController существует
+            if (_playerController != null)
+            {
+                _lastKnownPlayerPosition = _playerController.transform.position;
+                _hasLastKnownPosition = true;
+            }
+        }
+
+        void LoadData()
+        {
+            string path = Path.Combine(Application.persistentDataPath, SAVE_FILE_NAME);
+            if (File.Exists(path))
+            {
+                string json = File.ReadAllText(path);
+                var saveData = JsonConvert.DeserializeObject<PlayerSaveData>(json);
+                _loadedSaveData = saveData;
+
+                _level = saveData.level;
+                _experience = saveData.experience;
+                _engramPoints = saveData.engramPoints;
+                _statLevels = saveData.statLevels ?? new Dictionary<StatType, int>();
+                InitializeStats();
+
+                hotbarInventoryData = new InventoryData(10);
+                hotbarInventoryData.FromSerializable(saveData.hotbar, itemDatabase.ItemLookup);
+
+                mainInventoryData = new InventoryData(INVENTORY_SIZE);
+                mainInventoryData.FromSerializable(saveData.mainInventory, itemDatabase.ItemLookup);
+
+                hotbarSlotMap = saveData.hotbarSlotMap ?? new Dictionary<string, int>();
+
+                engramData = new EngramData();
+                engramData.InitializeFromDatabase(recipeDatabase);
+                engramData.FromSerializable(saveData.engrams, recipeDatabase);
+
+                UpdateEngramAvailability();
+
+                if (PlayerSurvivalSystem.Instance != null)
+                {
+                    PlayerSurvivalSystem.Instance.LoadFrom(saveData);
+                }
+                else
+                {
+                    Debug.LogError("[PlayerProgress] LoadData: PlayerSurvivalSystem.Instance null!");
+                }
+
+            }
+            else
+            {
+                _isNewPlayer = true;
+                hotbarInventoryData = new InventoryData(10);
+                mainInventoryData = new InventoryData(INVENTORY_SIZE);
+                hotbarSlotMap = new Dictionary<string, int>();
+
+                engramData = new EngramData();
+                engramData.InitializeFromDatabase(recipeDatabase);
+                InitializeStats();
+                _engramPoints = 0;
+                UpdateEngramAvailability();
+
+                GiveBeginnerItems();
+                Save("PlayerProgress.LoadData");
+            }
+        }
+
+        void ApplyData()
+        {
+            if (_playerController == null)
+            {
+                Debug.LogError("[PlayerProgress] ApplyData: _playerController null!");
+                return;
+            }
+
+            if (_isNewPlayer)
+            {
+                _playerController.transform.position = defaultPlayerSpawnPoint;
+                // Debug.Log($"[PlayerProgress] Новый игрок — позиция: {defaultPlayerSpawnPoint}");
+            }
+            else if (_loadedSaveData != null)
+            {
+                _playerController.transform.position = new Vector3(
+                    _loadedSaveData.playerPositionX,
+                    _loadedSaveData.playerPositionY,
+                    _loadedSaveData.playerPositionZ
+                );
+                // Debug.Log($"[PlayerProgress] Позиция загружена: {_playerController.transform.position}");
+            }
+
+            if (_inventoryManager != null && _loadedSaveData != null)
+            {
+                _inventoryManager.EquipSavedEquippedItem(_loadedSaveData);
+            }
+        }
+
+        public void ReloadFromFile()
+        {
+            // Debug.Log("[PlayerProgress] ReloadFromFile вызван");
+            _isNewPlayer = false;
+            _loadedSaveData = null;
+            LoadData();
+        }
+
+        public void RegisterPlayerController(PlayerController controller)
+        {
+            _playerController = controller;
+            ApplyData(); 
+        }
+
+        public void RegisterInventoryManager(InventoryManager manager)
+        {
+            _inventoryManager = manager;
         }
 
         public static void InitializeLevelTable()
@@ -366,86 +492,6 @@ namespace Assets.Scripts.Core
             Save("PlayerProgress.UnmarkItemAsHotbarPreferred");
         }
 
-        void LoadOrCreate()
-        {
-            string path = Path.Combine(Application.persistentDataPath, SAVE_FILE_NAME);
-            if (File.Exists(path))
-            {
-                string json = File.ReadAllText(path);
-                var saveData = JsonConvert.DeserializeObject<PlayerSaveData>(json);
-
-                _level = saveData.level;
-                _experience = saveData.experience;
-                _engramPoints = saveData.engramPoints;
-
-                // Загружаем статы
-                _statLevels = saveData.statLevels ?? new Dictionary<StatType, int>();
-
-                InitializeStats(); // ← чтобы заполнить недостающие ключи
-
-                // Инвентарь
-                hotbarInventoryData = new InventoryData(10);
-                hotbarInventoryData.FromSerializable(saveData.hotbar, itemDatabase.ItemLookup);
-
-                mainInventoryData = new InventoryData(INVENTORY_SIZE);
-                mainInventoryData.FromSerializable(saveData.mainInventory, itemDatabase.ItemLookup);
-
-                hotbarSlotMap = saveData.hotbarSlotMap ?? new Dictionary<string, int>();
-
-                // Энграммы
-                engramData = new EngramData();
-                engramData.InitializeFromDatabase(recipeDatabase);
-                engramData.FromSerializable(saveData.engrams, recipeDatabase);
-
-                UpdateEngramAvailability();
-
-                // После блока с загрузкой инвентаря/статов, но ДО вызова GiveBeginnerItems()
-                if (playerController != null)
-                {
-                    playerController.transform.position = new Vector3(
-                        saveData.playerPositionX,
-                        saveData.playerPositionY,
-                        saveData.playerPositionZ
-                    );
-                }
-                else
-                {
-                    Debug.LogWarning("[PlayerProgress] playerController не назначен! Позиция не загружена.");
-                }
-
-                if (GiveBeginnerItemsToPlayer)
-                    GiveBeginnerItems();
-
-                if (PlayerSurvivalSystem.Instance != null)
-                    PlayerSurvivalSystem.Instance.LoadFrom(saveData);
-
-                if (inventoryManager != null)
-                    inventoryManager.EquipSavedEquippedItem(saveData);
-
-            }
-            else
-            {
-                // Новый игрок
-                hotbarInventoryData = new InventoryData(10);
-                mainInventoryData = new InventoryData(INVENTORY_SIZE);
-                hotbarSlotMap = new Dictionary<string, int>();
-
-                engramData = new EngramData();
-                engramData.InitializeFromDatabase(recipeDatabase);
-                InitializeStats();
-                _engramPoints = 0;
-                UpdateEngramAvailability();
-
-                if (playerController != null)
-                {
-                    // Заменить на точки спавна
-                    playerController.transform.position = defaultPlayerSpawnPoint;
-                }
-
-                GiveBeginnerItems();
-                Save("PlayerProgress.LoadOrCreate");
-            }
-        }
 
         public void Save(string noteFrom = "")
         {
@@ -459,12 +505,29 @@ namespace Assets.Scripts.Core
                 mainInventory = mainInventoryData.ToSerializable(INVENTORY_SIZE),
                 hotbarSlotMap = new Dictionary<string, int>(hotbarSlotMap),
                 engrams = engramData.ToSerializable(),
-
-                playerPositionX = playerController.transform.position.x,
-                playerPositionY = playerController.transform.position.y,
-                playerPositionZ = playerController.transform.position.z,
-
             };
+
+            // === ИСПРАВЛЕНИЕ: проверяем _playerController ===
+            if (_playerController != null)
+            {
+                saveData.playerPositionX = _playerController.transform.position.x;
+                saveData.playerPositionY = _playerController.transform.position.y;
+                saveData.playerPositionZ = _playerController.transform.position.z;
+                // Debug.Log($"[PlayerProgress] Save: позиция из живого контроллера: {_playerController.transform.position}");
+            }
+            else if (_hasLastKnownPosition)
+            {
+                saveData.playerPositionX = _lastKnownPlayerPosition.x;
+                saveData.playerPositionY = _lastKnownPlayerPosition.y;
+                saveData.playerPositionZ = _lastKnownPlayerPosition.z;
+                // Debug.LogWarning($"[PlayerProgress] Save: _playerController null, используем кэш: {_lastKnownPlayerPosition}");
+            }
+            else
+            {
+                Debug.LogError("[PlayerProgress] Save: позиция недоступна! Используется дефолтная.");
+                // Оставляем дефолтные значения из PlayerSaveData
+            }
+
             // сохранение состояния выживания
             if (PlayerSurvivalSystem.Instance != null)
                 PlayerSurvivalSystem.Instance.SaveTo(saveData);

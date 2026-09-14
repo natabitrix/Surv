@@ -48,6 +48,11 @@ namespace Assets.Scripts.InventorySystem
         private int _accumulatedFoodCount = 0;
         private Item _currentFoodItem = null;
 
+        private void Awake()
+        {
+            PlayerProgress.Instance?.RegisterInventoryManager(this);
+        }
+
         // === STATS ===
         // Обновление отображения уровня, опыта и очков
         public void RefreshPlayerStatsDisplay()
@@ -534,7 +539,7 @@ namespace Assets.Scripts.InventorySystem
                 SelectSlot(localSlotIndex, owner);
 
                 InventorySlot slot = GetSlotByIndex(localSlotIndex);
-  
+
                 if (!slot.IsEmpty && slot.item != null)
                 {
                     equipment.Equip(slot.item, savedIndex); //globalSlotIndex

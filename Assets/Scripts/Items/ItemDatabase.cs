@@ -3,7 +3,8 @@ using UnityEngine;
 
 namespace Assets.Scripts.Items
 {
-    public class ItemDatabase : MonoBehaviour
+    [CreateAssetMenu(fileName = "ItemDatabase", menuName = "Game/Item Database")]
+    public class ItemDatabase : ScriptableObject  // <-- Изменено с MonoBehaviour
     {
         public Item[] allItems;
         private Dictionary<string, Item> _itemLookup;
@@ -31,9 +32,9 @@ namespace Assets.Scripts.Items
             }
         }
 
-        private void Awake()
-        {
-            DontDestroyOnLoad(gameObject);
-        }
+        // private void Awake()
+        // {
+        //     DontDestroyOnLoad(gameObject);
+        // }
     }
 }

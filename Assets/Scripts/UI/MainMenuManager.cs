@@ -1,4 +1,5 @@
 using System;
+using Assets.Scripts.Core;
 using Assets.Scripts.InventorySystem;
 using Assets.Scripts.Player;
 using UnityEngine;
@@ -83,6 +84,8 @@ namespace Assets.Scripts.UI
         {
             SetRealPause(false);
             SetCursorVisible(false);
+            // Перечитываем файл перед загрузкой сцены
+            PlayerProgress.Instance?.ReloadFromFile();
             SceneManager.LoadScene(GameScene);
         }
 
