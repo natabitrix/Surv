@@ -86,6 +86,11 @@ namespace Assets.Scripts.UI
             SetCursorVisible(false);
             // Перечитываем файл перед загрузкой сцены
             PlayerProgress.Instance?.ReloadFromFile();
+            // ✅ Показываем загрузочный экран
+            if (LoadingScreenManager.Instance != null)
+            {
+                LoadingScreenManager.Instance.Show("Загрузка игры...");
+            }
             SceneManager.LoadScene(GameScene);
         }
 

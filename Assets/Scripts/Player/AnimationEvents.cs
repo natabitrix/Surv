@@ -5,45 +5,46 @@ namespace Assets.Scripts.Player
 {
     public class AnimationEvents : MonoBehaviour
     {
-        [SerializeField] private PlayerController _playerController;
+        // [SerializeField] private PlayerController _playerController;
         private PlayerMovementSettings _settings;
         private CharacterController _controller;
-        [SerializeField] private PlayerInteraction _playerInteraction;
+        private PlayerInteraction _playerInteraction;
+        // [SerializeField] private PlayerInteraction _playerInteraction;
 
         private void Start()
         {
-            _controller = _playerController.CharacterController;
-            if (_controller == null)
+            var pc = PlayerController.Instance;
+            if (pc == null)
             {
-                Debug.LogError("characterController is null in PlayerController!", this);
+                Debug.LogError("PlayerController.Instance is null!", this);
                 return;
             }
-
-            _settings = _playerController.settings;
+            _controller = pc.CharacterController;
+            _settings = pc.settings;
+            if (pc.TryGetComponent<PlayerInteraction>(out var interact)) _playerInteraction = interact;
         }
 
-        private void OnFootstep(AnimationEvent animationEvent)
+        // Сделай их public, чтобы они точно были видны в Animation Events
+        public void OnFootstep(AnimationEvent animationEvent)
         {
             if (animationEvent.animatorClipInfo.weight > 0.5f && _settings.FootstepAudioClips.Length > 0)
             {
                 var index = Random.Range(0, _settings.FootstepAudioClips.Length);
                 AudioClip clip = _settings.FootstepAudioClips[index];
 
-                // Получаем глобальную громкость, если есть менеджер, иначе берем из настроек
                 float globalVolume = 1f;
                 if (AudioManager.Instance != null)
                 {
                     globalVolume = AudioManager.Instance.masterVolume;
                 }
 
-                // Итоговая громкость = Глобальная * Настройка шагов
                 float finalVolume = globalVolume * _settings.FootstepAudioVolume;
 
                 PlaySoundAtPosition(clip, transform.TransformPoint(_controller.center), finalVolume);
             }
         }
 
-        private void OnLand(AnimationEvent animationEvent)
+        public void OnLand(AnimationEvent animationEvent)
         {
             if (animationEvent.animatorClipInfo.weight > 0.4 && _settings.LandingAudioClip != null)
             {
@@ -58,7 +59,6 @@ namespace Assets.Scripts.Player
             }
         }
 
-        // Вспомогательный метод для корректного воспроизведения с нужной громкостью
         private void PlaySoundAtPosition(AudioClip clip, Vector3 position, float volume)
         {
             if (clip == null) return;
@@ -68,17 +68,30 @@ namespace Assets.Scripts.Player
 
             AudioSource source = soundObj.AddComponent<AudioSource>();
             source.clip = clip;
-            source.volume = volume; // <-- ВАЖНО: Устанавливаем громкость сразу при создании
-            source.spatialBlend = 1f; // 3D звук
+            source.volume = volume;
+            source.spatialBlend = 1f;
             source.Play();
 
-            // Уничтожаем объект после завершения звука
             Destroy(soundObj, clip.length + 0.1f);
         }
 
-        private void OnInteractFinished() => _playerInteraction.OnInteractFinished();
-        private void OnOpenInventoryFinished() => _playerInteraction.OnOpenInventoryFinished();
-        private void OnAttackInteractFinished() => _playerInteraction.OnAttackInteractFinished();
+        // Эти методы уже public, они должны появиться в списке
+        public void OnInteractFinishedAnimationEvent() 
+        {
+            if (_playerInteraction != null)
+                _playerInteraction.OnInteractFinishedAnimationEvent();
+        }
 
+        public void OnOpenInventoryFinisheddAnimationEvent() 
+        {
+            if (_playerInteraction != null)
+                _playerInteraction.OnOpenInventoryFinisheddAnimationEvent();
+        }
+
+        public void OnAttackInteractFinished() 
+        {
+            if (_playerInteraction != null)
+                _playerInteraction.OnAttackInteractFinished();
+        }
     }
 }

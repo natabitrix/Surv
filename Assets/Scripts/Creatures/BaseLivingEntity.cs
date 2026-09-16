@@ -4,22 +4,24 @@ using Assets.Scripts.Audio;
 using Assets.Scripts.Player;
 using Assets.Scripts.Effects;
 using Assets.Scripts.Interactables;
-using Assets.Scripts.InventorySystem; // Для StatType, PlayerProgress, PlayerSurvivalSystem
+using Assets.Scripts.InventorySystem;
+using Assets.Scripts.Corpses;
 
-namespace Assets.Scripts.Creatures 
+namespace Assets.Scripts.Creatures
 {
     public abstract class BaseLivingEntity : MonoBehaviour, IInteractable, IImpactSoundProvider
     {
         [Header("Audio")]
-        [SerializeField] private ImpactType _impactType = ImpactType.Flesh; 
+        [SerializeField] private ImpactType _impactType = ImpactType.Flesh;
         public virtual ImpactType GetImpactType() => _impactType;
+
         [Header("ParticleSystem for Damage Effect")]
         public ParticleSystem damageEffect;
 
-        public bool tamed = false; // прирученное существо
-        public bool tamable = false; // приручаемое существо
-        public bool tamableKO = false; // приручаемое оглушением
-        public bool knockedOut = false; // оглушенное существ
+        public bool tamed = false;          // прирученное существо
+        public bool tamable = false;        // приручаемое существо
+        public bool tamableKO = false;      // приручаемое оглушением
+        public bool knockedOut = false;     // оглушенное существо
         public bool tamablePassive = false; // приручаемое пассивным (кормлением, другими механиками)
 
         [Header("Interaction")]
@@ -29,7 +31,6 @@ namespace Assets.Scripts.Creatures
         // ==========================================
         // === ИНВЕНТАРЬ (Открытие по F) ===
         // ==========================================
-        // [Header("Inventory")]
         [SerializeField] private ChestInventory _inventory;
         [SerializeField] private ChestUI _chestUI;
         private bool _isOpen = false;
@@ -39,40 +40,39 @@ namespace Assets.Scripts.Creatures
         public float maxTorpor = 100f;
         public float torporRecoveryRate = 1f; // Как быстро просыпается
 
-        // Используем ссылки на системы, возможно, через Singleton, как у тебя в PlayerSurvivalSystem
-        protected PlayerProgress playerProgress; // Для получения максимальных значений статов
-        protected PlayerSurvivalSystem survivalSystem; // Можно использовать для получения/изменения базовых статов, если они общие
+        // Ссылки на системы
+        protected PlayerProgress playerProgress;
+        protected PlayerSurvivalSystem survivalSystem;
 
         // Статы, специфичные для этого существа
-        // Для простоты можно хранить как поля, но лучше - через словарь или отдельный компонент Stats
         protected float health;
         protected float maxHealth;
         protected float stamina;
         protected float maxStamina;
-        // ... другие статы, если нужны (Food, Water, Weight и т.д.)
 
-        // Ссылка на аниматор (если есть)
+        // Ссылка на аниматор
         protected Animator animator;
-        protected int animIDTakeDamage; // Пример Hash для анимации "урон"
-        protected int animIDDeath; // Пример Hash для анимации "смерть"
+        protected int animIDTakeDamage;
+        protected int animIDDeath;
 
         // События
-        public System.Action<BaseLivingEntity> OnDeath; // Событие смерти, можно подписаться снаружи (например, Spawner)
+        public System.Action<BaseLivingEntity> OnDeath;
 
         protected virtual void Awake()
         {
             // Ищем синглтоны
             playerProgress = PlayerProgress.Instance;
-            survivalSystem = PlayerSurvivalSystem.Instance; // Если используется для общих механик
+            survivalSystem = PlayerSurvivalSystem.Instance;
 
             // Получаем аниматор
             animator = GetComponent<Animator>();
             if (animator != null)
             {
-                animIDTakeDamage = Animator.StringToHash("TakeDamage"); // Или другой параметр
+                animIDTakeDamage = Animator.StringToHash("TakeDamage");
                 animIDDeath = Animator.StringToHash("Death");
             }
-            // Инициализация статов (можно настроить через ScriptableObject, как ты делаешь со статами игрока)
+
+            // Инициализация статов
             InitializeStats();
         }
 
@@ -84,7 +84,6 @@ namespace Assets.Scripts.Creatures
 
         public void Interact(InteractContext context)
         {
-            // Инвентарь доступен если прирученный или оглушенный
             if ((tamed || (tamableKO && knockedOut)) && context.isTargetInventory)
             {
                 OpenInventory();
@@ -108,7 +107,7 @@ namespace Assets.Scripts.Creatures
             }
             else
             {
-                Debug.LogError("[Corpse] _chestUI не назначен! Инвентарь не откроется.");
+                Debug.LogError("[BaseLivingEntity] _chestUI не назначен! Инвентарь не откроется.");
             }
         }
 
@@ -129,13 +128,10 @@ namespace Assets.Scripts.Creatures
         // Статы
         protected virtual void InitializeStats()
         {
-            // Пример: получаем базовые значения из PlayerProgress или из конфигурации конкретного существа
-            // Для животных можно использовать собственные параметры, а не PlayerProgress
-            // maxHealth = playerProgress.GetMaxValue(StatType.Health); // <- НЕ для животного!
-            maxHealth = GetMaxHealthFromConfiguration(); // Реализуй этот метод
+            maxHealth = GetMaxHealthFromConfiguration();
             health = maxHealth;
 
-            maxStamina = GetMaxStaminaFromConfiguration(); // Реализуй этот метод
+            maxStamina = GetMaxStaminaFromConfiguration();
             stamina = maxStamina;
         }
 
@@ -149,7 +145,6 @@ namespace Assets.Scripts.Creatures
             health -= damage;
             if (animator != null && damage > 0)
             {
-                // Пример: триггер анимации получения урона
                 animator.SetTrigger(animIDTakeDamage);
             }
 
@@ -163,24 +158,17 @@ namespace Assets.Scripts.Creatures
             }
         }
 
-        // Система частиц при нанесении урона: Искры, кровь
+        // Система частиц при нанесении урона
         void PlayDamageEffect(Vector3 targetHitPosition)
         {
-            // if (animator != null)
-            //     animator.SetTrigger("Break");
-
             if (damageEffect != null)
             {
-                // Отделяем от родителя, чтобы не удалился вместе с ним
                 var effectInstance = Instantiate(damageEffect, targetHitPosition, transform.rotation);
-
                 effectInstance.Play();
 
-                // Уничтожим частицы после завершения
                 var main = effectInstance.main;
-                Destroy(effectInstance.gameObject, main.duration + 1.5f); //  + 1.5f
+                Destroy(effectInstance.gameObject, main.duration + 1.5f);
             }
-
         }
 
         // Общий метод смерти
@@ -190,53 +178,58 @@ namespace Assets.Scripts.Creatures
 
             CancelInvoke();
 
-            // Отключить NavMeshAgent, чтобы не пыталось двигаться во время смерти
+            // Отключаем NavMeshAgent
             var agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
-            // if (agent != null) agent.enabled = false;
             if (agent != null) Destroy(agent);
-            
-            if (animator != null) animator.SetTrigger(animIDDeath);
+
+            // Уничтожаем аниматор
+            if (animator != null) Destroy(animator);
 
             var corpse = GetComponent<Corpse>();
 
-            // Вар. 1
-            // corpse.enabled = true;
-            // corpse.CreateCorpseInventory();
-            // var menu = GetComponent<RadialMenu>();
-            // if (menu != null) menu.enabled = true;
+            // Активируем компонент тела
+            if (corpse != null)
+            {
+                corpse.enabled = true;
 
-            // Вар. 2
-            // corpse.ActivateRagdoll();
-            // StartCoroutine(corpse.StopMovingCorpse());
+                corpse.ActivateRagdoll();
+                corpse.StartCoroutine(corpse.StopMovingRagdoll());
 
-            // Вар. 3
-            // Активируем компонента тела
-            corpse.enabled = true;
+                corpse.InitializeCorpse();
 
-            // Инициализируем труп для добычи ресурсов с него
-            corpse.InitializeCorpse();
-
-            // Созаем инвентарь трупа
-            corpse.CreateCorpseInventory(
-                "CreatureCorpse",
-                100,
-                null,
-                null,
-                FindAnyObjectByType<ChestUI>()
-            );
+                corpse.CreateCorpseInventory(
+                    "CreatureCorpse",
+                    100,
+                    FindAnyObjectByType<ChestUI>()
+                );
+            }
 
             var menu = GetComponent<RadialMenu>();
             if (menu != null) menu.enabled = true;
 
- 
-            // Debug.Log("Creature Died!");
+            // === Регистрируем труп в CorpseManager ===
+            if (CorpseManager.Instance != null)
+            {
+                string creatureId = null;
+
+                // Пытаемся получить creatureId из Creature
+                var creature = GetComponent<Creature>();
+                if (creature != null)
+                {
+                    creatureId = creature.creatureId;
+                }
+
+                // Новая сигнатура: RegisterCorpse(GameObject, string ownerPlayerId, string creatureId = null)
+                CorpseManager.Instance.RegisterCorpse(
+                    gameObject,   // ← это то же самое существо, ставшее трупом
+                    "world",      // существ не принадлежат игрокам
+                    creatureId    // "Raptor", "Dodo" и т.д.
+                );
+            }
+
             // Вызываем событие смерти
             OnDeath?.Invoke(this);
-
         }
-
-
-
 
         /// <summary>
         /// Вызывается в конце анимации смерти (через Animation Event).
@@ -244,17 +237,13 @@ namespace Assets.Scripts.Creatures
         /// </summary>
         public void OnDeathAnimationFinished()
         {
-
-            // var col = gameObject.GetComponent<Collider>();
-            // Destroy(col);
-
             if (animator != null)
             {
                 animator.enabled = false;
             }
         }
 
-        // Метод для восстановления здоровья (если нужно)
+        // Метод для восстановления здоровья
         public virtual void Heal(float amount)
         {
             health = Mathf.Clamp(health + amount, 0, maxHealth);

@@ -5,11 +5,11 @@ using Assets.Scripts.Core;
 using System.Collections;
 using Assets.Scripts.UI;
 
-namespace Assets.Scripts.Creatures
+namespace Assets.Scripts.Loot
 {
     /// <summary>
-    /// LootBag — сумка, остающаяся после разбора трупа.
-    /// Содержит лут из инвентаря трупа и исчезает через время.
+    /// Сумка с вещами. Появляется при разборе трупа, выбрасывании вещей,
+    /// разрушении сундука и т.д. Исчезает по таймеру или когда вещи забрали.
     /// </summary>
     public class LootBag : MonoBehaviour, IInteractable
     {
@@ -25,7 +25,12 @@ namespace Assets.Scripts.Creatures
         [Header("Despawn Settings")]
         [SerializeField] private float _bagDisappearTime = 180f;
 
+        [Header("Persistence")]
+        public string InstanceId { get; set; }
+        public string OwnerPlayerId { get; set; } = "world";
+
         private Coroutine _despawnCoroutine;
+        private bool _isDespawning = false;
 
         private void Start()
         {
@@ -40,37 +45,62 @@ namespace Assets.Scripts.Creatures
 
         private void OnDestroy()
         {
-            // ✅ Отписываемся при уничтожении
             if (_inventory?.Data != null)
             {
                 _inventory.Data.OnInventoryChanged -= OnInventoryChanged;
+            }
+
+            // ✅ Уведомляем менеджер
+            if (LootBagManager.Instance != null && !string.IsNullOrEmpty(InstanceId))
+            {
+                if (!LootBagManager.Instance.IsQuitting)
+                {
+                    LootBagManager.Instance.UnregisterLootBag(InstanceId);
+                }
             }
         }
 
         private void OnInventoryChanged()
         {
-            // ✅ Проверяем, не стал ли инвентарь пустым
             if (IsInventoryEmpty())
             {
-                Debug.Log($"[LootBag] Инвентарь стал пустым! Исчезаем немедленно.");
+                Debug.Log($"[LootBag] Инвентарь пуст! Исчезаем.");
                 ForceDespawn();
             }
         }
 
         /// <summary>
-        /// Инициализирует сумку с инвентарём из трупа
+        /// Инициализация через источник (труп, сундук и т.д.)
         /// </summary>
-        public void Initialize(ChestInventory corpseInventory, ChestUI chestUI, float corpseDisappearTime, IInteractable source = null)
+        public void Initialize(ChestInventory inventory, ChestUI chestUI, float disappearTime, IInteractable source = null)
         {
-            _inventory = corpseInventory;
+            _inventory = inventory;
             _chestUI = chestUI;
-            _bagDisappearTime = corpseDisappearTime * 0.6f;
-            _source = source ?? this; // ← если source не передан, используем this
+            _bagDisappearTime = disappearTime;
+            _source = source ?? this;
         }
+
+        /// <summary>
+        /// Устанавливает данные из сохранения.
+        /// </summary>
+        public void SetPersistenceData(string instanceId, string ownerPlayerId)
+        {
+            InstanceId = instanceId;
+            OwnerPlayerId = ownerPlayerId;
+        }
+
+        /// <summary>
+        /// Устанавливает оставшееся время жизни.
+        /// </summary>
+        public void SetRemainingTime(float remainingTime)
+        {
+            _bagDisappearTime = remainingTime;
+        }
+
+        // === IInteractable ===
 
         public InteractType GetInteractType() => InteractType.OpenTargetInventory;
         public InteractType GetInteractType2() => InteractType.None;
-
         public ChestInventory GetInventory() => _inventory;
         public bool HasInventory() => _inventory != null;
         public bool ShouldDetachAfterInteract() => false;
@@ -85,10 +115,7 @@ namespace Assets.Scripts.Creatures
 
         public void OpenInventory()
         {
-            if (_isOpen)
-            {
-                CloseInventory();
-            }
+            if (_isOpen) CloseInventory();
 
             if (_chestUI != null)
             {
@@ -129,10 +156,9 @@ namespace Assets.Scripts.Creatures
 
             while (elapsed < _bagDisappearTime)
             {
-                // Проверяем каждую секунду, пуст ли инвентарь
                 if (IsInventoryEmpty())
                 {
-                    Debug.Log($"[LootBag] Сумка исчезла — весь лут забран на {transform.position}");
+                    Debug.Log($"[LootBag] Сумка исчезла — весь лут забран.");
                     ForceDespawn();
                     yield break;
                 }
@@ -141,16 +167,12 @@ namespace Assets.Scripts.Creatures
                 elapsed += 1f;
             }
 
-            // Если таймер истёк, исчезаем всё равно
-            Debug.Log($"[LootBag] Сумка исчезла по таймеру на {transform.position}");
+            Debug.Log($"[LootBag] Сумка исчезла по таймеру.");
             ForceDespawn();
         }
 
-        private bool _isDespawning = false;
-
         public void ForceDespawn()
         {
-            // ✅ Защита от повторного вызова
             if (_isDespawning) return;
             _isDespawning = true;
 
@@ -160,15 +182,13 @@ namespace Assets.Scripts.Creatures
                 _despawnCoroutine = null;
             }
 
-            // Отписываемся от событий
             if (_inventory?.Data != null)
             {
                 _inventory.Data.OnInventoryChanged -= OnInventoryChanged;
             }
 
             CloseInventory();
-            
-            // Закрываем панель в PanelsUIController
+
             var panelsController = FindAnyObjectByType<PanelsUIController>();
             if (panelsController != null)
             {
@@ -176,7 +196,6 @@ namespace Assets.Scripts.Creatures
             }
 
             Destroy(gameObject);
-            
         }
     }
 }

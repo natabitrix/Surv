@@ -10,6 +10,7 @@ using Assets.Scripts.Player;
 using Assets.Scripts.InventorySystem;
 using System.Collections;
 using Assets.Scripts.Items;
+using Assets.Scripts.UI;
 
 namespace Assets.Scripts.Core
 {
@@ -59,19 +60,21 @@ namespace Assets.Scripts.Core
 
         private IEnumerator Start()
         {
-            // Ждем, пока PlayerProgress появится
-            while (PlayerProgress.Instance == null)
-                yield return null;
-
-            // Подписываемся на событие
+            while (PlayerProgress.Instance == null) yield return null;
             PlayerProgress.Instance.OnPlayerLoaded += OnPlayerLoadedHandler;
 
-            // Если игрок уже загружен (например, при прямом запуске GameWorld),
-            // вызываем загрузку мира сразу
             if (PlayerProgress.Instance.playerController != null)
             {
                 OnPlayerLoadedHandler();
             }
+        }
+
+        private IEnumerator LoadWorldAsyncTask()
+        {
+            _playerController = PlayerProgress.Instance.playerController;
+            if (_playerController == null) yield break;
+
+            yield return StartCoroutine(LoadWorldAsync(_playerController.transform.position));
         }
 
         void Update()
@@ -111,13 +114,6 @@ namespace Assets.Scripts.Core
                 Debug.LogError("[WorldManager] PlayerController не найден!");
                 return;
             }
-
-            // Debug.Log($"[WorldManager] Загрузка мира вокруг: {_playerController.transform.position}");
-
-            // Загружаем мир ВОКРУГ СОХРАНЁННОЙ позиции игрока
-            LoadWorld(_playerController.transform.position);
-            // Debug.Log($"[WorldManager] Мир загружен вокруг позиции игрока: {_playerController.transform.position}");
-
 
         }
 
@@ -206,19 +202,18 @@ namespace Assets.Scripts.Core
         }
 
         // ===== ЗАГРУЗКА МИРА =====
-        public void LoadWorld(Vector3 playerPosition)
+        public IEnumerator LoadWorldAsync(Vector3 playerPosition)
         {
             ClearExistingStructures();
             _chunks.Clear();
             _instanceMap.Clear();
 
-            // Получаем все чанки в радиусе загрузки
             var chunksToLoad = GetChunksInRadius(playerPosition, loadRadiusInChunks);
             int totalStructures = 0;
 
-            // Загружаем данные чанков
-            foreach (var chunkKey in chunksToLoad)
+            for (int i = 0; i < chunksToLoad.Count; i++)
             {
+                var chunkKey = chunksToLoad[i];
                 string path = GetChunkSavePath(chunkKey);
                 if (!File.Exists(path)) continue;
 
@@ -231,22 +226,18 @@ namespace Assets.Scripts.Core
                     {
                         _chunks[chunkKey] = chunkData.structures;
                         totalStructures += chunkData.structures.Count;
-                        // Debug.Log($"[WorldManager] Загружен чанк {chunkKey} ({chunkData.structures.Count} структур)");
                     }
                 }
                 catch (Exception e)
                 {
                     Debug.LogError($"[WorldManager] Ошибка загрузки чанка {chunkKey}: {e.Message}");
                 }
+
+                // Даем кадр каждые 2 чанка
+                if (i % 2 == 0) yield return null;
             }
 
-            // Инстанциируем все структуры
             InstantiateLoadedChunks();
-
-            // Восстанавливаем иерархию ДВЕРЕЙ (только после полной загрузки)
-            // RestoreDoorHierarchy();
-
-            // Debug.Log($"[WorldManager] Загружено {totalStructures} структур из {chunksToLoad.Count} чанков");
         }
 
         // ===== ИНСТАНЦИРОВАНИЕ СТРУКТУР =====

@@ -44,28 +44,36 @@ namespace Assets.Scripts.InventorySystem
 
         void CreateChestSlots()
         {
-            if (slotUIs != null)
-            {
-                foreach (Transform t in chestSlotParent)
-                    Destroy(t.gameObject);
-                slotUIs.Clear();
-            }
-            else
-            {
-                slotUIs = new List<InventorySlotUI>();
-            }
-
             if (_currentChest?.Data?.slots == null) return;
 
-            for (int i = 0; i < _currentChest.Data.slots.Count; i++)
+            int requiredSize = _currentChest.Data.slots.Count;
+
+            if (slotUIs == null) slotUIs = new List<InventorySlotUI>();
+
+            // Удаляем лишние
+            while (slotUIs.Count > requiredSize)
+            {
+                var last = slotUIs[slotUIs.Count - 1];
+                slotUIs.RemoveAt(slotUIs.Count - 1);
+                Destroy(last.gameObject);
+            }
+
+            // Создаем недостающие
+            while (slotUIs.Count < requiredSize)
             {
                 var go = Instantiate(slotPrefab, chestSlotParent);
                 var ui = go.GetComponent<InventorySlotUI>();
-                ui.SetupChest(i, this);
-                ui.SetSlot(GetSlot(i));
+                ui.SetupChest(slotUIs.Count, this);
                 slotUIs.Add(ui);
             }
+
+            // Обновляем существующие
+            for (int i = 0; i < slotUIs.Count; i++)
+            {
+                slotUIs[i].SetSlot(GetSlot(i));
+            }
         }
+
 
         public InventorySlot GetSlot(int index)
         {

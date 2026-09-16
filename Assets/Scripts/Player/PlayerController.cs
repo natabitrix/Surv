@@ -119,8 +119,22 @@ namespace Assets.Scripts.Player
             get { return _playerInput.currentControlScheme == "KeyboardMouse"; }
         }
 
+        // 1. Добавляем статическое свойство для доступа из любой точки кода
+        public static PlayerController Instance { get; private set; }
+
         private void Awake()
         {
+            // 2. Реализуем паттерн Синглтон
+            if (Instance != null && Instance != this)
+            {
+                // Если Instance уже существует и это не мы — значит, появился дубликат игрока.
+                // Удаляем дубликат, чтобы не ломать игру.
+                Destroy(gameObject);
+                return;
+            }
+
+            Instance = this; // Сохраняем ссылку на себя
+
             _controller = GetComponent<CharacterController>();
             if (_controller == null)
             {

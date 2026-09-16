@@ -254,6 +254,8 @@ namespace Assets.Scripts.Player
 
             bool isUIOpened = _isPanelOpened || _isPauseOpened;
 
+            // Debug.Log("isUIOpened: " + isUIOpened);
+
             // --- Обработка атаки ---
             if (_attackPressedThisFrame)
             {

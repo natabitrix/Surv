@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 82b251e5117fe8043b644e413094f9a4, type: 3}
-  m_Name: ItemDatabase
+  m_Name: _ItemDatabase
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Items.ItemDatabase
   allItems:
   - {fileID: 11400000, guid: f9b53d2cdc053be40a678c88e6caf4ce, type: 2}

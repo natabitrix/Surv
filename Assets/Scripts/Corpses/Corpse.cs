@@ -7,8 +7,11 @@ using Assets.Scripts.Effects;
 using Assets.Scripts.Audio;
 using Assets.Scripts.Core;
 using System.Collections;
+using System.Collections.Generic;
+using Assets.Scripts.Creatures;
+using Assets.Scripts.Loot;
 
-namespace Assets.Scripts.Creatures
+namespace Assets.Scripts.Corpses
 {
     public class Corpse : MonoBehaviour, IInteractable, IImpactSoundProvider
     {
@@ -74,13 +77,17 @@ namespace Assets.Scripts.Creatures
 
         [Header("Ragdoll")]
         public RagdollSettings ragdollSettings;
-        private PlayerController _playerController = null;
-        private Transform playerTransform;
 
         [Header("Despawn Settings")]
         [SerializeField] private float _corpseDisappearTime = 300f;
         [SerializeField] private GameObject _lootBagPrefab;
 
+        [Header("Persistence")]
+        public string InstanceId { get; set; }
+        public string OwnerPlayerId { get; set; } = "player_001";
+        public string CorpseId { get; set; } = "Unknown";
+
+        private float _remainingLifetime;
         private string _corpseName = "";
         private float _creationTime = 0f;
         private int _harvestHits = 0;
@@ -122,12 +129,6 @@ namespace Assets.Scripts.Creatures
                     _remainingAmounts[i] = harvestDrops[i].totalAmount;
                 }
             }
-
-            if (TryGetComponent<PlayerController>(out var pc))
-            {
-                _playerController = pc;
-                playerTransform = pc.transform;
-            }
         }
 
         public InteractType GetInteractType() => InteractType.OpenTargetInventory;
@@ -162,7 +163,6 @@ namespace Assets.Scripts.Creatures
 
         public void ActivateRagdoll()
         {
-
             foreach (var part in ragdollSettings.ragdollParts)
             {
                 if (part == null) continue;
@@ -175,13 +175,10 @@ namespace Assets.Scripts.Creatures
 
                 rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
-                // rb.linearDamping = 5f;
-                rb.linearDamping = ragdollSettings.linearDamp;
-                // rb.angularDamping = 5f;
-                rb.angularDamping = ragdollSettings.angularDamp;
-                // rb.mass *= ragdollSettings.massMultiplier;
-
-                // rb.maxAngularVelocity = 5f;
+                // rb.linearDamping = ragdollSettings.linearDamp;
+                // rb.angularDamping = ragdollSettings.angularDamp;
+                rb.linearDamping = 1f;
+                rb.angularDamping = 1f;
                 rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
 
                 foreach (var otherPart in ragdollSettings.ragdollParts)
@@ -189,15 +186,6 @@ namespace Assets.Scripts.Creatures
                     if (part != otherPart && otherPart.TryGetComponent<Collider>(out var otherCol))
                     {
                         Physics.IgnoreCollision(rb.GetComponent<Collider>(), otherCol, true);
-                    }
-                }
-
-                if (playerTransform != null)
-                {
-                    Debug.Log("ActivateRagdoll playerTransform: " + playerTransform);
-                    if (playerTransform.TryGetComponent<Collider>(out var playerCol))
-                    {
-                        Physics.IgnoreCollision(rb.GetComponent<Collider>(), playerCol, true);
                     }
                 }
             }
@@ -218,21 +206,12 @@ namespace Assets.Scripts.Creatures
                         rb.Sleep();
                     }
                 }
-
-                if (playerTransform != null)
-                {
-                    Debug.Log("DeactivateRagdoll playerTransform: " + playerTransform);
-                    if (playerTransform.TryGetComponent<Collider>(out var playerCol))
-                    {
-                        Physics.IgnoreCollision(rb.GetComponent<Collider>(), playerCol, false);
-                    }
-                }
             }
         }
 
         public IEnumerator StopMovingRagdoll()
         {
-            yield return new WaitForSeconds(5.5f);
+            yield return new WaitForSeconds(2.5f);
             DeactivateRagdoll();
         }
 
@@ -244,12 +223,16 @@ namespace Assets.Scripts.Creatures
             if (animator != null) Destroy(animator);
 
             DeactivateRagdoll();
-
         }
 
-        public void CreateCorpseInventory(string corpseName, int invCapacity, InventoryData mainInventory, InventoryData hotbarInventory, ChestUI chestUI)
+        public void CreateCorpseInventory(
+            string corpseName,
+            int invCapacity,
+            InventoryData mainInventory,
+            InventoryData hotbarInventory,
+            ChestUI chestUI
+        )
         {
-
             // Добавляем к трупу и инициализируем компонент ChestInventory
             var chestInv = gameObject.AddComponent<ChestInventory>();
             string corpseKey = $"{corpseName}_{System.Guid.NewGuid().ToString()}";
@@ -269,8 +252,21 @@ namespace Assets.Scripts.Creatures
                 // Заполняем инвентарь существа
                 PopulateInventory(chestInv);
             }
+        }
 
+        public void CreateCorpseInventory(
+            string corpseName,
+            int invCapacity,
+            ChestUI chestUI)
+        {
+            // Добавляем к трупу и инициализируем компонент ChestInventory
+            var chestInv = gameObject.AddComponent<ChestInventory>();
+            string corpseKey = $"{corpseName}_{System.Guid.NewGuid().ToString()}";
+            chestInv.Initialize(invCapacity, corpseKey);
 
+            _inventory = chestInv;
+            _chestUI = chestUI;
+            _corpseName = corpseName;
         }
 
         private void PopulateInventory(ChestInventory inv)
@@ -302,7 +298,7 @@ namespace Assets.Scripts.Creatures
             }
         }
 
-        private void CopyPlayerItemsToCorpse(InventoryData mainInventory, InventoryData hotbarInventory)
+        public void CopyPlayerItemsToCorpse(InventoryData mainInventory, InventoryData hotbarInventory)
         {
             if (_inventory?.Data == null) return;
 
@@ -330,6 +326,18 @@ namespace Assets.Scripts.Creatures
                 }
             }
         }
+
+
+        public void LoadFromCorpseData(SerializableInventory inventoryData, ItemDatabase itemDatabase)
+        {
+            if (_inventory?.Data == null) return;
+
+            if (inventoryData != null && itemDatabase != null)
+            {
+                _inventory.Data.FromSerializable(inventoryData, itemDatabase.ItemLookup);
+            }
+        }
+
 
         public void OpenInventory()
         {
@@ -491,6 +499,12 @@ namespace Assets.Scripts.Creatures
                 _despawnCoroutine = null;
             }
 
+            if (CorpseManager.Instance != null && !string.IsNullOrEmpty(InstanceId))
+            {
+                // Труп разобран — можно удалить запись (лут перенесен в LootBag)
+                // CorpseManager.Instance.UnregisterCorpse(InstanceId);
+            }
+
             Destroy(gameObject, 0.5f);
         }
 
@@ -540,6 +554,12 @@ namespace Assets.Scripts.Creatures
             if (lootBag != null)
             {
                 lootBag.Initialize(bagInventory, _chestUI, _corpseDisappearTime, lootBag);
+
+                // ✅ Регистрируем сумку в LootBagManager
+                if (LootBagManager.Instance != null)
+                {
+                    LootBagManager.Instance.RegisterLootBag(bagGO, "world");
+                }
             }
             else
             {
@@ -554,7 +574,7 @@ namespace Assets.Scripts.Creatures
 
             if (!IsHarvested)
             {
-                Debug.Log($"[Corpse] Труп исчез по таймеру на {transform.position}");
+                // Debug.Log($"[Corpse] Труп исчез по таймеру на {transform.position}");
                 Destroy(gameObject);
             }
         }
@@ -634,6 +654,120 @@ namespace Assets.Scripts.Creatures
         }
 
         public void InterruptByAttack(PlayerInteraction player) => StopDragging(player);
+
+        public int GetHarvestHits() => _harvestHits;
+
+        public int GetInventoryCapacity() => _inventory?.Data?.size ?? 100;
+
+        public void StartDespawnTimer(float lifetime)
+        {
+            _remainingLifetime = lifetime;
+            if (_despawnCoroutine != null) StopCoroutine(_despawnCoroutine);
+            _despawnCoroutine = StartCoroutine(DespawnAfterTime(lifetime));
+        }
+
+        public void SaveHarvestData(CorpseSaveData data)
+        {
+            data.harvestDrops.Clear();
+            data.remainingAmounts.Clear();
+
+            if (harvestDrops != null)
+            {
+                foreach (var drop in harvestDrops)
+                {
+                    data.harvestDrops.Add(new ResourceDropData
+                    {
+                        itemId = drop.item?.Id ?? "",
+                        totalAmount = drop.totalAmount
+                    });
+                }
+            }
+
+            if (_remainingAmounts != null)
+            {
+                data.remainingAmounts.AddRange(_remainingAmounts);
+            }
+
+            data.harvestHits = _harvestHits;
+            data.isDepleted = _isDepleted;
+        }
+
+        public void LoadHarvestData(CorpseSaveData data)
+        {
+            // Восстанавливаем добычу
+            if (data.harvestDrops != null && data.harvestDrops.Count > 0)
+            {
+                var itemDb = PlayerProgress.Instance?.itemDatabase?.ItemLookup;
+                var newDrops = new List<ResourceDrop>();
+
+                foreach (var dropData in data.harvestDrops)
+                {
+                    if (itemDb != null && itemDb.TryGetValue(dropData.itemId, out var item))
+                    {
+                        newDrops.Add(new ResourceDrop
+                        {
+                            item = item,
+                            totalAmount = dropData.totalAmount
+                        });
+                    }
+                }
+
+                harvestDrops = newDrops.ToArray();
+            }
+
+            // Восстанавливаем оставшиеся количества
+            if (data.remainingAmounts != null && data.remainingAmounts.Count > 0)
+            {
+                _remainingAmounts = data.remainingAmounts.ToArray();
+            }
+            else if (harvestDrops != null)
+            {
+                // Если не было сохранено — считаем, что все на месте
+                _remainingAmounts = new int[harvestDrops.Length];
+                for (int i = 0; i < harvestDrops.Length; i++)
+                    _remainingAmounts[i] = harvestDrops[i].totalAmount;
+            }
+
+            _harvestHits = data.harvestHits;
+            _isDepleted = data.isDepleted;
+        }
+
+        // Перегрузка DespawnAfterTime
+        private IEnumerator DespawnAfterTime(float lifetime)
+        {
+            yield return new WaitForSeconds(lifetime);
+
+            if (!IsHarvested)
+            {
+                // Debug.Log($"[Corpse] Труп исчез по таймеру: {InstanceId}");
+
+                // Уведомляем менеджер
+                if (CorpseManager.Instance != null && !string.IsNullOrEmpty(InstanceId))
+                {
+                    CorpseManager.Instance.UnregisterCorpse(InstanceId);
+                }
+
+                Destroy(gameObject);
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (CorpseManager.Instance != null && !string.IsNullOrEmpty(InstanceId))
+            {
+                // Не удаляем файл при выходе из игры
+                if (!CorpseManager.Instance.IsQuitting)
+                {
+                    CorpseManager.Instance.UnregisterCorpse(InstanceId);
+                    // Debug.Log($"[Corpse] OnDestroy — файл {InstanceId} удален");
+                }
+                // else
+                // {
+                //     Debug.Log($"[Corpse] OnDestroy при выходе — файл {InstanceId} сохранён");
+                // }
+            }
+        }
+
     }
 
     [System.Serializable]

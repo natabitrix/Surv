@@ -1,4 +1,5 @@
 using Assets.Scripts.Core;
+using Assets.Scripts.Corpses;
 using Assets.Scripts.Creatures;
 using Assets.Scripts.InventorySystem;
 using Assets.Scripts.Items;

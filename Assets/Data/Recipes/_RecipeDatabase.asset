@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c081502bdf5523e4ca7db521367fc190, type: 3}
-  m_Name: RecipeDatabase
+  m_Name: _RecipeDatabase
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Crafting.RecipeDatabase
   _allRecipes:
   - {fileID: 11400000, guid: 0c70406cca4897a46bf0899026815ca1, type: 2}

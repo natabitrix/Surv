@@ -1,5 +1,6 @@
 // Assets/Scripts/InventorySystem/PlayerPanelsUIController.cs
 using Assets.Scripts.Core;
+using Assets.Scripts.Corpses;
 using Assets.Scripts.Creatures;
 using Assets.Scripts.Interactables;
 using Assets.Scripts.InventorySystem;
@@ -18,9 +19,6 @@ namespace Assets.Scripts.UI
     {
         [SerializeField] private PlayerInputHandler _input;
         [SerializeField] private PlayerController _playerController;
-        // [SerializeField] private ItemDatabase _itemDatabase;
-
-
         [Header("Panels")]
         public GameObject TopButtons;
         public GameObject EngramsPanel;
@@ -64,9 +62,13 @@ namespace Assets.Scripts.UI
         [SerializeField] private InventoryManager inventoryManager;
         [SerializeField] private CharacterPreviewManager previewManager;
         [SerializeField] private TooltipManager tooltipManager;
+        
+        [SerializeField] private PauseManager pauseManager;
+        [SerializeField] private DeathScreenManager deathScreenManager;
 
         private bool _isInventoryOpened = false;
         private bool _isRadialMenuOpened = false;
+        // private bool _isDeathScreenShow = false;
 
         public Item RadialMenuCurrentTarget = null;
         public GameObject RadialMenuCurrentTargetGO = null;
@@ -225,7 +227,6 @@ namespace Assets.Scripts.UI
         {
             EngramsPanel.SetActive(false);
         }
-
 
         // Закрытие сундука
         public void CloseChestPanel()

@@ -10,34 +10,13 @@ namespace Assets.Scripts.UI
     public class DeathScreenManager : MonoBehaviour
     {
         public GameObject DeathSceenCanvas;
-        // public GameObject PausePanel;
 
         public String GameScene;
-        // public String MainMenuScene;
 
         public float timeScale = 1f;
 
-        private bool _isDeathSceenOpened = false;
-
-
-        // [SerializeField] private PlayerInputHandler _input;
         [SerializeField] private PlayerController _playerController;
         [SerializeField] private PanelsUIController _panelsController;
-
-        public bool IsDeathSceenOpened() => _isDeathSceenOpened;
-
-
-        public void LockCamera(bool isLock)
-        {
-            if (_playerController != null)
-            {
-                _playerController.LockCameraOnEsc = isLock;
-            }
-            else
-            {
-                Debug.Log("_playerController not found");
-            }
-        }
 
         public void SetCursorVisible(bool isCursorVisible)
         {
@@ -54,47 +33,34 @@ namespace Assets.Scripts.UI
                 Time.timeScale = timeScale;
         }
 
-        public void Show()
-        {
-
-            if (_panelsController != null)
-            {
-                _panelsController.CloseRadialMenu();
-                _panelsController.CloseAllPanels();
-            }
-
-            DeathSceenCanvas.SetActive(true);
-            LockCamera(true);
-            _isDeathSceenOpened = true;
-            // SetRealPause(true);
-            SetCursorVisible(true);
-        }
-
-        // public void ResumeFromPause()
-        // {
-        //     DeathSceenCanvas.SetActive(false);
-        //     SetCursorVisible(false);
-        //     LockCamera(false);
-        //     _isDeathSceenOpened = false;
-        //     SetRealPause(false);
-        // }
-
-
-        public void LoadGameScene()
+        // Кнопка респавна
+        public void OnRespawnButtonClick()
         {
             SetRealPause(false);
-            _isDeathSceenOpened = false;
             SetCursorVisible(false);
-            // Перечитываем файл перед загрузкой сцены
-            PlayerProgress.Instance?.ReloadFromFile();
-            SceneManager.LoadScene(GameScene);
 
+            // Возрождаем игрока
             if (PlayerSurvivalSystem.Instance != null)
             {
                 PlayerSurvivalSystem.Instance.Respawn();
             }
+
+            var pauseManager = FindAnyObjectByType<PauseManager>();
+            if (pauseManager != null)
+            {
+                pauseManager.HideDeathScreen();
+            }
         }
 
+        public void OnDieButtonClick()
+        {
 
+            // Возрождаем игрока
+            if (PlayerSurvivalSystem.Instance != null)
+            {
+                PlayerSurvivalSystem.Instance.DieManually = true;
+            }
+
+        }
     }
 }

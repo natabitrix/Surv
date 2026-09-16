@@ -281,7 +281,7 @@ namespace Assets.Scripts.InventorySystem
                 }
             }
         }
-        
+
         public int GetTotalCountOfItem(Item item)
         {
             if (item == null) return 0;
@@ -300,52 +300,135 @@ namespace Assets.Scripts.InventorySystem
 
         // Методы сохранения/загрузки
 
+        // public void FromSerializable(SerializableInventory serializable, Dictionary<string, Item> itemDatabase)
+        // {
+        //     if (serializable?.slots == null || serializable.slots.Length != size)
+        //     {
+        //         Debug.LogWarning("Несоответствие размера инвентаря при загрузке.");
+        //         return;
+        //     }
+
+        //     for (int i = 0; i < size; i++)
+        //     {
+        //         var saved = serializable.slots[i];
+        //         // if (saved.itemId == -1)
+        //         if (string.IsNullOrEmpty(saved.itemId))
+        //         {
+        //             slots[i] = new InventorySlot();
+        //         }
+        //         else if (itemDatabase.TryGetValue(saved.itemId, out var item))
+        //         {
+        //             slots[i] = new InventorySlot
+        //             {
+        //                 item = item,
+        //                 count = saved.count,
+        //                 // Если прочность в файле < 0, принудительно ставим макс. прочность
+        //                 currentDurability = (saved.durability < 0 && item.hasDurability)
+        //                 ? item.maxDurability
+        //                 : saved.durability
+        //             };
+
+        //             // ФИКС: Если прочность -1, но предмет — инструмент, починим её
+        //             if (slots[i].currentDurability < 0 && item.hasDurability)
+        //             {
+        //                 slots[i].currentDurability = item.maxDurability;
+        //             }
+
+        //         }
+        //         else
+        //         {
+        //             slots[i] = new InventorySlot();
+        //             Debug.LogError($"Item ID {saved.itemId} не найден!");
+        //         }
+        //     }
+
+        //     NotifyChanged();
+        // }
+
+
+
         public void FromSerializable(SerializableInventory serializable, Dictionary<string, Item> itemDatabase)
         {
-            if (serializable?.slots == null || serializable.slots.Length != size)
+            // === 1. Проверка входных данных ===
+            if (serializable?.slots == null)
             {
-                Debug.LogWarning("Несоответствие размера инвентаря при загрузке.");
+                Debug.LogWarning("[InventoryData] Serialized inventory is null, skipping load.");
                 return;
             }
 
+            if (serializable.slots.Length != size)
+            {
+                Debug.LogWarning($"[InventoryData] Size mismatch: expected {size}, got {serializable.slots.Length}. Skipping load.");
+                return;
+            }
+
+            if (itemDatabase == null)
+            {
+                Debug.LogError("[InventoryData] Item database is null! Cannot resolve items.");
+                return;
+            }
+
+            // === 2. Десериализация ===
             for (int i = 0; i < size; i++)
             {
                 var saved = serializable.slots[i];
-                // if (saved.itemId == -1)
+
+                // Пустой слот
                 if (string.IsNullOrEmpty(saved.itemId))
                 {
                     slots[i] = new InventorySlot();
+                    continue;
                 }
-                else if (itemDatabase.TryGetValue(saved.itemId, out var item))
+
+                // Ищем предмет
+                if (!itemDatabase.TryGetValue(saved.itemId, out var item))
                 {
-                    slots[i] = new InventorySlot
-                    {
-                        item = item,
-                        count = saved.count,
-                        // Если прочность в файле < 0, принудительно ставим макс. прочность
-                        currentDurability = (saved.durability < 0 && item.hasDurability)
-                        ? item.maxDurability
-                        : saved.durability
-                    };
+                    Debug.LogError($"[InventoryData] Item ID '{saved.itemId}' not found in database!");
+                    slots[i] = new InventorySlot();
+                    continue;
+                }
 
-                    // ФИКС: Если прочность -1, но предмет — инструмент, починим её
-                    if (slots[i].currentDurability < 0 && item.hasDurability)
+                // === 3. Создаём слот ===
+                var newSlot = new InventorySlot
+                {
+                    item = item,
+                    count = saved.count,
+                    currentDurability = saved.durability,
+                };
+
+                // === 4. Восстановление прочности ===
+                if (item.hasDurability)
+                {
+                    // Если в файле прочность < 0 — ставим максимум
+                    if (newSlot.currentDurability < 0)
                     {
-                        slots[i].currentDurability = item.maxDurability;
+                        // Debug.Log($"[InventoryData] Restoring durability for '{item.itemName}': {newSlot.currentDurability} → {item.maxDurability}");
+                        newSlot.currentDurability = item.maxDurability;
                     }
-
+                    // Ограничиваем прочность максимумом
+                    else if (newSlot.currentDurability > item.maxDurability)
+                    {
+                        Debug.LogWarning($"[InventoryData] Durability for '{item.itemName}' exceeds max ({newSlot.currentDurability} > {item.maxDurability}). Clamping.");
+                        newSlot.currentDurability = item.maxDurability;
+                    }
                 }
                 else
                 {
-                    slots[i] = new InventorySlot();
-                    Debug.LogError($"Item ID {saved.itemId} не найден!");
+                    // Если у предмета нет прочности — ставим -1
+                    newSlot.currentDurability = -1f;
                 }
+
+                slots[i] = newSlot;
             }
 
-
-
+            // === 5. Уведомляем об изменениях ===
             NotifyChanged();
         }
+
+
+
+
+
 
         public SerializableInventory ToSerializable(int size)
         {

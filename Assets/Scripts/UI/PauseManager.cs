@@ -12,6 +12,7 @@ namespace Assets.Scripts.UI
         public GameObject PauseCanvas;
         public GameObject PausePanel;
         public GameObject SettingsPanel;
+        public GameObject DeathScreenPanel;
 
         public String GameScene;
         public String MainMenuScene;
@@ -50,13 +51,12 @@ namespace Assets.Scripts.UI
                     if (_panelsController.IsRadialMenuOpened())
                     {
                         anyPanelsOpened = true;
-                        // Debug.Log("IsRadialMenuOpened");
                         _panelsController.CloseRadialMenu();
                     }
+
                     if (_panelsController.IsInventoryOpened())
                     {
                         anyPanelsOpened = true;
-                        // Debug.Log("IsInventoryOpened");
                         _panelsController.CloseAllPanels();
                     }
                 }
@@ -118,6 +118,29 @@ namespace Assets.Scripts.UI
             _isPauseOpened = true;
             // SetRealPause(true);
             SetCursorVisible(true);
+        }
+
+        public void ShowDeathScreen()
+        {
+            PauseCanvas.SetActive(true);
+            DeathScreenPanel.SetActive(true);
+            PausePanel.SetActive(false);
+            SettingsPanel.SetActive(false);
+            LockCamera(true);
+            _isPauseOpened = true;
+            // SetRealPause(true);
+            SetCursorVisible(true);
+        }
+
+        public void HideDeathScreen()
+        {
+            PauseCanvas.SetActive(false);
+            DeathScreenPanel.SetActive(false);
+            PausePanel.SetActive(false);
+            SettingsPanel.SetActive(false);
+            LockCamera(false);
+            _isPauseOpened = false;
+            SetCursorVisible(false);
         }
 
         public void ResumeFromPause()

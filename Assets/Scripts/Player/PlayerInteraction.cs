@@ -14,6 +14,7 @@ using Assets.Scripts.Utils;
 using Unity.VisualScripting;
 using Assets.Scripts.Creatures;
 using Assets.Scripts.Audio;
+using Assets.Scripts.Corpses;
 
 namespace Assets.Scripts.Player
 {
@@ -77,6 +78,7 @@ namespace Assets.Scripts.Player
         private IInteractable _pendingInteractionTarget;
         private BaseLivingEntity _hitCreature;
         private Corpse _currentlyDraggingCorpse;
+        private PauseManager _pauseManager;
 
         private void Start()
         {
@@ -88,8 +90,12 @@ namespace Assets.Scripts.Player
             _settings = _playerController.settings;
             _waterLayers = _settings.WaterLayers;
 
+            _pauseManager = FindAnyObjectByType<PauseManager>();
+
             if (interactionUI != null)
                 interactionUI.SetActive(false);
+
+
         }
 
         private void OnEnable()
@@ -224,7 +230,6 @@ namespace Assets.Scripts.Player
 
         public void OnInteractFinished(IInteractable specificTarget = null)
         {
-
             IInteractable target = specificTarget ?? (_allTargets.Count > 0 ? _allTargets[0] : null);
             if (target == null) return;
 
@@ -240,6 +245,12 @@ namespace Assets.Scripts.Player
 
             if (target.ShouldDetachAfterInteract())
                 ClearTriggerTarget();
+        }
+
+        // Перегрузка для Animation Event
+        public void OnInteractFinishedAnimationEvent()
+        {
+            OnInteractFinished();
         }
 
         public void OnOpenInventoryFinished(IInteractable specificTarget = null)
@@ -270,7 +281,12 @@ namespace Assets.Scripts.Player
 
             if (target.HasInventory() && _panelsController != null)
                 _panelsController.OpenOtherInventory();
+        }
 
+        // Перегрузка для Animation Event
+        public void OnOpenInventoryFinisheddAnimationEvent()
+        {
+            OnOpenInventoryFinished();
         }
 
         private void OpenRadialMenuIfAvailable()
@@ -363,23 +379,23 @@ namespace Assets.Scripts.Player
             return true;
         }
 
-        private void PerformInteractionRaycast_()
+        private void PerformInteractionRaycast()
         {
             _allTargets.Clear();
             _targetGO = null;
             _hitCreature = null;
 
-            float currentInteractionDistance = 2.0f;
+            float currentInteractionDistance = 3.0f; // диапазон
             Vector3 headPos = _playerHead.position;
             Vector3 headDir = _playerHead.forward;
 
             // === 1. Raycast для существ (оставляем точным для боя) ===
-            if (Physics.Raycast(headPos, headDir, out RaycastHit hitCreature, 2.0f, _damageLayers))
+            if (Physics.Raycast(headPos, headDir, out RaycastHit hitCreature, 5.0f, _damageLayers))
             {
                 TryFindCreature(hitCreature.collider);
             }
 
-            // === 2. Поиск интерактивных объектов через OverlapSphere + Сортировка ===
+            // === 2. Поиск интерактивных объектов через OverlapSphere ===
             Collider[] nearbyColliders = Physics.OverlapSphere(headPos, currentInteractionDistance, _interactableLayers);
 
             IInteractable bestTarget = null;
@@ -393,13 +409,12 @@ namespace Assets.Scripts.Player
                 GameObject candidateRoot = null;
                 IInteractable foundInteractable = null;
 
-                // Поднимаемся до 5 уровней вверх
-                for (int i = 0; i < 5 && current != null; i++)
+                // Поднимаемся до 10 уровней вверх (был 5)
+                for (int i = 0; i < 10 && current != null; i++)
                 {
-                    // ✅ ПРИОРИТЕТ 1: Сначала ищем CORPSE (независимо от состояния BaseLivingEntity)
+                    // ✅ ПРИОРИТЕТ 1: Сначала ищем CORPSE
                     if (current.TryGetComponent<Corpse>(out var corpse))
                     {
-                        // Проверяем явный коллайдер или используем любой, если не назначен
                         bool isCorrectCollider = corpse.InteractionCollider == null ||
                                                corpse.InteractionCollider == col;
 
@@ -407,17 +422,16 @@ namespace Assets.Scripts.Player
                         {
                             candidateRoot = current.gameObject;
                             foundInteractable = corpse;
-                            break; // Нашли труп — дальше не ищем, он важнее живого существа
+                            break;
                         }
                     }
 
-                    // ✅ ПРИОРИТЕТ 2: Только если нет трупа, проверяем BaseLivingEntity
+                    // ✅ ПРИОРИТЕТ 2: BaseLivingEntity (живые существа)
                     if (current.TryGetComponent<BaseLivingEntity>(out var livingEntity))
                     {
                         bool isCorrectCollider = livingEntity.InteractionCollider == null ||
                                                livingEntity.InteractionCollider == col;
 
-                        // Для живых существ ПРОВЕРЯЕМ IsAlive()
                         if (isCorrectCollider && livingEntity.IsAlive())
                         {
                             candidateRoot = current.gameObject;
@@ -441,26 +455,23 @@ namespace Assets.Scripts.Player
                     current = current.parent;
                 }
 
-                // Если не нашли корневого объекта — пропускаем этот коллайдер
+                // Если не нашли корневого объекта — пропускаем
                 if (candidateRoot == null || foundInteractable == null) continue;
 
-                // 🔑 ШАГ 2: Проверка видимости ДЛЯ КОРНЕВОГО ОБЪЕКТА
-                if (!IsVisibleByCamera(candidateRoot, currentInteractionDistance)) continue;
+                // 🔑 ШАГ 2: УПРОЩЕННАЯ проверка видимости (БЕЗ LineCast)
+                // Просто проверяем дистанцию и общее направление
+                Vector3 toTarget = candidateRoot.transform.position - headPos;
+                float distToTarget = toTarget.magnitude;
 
-                // 🔑 ШАГ 3: Расчет приоритета
-                Vector3 toCol = col.transform.position - headPos;
-                float angle = Vector3.Angle(headDir, toCol.normalized);
-                float dist = Vector3.Distance(headPos, candidateRoot.transform.position);
+                if (distToTarget > currentInteractionDistance) continue;
 
-                if (dist > currentInteractionDistance) continue;
+                // Проверяем: находится ли цель в пределах ~ 120 градусов от взгляда
+                // Это позволит видеть цели сбоку и даже немного сзади
+                float angle = Vector3.Angle(headDir, toTarget.normalized);
+                if (angle > 120f) continue; // был 90, теперь 120
 
-                float score = (1f - (angle / 90f)) * 0.7f + (1f - (dist / currentInteractionDistance)) * 0.3f;
-
-                // Если это дверь, даем ей огромный бонус, чтобы она "перебивала" стены
-                // if (foundInteractable is DoorController)
-                // {
-                //     score += 0.5f;
-                // }
+                // 🔑 ШАГ 3: Расчет приоритета (ближайшая цель выигрывает)
+                float score = (1f - (angle / 120f)) * 0.3f + (1f - (distToTarget / currentInteractionDistance)) * 0.7f;
 
                 if (score > bestScore)
                 {
@@ -470,143 +481,13 @@ namespace Assets.Scripts.Player
                 }
             }
 
-            Debug.Log("bestTarget: " + bestTarget);
             // Добавляем в список ТОЛЬКО лучшую цель
             if (bestTarget != null)
             {
                 ProcessHitObject(bestTargetGO);
             }
 
-
-            // === ВИЗУАЛИЗАЦИЯ ДЛЯ ОТЛАДКИ ===
-#if UNITY_EDITOR
-
-            // Рисуем основной луч взаимодействия (Красный)
-            Debug.DrawRay(headPos, headDir * 2.0f, Color.orange);
-
-            // Если есть цель, рисуем линию до неё (Зеленый)
-            if (_targetGO != null)
-            {
-                Debug.DrawLine(headPos, _targetGO.transform.position, Color.cyan);
-            }
-#endif
-
-
-
-
         }
-
-private void PerformInteractionRaycast()
-{
-    _allTargets.Clear();
-    _targetGO = null;
-    _hitCreature = null;
-
-    float currentInteractionDistance = 5.0f; // увеличил диапазон
-    Vector3 headPos = _playerHead.position;
-    Vector3 headDir = _playerHead.forward;
-
-    // === 1. Raycast для существ (оставляем точным для боя) ===
-    if (Physics.Raycast(headPos, headDir, out RaycastHit hitCreature, 5.0f, _damageLayers))
-    {
-        TryFindCreature(hitCreature.collider);
-    }
-
-    // === 2. Поиск интерактивных объектов через OverlapSphere ===
-    Collider[] nearbyColliders = Physics.OverlapSphere(headPos, currentInteractionDistance, _interactableLayers);
-
-    IInteractable bestTarget = null;
-    GameObject bestTargetGO = null;
-    float bestScore = -1f;
-
-    foreach (var col in nearbyColliders)
-    {
-        // 🔑 ШАГ 1: Ищем КОРНЕВОЙ объект взаимодействия ВВЕРХ по иерархии
-        Transform current = col.transform;
-        GameObject candidateRoot = null;
-        IInteractable foundInteractable = null;
-
-        // Поднимаемся до 10 уровней вверх (был 5)
-        for (int i = 0; i < 10 && current != null; i++)
-        {
-            // ✅ ПРИОРИТЕТ 1: Сначала ищем CORPSE
-            if (current.TryGetComponent<Corpse>(out var corpse))
-            {
-                bool isCorrectCollider = corpse.InteractionCollider == null ||
-                                       corpse.InteractionCollider == col;
-
-                if (isCorrectCollider && corpse.enabled)
-                {
-                    candidateRoot = current.gameObject;
-                    foundInteractable = corpse;
-                    break;
-                }
-            }
-
-            // ✅ ПРИОРИТЕТ 2: BaseLivingEntity (живые существа)
-            if (current.TryGetComponent<BaseLivingEntity>(out var livingEntity))
-            {
-                bool isCorrectCollider = livingEntity.InteractionCollider == null ||
-                                       livingEntity.InteractionCollider == col;
-
-                if (isCorrectCollider && livingEntity.IsAlive())
-                {
-                    candidateRoot = current.gameObject;
-                    foundInteractable = livingEntity;
-                    break;
-                }
-            }
-
-            // ✅ ПРИОРИТЕТ 3: Обычные интерактаблы (сундуки, двери)
-            if (foundInteractable == null)
-            {
-                var interactable = current.GetComponent<IInteractable>();
-                if (interactable != null && !(interactable is Corpse) && !(interactable is BaseLivingEntity))
-                {
-                    candidateRoot = current.gameObject;
-                    foundInteractable = interactable;
-                    break;
-                }
-            }
-
-            current = current.parent;
-        }
-
-        // Если не нашли корневого объекта — пропускаем
-        if (candidateRoot == null || foundInteractable == null) continue;
-
-        // 🔑 ШАГ 2: УПРОЩЕННАЯ проверка видимости (БЕЗ LineCast)
-        // Просто проверяем дистанцию и общее направление
-        Vector3 toTarget = candidateRoot.transform.position - headPos;
-        float distToTarget = toTarget.magnitude;
-
-        if (distToTarget > currentInteractionDistance) continue;
-
-        // Проверяем: находится ли цель в пределах ~ 120 градусов от взгляда
-        // Это позволит видеть цели сбоку и даже немного сзади
-        float angle = Vector3.Angle(headDir, toTarget.normalized);
-        if (angle > 120f) continue; // был 90, теперь 120
-
-        // 🔑 ШАГ 3: Расчет приоритета (ближайшая цель выигрывает)
-        float score = (1f - (angle / 120f)) * 0.3f + (1f - (distToTarget / currentInteractionDistance)) * 0.7f;
-
-        if (score > bestScore)
-        {
-            bestScore = score;
-            bestTargetGO = candidateRoot;
-            bestTarget = foundInteractable;
-        }
-    }
-
-    // Добавляем в список ТОЛЬКО лучшую цель
-    if (bestTarget != null)
-    {
-        ProcessHitObject(bestTargetGO);
-    }
-
-}
-
-
 
 
         // Поиск всех компонентов IInteractable на объекте
@@ -626,6 +507,7 @@ private void PerformInteractionRaycast()
             StringBuilder sb = new StringBuilder();
             bool isInventoryOpened = _panelsController?.IsInventoryOpened() == true;
             bool isMenuAlreadyOpen = _panelsController?.IsRadialMenuOpened() == true;
+            bool isPauseOpened = _pauseManager?.IsPauseOpened() == true;
 
             foreach (var target in _allTargets)
             {
@@ -677,7 +559,7 @@ private void PerformInteractionRaycast()
             if (interactionUI != null)
             {
                 interactionText.text = sb.ToString();
-                interactionUI.SetActive(!isInventoryOpened && sb.Length > 0);
+                interactionUI.SetActive(!isPauseOpened && !isInventoryOpened && sb.Length > 0);
             }
         }
 
@@ -731,8 +613,9 @@ private void PerformInteractionRaycast()
             }
 
             if (_allTargets.Count > 0 && _targetGO == null)
+            {
                 _targetGO = hitObject;
-
+            }
 
             // === БЛОК 2: Поиск BaseLivingEntity (только для боя/урона) ===
             // Здесь оставляем поиск существа, но только если НЕТ трупа
@@ -1171,22 +1054,22 @@ private void PerformInteractionRaycast()
         {
             if (!Application.isPlaying) return;
 
-    float currentInteractionDistance = 5.0f;
-    Vector3 headPos = _playerHead != null ? _playerHead.position : transform.position;
-    Vector3 headDir = _playerHead != null ? _playerHead.forward : transform.forward;
+            float currentInteractionDistance = 5.0f;
+            Vector3 headPos = _playerHead != null ? _playerHead.position : transform.position;
+            Vector3 headDir = _playerHead != null ? _playerHead.forward : transform.forward;
 
-    // Рисуем луч взгляда
-    Debug.DrawRay(headPos, headDir * 5.0f, Color.orange);
+            // Рисуем луч взгляда
+            Debug.DrawRay(headPos, headDir * 5.0f, Color.orange);
 
-    // Рисуем линию до целевого объекта
-    if (_targetGO != null)
-    {
-        Debug.DrawLine(headPos, _targetGO.transform.position, Color.green);
-    }
+            // Рисуем линию до целевого объекта
+            if (_targetGO != null)
+            {
+                Debug.DrawLine(headPos, _targetGO.transform.position, Color.green);
+            }
 
-    // Рисуем сферу поиска
-    Gizmos.color = new Color(0, 1, 0, 0.1f);
-    Gizmos.DrawWireSphere(headPos, currentInteractionDistance);
+            // Рисуем сферу поиска
+            Gizmos.color = new Color(0, 1, 0, 0.1f);
+            Gizmos.DrawWireSphere(headPos, currentInteractionDistance);
 
 
             // Item equippedItem = GetEquippedTool();

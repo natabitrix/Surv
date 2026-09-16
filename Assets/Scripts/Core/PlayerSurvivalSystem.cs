@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Assets.Scripts.Building;
+using Assets.Scripts.Corpses;
 using Assets.Scripts.Creatures;
 using Assets.Scripts.Interactables;
 using Assets.Scripts.InventorySystem;
@@ -9,7 +10,9 @@ using Assets.Scripts.Items;
 using Assets.Scripts.Player;
 using Assets.Scripts.UI;
 using Unity.Mathematics;
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace Assets.Scripts.Core
 {
@@ -31,7 +34,7 @@ namespace Assets.Scripts.Core
         [SerializeField] private float _foodLossPerSecond = 0.05f;
         [SerializeField] private float _waterLossPerSecond = 0.07f;
         [SerializeField] private float _staminaLossPerSecondAtMaxSpeed = 2f;
-        [SerializeField] private float _oxygenLossPerSecondUnderwater = 3f;
+        [SerializeField] private float _oxygenLossPerSecondUnderwater = 3f; //3f
         [SerializeField] private float _healthLossPerSecondWhenCritical = 1f;
 
         [Header("Recovery")]
@@ -63,7 +66,8 @@ namespace Assets.Scripts.Core
         public float MaxTorpidity => PlayerProgress.Instance?.GetMaxValue(StatType.Weight) ?? 100f;
 
         private bool _isDead = false;
-        [SerializeField] private GameObject _playerCorpsePrefab;
+        public bool DieManually = false;
+        // [SerializeField] private GameObject _playerCorpsePrefab;
 
         public event Action OnSurvivalStatsChanged; // ← новое событие
 
@@ -133,8 +137,8 @@ namespace Assets.Scripts.Core
             _torpidity = 0f;
 
             //для тестирования смерти
-            _health = 3;
-            _oxygen = 0;
+            // _health = 3;
+            // _oxygen = 0;
 
             OnSurvivalStatsChanged?.Invoke(); // обновить UI
         }
@@ -195,7 +199,7 @@ namespace Assets.Scripts.Core
                 }
                 // Иначе — здоровье не восстанавливается автоматически (может быть через еду/сон позже)
 
-                if (_health <= 0f && !_isDead)
+                if ((DieManually || _health <= 0f) && !_isDead)
                 {
                     _isDead = true;
                     _health = 0f;
@@ -258,60 +262,102 @@ namespace Assets.Scripts.Core
         // - Heal(float amount)
         // - SetUnderwater(bool state)
 
-        // [Tooltip("Ресурсы, которые выпадают при разбивании тела (железо, электроника, кости)")]
-        // public Corpse.ResourceDrop[] harvestDrops;
+        private void TogglePlayerActive(PlayerController pc = null, bool active = true)
+        {
+            if (pc == null) return;
 
-        // [Tooltip("Сколько ударов нужно, чтобы полностью разобрать тело")]
-        // public int maxHarvestHits = 5;
+            pc.enabled = active;
+            if (pc.TryGetComponent<PlayerInteraction>(out var interact)) interact.enabled = active;
+            if (pc.TryGetComponent<PlayerEquipment>(out var equipment)) equipment.enabled = active;
+            if (pc.TryGetComponent<PlayerBuildMode>(out var buildMode)) buildMode.enabled = active;
+            if (pc.TryGetComponent<ItemUsageSystem>(out var usage)) usage.enabled = active;
+            if (pc.TryGetComponent<ItemHandler>(out var handler)) handler.enabled = active;
+            if (pc.TryGetComponent<PlayerInput>(out var input)) input.enabled = active;
+            if (pc.TryGetComponent<PlayerInputHandler>(out var inputHandler)) inputHandler.enabled = active;
+            if (pc.TryGetComponent<CharacterController>(out var cc)) cc.enabled = active;
+            pc.gameObject.SetActive(active);
+        }
 
         private void OnPlayerDeath()
         {
-            var playerController = PlayerProgress.Instance?.playerController;
-            if (playerController == null) return;
+            var pc = PlayerProgress.Instance?.playerController;
+            if (pc == null) return;
 
             // Отключаем управление игроком
-            playerController.enabled = false;
-            var character = playerController.VisualCharacter;
-            if (character != null) character.SetActive(false);
+            TogglePlayerActive(pc, false);
 
-            if (playerController.TryGetComponent<PlayerInteraction>(out var interact)) interact.enabled = false;
-            if (playerController.TryGetComponent<PlayerEquipment>(out var equipment)) equipment.enabled = false;
-            if (playerController.TryGetComponent<PlayerBuildMode>(out var buildMode)) buildMode.enabled = false;
-            if (playerController.TryGetComponent<ItemUsageSystem>(out var usage)) usage.enabled = false;
-            if (playerController.TryGetComponent<ItemHandler>(out var handler)) handler.enabled = false;
-
-            // Создаём труп игрока на его позиции
-            GameObject playerCorpseGO = Instantiate(_playerCorpsePrefab, playerController.transform.position, Quaternion.identity);
-
-            var corpse = playerCorpseGO.GetComponent<Corpse>();
-
-            // Инициализируем труп для добычи ресурсов с него
-            corpse.InitializeCorpse();
-
-            // Созаем инвентарь трупа
-            corpse.CreateCorpseInventory(
-                "PlayerCorpse",
-                110,
-                PlayerProgress.Instance.mainInventoryData,
-                PlayerProgress.Instance.hotbarInventoryData,
-                FindAnyObjectByType<ChestUI>()
-            );
-
-            // var menu = corpse.GetComponent<RadialMenu>();
-            // if (menu != null) menu.enabled = true;
-
-            // Показываем экран смери
-            var deathScreenManager = FindAnyObjectByType<DeathScreenManager>();
-            if (deathScreenManager != null)
+            if (CorpseManager.Instance == null)
             {
-                deathScreenManager.Show();
+                Debug.LogError("[PlayerSurvivalSystem] OnPlayerDeath: CorpseManager.Instance == null! Труп не создан.");
+                return;
+            }
+            // Создаём труп игрока на его позиции
+            GameObject corpseBodyPrefab = CorpseManager.Instance.corpseBodyPrefab;
+            GameObject playerCorpseGO = Instantiate(corpseBodyPrefab, pc.transform.position, Quaternion.identity);
+
+            // Активируем компонента тела
+            if (playerCorpseGO.TryGetComponent<Corpse>(out var corpse))
+            {
+                corpse.enabled = true;
+                corpse.ActivateRagdoll();
+                corpse.StartCoroutine(corpse.StopMovingRagdoll());
+                corpse.InitializeCorpse();
+
+                corpse.CreateCorpseInventory(
+                    "PlayerCorpse",
+                    110,
+                    FindAnyObjectByType<ChestUI>()
+                );
+
+                corpse.CopyPlayerItemsToCorpse(
+                    PlayerProgress.Instance.mainInventoryData,
+                    PlayerProgress.Instance.hotbarInventoryData
+                );
+
+                var menu = corpse.GetComponent<RadialMenu>();
+                if (menu != null) menu.enabled = true;
             }
 
+            // Регистрируем труп в CorpseManager
+            CorpseManager.Instance.RegisterCorpse(
+                playerCorpseGO,
+                "player_001"           // TODO: в мультиплеере — SteamID игрока
+            );
+
+
+            // Очищаем инвентарь игрока (чтобы после возрождения не было дубликатов)
+            PlayerProgress.Instance.mainInventoryData = new InventoryData(PlayerProgress.INVENTORY_SIZE);
+            PlayerProgress.Instance.hotbarInventoryData = new InventoryData(10);
+            PlayerProgress.Instance.Save("PlayerDeath.ClearedInventory");
+
+            var pauseManager = FindAnyObjectByType<PauseManager>();
+            if (pauseManager != null)
+            {
+                pauseManager.ShowDeathScreen();
+            }
         }
 
         public void Respawn()
         {
-            Debug.Log("PlayerSurvivalSystem Respawn");
+            // Debug.Log("[PlayerSurvivalSystem] Respawn");
+
+            var playerProgress = PlayerProgress.Instance;
+            if (playerProgress == null)
+            {
+                Debug.LogError("[PlayerSurvivalSystem] Respawn: PlayerProgress == null!");
+                return;
+            }
+
+            playerProgress.ReloadFromFile();
+
+            var playerController = playerProgress.playerController;
+            if (playerController != null)
+            {
+                TogglePlayerActive(playerController, true);
+            }
+
+            DieManually = false;
+
             _isDead = false;
             _health = MaxHealth;
             _stamina = MaxStamina;
@@ -319,10 +365,6 @@ namespace Assets.Scripts.Core
             _food = MaxFood;
             _water = MaxWater;
             _torpidity = 0f;
-
-            //для тестирования смерти
-            // _health = 3;
-            // _oxygen = 0;
 
             OnSurvivalStatsChanged?.Invoke();
 
