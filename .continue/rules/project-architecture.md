@@ -127,6 +127,7 @@ Surv/
 ## Data-Driven Design
 
 All core game data should be ScriptableObjects stored in `Assets/Data/`:
+- `GameSettings` - Game Settings
 - `CreatureData` - Species stats, spawn weights, taming values
 - `ItemData` - Item properties, weight, stack size, durability
 - `RecipeData` - Crafting requirements and results
@@ -171,3 +172,402 @@ All core game data should be ScriptableObjects stored in `Assets/Data/`:
 - [GitHub Documentation](https://docs.github.com/en) - For version control
 - [Visual Studio Unity Debugging](https://learn.microsoft.com/en-us/visualstudio/gamedev/unity/get-started/visual-studio-tools-for-unity) - IDE integration
 - [Unity Profiler Guide](https://docs.unity3d.com/Manual/Profiler.html) - Performance optimization
+
+
+---
+
+# Current Implementation Status
+
+> Это описание того, что **уже реализовано** в проекте.
+> Обновлено: [17.09.2026]
+
+## Реализовано
+
+### 1. Менеджеры и архитектура
+
+- **Префаб `===CoreManagers===`** — все глобальные менеджеры на одном объекте.
+- **`ManagersSpawner`** — создает `===CoreManagers===` в Bootstrap-сцене. Защита от дубликатов через `static bool _managersCreated`.
+- **`DontDestroyOnLoad`** — все менеджеры живут между сценами.
+- **Сцены:**
+  - `MainMenu` — главное меню.
+  - `GameWorld` — игровой мир.
+  - Bootstrap-сцена (или `MainMenu` как первая) — создает менеджеров.
+
+### 2. Менеджеры в `===CoreManagers===`
+
+| Менеджер                | Назначение           
+|-------------------------|---------------------------------------------------
+| `LoadingScreenManager`  | Управление загрузочным экраном 
+| `GameController`        | Сохранение игры, выход 
+| `PlayerSurvivalSystem`  | Здоровье, еда, вода, кислород, выносливость
+| `PlayerProgress`        | Уровень, опыт, энгрamm-очки, инвентарь, экипировка 
+| `WorldManager`          | Чанковая система сохранения построек 
+| `LanguageManager`       | Локализация 
+| `InventoryConfig`       | Настройки инвентаря 
+| `AudioManager`          | Громкость 
+| `CorpseManager`         | Сохранение/загрузка трупов 
+| `SceneBootstrap`        | Регистрация задач загрузки 
+| `LootBagManager`        | Сохранение/загрузка сумок 
+
+
+### 2.1 Менеджеры на объекте `===GameManagers===` на сцене
+> Все эти менеджеры — **сценовые** (не `DontDestroyOnLoad`). Они пересоздаются при загрузке сцены `GameWorld`.
+> Глобальные менеджеры (сохранение, прогресс) — в префабе `===CoreManagers===` с `DontDestroyOnLoad`.
+| Менеджер                    | Назначение           
+|-----------------------------|-----------------------------------------------
+| `HUDManager`                | Отображение статов 
+| `CharacterPreviewManager`   | Превью персонажа при открытие его инвентаря 
+| `CombatAudioManager`        | Звуки ударов рязными инструментами 
+| `NotificationManager`       | Уведомления 
+| `TooltipManager`            | Подсказки при наведении 
+| `ContextMenuManager`        | Контекстное меню с кнопками для слотов инвентаря 
+| `PauseManager`              | Окно паузы с оверлеем и кнопками 
+| `DeathScreenManager`        | Окно экрана смерти с оверлеем и кнопками 
+
+### 2.2 Компоненты на объекте `===InventoryManager===` на сцене
+| Компонент                   | Назначение           
+|-----------------------------|-----------------------------------------------
+| `InventoryManager`          | Управление инвентарями 
+
+### 2.3 Компоненты на объекте `===PanelsController===` на сцене
+| Компонент                   | Назначение           
+|-----------------------------|-----------------------------------------------
+| `PanelsUIController`        | Управление кнопками и панелями инветаря, энграмм, крафтинга
+
+### 2.4 Компоненты на объекте `___CreatureSpawner___` на сцене
+| Компонент                   | Назначение           
+|-----------------------------|-----------------------------------------------
+| `CreatureSpawner`           | Менеджер спавна существ
+
+### 2.5 Компоненты на объекте `---Player---` на сцене
+
+| Компонент                       | Назначение                                                        |
+|---------------------------------|-------------------------------------------------------------------|
+| `Character Controller`          | Физическое движение игрока (встроенный Unity)                     |
+| `Capsule Collider`              | Коллайдер для физики                                              |
+| `Basic Rigid Body Push (Script)`| Толкание Rigidbody-объектов (например, ящиков)                    |
+| `Player Input`                  | Новый Input System (Unity) — источник ввода                       |
+| `Player Input Handler (Script)` | Обработка ввода, события (Interact, Fire, Hotbar, ...)            |
+| `Camera Manager (Script)`       | Управление Cinemachine-камерой, режимы (first/third person)       |
+| `Player Equipment (Script)`     | Экипировка инструментов/оружия, `corpseDragAnchor`, `IsEquipped`  |
+| `Player Build Mode (Script)`    | Режим строительства, preview построек                             |
+| `Item Usage System (Script)`    | Использование предметов (еда, ресурсы, оружие)                    |
+| `Item Handler (Script)`         | Подбор предметов, `PickupItem()`, `DestroyItem()`                 |
+| `Player Interaction (Script)`   | Raycast/OverlapSphere-взаимодействие с IInteractable              |
+| `Player Controller (Script)`    | Главный контроллер: движение, камера, атака, ссылки на системы    |
+
+**Дочерние объекты:**
+- `PlayerCameraRoot` — точка привязки Cinemachine-камеры
+  - `Character` — визуальная модель игрока (меш, Animator, Ragdoll, Corpse, RadialMenu)
+  - `Directional Light` — направленный свет (для модели?)
+- `UI` → `UICanvases`:
+  - `InventoryCanvas` — инвентарь игрока
+  - `InteractionCanvas` — подсказки взаимодействия
+  - `NotificationTopCanvas` — верхние уведомления
+  - `NotificationLeftCanvas` — левые уведомления
+  - `HUDCanvas` — HUD (статы)
+  - `ContextMenuCanvas` — контекстное меню слотов
+  - `PauseCanvas` — окно паузы
+  - `RadialMenuCanvas` — радиальное меню
+- `_Env` — окружение (трава, деревья, камни)?
+- `Interactables` — интерактивные объекты в сцене?
+
+**Важно:** на `Character` (дочернем объекте) висят:
+- `Animator`
+- `Corpse (Script)` — **отключен** (активируется при смерти)
+- `RadialMenu (Script)` — **отключен**
+- `RagdollSettings` — настройки ragdoll
+- `Rigidbody` — для ragdoll
+
+**При смерти игрока:**
+1. `PlayerController` и живые компоненты **отключаются**.
+2. Создается `corpseBodyPrefab` (отдельный префаб с `Corpse`).
+3. `PlayerController` **уничтожается** или **скрывается**.
+
+
+
+### 3. ScriptableObject базы данных
+
+| База                | Назначение 
+|---------------------|----------------------------------------------------
+| `ItemDatabase`      | Реестр всех предметов 
+| `RecipeDatabase`    | Реестр рецептов 
+| `CreatureDatabase`  | Реестр существ 
+| `GameSettings`      | Глобальные настройки (время жизни трупов/сумок) 
+
+
+**Важно:** все базы — **ассеты** (`ScriptableObject`), **не** `MonoBehaviour` в сцене.
+
+### 4. Данные существ
+
+- **`CreatureData`** (ScriptableObject) — данные одного существа:
+  - `creatureId`, `displayName`, `icon`, `description`
+  - `prefab` — **единый префаб** (живой = труп)
+  - Статы: `maxHealth`, `maxStamina`, `walkSpeed`, `chaseSpeed`
+  - Агрессия: `aggressionRadius`, `attackRange`, `attackDamage`, `attackCooldown`
+  - Блуждание: `wanderRange`, `minWanderDelay`, `maxWanderDelay`
+  - Поведение: `behaviorType`, `tamable`, `tamableKO`, `tamablePassive`
+  - Лут: `inventoryLootTable`, `harvestDrops`, `maxHarvestHits`
+  - Разрешения: `allowFists`, `allowAxe`, `allowPickaxe`, `allowSword`, `allowSickle`
+  - Звуки: `footstepClip`, `attackClip`, `takeDamageClip`, `deathClip`
+  - Эффекты: `damageEffect`, `impactType`
+  - `corpseLifetimeOverride`
+
+- **`Creature`** (MonoBehaviour) — компонент существа:
+  - Ссылка на `CreatureDatabase` + `creatureId`
+  - Свойство `Data` — кэш `CreatureData`
+  - Статы берутся из `CreatureData` через свойства (`WanderRange`, `ChaseSpeed`, ...)
+  - AI: State Machine (Wander / Chase / Attack)
+  - Использует `NavMeshAgent`
+
+- **`BaseLivingEntity`** — базовый класс:
+  - `health`, `maxHealth`, `stamina`, `maxStamina`
+  - `TakeDamage()`, `Die()`, `Heal()`
+  - `IInteractable`, `IImpactSoundProvider`
+  - `OnDeath` — событие
+
+### 5. Система смерти и трупов
+
+- **`Corpse`** (MonoBehaviour) — компонент трупа:
+  - Висит на **том же префабе**, что и живое существо/игрок
+  - **Отключен** по умолчанию (`enabled = false`)
+  - Включается при смерти (`enabled = true`)
+  - `InstanceId`, `OwnerPlayerId`, `CorpseId` — для сохранения
+  - Инвентарь трупа (`ChestInventory`)
+  - `inventoryLootTable` — лут, попадающий в инвентарь
+  - `harvestDrops` — ресурсы при разборе
+  - `maxHarvestHits` — количество ударов
+  - `RagdollSettings` — настройки ragdoll
+  - `LootBagPrefab` — префаб сумки (создается при разборе)
+
+- **`CorpseManager`** (MonoBehaviour) — сохранение/загрузка:
+  - Хранит `_loadedCorpses` — Dictionary<string, GameObject>
+  - `RegisterCorpse(corpseGO, ownerPlayerId, creatureId = null)` — регистрация
+  - `UnregisterCorpse(instanceId)` — удаление файла
+  - `LoadAllCorpsesAsync()` — загрузка через корутину
+  - `SpawnCorpseFromData(data)` — создание трупа из данных
+  - `IsQuitting` — защита от удаления файла при выходе
+  - Файлы: `persistentDataPath/Corpses/corpse_{guid}.save`
+
+- **`CorpseSaveData`** (сериализуемый класс):
+  - `instanceId`, `ownerPlayerId`, `corpseType`, `creatureId`
+  - Позиция/поворот
+  - `creationTimeUtc`, `despawnDuration`, `isLootBag`
+  - `inventorySaveKey`, `inventoryData` (SerializableInventory)
+  - `harvestDrops`, `remainingAmounts`, `harvestHits`, `isDepleted`
+
+- **Сценарий смерти игрока:**
+  1. `PlayerSurvivalSystem.OnPlayerDeath()` — отключает живые компоненты игрока.
+  2. Создает `corpseBodyPrefab` из `CorpseManager.corpseBodyPrefab`.
+  3. Активирует `Corpse`.
+  4. `CreateCorpseInventory("PlayerCorpse", 110, chestUI)`.
+  5. `CopyPlayerItemsToCorpse(mainInventory, hotbarInventory)`.
+  6. `CorpseManager.RegisterCorpse(corpseGO, "player_001")`.
+  7. Очищает инвентарь игрока.
+  8. Показывает экран смерти.
+
+- **Сценарий смерти существа:**
+  1. `BaseLivingEntity.Die()` — отключает `NavMeshAgent`, `Animator`.
+  2. Активирует `Corpse` на **том же объекте**.
+  3. Копирует лут из `CreatureData`:
+     - `corpse.harvestDrops = data.harvestDrops`
+     - `corpse.inventoryLootTable = data.inventoryLootTable`
+     - `corpse.maxHarvestHits = data.maxHarvestHits`
+     - `corpse.allowFists/Axe/Pickaxe/Sword/Sickle = data.allow*`
+  4. `CreateCorpseInventory("CreatureCorpse", 100, chestUI)`.
+  5. `PopulateInventoryFromLootTable()` — заполняет инвентарь.
+  6. `CorpseManager.RegisterCorpse(gameObject, "world", creatureId)`.
+
+- **Сценарий загрузки трупа:**
+  1. `CorpseManager.LoadAllCorpsesAsync()` — читает все `corpse_*.save`.
+  2. Проверяет `age < despawnDuration` (иначе удаляет).
+  3. `SpawnCorpseFromData(data)`:
+     - Для игрока — `corpseBodyPrefab`.
+     - Для существа — `creatureDatabase.GetCreature(data.creatureId).prefab`.
+     - Отключает живые компоненты (`Creature`, `NavMeshAgent`, `Animator`).
+     - Включает `Corpse`.
+     - Восстанавливает инвентарь из `data.inventoryData`.
+     - Запускает таймер `StartDespawnTimer(remainingTime)`.
+
+- **Сценарий разбора трупа:**
+  1. `Corpse.OnHarvestComplete()` — вызывается после `maxHarvestHits` ударов.
+  2. Создает `LootBag` с остатками инвентаря.
+  3. `LootBagManager.RegisterLootBag(bagGO, "world")`.
+  4. `CorpseManager.UnregisterCorpse(InstanceId)` — удаляет файл.
+  5. `Destroy(gameObject, 0.5f)`.
+
+### 6. Система сумок (LootBag)
+
+- **`LootBag`** (MonoBehaviour) — компонент сумки:
+  - `InstanceId`, `OwnerPlayerId` — для сохранения
+  - `ChestInventory` — инвентарь
+  - `ChestUI` — UI
+  - `_bagDisappearTime` — время жизни
+  - `Initialize(inventory, chestUI, disappearTime, source)`
+  - `SetPersistenceData(instanceId, ownerPlayerId)`
+  - `SetRemainingTime(remainingTime)`
+  - `ForceDespawn()` — исчезновение
+  - `OnDestroy()` — уведомляет `LootBagManager` (если не выход)
+
+- **`LootBagManager`** (MonoBehaviour) — сохранение/загрузка:
+  - Хранит `_loadedLootBags` — Dictionary<string, GameObject>
+  - `RegisterLootBag(lootBagGO, ownerPlayerId = "world")` — регистрация
+  - `UnregisterLootBag(instanceId)` — удаление файла
+  - `LoadAllLootBagsAsync()` — загрузка
+  - `SpawnLootBagFromData(data)` — создание сумки
+  - `IsQuitting` — защита при выходе
+  - Файлы: `persistentDataPath/LootBags/lootbag_{guid}.save`
+
+- **`LootBagSaveData`** (сериализуемый класс):
+  - `instanceId`, `ownerPlayerId`
+  - Позиция/поворот
+  - `creationTimeUtc`, `despawnDuration`
+  - `inventorySaveKey`, `inventoryData`
+
+- **Сценарий появления сумки:**
+  - **Разбор трупа** — `Corpse.CreateLootBag()`.
+  - **Выброс вещей** — TODO.
+  - **Разрушение сундука** — TODO.
+
+### 7. Загрузочный экран
+
+- **`LoadingScreenManager`** (MonoBehaviour) — синглтон:
+  - `_loadingCanvas`, `_progressBar` (Image), `_statusText`
+  - `_minShowTime`, `_physicsSettleTime`
+  - `Show(status)`, `Hide()`
+  - `RegisterTask(name, IEnumerator routine)` — регистрация задачи
+  - `StartLoading()` — запуск всех задач
+  - `LoadingRoutine()`:
+    1. Показывает экран.
+    2. Выполняет задачи по очереди.
+    3. `SetProgress(0.9f, "Ожидание физики...")` — ждет `_physicsSettleTime`.
+    4. `SetProgress(1f, "Готово")`.
+    5. Скрывает экран.
+
+- **`SceneBootstrap`** (MonoBehaviour) — регистратор задач:
+  - Ждет `PlayerProgress` и `PlayerController`.
+  - Регистрирует задачи:
+    1. `CorpseManager.LoadAllCorpsesAsync()` — "Загрузка трупов..."
+    2. `LootBagManager.LoadAllLootBagsAsync()` — "Загрузка сумок..."
+    3. `WorldManager.LoadWorldAsync(playerPos)` — "Загрузка мира..."
+  - `LoadingScreenManager.StartLoading()`.
+
+- **Порядок загрузки:** трупы → сумки → мир → ожидание физики.
+
+### 8. Инвентарь и ChestUI
+
+- **`InventoryData`** — данные инвентаря (слоты).
+- **`InventorySlot`** — один слот (`item`, `count`, `currentDurability`).
+- **`InventoryManager`** — логика игрока (использование, drop).
+- **`ChestInventory`** — контейнер (сундук, труп, сумка):
+  - `saveKey`, `size`, `Data`
+  - `Initialize(size, saveKey)`
+  - `Save()`, `Load()`
+  - `OnDestroy()` — сохраняет/удаляет файл (в зависимости от `IsCorpseInventory()`).
+  - **Оптимизация:** `ChestUI.CreateChestSlots()` переиспользует слоты, а не создает заново.
+
+- **`ChestUI`** — UI для контейнеров:
+  - `_currentChest`, `slotUIs`, `slotPrefab`
+  - `OpenWith(chest, source)`, `Close()`
+  - `CreateChestSlots()` — создает/переиспользует слоты
+  - `RefreshUI()` — обновляет UI
+  - **Оптимизация:** использует `Destroy` только для **лишних** слотов.
+
+### 9. Управление и ввод
+
+- **Input System** (Unity).
+- **`PlayerInputHandler`** — обработка ввода:
+  - Move, Look, Jump, Sprint, Crouch, Crawl
+  - Interact, TargetInventory
+  - Attack, RightClick
+  - Hotbar (0-9)
+  - Drop, OpenInventory, Cancel, HideTool
+
+- **`PlayerController`** — контроллер игрока:
+  - `CharacterController`, `PlayerInput`, `PlayerInputHandler`
+  - Статы движения: `MoveSpeed`, `SprintSpeed`, `SwimSpeed`, ...
+  - `PlayerMovementSettings` (ScriptableObject) — все настройки движения.
+  - Ссылки: `equipment`, `buildMode`, `itemUsageSystem`, `panelsController`.
+  - Трансформы: `VisualCharacter`, `Head`, `EyeCenterForCamera`.
+  - Регистрация: `PlayerProgress.Instance?.RegisterPlayerController(this)`.
+  - Singleton: `PlayerController.Instance`.
+
+### 10. Инвентарь игрока
+
+- **`PlayerProgress`** — данные игрока:
+  - `hotbarInventoryData` (10 слотов)
+  - `mainInventoryData` (100 слотов)
+  - `engramData`
+  - `recipeDatabase`, `itemDatabase`
+  - `beginnerItems`
+  - `playerController`, `inventoryManager` — регистрируются в рантайме.
+  - `OnPlayerLoaded` — событие после загрузки.
+
+- **`InventoryManager`** — логика:
+  - `UseItemFromSlot()`, `DropItemFromSlot()`
+  - `MoveAllToChest()`, `MoveAllToPlayer()`
+  - `EquipSavedEquippedItem()`, `SaveEquippedItem()`
+  - `TryRepairItem()`
+
+- **`InventoryUI`**, **`HotbarUI`** — UI игрока.
+
+### 11. Известные особенности
+
+- **Трупы не удаляются** при выходе из игры (`IsQuitting` в менеджерах).
+- **Трупы удаляются** при разборе (`OnHarvestComplete` → `UnregisterCorpse`).
+- **Animator** у трупов **отключается** (`animator.enabled = false`), **НЕ удаляется** — иначе ragdoll ломается.
+- **`Corpse` висит на корне префаба** существа (не на дочернем).
+- **`RagdollSettings`** заполнены костями (Torso, UpperLeg.L, UpperLeg.R, ...).
+- **`SceneBootstrap`** регистрирует задачи загрузки — **единственное место**.
+- **`LoadingScreenManager`** — singleton, живет в `===CoreManagers===`.
+- **`ChestUI.CreateChestSlots()`** — переиспользует слоты (оптимизация).
+- **`Corpse.OnHarvestComplete()`** — `UnregisterCorpse(InstanceId)` **раскомментирован** (удаляет файл).
+
+## TODO
+
+- [ ] **Выброс вещей → сумка** (`InventoryManager.DropItemFromSlot` → `LootBagManager.CreateLootBagFromItems`).
+- [ ] **Разрушение сундука → сумка** (`ChestController.OnDestroy` → `LootBagManager`).
+- [ ] **Система выбора персонажа** (меши, материалы, blend shapes).
+- [ ] **Мультиплеер** (Mirror / Netcode).
+- [ ] **Предзагрузка слотов `ChestUI`** при старте (убрать лаг при первом открытии).
+- [ ] **Температура** (Hyperthermia/Hypothermia).
+- [ ] **Taming** (Knockout / Passive).
+- [ ] **Breeding** (Mating, Imprinting, Mutations).
+- [ ] **Rideable creatures** (Mounted combat).
+- [ ] **Building stability** (Structural integrity).
+- [ ] **Electrical system** (Generators, Cables, Appliances).
+- [ ] **Irrigation system** (Pipes, Taps, Reservoirs).
+- [ ] **Ranged weapons** (Bow, Crossbow, Firearms).
+- [ ] **Armor system** (Protection, Durability).
+- [ ] **Blueprints & Quality tiers**.
+
+## Важные файлы для контекста
+
+При создании нового чата скинуть:
+
+### Обязательно
+- `PROJECT-ARCHITECTURE.md` (этот файл)
+- `CorpseManager.cs`
+- `CorpseSaveData.cs`
+- `Corpse.cs`
+- `LootBagManager.cs`
+- `LootBagSaveData.cs`
+- `LootBag.cs`
+- `PlayerSurvivalSystem.cs`
+- `BaseLivingEntity.cs`
+- `Creature.cs`
+- `CreatureData.cs`
+- `CreatureDatabase.cs`
+- `LoadingScreenManager.cs`
+- `SceneBootstrap.cs`
+- `ChestUI.cs`
+- `ChestInventory.cs`
+- `InventoryManager.cs`
+- `InventoryData.cs`
+
+### По необходимости (для следующей задачи)
+- Для **выброса вещей**: `InventoryManager.cs`, `LootBagManager.cs`, `LootBag.cs`
+- Для **разрушения сундука**: `ChestController.cs`, `ChestInventory.cs`, `LootBagManager.cs`
+- Для **выбора персонажа**: `PlayerController.cs`, `CreatureData.cs`, `Corpse.cs`, `PlayerProgress.cs`
+- Для **мультиплеера**: всё понемногу
+

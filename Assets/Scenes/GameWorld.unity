@@ -2573,7 +2573,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &57059579
 Transform:
   m_ObjectHideFlags: 0
@@ -2602,7 +2602,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Core.CreatureSpawner
   creaturePrefabs:
-  - {fileID: 4670970197717847591, guid: 0c2e9d48789cd304e8a63e95e6562219, type: 3}
+  - {fileID: 5529909678809400541, guid: 0c2e9d48789cd304e8a63e95e6562219, type: 3}
   maxCreatures: 1
   spawnRadius: 20
   playerController: {fileID: 8534511745338947437}

@@ -178,59 +178,74 @@ namespace Assets.Scripts.Creatures
 
             CancelInvoke();
 
-            // Отключаем NavMeshAgent
+            // === 1. Отключаем NavMeshAgent ===
             var agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
             if (agent != null) Destroy(agent);
 
-            // Уничтожаем аниматор
-            if (animator != null) Destroy(animator);
+            // === 2. Отключаем Animator (для ragdoll, НЕ удаляем!) ===
+            if (animator != null)
+                animator.enabled = false;
 
+            // === 3. Получаем creatureId из Creature ===
+            string creatureId = null;
+            Creature creature = GetComponent<Creature>();
+            if (creature != null)
+            {
+                creatureId = creature.creatureId;
+            }
+
+            // === 4. Активируем Corpse ===
             var corpse = GetComponent<Corpse>();
-
-            // Активируем компонент тела
             if (corpse != null)
             {
                 corpse.enabled = true;
-
                 corpse.ActivateRagdoll();
                 corpse.StartCoroutine(corpse.StopMovingRagdoll());
-
                 corpse.InitializeCorpse();
 
+                // === 5. Копируем настройки лута из CreatureData ===
+                if (creature != null && creature.Data != null)
+                {
+                    var data = creature.Data;
+
+                    corpse.harvestDrops = data.harvestDrops;
+                    corpse.inventoryLootTable = data.inventoryLootTable;
+                    corpse.maxHarvestHits = data.maxHarvestHits;
+                    corpse.allowFists = data.allowFists;
+                    corpse.allowAxe = data.allowAxe;
+                    corpse.allowPickaxe = data.allowPickaxe;
+                    corpse.allowSword = data.allowSword;
+                    corpse.allowSickle = data.allowSickle;
+                }
+
+                // === 6. Создаём инвентарь трупа ===
                 corpse.CreateCorpseInventory(
                     "CreatureCorpse",
                     100,
                     FindAnyObjectByType<ChestUI>()
                 );
+
+                // === 7. Заполняем инвентарь лутом из inventoryLootTable ===
+                corpse.PopulateInventoryFromLootTable();
             }
 
+            // === 8. Активируем RadialMenu ===
             var menu = GetComponent<RadialMenu>();
             if (menu != null) menu.enabled = true;
 
-            // === Регистрируем труп в CorpseManager ===
+            // === 9. Регистрируем труп в CorpseManager ===
             if (CorpseManager.Instance != null)
             {
-                string creatureId = null;
-
-                // Пытаемся получить creatureId из Creature
-                var creature = GetComponent<Creature>();
-                if (creature != null)
-                {
-                    creatureId = creature.creatureId;
-                }
-
-                // Новая сигнатура: RegisterCorpse(GameObject, string ownerPlayerId, string creatureId = null)
                 CorpseManager.Instance.RegisterCorpse(
-                    gameObject,   // ← это то же самое существо, ставшее трупом
-                    "world",      // существ не принадлежат игрокам
-                    creatureId    // "Raptor", "Dodo" и т.д.
+                    gameObject,
+                    "world",
+                    creatureId
                 );
             }
 
             // Вызываем событие смерти
             OnDeath?.Invoke(this);
         }
-
         /// <summary>
         /// Вызывается в конце анимации смерти (через Animation Event).
         /// Выключает коллайдер и аниматор

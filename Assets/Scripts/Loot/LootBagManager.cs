@@ -112,7 +112,7 @@ namespace Assets.Scripts.Loot
             SaveLootBagToDisk(saveData);
             _loadedLootBags[instanceId] = lootBagGO;
 
-            Debug.Log($"[LootBagManager] Сумка зарегистрирована: {instanceId} (owner: {ownerPlayerId})");
+            // Debug.Log($"[LootBagManager] Сумка зарегистрирована: {instanceId} (owner: {ownerPlayerId})");
             return instanceId;
         }
 
@@ -129,7 +129,7 @@ namespace Assets.Scripts.Loot
             if (File.Exists(path))
             {
                 File.Delete(path);
-                Debug.Log($"[LootBagManager] Сумка удалена с диска: {instanceId}");
+                // Debug.Log($"[LootBagManager] Сумка удалена с диска: {instanceId}");
             }
         }
 
@@ -207,7 +207,7 @@ namespace Assets.Scripts.Loot
             string[] files = Directory.GetFiles(_saveDirectory, "lootbag_*.save");
             int loaded = 0;
 
-            Debug.Log($"[LootBagManager] Найдено сумок: {files.Length}");
+            // Debug.Log($"[LootBagManager] Найдено сумок: {files.Length}");
 
             for (int i = 0; i < files.Length; i++)
             {
@@ -227,7 +227,7 @@ namespace Assets.Scripts.Loot
                     if (age >= data.despawnDuration)
                     {
                         File.Delete(file);
-                        Debug.Log($"[LootBagManager] Сумка {data.instanceId} истекла. Удалена.");
+                        // Debug.Log($"[LootBagManager] Сумка {data.instanceId} истекла. Удалена.");
                         continue;
                     }
 
@@ -245,7 +245,7 @@ namespace Assets.Scripts.Loot
                     yield return null;
             }
 
-            Debug.Log($"[LootBagManager] Загружено сумок: {loaded}");
+            // Debug.Log($"[LootBagManager] Загружено сумок: {loaded}");
         }
 
         private void SpawnLootBagFromData(LootBagSaveData data)
@@ -298,13 +298,12 @@ namespace Assets.Scripts.Loot
 
             _loadedLootBags[data.instanceId] = lootBagGO;
 
-            Debug.Log($"[LootBagManager] Сумка восстановлена: {data.instanceId}");
+            // Debug.Log($"[LootBagManager] Сумка восстановлена: {data.instanceId}");
         }
 
         private void OnApplicationQuit()
         {
             IsQuitting = true;
-            Debug.Log("[LootBagManager] OnApplicationQuit — сумки НЕ будут удалены с диска");
         }
     }
 }

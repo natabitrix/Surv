@@ -145,20 +145,20 @@ namespace Assets.Scripts.UI
             _isLoading = false;
             _loadingCoroutine = null;
 
-            Debug.Log("[LoadingScreenManager] Загрузка завершена!");
+            // Debug.Log("[LoadingScreenManager] Загрузка завершена!");
         }
 
         private IEnumerator RunTask(LoadingTask task)
         {
-            Debug.Log($"[LoadingScreenManager] Начинаем: {task.Name}");
+            // Debug.Log($"[LoadingScreenManager] Начинаем: {task.Name}");
             yield return StartCoroutine(task.Routine);
             task.IsDone = true;
-            Debug.Log($"[LoadingScreenManager] Завершено: {task.Name}");
+            // Debug.Log($"[LoadingScreenManager] Завершено: {task.Name}");
         }
 
         private void SetProgress(float progress, string status = null)
         {
-            Debug.Log($"[LoadingScreenManager] SetProgress: {progress}, status: {status}");
+            // Debug.Log($"[LoadingScreenManager] SetProgress: {progress}, status: {status}");
             
             if (_progressBar != null)
                 _progressBar.fillAmount = Mathf.Clamp01(progress);

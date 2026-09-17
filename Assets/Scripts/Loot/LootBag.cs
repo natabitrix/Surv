@@ -158,7 +158,7 @@ namespace Assets.Scripts.Loot
             {
                 if (IsInventoryEmpty())
                 {
-                    Debug.Log($"[LootBag] Сумка исчезла — весь лут забран.");
+                    // Debug.Log($"[LootBag] Сумка исчезла — весь лут забран.");
                     ForceDespawn();
                     yield break;
                 }
@@ -167,7 +167,7 @@ namespace Assets.Scripts.Loot
                 elapsed += 1f;
             }
 
-            Debug.Log($"[LootBag] Сумка исчезла по таймеру.");
+            // Debug.Log($"[LootBag] Сумка исчезла по таймеру.");
             ForceDespawn();
         }
 

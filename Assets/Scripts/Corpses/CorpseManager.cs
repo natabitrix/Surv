@@ -75,7 +75,7 @@ namespace Assets.Scripts.Corpses
             string[] files = Directory.GetFiles(_saveDirectory, "corpse_*.save");
             int loaded = 0;
 
-            Debug.Log($"[CorpseManager] Найдено трупов: {files.Length}");
+            // Debug.Log($"[CorpseManager] Найдено трупов: {files.Length}");
 
             for (int i = 0; i < files.Length; i++)
             {
@@ -95,7 +95,7 @@ namespace Assets.Scripts.Corpses
                     if (age >= data.despawnDuration)
                     {
                         File.Delete(file);
-                        Debug.Log($"[CorpseManager] Труп {data.instanceId} истек. Удален.");
+                        // Debug.Log($"[CorpseManager] Труп {data.instanceId} истек. Удален.");
                         continue;
                     }
 
@@ -113,7 +113,7 @@ namespace Assets.Scripts.Corpses
                     yield return null;
             }
 
-            Debug.Log($"[CorpseManager] Загружено трупов: {loaded}");
+            // Debug.Log($"[CorpseManager] Загружено трупов: {loaded}");
         }
 
         private void OnDestroy()
@@ -296,11 +296,19 @@ namespace Assets.Scripts.Corpses
 
             GameObject corpseGO = Instantiate(prefab, position, rotation);
 
+            // ✅ Отключаем живые компоненты для существ
+            if (data.corpseType == "CreatureCorpse")
+            {
+                if (corpseGO.TryGetComponent<Creature>(out var creature)) creature.enabled = false;
+                if (corpseGO.TryGetComponent<NavMeshAgent>(out var agent)) Destroy(agent);
+                if (corpseGO.TryGetComponent<Animator>(out var anim)) anim.enabled = false;
+            }
+
             var corpse = corpseGO.GetComponentInChildren<Corpse>(true);
             if (corpse == null) return;
 
             // Настраиваем Corpse
-            // corpse.enabled = true;
+            corpse.enabled = true;
             corpse.InstanceId = data.instanceId;
             corpse.OwnerPlayerId = data.ownerPlayerId;
             corpse.CorpseId = data.corpseType;
@@ -313,7 +321,7 @@ namespace Assets.Scripts.Corpses
             // Создаём инвентарь (размер из сохранения)
             int inventorySize = data.inventoryData?.slots?.Length ?? 100;
             corpse.CreateCorpseInventory(
-                "PlayerCorpse",
+                data.corpseType,  // ← "PlayerCorpse" или "CreatureCorpse"
                 inventorySize,
                 FindAnyObjectByType<ChestUI>()
             );

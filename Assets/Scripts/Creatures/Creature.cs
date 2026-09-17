@@ -20,6 +20,7 @@ namespace Assets.Scripts.Creatures
 
         // Кэшированная ссылка на данные
         private CreatureData _data;
+        public CreatureData Data => _data;
 
         // === Статы (берутся из _data через свойства) ===
         public float WanderRange => _data?.wanderRange ?? 20f;
@@ -43,8 +44,8 @@ namespace Assets.Scripts.Creatures
         [HideInInspector] public AudioClip DeathAudioClip;
         [HideInInspector, Range(0, 1)] public float DeathAudioVolume = 0.5f;
 
-        private NavMeshAgent agent;
-        private Transform playerTransform;
+        private NavMeshAgent _agent;
+        private Transform _playerTransform;
 
         private enum CreatureState { Wander, Chase, Attack }
         private CreatureState currentState = CreatureState.Wander;
@@ -108,7 +109,7 @@ namespace Assets.Scripts.Creatures
             stamina = maxStamina;
 
             // === Инициализация компонентов ===
-            agent = GetComponent<NavMeshAgent>();
+            _agent = GetComponent<NavMeshAgent>();
             _animator = GetComponent<Animator>();
 
             if (_animator != null)
@@ -118,26 +119,26 @@ namespace Assets.Scripts.Creatures
                 _animIDAttack = Animator.StringToHash("Attack");
             }
 
-            if (playerTransform == null)
+            if (_playerTransform == null)
             {
                 GameObject player = GameObject.FindGameObjectWithTag("Player");
-                if (player != null) playerTransform = player.transform;
+                if (player != null) _playerTransform = player.transform;
             }
         }
 
         public void SetTarget(Transform target)
         {
-            playerTransform = target;
+            _playerTransform = target;
         }
 
         void Update()
         {
-            if (!IsAlive() || agent == null)
+            if (!IsAlive() || _agent == null)
             {
                 return;
             }
 
-            if (playerTransform == null)
+            if (_playerTransform == null)
             {
                 SetState(CreatureState.Wander);
                 HandleWandering();
@@ -149,10 +150,10 @@ namespace Assets.Scripts.Creatures
             if (torpor >= maxTorpor && !knockedOut)
             {
                 knockedOut = true;
-                agent.isStopped = true;
+                _agent.isStopped = true;
             }
 
-            float distanceToPlayer = Vector3.Distance(transform.position, playerTransform.position);
+            float distanceToPlayer = Vector3.Distance(transform.position, _playerTransform.position);
 
             if (isAttacking)
             {
@@ -179,7 +180,7 @@ namespace Assets.Scripts.Creatures
 
         void LateUpdate()
         {
-            if (isWandering && agent != null && agent.isOnNavMesh && agent.remainingDistance < agent.stoppingDistance)
+            if (isWandering && _agent != null && _agent.isOnNavMesh && _agent.remainingDistance < _agent.stoppingDistance)
             {
                 isWandering = false;
             }
@@ -190,20 +191,20 @@ namespace Assets.Scripts.Creatures
             if (currentState == newState) return;
             currentState = newState;
 
-            if (agent != null && agent.enabled && agent.isOnNavMesh)
+            if (_agent != null && _agent.enabled && _agent.isOnNavMesh)
             {
                 switch (currentState)
                 {
                     case CreatureState.Chase:
-                        agent.speed = ChaseSpeed;
-                        agent.isStopped = false;
+                        _agent.speed = ChaseSpeed;
+                        _agent.isStopped = false;
                         break;
                     case CreatureState.Wander:
-                        agent.speed = WalkSpeed;
-                        agent.isStopped = false;
+                        _agent.speed = WalkSpeed;
+                        _agent.isStopped = false;
                         break;
                     case CreatureState.Attack:
-                        agent.isStopped = true;
+                        _agent.isStopped = true;
                         break;
                 }
             }
@@ -211,8 +212,8 @@ namespace Assets.Scripts.Creatures
 
         private void HandleChasing()
         {
-            if (!agent.isOnNavMesh) return;
-            agent.SetDestination(playerTransform.position);
+            if (!_agent.isOnNavMesh) return;
+            _agent.SetDestination(_playerTransform.position);
         }
 
         private void HandleWandering()
@@ -222,9 +223,9 @@ namespace Assets.Scripts.Creatures
                 StartWandering();
             }
 
-            if (agent.remainingDistance <= agent.stoppingDistance && !agent.pathPending)
+            if (_agent.remainingDistance <= _agent.stoppingDistance && !_agent.pathPending)
             {
-                if (agent.velocity.magnitude < 0.1f)
+                if (_agent.velocity.magnitude < 0.1f)
                 {
                     _animator?.SetBool(_animIDIsMoving, false);
                 }
@@ -254,8 +255,8 @@ namespace Assets.Scripts.Creatures
         private void ResetAttackState()
         {
             isAttacking = false;
-            if (playerTransform != null &&
-                Vector3.Distance(transform.position, playerTransform.position) <= AggressionRadius)
+            if (_playerTransform != null &&
+                Vector3.Distance(transform.position, _playerTransform.position) <= AggressionRadius)
             {
                 SetState(CreatureState.Chase);
             }
@@ -269,7 +270,7 @@ namespace Assets.Scripts.Creatures
         {
             if (_animator != null && !isAttacking)
             {
-                float currentSpeed = agent.velocity.magnitude;
+                float currentSpeed = _agent.velocity.magnitude;
                 _animator.SetFloat(_animIDSpeed, currentSpeed);
                 _animator.SetBool(_animIDIsMoving, currentSpeed > 0.1f);
             }
@@ -277,7 +278,7 @@ namespace Assets.Scripts.Creatures
 
         private void StartWandering()
         {
-            if (!agent.isOnNavMesh) return;
+            if (!_agent.isOnNavMesh) return;
 
             isWandering = true;
 
@@ -286,7 +287,7 @@ namespace Assets.Scripts.Creatures
 
             if (NavMesh.SamplePosition(randomDirection, out NavMeshHit hit, WanderRange, NavMesh.AllAreas))
             {
-                agent.SetDestination(hit.position);
+                _agent.SetDestination(hit.position);
             }
 
             float delay = Random.Range(MinWanderDelay, MaxWanderDelay);
@@ -295,7 +296,7 @@ namespace Assets.Scripts.Creatures
 
         void OnDestinationReached()
         {
-            if (agent.remainingDistance < agent.stoppingDistance)
+            if (_agent.remainingDistance < _agent.stoppingDistance)
             {
                 isWandering = false;
             }

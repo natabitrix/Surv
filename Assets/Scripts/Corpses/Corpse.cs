@@ -228,35 +228,6 @@ namespace Assets.Scripts.Corpses
         public void CreateCorpseInventory(
             string corpseName,
             int invCapacity,
-            InventoryData mainInventory,
-            InventoryData hotbarInventory,
-            ChestUI chestUI
-        )
-        {
-            // Добавляем к трупу и инициализируем компонент ChestInventory
-            var chestInv = gameObject.AddComponent<ChestInventory>();
-            string corpseKey = $"{corpseName}_{System.Guid.NewGuid().ToString()}";
-            chestInv.Initialize(invCapacity, corpseKey);
-
-            _inventory = chestInv;
-            _chestUI = chestUI;
-            _corpseName = corpseName;
-
-            if (mainInventory != null)
-            {
-                // Копируем в труп все вещи игрока
-                CopyPlayerItemsToCorpse(mainInventory, hotbarInventory);
-            }
-            else
-            {
-                // Заполняем инвентарь существа
-                PopulateInventory(chestInv);
-            }
-        }
-
-        public void CreateCorpseInventory(
-            string corpseName,
-            int invCapacity,
             ChestUI chestUI)
         {
             // Добавляем к трупу и инициализируем компонент ChestInventory
@@ -269,18 +240,21 @@ namespace Assets.Scripts.Corpses
             _corpseName = corpseName;
         }
 
-        private void PopulateInventory(ChestInventory inv)
+        /// <summary>
+        /// Заполняет инвентарь трупа лутом из inventoryLootTable.
+        /// Используется для существ.
+        /// </summary>
+        public void PopulateInventoryFromLootTable()
         {
-            if (inventoryLootTable == null || inv == null)
+            if (_inventory?.Data == null)
             {
-                Debug.LogWarning("[Creature] inventoryLootTable или inv равны null!");
+                Debug.LogWarning("[Corpse] _inventory или _inventory.Data равны null!");
                 return;
             }
 
-            var data = inv.Data;
-            if (data == null)
+            if (inventoryLootTable == null || inventoryLootTable.Length == 0)
             {
-                Debug.LogError("[Creature] inv.Data равна null! Ячейки не созданы.");
+                Debug.Log($"[Corpse] inventoryLootTable пуст — инвентарь останется пустым.");
                 return;
             }
 
@@ -293,7 +267,7 @@ namespace Assets.Scripts.Corpses
                 if (roll <= entry.dropChance)
                 {
                     int amount = Random.Range(entry.minAmount, entry.maxAmount + 1);
-                    data.AddItemAnywhere(entry.item, amount);
+                    _inventory.Data.AddItemAnywhere(entry.item, amount);
                 }
             }
         }
@@ -327,7 +301,6 @@ namespace Assets.Scripts.Corpses
             }
         }
 
-
         public void LoadFromCorpseData(SerializableInventory inventoryData, ItemDatabase itemDatabase)
         {
             if (_inventory?.Data == null) return;
@@ -337,7 +310,6 @@ namespace Assets.Scripts.Corpses
                 _inventory.Data.FromSerializable(inventoryData, itemDatabase.ItemLookup);
             }
         }
-
 
         public void OpenInventory()
         {
@@ -502,7 +474,7 @@ namespace Assets.Scripts.Corpses
             if (CorpseManager.Instance != null && !string.IsNullOrEmpty(InstanceId))
             {
                 // Труп разобран — можно удалить запись (лут перенесен в LootBag)
-                // CorpseManager.Instance.UnregisterCorpse(InstanceId);
+                CorpseManager.Instance.UnregisterCorpse(InstanceId);
             }
 
             Destroy(gameObject, 0.5f);
