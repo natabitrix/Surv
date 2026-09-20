@@ -232,7 +232,8 @@ namespace Assets.Scripts.Corpses
         /// </summary>
         private float GetLifetime(string creatureId)
         {
-            float defaultLifetime = gameSettings != null ? gameSettings.corpseLifetime : 300f;
+            // float defaultLifetime = gameSettings != null ? gameSettings.corpseLifetime : 300f;
+            float defaultLifetime = SessionMode.CorpseLifetime;
 
             // Если у существа есть override — используем его
             if (!string.IsNullOrEmpty(creatureId) && creatureDatabase != null)

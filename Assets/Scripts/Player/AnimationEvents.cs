@@ -75,20 +75,83 @@ namespace Assets.Scripts.Player
             Destroy(soundObj, clip.length + 0.1f);
         }
 
-        // Эти методы уже public, они должны появиться в списке
-        public void OnInteractFinishedAnimationEvent() 
+        // ==========================================
+        // === INTERACTION EVENTS ===
+        // ==========================================
+
+        // === OnInteractFinished ===
+        // Вызывается из анимации PlayerPickupTable и подобных.
+        // Проксирует в PlayerInteraction.OnInteractFinishedAnimationEvent(),
+        // который внутри вызывает OnInteractFinished(IInteractable = null).
+
+        public void OnInteractFinished()
+        {
+            // Debug.Log("[AnimationEvents] OnInteractFinished()");
+            if (_playerInteraction != null)
+                _playerInteraction.OnInteractFinishedAnimationEvent();
+        }
+
+        public void OnInteractFinished(int value)
+        {
+            // Debug.Log($"[AnimationEvents] OnInteractFinished({value})");
+            if (_playerInteraction != null)
+                _playerInteraction.OnInteractFinishedAnimationEvent();
+        }
+
+        public void OnInteractFinishedAnimationEvent()
         {
             if (_playerInteraction != null)
                 _playerInteraction.OnInteractFinishedAnimationEvent();
         }
 
-        public void OnOpenInventoryFinisheddAnimationEvent() 
+
+        // === OnOpenInventoryFinished ===
+        // Вызывается из анимации OpenInventory (открытие сундука/трупа по F).
+        // Проксирует в PlayerInteraction.OnOpenInventoryFinisheddAnimationEvent(),
+        // который внутри вызывает OnOpenInventoryFinished(IInteractable = null).
+        //
+        // ВНИМАНИЕ: в PlayerInteraction метод называется с опечаткой — две 'd' в конце.
+        // Это исторически, менять название опасно (могут быть ссылки в анимациях).
+
+        public void OnOpenInventoryFinished()
+        {
+            // Debug.Log("[AnimationEvents] OnOpenInventoryFinished()");
+            if (_playerInteraction != null)
+                _playerInteraction.OnOpenInventoryFinisheddAnimationEvent();
+        }
+
+        public void OnOpenInventoryFinished(int value)
+        {
+            // Debug.Log($"[AnimationEvents] OnOpenInventoryFinished({value})");
+            if (_playerInteraction != null)
+                _playerInteraction.OnOpenInventoryFinisheddAnimationEvent();
+        }
+
+        public void OnOpenInventoryFinishedd()
         {
             if (_playerInteraction != null)
                 _playerInteraction.OnOpenInventoryFinisheddAnimationEvent();
         }
 
-        public void OnAttackInteractFinished() 
+        public void OnOpenInventoryFinisheddAnimationEvent()
+        {
+            if (_playerInteraction != null)
+                _playerInteraction.OnOpenInventoryFinisheddAnimationEvent();
+        }
+
+
+        // === OnAttackInteractFinished ===
+        // Вызывается из анимации атаки (AttackFist, AttackAxe и т.д.).
+        // Проксирует в PlayerInteraction.OnAttackInteractFinished() — там своя логика.
+
+        public void OnAttackInteractFinished()
+        {
+            // Debug.Log("[AnimationEvents] OnAttackInteractFinished()");
+            if (_playerInteraction != null)
+                _playerInteraction.OnAttackInteractFinished();
+        }
+
+        public void OnAttackInteractFinished(int value)
         {
             if (_playerInteraction != null)
                 _playerInteraction.OnAttackInteractFinished();

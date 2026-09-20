@@ -271,6 +271,26 @@ namespace Assets.Scripts.Player
             _input.OnFireTriggered -= Attack;
         }
 
+        /// <summary>
+        /// Возвращает текущую горизонтальную скорость игрока.
+        /// CharacterController.velocity включает вертикальную скорость, поэтому берем только XZ.
+        /// </summary>
+        public float CurrentHorizontalSpeed
+        {
+            get
+            {
+                if (_controller != null)
+                {
+                    Vector3 horizontalVelocity = new(_controller.velocity.x, 0f, _controller.velocity.z);
+                    return horizontalVelocity.magnitude;
+                }
+                return 0f;
+            }
+        }
+
+        // Также можно добавить свойство для полной скорости, если нужно:
+        public float CurrentSpeed => _controller != null ? _controller.velocity.magnitude : 0f;
+
         public float GetAttackDamage()
         {
             if (equipment != null && equipment.IsEquipped)

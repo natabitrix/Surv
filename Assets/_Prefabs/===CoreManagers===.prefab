@@ -59,7 +59,7 @@ MonoBehaviour:
   _progressBar: {fileID: 2843025125273141322}
   _statusText: {fileID: 8797378990931335956}
   _minShowTime: 1
-  _physicsSettleTime: 2
+  _physicsSettleTime: 2.5
 --- !u!114 &4963310491301221465
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -72,6 +72,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b2afeee12ab9dca448eadee660c147f9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.GameController
+  _gameSettings: {fileID: 11400000, guid: 92f8da4672bb630409835cc71a53b5b0, type: 2}
 --- !u!114 &9057286865047072866
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -92,6 +93,7 @@ MonoBehaviour:
   _staminaRecoveryPerSecond: 20
   _oxygenRecoveryPerSecond: 20
   _healthRecoveryPerSecond: 1
+  _deathScreenDelay: 1
   DieManually: 0
 --- !u!114 &5087374864759840938
 MonoBehaviour:

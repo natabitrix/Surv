@@ -4,6 +4,7 @@ using Assets.Scripts.Building;
 using Assets.Scripts.Core;
 using Assets.Scripts.Crafting;
 using Assets.Scripts.Items;
+using Assets.Scripts.Loot;
 using Assets.Scripts.Player;
 using Assets.Scripts.UI;
 using TMPro;
@@ -344,56 +345,176 @@ namespace Assets.Scripts.InventorySystem
 
         // === DROP ===
 
+        // public void DropItemFromSlot(int localSlotIndex, SlotOwner owner)
+        // {
+        //     var progress = PlayerProgress.Instance;
+        //     if (progress == null) return;
+
+        //     InventorySlot slot = null;
+        //     if (owner == SlotOwner.Hotbar && localSlotIndex < progress.hotbarInventoryData.slots.Count)
+        //     {
+        //         slot = progress.hotbarInventoryData.slots[localSlotIndex];
+        //     }
+        //     else if (owner == SlotOwner.Inventory && localSlotIndex < progress.mainInventoryData.slots.Count)
+        //     {
+        //         slot = progress.mainInventoryData.slots[localSlotIndex];
+        //     }
+
+        //     if (slot?.IsEmpty != false || slot.item == null) return;
+
+        //     string itemName = slot.item.itemName;
+        //     Sprite icon = slot.item.icon;
+
+        //     // Удаляем из правильного контейнера
+        //     if (owner == SlotOwner.Hotbar)
+        //     {
+        //         progress.hotbarInventoryData.RemoveItemFromSlot(localSlotIndex);
+        //         progress.hotbarInventoryData.NotifyChanged();
+
+        //     }
+        //     else if (owner == SlotOwner.Inventory)
+        //     {
+        //         progress.mainInventoryData.RemoveItemFromSlot(localSlotIndex);
+        //         progress.mainInventoryData.NotifyChanged();
+        //     }
+
+        //     progress.Save("InventoryManager.DropItemFromSlot");
+
+        //     if (NotificationManager.Instance != null)
+        //     {
+        //         NotificationManager.Instance.Show($"Выброшено: {itemName}", icon);
+        //     }
+        // }
+
+
+
         public void DropItemFromSlot(int localSlotIndex, SlotOwner owner)
         {
             var progress = PlayerProgress.Instance;
             if (progress == null) return;
 
             InventorySlot slot = null;
+            InventoryData sourceData = null;
+
             if (owner == SlotOwner.Hotbar && localSlotIndex < progress.hotbarInventoryData.slots.Count)
             {
                 slot = progress.hotbarInventoryData.slots[localSlotIndex];
+                sourceData = progress.hotbarInventoryData;
             }
             else if (owner == SlotOwner.Inventory && localSlotIndex < progress.mainInventoryData.slots.Count)
             {
                 slot = progress.mainInventoryData.slots[localSlotIndex];
+                sourceData = progress.mainInventoryData;
             }
 
             if (slot?.IsEmpty != false || slot.item == null) return;
 
-            string itemName = slot.item.itemName;
-            Sprite icon = slot.item.icon;
+            // === ВАЖНО: СОХРАНЯЕМ ДАННЫЕ ДО УДАЛЕНИЯ ===
+            Item itemToDrop = slot.item;
+            int countToDrop = slot.count;
+            float durabilityToDrop = slot.currentDurability;
+            ItemType itemType = itemToDrop.itemType; // ← сохраняем тип заранее
 
-            // Удаляем из правильного контейнера
-            if (owner == SlotOwner.Hotbar)
+            // === Создаём список для LootBagManager ===
+            var itemsToDrop = new List<(Item item, int count, float durability)>
+    {
+        (itemToDrop, countToDrop, durabilityToDrop)
+    };
+
+            // === Вычисляем позицию для сумки ===
+            Vector3 dropPosition = Vector3.zero;
+            var playerController = progress.playerController;
+            if (playerController != null)
             {
-                progress.hotbarInventoryData.RemoveItemFromSlot(localSlotIndex);
-                progress.hotbarInventoryData.NotifyChanged();
+                dropPosition = playerController.transform.position
+                             + playerController.transform.forward * 2f
+                             + playerController.transform.up * 0.5f;
 
+                if (Physics.Raycast(dropPosition + Vector3.up * 5f, Vector3.down, out RaycastHit hit, 10f))
+                {
+                    dropPosition = hit.point + Vector3.up * 0.1f;
+                }
             }
-            else if (owner == SlotOwner.Inventory)
+            else
             {
-                progress.mainInventoryData.RemoveItemFromSlot(localSlotIndex);
-                progress.mainInventoryData.NotifyChanged();
+                Debug.LogError("[InventoryManager] PlayerController не найден!");
+                return;
             }
 
-            //////////////////////////
-            // if (slot.item.itemType == ItemType.Tool || slot.item.itemType == ItemType.Weapon)
-            // {
-            //     int equippedSlotIndex = equipment.EquippedSlotIndex;
-            //     if (equipment.IsEquipped && slot.item == equipment.GetCurrentItem())
-            //     {
-            //         equipment.Unequip();
-            //     }
-            // }
+            // === Создаём сумку ===
+            if (LootBagManager.Instance == null)
+            {
+                Debug.LogError("[InventoryManager] LootBagManager не найден!");
+                return;
+            }
+
+            LootBagManager.Instance.CreateLootBagFromItems(itemsToDrop, dropPosition, "player_001");
+
+            // === Снимаем экипировку ДО удаления из слота (если предмет был в руках) ===
+            if ((itemType == ItemType.Tool || itemType == ItemType.Weapon) &&
+                equipment != null && equipment.IsEquipped && equipment.GetCurrentItem() == itemToDrop)
+            {
+                equipment.Unequip();
+            }
+
+            // === Удаляем из слота (теперь безопасно) ===
+            if (sourceData != null)
+            {
+                sourceData.RemoveItemFromSlot(localSlotIndex);
+                sourceData.NotifyChanged();
+            }
 
             progress.Save("InventoryManager.DropItemFromSlot");
 
             if (NotificationManager.Instance != null)
             {
-                NotificationManager.Instance.Show($"Выброшено: {itemName}", icon);
+                NotificationManager.Instance.Show($"Выброшено: {itemToDrop.itemName} x{countToDrop} в сумку", itemToDrop.icon);
             }
         }
+
+        // Вызывается по кнопке PlayerInventoryDropButton "Выбросить всё"
+        // public void DropItemsFromInventory()
+        // {
+        //     var progress = PlayerProgress.Instance;
+        //     if (progress == null || progress.mainInventoryData == null) return;
+
+        //     var mainInventory = progress.mainInventoryData;
+        //     List<(Item item, int count)> droppedItems = new List<(Item, int)>();
+
+        //     // Собираем все предметы из основного инвентаря (100 слотов)
+        //     for (int i = 0; i < mainInventory.slots.Count; i++)
+        //     {
+        //         var slot = mainInventory.slots[i];
+        //         if (slot?.IsEmpty == false && slot.item != null && slot.count > 0)
+        //         {
+        //             // Сохраняем для уведомления
+        //             droppedItems.Add((slot.item, slot.count));
+
+        //             // Очищаем слот
+        //             slot.item = null;
+        //             slot.count = 0;
+        //             slot.currentDurability = -1f;
+        //         }
+        //     }
+
+        //     // Показываем уведомления (одно на каждый стек)
+        //     foreach (var (item, count) in droppedItems)
+        //     {
+        //         if (NotificationManager.Instance != null)
+        //         {
+        //             NotificationManager.Instance.Show(
+        //                 $"Выброшено: {item.itemName} x{count}",
+        //                 item.icon
+        //             );
+        //         }
+        //     }
+
+        //     // Обновляем UI и сохраняем прогресс
+        //     mainInventory.NotifyChanged();
+        //     progress.Save("InventoryManager.DropItemsFromInventory");
+
+
+        // }
 
         // Вызывается по кнопке PlayerInventoryDropButton "Выбросить всё"
         public void DropItemsFromInventory()
@@ -401,42 +522,85 @@ namespace Assets.Scripts.InventorySystem
             var progress = PlayerProgress.Instance;
             if (progress == null || progress.mainInventoryData == null) return;
 
-            var mainInventory = progress.mainInventoryData;
-            List<(Item item, int count)> droppedItems = new List<(Item, int)>();
+            var playerController = progress.playerController;
+            if (playerController == null)
+            {
+                Debug.LogError("[InventoryManager] PlayerController не найден!");
+                return;
+            }
 
-            // Собираем все предметы из основного инвентаря (100 слотов)
+            if (LootBagManager.Instance == null)
+            {
+                Debug.LogError("[InventoryManager] LootBagManager не найден!");
+                return;
+            }
+
+            var mainInventory = progress.mainInventoryData;
+
+            // Собираем все предметы
+            var itemsToDrop = new List<(Item item, int count, float durability)>();
             for (int i = 0; i < mainInventory.slots.Count; i++)
             {
                 var slot = mainInventory.slots[i];
                 if (slot?.IsEmpty == false && slot.item != null && slot.count > 0)
                 {
-                    // Сохраняем для уведомления
-                    droppedItems.Add((slot.item, slot.count));
+                    itemsToDrop.Add((slot.item, slot.count, slot.currentDurability));
+                }
+            }
 
-                    // Очищаем слот
+            if (itemsToDrop.Count == 0)
+            {
+                if (NotificationManager.Instance != null)
+                    NotificationManager.Instance.Show("Нечего выбрасывать.", null);
+                return;
+            }
+
+            // === Снимаем экипировку, если предмет из основного инвентаря ===
+            if (equipment != null && equipment.IsEquipped)
+            {
+                int equippedGlobalIndex = equipment.EquippedSlotIndex;
+                // Индексы 10+ принадлежат mainInventory
+                if (equippedGlobalIndex >= 10)
+                {
+                    equipment.Unequip();
+                }
+            }
+
+            // === Позиция для сумки ===
+            Vector3 dropPosition = playerController.transform.position
+                                 + playerController.transform.forward * 2f
+                                 + playerController.transform.up * 0.5f;
+
+            if (Physics.Raycast(dropPosition + Vector3.up * 5f, Vector3.down, out RaycastHit hit, 10f))
+            {
+                dropPosition = hit.point + Vector3.up * 0.1f;
+            }
+
+            // === Создаём сумку со всеми предметами ===
+            // Примечание: если предметов больше, чем слотов в сумке — часть не поместится.
+            // Нужно либо увеличить размер сумки, либо создавать несколько сумок.
+            int totalSlotsNeeded = itemsToDrop.Count;
+            LootBagManager.Instance.CreateLootBagFromItems(itemsToDrop, dropPosition, "player_001");
+
+            // === Очищаем инвентарь ===
+            for (int i = 0; i < mainInventory.slots.Count; i++)
+            {
+                var slot = mainInventory.slots[i];
+                if (slot?.IsEmpty == false)
+                {
                     slot.item = null;
                     slot.count = 0;
                     slot.currentDurability = -1f;
                 }
             }
 
-            // Показываем уведомления (одно на каждый стек)
-            foreach (var (item, count) in droppedItems)
-            {
-                if (NotificationManager.Instance != null)
-                {
-                    NotificationManager.Instance.Show(
-                        $"Выброшено: {item.itemName} x{count}",
-                        item.icon
-                    );
-                }
-            }
-
-            // Обновляем UI и сохраняем прогресс
             mainInventory.NotifyChanged();
             progress.Save("InventoryManager.DropItemsFromInventory");
 
-
+            if (NotificationManager.Instance != null)
+            {
+                NotificationManager.Instance.Show($"Выброшено в сумку: {itemsToDrop.Count} стаков", null);
+            }
         }
 
         // вызывается по кнопке OtherInventoryDropButton "Выбросить всё"

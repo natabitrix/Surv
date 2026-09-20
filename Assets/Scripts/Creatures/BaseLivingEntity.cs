@@ -174,6 +174,8 @@ namespace Assets.Scripts.Creatures
         // Общий метод смерти
         protected virtual void Die()
         {
+            if (_isDead) return;
+            _isDead = true;
             health = 0;
 
             CancelInvoke();
@@ -192,6 +194,7 @@ namespace Assets.Scripts.Creatures
             if (creature != null)
             {
                 creatureId = creature.creatureId;
+                creature.enabled = false;   // ← добавить
             }
 
             // === 4. Активируем Corpse ===
@@ -246,6 +249,7 @@ namespace Assets.Scripts.Creatures
             // Вызываем событие смерти
             OnDeath?.Invoke(this);
         }
+
         /// <summary>
         /// Вызывается в конце анимации смерти (через Animation Event).
         /// Выключает коллайдер и аниматор
@@ -265,14 +269,12 @@ namespace Assets.Scripts.Creatures
         }
 
         // Геттеры
+        protected bool _isDead = false;
+        public bool IsDead() => _isDead;
         public float GetHealth() => health;
         public float GetMaxHealth() => maxHealth;
         public float GetStamina() => stamina;
         public float GetMaxStamina() => maxStamina;
-        public bool IsAlive()
-        {
-            bool alive = health > 0;
-            return alive;
-        }
+        public bool IsAlive() => !_isDead && health > 0;
     }
 }

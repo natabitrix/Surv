@@ -60,6 +60,8 @@ namespace Assets.Scripts.Creatures
         private int _animIDIsMoving;
         private int _animIDAttack;
 
+        public bool DieManually = false;
+
         protected override void Awake()
         {
             base.Awake();
@@ -176,6 +178,11 @@ namespace Assets.Scripts.Creatures
             }
 
             UpdateAnimation();
+
+            if(DieManually)
+            {
+                Die();
+            }
         }
 
         void LateUpdate()

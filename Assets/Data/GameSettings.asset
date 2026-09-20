@@ -12,5 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 64611dad134ba9f4ab678e6cd28b6f58, type: 3}
   m_Name: GameSettings
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Core.GameSettings
-  corpseLifetime: 1800
-  lootBagLifetime: 1800
+  corpseLifetime: 3600
+  lootBagLifetime: 3600
+  isMultiplayer: 0
+  singleplayerPauseTimeScale: 0
+  deathScreenFreezesWorld: 0

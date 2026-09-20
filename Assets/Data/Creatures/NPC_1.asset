@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 58e94cc098c1fb24eae786f00d455af0, type: 3}
-  m_Name: Creature_Robot_George
+  m_Name: NPC_1
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Creatures.CreatureData
-  creatureId: Robot_George
-  displayName: Robot George
+  creatureId: NPC_1
+  displayName: NPC 1
   icon: {fileID: 0}
   description: 
-  prefab: {fileID: 9136099890693409341, guid: c3e066d5409bfe945b0c33e6e0ab096b, type: 3}
+  prefab: {fileID: 9136099890693409341, guid: 92a6431579052564487ec73b861e8184, type: 3}
   maxHealth: 100
   maxStamina: 50
   walkSpeed: 2
@@ -32,11 +32,7 @@ MonoBehaviour:
   tamable: 0
   tamableKO: 0
   tamablePassive: 0
-  inventoryLootTable:
-  - item: {fileID: 11400000, guid: dc69f91a959d4494c9ba7b0b71c6b2ec, type: 2}
-    minAmount: 1
-    maxAmount: 1
-    dropChance: 1
+  inventoryLootTable: []
   harvestDrops:
   - item: {fileID: 11400000, guid: 5b2aeb1461a89434dab6751adb6301c6, type: 2}
     totalAmount: 50

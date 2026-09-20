@@ -63,8 +63,8 @@ namespace Assets.Scripts.UI
         [SerializeField] private CharacterPreviewManager previewManager;
         [SerializeField] private TooltipManager tooltipManager;
         
-        [SerializeField] private PauseManager pauseManager;
-        [SerializeField] private DeathScreenManager deathScreenManager;
+        // [SerializeField] private PauseManager pauseManager;
+        // [SerializeField] private DeathScreenManager deathScreenManager;
 
         private bool _isInventoryOpened = false;
         private bool _isRadialMenuOpened = false;

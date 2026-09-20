@@ -33,7 +33,7 @@ namespace Assets.Scripts.Player
 
         [Header("Raycast Settings")]
         [SerializeField] private LayerMask _interactableLayers;
-        // [SerializeField] private float _playerInteractionRadius = 1f;
+        [SerializeField] private float _playerInteractionRadius = 1f;
 
         [Header("Contact Settings")]
         [SerializeField] private LayerMask _harvestableLayers;
@@ -94,8 +94,6 @@ namespace Assets.Scripts.Player
 
             if (interactionUI != null)
                 interactionUI.SetActive(false);
-
-
         }
 
         private void OnEnable()
@@ -121,6 +119,7 @@ namespace Assets.Scripts.Player
             PerformInteractionRaycast();
             UpdateInteractionUI();
             HandleHoldLogic();
+            CheckCorpsePhysicsState();
         }
 
         // === ЛОГИКА УДЕРЖАНИЯ 
@@ -230,6 +229,8 @@ namespace Assets.Scripts.Player
 
         public void OnInteractFinished(IInteractable specificTarget = null)
         {
+            // Debug.Log("[PlayerInteraction] OnInteractFinished(IInteractable specificTarget = null)!");
+
             IInteractable target = specificTarget ?? (_allTargets.Count > 0 ? _allTargets[0] : null);
             if (target == null) return;
 
@@ -250,12 +251,13 @@ namespace Assets.Scripts.Player
         // Перегрузка для Animation Event
         public void OnInteractFinishedAnimationEvent()
         {
+            // Debug.Log("[PlayerInteraction] OnInteractFinishedAnimationEvent()!");
             OnInteractFinished();
         }
 
         public void OnOpenInventoryFinished(IInteractable specificTarget = null)
         {
-
+            // Debug.Log("[PlayerInteraction] OnOpenInventoryFinished(IInteractable specificTarget = null)!");
             IInteractable target = specificTarget ?? (_allTargets.Count > 0 ? _allTargets[0] : null);
 
             if (target == null) return;
@@ -286,6 +288,7 @@ namespace Assets.Scripts.Player
         // Перегрузка для Animation Event
         public void OnOpenInventoryFinisheddAnimationEvent()
         {
+            // Debug.Log("[PlayerInteraction] OnOpenInventoryFinisheddAnimationEvent()!");
             OnOpenInventoryFinished();
         }
 
@@ -379,116 +382,226 @@ namespace Assets.Scripts.Player
             return true;
         }
 
+        // private void PerformInteractionRaycast()
+        // {
+        //     _allTargets.Clear();
+        //     _targetGO = null;
+        //     _hitCreature = null;
+
+        //     float currentInteractionDistance = _playerInteractionRadius; // диапазон
+        //     Vector3 headPos = _playerHead.position;
+        //     Vector3 headDir = _playerHead.forward;
+
+        //     // === 1. Raycast для существ (оставляем точным для боя) ===
+        //     if (Physics.Raycast(headPos, headDir, out RaycastHit hitCreature, 5.0f, _damageLayers))
+        //     {
+        //         TryFindCreature(hitCreature.collider);
+        //     }
+
+        //     // === 2. Поиск интерактивных объектов через OverlapSphere ===
+        //     Collider[] nearbyColliders = Physics.OverlapSphere(headPos, currentInteractionDistance, _interactableLayers);
+
+        //     IInteractable bestTarget = null;
+        //     GameObject bestTargetGO = null;
+        //     float bestScore = -1f;
+
+        //     foreach (var col in nearbyColliders)
+        //     {
+        //         // 🔑 ШАГ 1: Ищем КОРНЕВОЙ объект взаимодействия ВВЕРХ по иерархии
+        //         Transform current = col.transform;
+        //         GameObject candidateRoot = null;
+        //         IInteractable foundInteractable = null;
+
+        //         // Поднимаемся до 10 уровней вверх (был 5)
+        //         for (int i = 0; i < 10 && current != null; i++)
+        //         {
+        //             // ✅ ПРИОРИТЕТ 1: Сначала ищем CORPSE
+        //             if (current.TryGetComponent<Corpse>(out var corpse))
+        //             {
+        //                 bool isCorrectCollider = corpse.InteractionCollider == null ||
+        //                                        corpse.InteractionCollider == col;
+
+        //                 if (isCorrectCollider && corpse.enabled)
+        //                 {
+        //                     candidateRoot = current.gameObject;
+        //                     foundInteractable = corpse;
+        //                     break;
+        //                 }
+        //             }
+
+        //             // ✅ ПРИОРИТЕТ 2: BaseLivingEntity (живые существа)
+        //             if (current.TryGetComponent<BaseLivingEntity>(out var livingEntity))
+        //             {
+        //                 bool isCorrectCollider = livingEntity.InteractionCollider == null ||
+        //                                        livingEntity.InteractionCollider == col;
+
+        //                 if (isCorrectCollider && livingEntity.IsAlive())
+        //                 {
+        //                     candidateRoot = current.gameObject;
+        //                     foundInteractable = livingEntity;
+        //                     break;
+        //                 }
+        //             }
+
+        //             // ✅ ПРИОРИТЕТ 3: Обычные интерактаблы (сундуки, двери)
+        //             if (foundInteractable == null)
+        //             {
+        //                 var interactable = current.GetComponent<IInteractable>();
+        //                 if (interactable != null && !(interactable is Corpse) && !(interactable is BaseLivingEntity))
+        //                 {
+        //                     candidateRoot = current.gameObject;
+        //                     foundInteractable = interactable;
+        //                     break;
+        //                 }
+        //             }
+
+        //             current = current.parent;
+        //         }
+
+        //         // Если не нашли корневого объекта — пропускаем
+        //         if (candidateRoot == null || foundInteractable == null) continue;
+
+        //         // 🔑 ШАГ 2: УПРОЩЕННАЯ проверка видимости (БЕЗ LineCast)
+        //         // Просто проверяем дистанцию и общее направление
+        //         Vector3 toTarget = candidateRoot.transform.position - headPos;
+        //         float distToTarget = toTarget.magnitude;
+
+        //         if (distToTarget > currentInteractionDistance) continue;
+
+        //         // Проверяем: находится ли цель в пределах ~ 120 градусов от взгляда
+        //         // Это позволит видеть цели сбоку и даже немного сзади
+        //         float angle = Vector3.Angle(headDir, toTarget.normalized);
+        //         if (angle > 120f) continue; // был 90, теперь 120
+
+        //         // 🔑 ШАГ 3: Расчет приоритета (ближайшая цель выигрывает)
+        //         float score = (1f - (angle / 120f)) * 0.3f + (1f - (distToTarget / currentInteractionDistance)) * 0.7f;
+
+        //         if (score > bestScore)
+        //         {
+        //             bestScore = score;
+        //             bestTargetGO = candidateRoot;
+        //             bestTarget = foundInteractable;
+        //         }
+        //     }
+
+        //     // Добавляем в список ТОЛЬКО лучшую цель
+        //     if (bestTarget != null)
+        //     {
+        //         ProcessHitObject(bestTargetGO);
+        //     }
+
+        // }
+
         private void PerformInteractionRaycast()
         {
             _allTargets.Clear();
             _targetGO = null;
             _hitCreature = null;
 
-            float currentInteractionDistance = 3.0f; // диапазон
             Vector3 headPos = _playerHead.position;
             Vector3 headDir = _playerHead.forward;
+            float dist = _playerInteractionRadius;
 
-            // === 1. Raycast для существ (оставляем точным для боя) ===
-            if (Physics.Raycast(headPos, headDir, out RaycastHit hitCreature, 5.0f, _damageLayers))
+            // === 1. Точный рейкаст из головы ===
+            // QueryTriggerInteraction.Collide — иначе триггер-коллайдеры (InteractionCollider)
+            // не будут найдены.
+            if (Physics.Raycast(
+                    headPos,
+                    headDir,
+                    out RaycastHit hit,
+                    dist,
+                    _interactableLayers,
+                    QueryTriggerInteraction.Collide))
             {
-                TryFindCreature(hitCreature.collider);
+                if (TryProcessHit(hit.collider.gameObject, hit.point))
+                    return; // нашли и обработали — выходим
             }
 
-            // === 2. Поиск интерактивных объектов через OverlapSphere ===
-            Collider[] nearbyColliders = Physics.OverlapSphere(headPos, currentInteractionDistance, _interactableLayers);
-
-            IInteractable bestTarget = null;
-            GameObject bestTargetGO = null;
-            float bestScore = -1f;
-
-            foreach (var col in nearbyColliders)
+            // === 2. SphereCast fallback ===
+            // «Прощает» промахи, когда рейкаст из головы летит мимо коллайдера
+            // (например, ragdoll лёг неудачно, или игрок смотрит чуть в сторону).
+            const float sphereRadius = 0.35f;
+            if (Physics.SphereCast(
+                    headPos,
+                    sphereRadius,
+                    headDir,
+                    out RaycastHit sphereHit,
+                    dist,
+                    _interactableLayers,
+                    QueryTriggerInteraction.Collide))
             {
-                // 🔑 ШАГ 1: Ищем КОРНЕВОЙ объект взаимодействия ВВЕРХ по иерархии
-                Transform current = col.transform;
-                GameObject candidateRoot = null;
-                IInteractable foundInteractable = null;
-
-                // Поднимаемся до 10 уровней вверх (был 5)
-                for (int i = 0; i < 10 && current != null; i++)
-                {
-                    // ✅ ПРИОРИТЕТ 1: Сначала ищем CORPSE
-                    if (current.TryGetComponent<Corpse>(out var corpse))
-                    {
-                        bool isCorrectCollider = corpse.InteractionCollider == null ||
-                                               corpse.InteractionCollider == col;
-
-                        if (isCorrectCollider && corpse.enabled)
-                        {
-                            candidateRoot = current.gameObject;
-                            foundInteractable = corpse;
-                            break;
-                        }
-                    }
-
-                    // ✅ ПРИОРИТЕТ 2: BaseLivingEntity (живые существа)
-                    if (current.TryGetComponent<BaseLivingEntity>(out var livingEntity))
-                    {
-                        bool isCorrectCollider = livingEntity.InteractionCollider == null ||
-                                               livingEntity.InteractionCollider == col;
-
-                        if (isCorrectCollider && livingEntity.IsAlive())
-                        {
-                            candidateRoot = current.gameObject;
-                            foundInteractable = livingEntity;
-                            break;
-                        }
-                    }
-
-                    // ✅ ПРИОРИТЕТ 3: Обычные интерактаблы (сундуки, двери)
-                    if (foundInteractable == null)
-                    {
-                        var interactable = current.GetComponent<IInteractable>();
-                        if (interactable != null && !(interactable is Corpse) && !(interactable is BaseLivingEntity))
-                        {
-                            candidateRoot = current.gameObject;
-                            foundInteractable = interactable;
-                            break;
-                        }
-                    }
-
-                    current = current.parent;
-                }
-
-                // Если не нашли корневого объекта — пропускаем
-                if (candidateRoot == null || foundInteractable == null) continue;
-
-                // 🔑 ШАГ 2: УПРОЩЕННАЯ проверка видимости (БЕЗ LineCast)
-                // Просто проверяем дистанцию и общее направление
-                Vector3 toTarget = candidateRoot.transform.position - headPos;
-                float distToTarget = toTarget.magnitude;
-
-                if (distToTarget > currentInteractionDistance) continue;
-
-                // Проверяем: находится ли цель в пределах ~ 120 градусов от взгляда
-                // Это позволит видеть цели сбоку и даже немного сзади
-                float angle = Vector3.Angle(headDir, toTarget.normalized);
-                if (angle > 120f) continue; // был 90, теперь 120
-
-                // 🔑 ШАГ 3: Расчет приоритета (ближайшая цель выигрывает)
-                float score = (1f - (angle / 120f)) * 0.3f + (1f - (distToTarget / currentInteractionDistance)) * 0.7f;
-
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestTargetGO = candidateRoot;
-                    bestTarget = foundInteractable;
-                }
+                if (TryProcessHit(sphereHit.collider.gameObject, sphereHit.point))
+                    return;
             }
 
-            // Добавляем в список ТОЛЬКО лучшую цель
-            if (bestTarget != null)
-            {
-                ProcessHitObject(bestTargetGO);
-            }
-
+            // === 3. Ничего не нашли — цель отсутствует ===
+            // (опционально) Можно попробовать дочерние коллайдеры через OverlapSphere,
+            // но обычно для активного взаимодействия этого не требуется.
         }
 
+        /// <summary>
+        /// Проверяет, есть ли на объекте (или его родителях) IInteractable,
+        /// и если да — регистрирует его как цель.
+        /// Возвращает true, если цель найдена и обработана.
+        /// </summary>
+        private bool TryProcessHit(GameObject hitObject, Vector3 hitPoint)
+        {
+            if (hitObject == null) return false;
+
+            // 🔑 Поднимаемся по иерархии до 10 уровней — ищем корневой объект взаимодействия.
+            // Приоритет: Corpse > BaseLivingEntity > обычные IInteractable.
+            Transform current = hitObject.transform;
+            GameObject candidateRoot = null;
+
+            for (int i = 0; i < 10 && current != null; i++)
+            {
+                // ПРИОРИТЕТ 1: Corpse
+                if (current.TryGetComponent<Corpse>(out var corpse) && corpse.enabled)
+                {
+                    candidateRoot = current.gameObject;
+                    break;
+                }
+
+                // ПРИОРИТЕТ 2: BaseLivingEntity (живое существо)
+                if (current.TryGetComponent<BaseLivingEntity>(out var living) && living.IsAlive())
+                {
+                    candidateRoot = current.gameObject;
+                    break;
+                }
+
+                // ПРИОРИТЕТ 3: обычные IInteractable (сундуки, двери, ресурсы)
+                var interactable = current.GetComponent<IInteractable>();
+                if (interactable != null
+                    && !(interactable is Corpse)
+                    && !(interactable is BaseLivingEntity))
+                {
+                    candidateRoot = current.gameObject;
+                    break;
+                }
+
+                current = current.parent;
+            }
+
+            if (candidateRoot == null) return false;
+
+            // Дополнительно: проверим дистанцию до BOUNDS, а не до transform.position.
+            // Для крупных объектов и ragdoll это критично.
+            Collider col = hitObject.GetComponent<Collider>();
+            Vector3 targetPoint = (col != null) ? col.ClosestPoint(_playerHead.position) : candidateRoot.transform.position;
+            float distToTarget = Vector3.Distance(_playerHead.position, targetPoint);
+
+            if (distToTarget > _playerInteractionRadius + 0.2f) // небольшой запас
+                return false;
+
+            // Заполняем _targetHitPosition для системы урона/эффектов
+            _targetHitPosition = hitPoint;
+            _targetHitNormal = _playerHead.forward;
+
+            // Обрабатываем и добавляем цель в _allTargets
+            ProcessHitObject(candidateRoot);
+
+            return _allTargets.Count > 0;
+        }
 
         // Поиск всех компонентов IInteractable на объекте
         private void FindInteractablesOnObject(GameObject obj)
@@ -504,6 +617,18 @@ namespace Assets.Scripts.Player
         // === 3. ОБНОВЛЕНИЕ UI (Две надписи) ===
         private void UpdateInteractionUI()
         {
+            // === ЕСЛИ ТАЩИМ ТЕЛО — показываем только «Отпустить» ===
+            if (_currentlyDraggingCorpse != null)
+            {
+                if (interactionUI != null)
+                {
+                    // interactionText.text = "[E] Отпустить тело";
+                    interactionUI.SetActive(false);
+                }
+                return;
+            }
+
+            // === Обычная логика ===
             StringBuilder sb = new StringBuilder();
             bool isInventoryOpened = _panelsController?.IsInventoryOpened() == true;
             bool isMenuAlreadyOpen = _panelsController?.IsRadialMenuOpened() == true;
@@ -562,7 +687,6 @@ namespace Assets.Scripts.Player
                 interactionUI.SetActive(!isPauseOpened && !isInventoryOpened && sb.Length > 0);
             }
         }
-
 
         /// <summary>
         /// Обрабатывает попадание в объект. 
@@ -1047,6 +1171,26 @@ namespace Assets.Scripts.Player
                     _panelsController.CloseAllPanels();
                 }
             }
+        }
+
+        // В файле PlayerInteraction.cs
+
+        private void CheckCorpsePhysicsState()
+        {
+            if (_currentlyDraggingCorpse == null) return;
+
+            // Получаем скорость через новое публичное свойство PlayerController
+            float currentSpeed = 0f;
+            if (_playerController != null)
+            {
+                currentSpeed = _playerController.CurrentHorizontalSpeed;
+            }
+
+            // Если скорость очень маленькая, стабилизируем тело (гасим колебания)
+            bool shouldStabilize = currentSpeed < 0.3f;
+
+            // Вызываем метод стабилизации у трупа
+            _currentlyDraggingCorpse.StabilizeRagdoll(shouldStabilize);
         }
 
 #if UNITY_EDITOR

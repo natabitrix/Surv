@@ -8,8 +8,11 @@ namespace Assets.Scripts.Core
     {
         public static GameController Instance { get; private set; }
 
-        // [Tooltip("Имя игровой сцены, при выходе из которой нужно сохранять")]
-        // [SerializeField] private string _gameSceneName = "GameWorld";
+        [Tooltip("Глобальные настройки игры (ассет GameSettings). " +
+                 "Единый источник правды для всех систем.")]
+        [SerializeField] private GameSettings _gameSettings;
+
+        public GameSettings Settings => _gameSettings;
 
         private void Awake()
         {
@@ -20,6 +23,13 @@ namespace Assets.Scripts.Core
             }
             Instance = this;
             DontDestroyOnLoad(gameObject);
+
+            if (_gameSettings == null)
+                Debug.LogError("[GameController] GameSettings не назначен! " +
+                               "Все системы, зависящие от него, могут работать некорректно.");
+
+            // Инициализируем статический доступ к режиму сессии
+            SessionMode.Initialize(_gameSettings);
         }
 
         private void OnApplicationQuit()

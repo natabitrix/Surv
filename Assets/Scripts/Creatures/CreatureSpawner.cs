@@ -33,11 +33,14 @@ namespace Assets.Scripts.Core
                 Debug.LogWarning($"[CreatureSpawner] Список creaturePrefabs пуст на объекте {gameObject.name}");
             }
 
+            CreateClone();
+
             StartCoroutine(SpawnRoutine());
         }
 
         System.Collections.IEnumerator SpawnRoutine()
         {
+            
             // Цикл продолжается, пока объект активен
             while (isActiveAndEnabled)
             {
@@ -51,29 +54,34 @@ namespace Assets.Scripts.Core
                     continue;
                 }
 
-                // 1. Выбираем случайный префаб из списка
-                Creature selectedPrefab = creaturePrefabs[Random.Range(0, creaturePrefabs.Count)];
+                CreateClone();
+            }
+        }
 
-                // 2. Генерируем позицию
-                Vector3 spawnPosition = playerController.transform.position + Random.insideUnitSphere * spawnRadius;
+        void CreateClone()
+        {
+            // 1. Выбираем случайный префаб из списка
+            Creature selectedPrefab = creaturePrefabs[Random.Range(0, creaturePrefabs.Count)];
 
-                // 3. Проверяем NavMesh
-                NavMeshHit hit;
-                if (NavMesh.SamplePosition(spawnPosition, out hit, 5f, NavMesh.AllAreas))
+            // 2. Генерируем позицию
+            Vector3 spawnPosition = playerController.transform.position + Random.insideUnitSphere * spawnRadius;
+
+            // 3. Проверяем NavMesh
+            NavMeshHit hit;
+            if (NavMesh.SamplePosition(spawnPosition, out hit, 5f, NavMesh.AllAreas))
+            {
+                Vector3 finalSpawnPos = hit.position;
+
+                // 4. Инстанцируем выбранный префаб
+                GameObject newCreatureGO = Instantiate(selectedPrefab.gameObject, finalSpawnPos, Quaternion.identity);
+                spawnedCreatures.Add(newCreatureGO);
+
+                var creatureScript = newCreatureGO.GetComponent<Creature>();
+                if (creatureScript != null)
                 {
-                    Vector3 finalSpawnPos = hit.position;
-
-                    // 4. Инстанцируем выбранный префаб
-                    GameObject newCreatureGO = Instantiate(selectedPrefab.gameObject, finalSpawnPos, Quaternion.identity);
-                    spawnedCreatures.Add(newCreatureGO);
-
-                    var creatureScript = newCreatureGO.GetComponent<Creature>();
-                    if (creatureScript != null)
-                    {
-                        creatureScript.SetTarget(playerController.transform);
-                        // Подписываемся на событие смерти
-                        creatureScript.OnDeath += OnCreatureDied;
-                    }
+                    creatureScript.SetTarget(playerController.transform);
+                    // Подписываемся на событие смерти
+                    creatureScript.OnDeath += OnCreatureDied;
                 }
             }
         }

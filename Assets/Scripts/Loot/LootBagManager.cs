@@ -61,6 +61,78 @@ namespace Assets.Scripts.Loot
         }
 
         // ==========================================
+        // === НОВЫЙ МЕТОД: СОЗДАНИЕ СУМКИ ИЗ ПРЕДМЕТОВ ===
+        // ==========================================
+
+        /// <summary>
+        /// Создает сумку с указанными предметами в заданной позиции.
+        /// Используется для выбрасывания вещей, разрушения сундуков и т.д.
+        /// </summary>
+        public string CreateLootBagFromItems(
+            List<(Item item, int count, float durability)> items,
+            Vector3 position,
+            string ownerPlayerId = "world")
+        {
+            if (items == null || items.Count == 0)
+            {
+                Debug.LogWarning("[LootBagManager] Попытка создать сумку без предметов.");
+                return null;
+            }
+
+            if (lootBagPrefab == null)
+            {
+                Debug.LogError("[LootBagManager] lootBagPrefab не назначен! Сумка не создана.");
+                return null;
+            }
+            
+            // Создаем GameObject сумки
+            GameObject bagGO = Instantiate(lootBagPrefab, position, Quaternion.identity);
+            bagGO.name = $"LootBag_Dropped";
+
+            // Создаем инвентарь для сумки
+            var bagInventory = bagGO.GetComponent<ChestInventory>();
+            if (bagInventory == null) 
+            {
+                bagInventory = bagGO.AddComponent<ChestInventory>();
+            }
+            
+            // Генерируем уникальный ключ сохранения
+            string saveKey = $"LootBag_{Guid.NewGuid().ToString().Substring(0, 8)}";
+            bagInventory.Initialize(items.Count, saveKey);
+
+            // Наполняем инвентарь предметами
+            foreach (var entry in items)
+            {
+                if (entry.item != null && entry.count > 0)
+                {
+                    bagInventory.Data.AddItemAnywhere(entry.item, entry.count, entry.durability);
+                }
+            }
+
+            // Инициализируем компонент LootBag
+            var lootBag = bagGO.GetComponent<LootBag>();
+            if (lootBag == null)
+            {
+                Debug.LogError("[LootBagManager] Префаб сумки не имеет компонента LootBag!");
+                Destroy(bagGO);
+                return null;
+            }
+            
+            var chestUI = FindAnyObjectByType<ChestUI>();
+            float lifetime = SessionMode.LootBagLifetime;
+            
+            // Initialize(инвентарь, UI, время_жизни, источник)
+            lootBag.Initialize(bagInventory, chestUI, lifetime, lootBag);
+
+            // Регистрируем в системе сохранения
+            string instanceId = RegisterLootBag(bagGO, ownerPlayerId);
+            
+            Debug.Log($"[LootBagManager] Сумка с {items.Count} типами предметов создана: {instanceId}");
+            
+            return instanceId;
+        }
+
+        // ==========================================
         // === РЕГИСТРАЦИЯ ===
         // ==========================================
 
@@ -159,46 +231,6 @@ namespace Assets.Scripts.Loot
         // ==========================================
         // === ЗАГРУЗКА С ДИСКА ===
         // ==========================================
-
-        // private void LoadAllLootBags()
-        // {
-        //     if (!Directory.Exists(_saveDirectory)) return;
-
-        //     string[] files = Directory.GetFiles(_saveDirectory, "lootbag_*.save");
-        //     int loaded = 0;
-
-        //     Debug.Log($"[LootBagManager] Найдено сумок: {files.Length}");
-
-        //     foreach (var file in files)
-        //     {
-        //         try
-        //         {
-        //             string json = File.ReadAllText(file);
-        //             var data = JsonConvert.DeserializeObject<LootBagSaveData>(json);
-
-        //             if (data == null) continue;
-
-        //             long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        //             long age = now - data.creationTimeUtc;
-
-        //             if (age >= data.despawnDuration)
-        //             {
-        //                 File.Delete(file);
-        //                 Debug.Log($"[LootBagManager] Сумка {data.instanceId} истекла. Удалена.");
-        //                 continue;
-        //             }
-
-        //             SpawnLootBagFromData(data);
-        //             loaded++;
-        //         }
-        //         catch (Exception e)
-        //         {
-        //             Debug.LogError($"[LootBagManager] Ошибка загрузки сумки из {file}: {e.Message}");
-        //         }
-        //     }
-
-        //     Debug.Log($"[LootBagManager] Загружено сумок: {loaded}");
-        // }
 
         public IEnumerator LoadAllLootBagsAsync()
         {

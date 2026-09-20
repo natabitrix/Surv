@@ -158,7 +158,7 @@ namespace Assets.Scripts.Player
 
         private void OnTargetInventoryStarted(InputAction.CallbackContext context)
         {
-            OnTargetInventoryPressed?.Invoke(); 
+            OnTargetInventoryPressed?.Invoke();
         }
 
         private void OnTargetInventoryCanceled(InputAction.CallbackContext context)
@@ -247,26 +247,59 @@ namespace Assets.Scripts.Player
 
         #endregion
 
+        // private void Update()
+        // {
+        //     _isPanelOpened = _panelsController != null && _panelsController.IsPanelOpened();
+        //     _isPauseOpened = _pauseManager != null && _pauseManager.IsPauseOpened();
+
+        //     bool isUIOpened = _isPanelOpened || _isPauseOpened;
+
+        //     // Debug.Log("isUIOpened: " + isUIOpened);
+
+        //     // --- Обработка атаки ---
+        //     if (_attackPressedThisFrame)
+        //     {
+        //         if (!isUIOpened && !IsPointerOverUI())
+        //         {
+        //             attack = true;
+        //         }
+        //         else
+        //         {
+        //             attack = false;
+        //         }
+        //         _attackPressedThisFrame = false;
+        //     }
+        //     else
+        //     {
+        //         attack = false;
+        //     }
+
+        //     if (_attackPressedThisFrame &&
+        //         !isUIOpened &&
+        //         Application.isFocused &&
+        //         !IsPointerOverUI())
+        //     {
+        //         LockCamera(false);
+        //         SetCursorVisible(false);
+        //     }
+
+        //     // --- Обработка хотбара ---
+        //     HandleHotbarInput();
+        // }
+
         private void Update()
         {
             _isPanelOpened = _panelsController != null && _panelsController.IsPanelOpened();
             _isPauseOpened = _pauseManager != null && _pauseManager.IsPauseOpened();
+            bool isDeathOpened = DeathScreenManager.Instance != null
+                              && DeathScreenManager.Instance.IsDeathScreenOpened();
 
-            bool isUIOpened = _isPanelOpened || _isPauseOpened;
+            bool isUIOpened = _isPanelOpened || _isPauseOpened || isDeathOpened;
 
-            // Debug.Log("isUIOpened: " + isUIOpened);
-
-            // --- Обработка атаки ---
+            // --- Атака ---
             if (_attackPressedThisFrame)
             {
-                if (!isUIOpened && !IsPointerOverUI())
-                {
-                    attack = true;
-                }
-                else
-                {
-                    attack = false;
-                }
+                attack = !isUIOpened && !IsPointerOverUI();
                 _attackPressedThisFrame = false;
             }
             else
@@ -274,16 +307,10 @@ namespace Assets.Scripts.Player
                 attack = false;
             }
 
-            if (_attackPressedThisFrame &&
-                !isUIOpened &&
-                Application.isFocused &&
-                !IsPointerOverUI())
-            {
-                LockCamera(false);
-                SetCursorVisible(false);
-            }
+            // ⚠️ УБРАН блок, который дёргал SetCursorVisible каждый кадр.
+            // Курсором управляют PauseManager / DeathScreenManager / PanelsUIController.
 
-            // --- Обработка хотбара ---
+            // --- Хотбар ---
             HandleHotbarInput();
         }
 
