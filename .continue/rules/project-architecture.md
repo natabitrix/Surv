@@ -268,6 +268,7 @@ All core game data should be ScriptableObjects stored in `Assets/Data/`:
   - `HUDCanvas` — HUD (статы)
   - `ContextMenuCanvas` — контекстное меню слотов
   - `PauseCanvas` — окно паузы
+  - `DeathScreenCanvas` — экран смерти
   - `RadialMenuCanvas` — радиальное меню
 - `_Env` — окружение (трава, деревья, камни)?
 - `Interactables` — интерактивные объекты в сцене?
@@ -415,6 +416,7 @@ All core game data should be ScriptableObjects stored in `Assets/Data/`:
   - `UnregisterLootBag(instanceId)` — удаление файла
   - `LoadAllLootBagsAsync()` — загрузка
   - `SpawnLootBagFromData(data)` — создание сумки
+  - `CreateLootBagFromItems` — создание сумки из предметов при выбрасывании
   - `IsQuitting` — защита при выходе
   - Файлы: `persistentDataPath/LootBags/lootbag_{guid}.save`
 
