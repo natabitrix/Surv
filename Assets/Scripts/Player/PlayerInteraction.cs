@@ -813,6 +813,10 @@ namespace Assets.Scripts.Player
         /// </summary>
         public void OnAttackInteractFinished()
         {
+            // Не обрабатываем ближний бой для дальнего оружия
+            Item equipped = GetEquippedTool();
+            if (equipped != null && equipped.isRanged) return;
+
             Item equippedTool = GetEquippedTool();
             AttackAnimationType weaponType = equippedTool?.attackAnimation ?? AttackAnimationType.Fists;
 

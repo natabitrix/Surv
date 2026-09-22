@@ -29,6 +29,9 @@ namespace Assets.Scripts.Player
         public bool IsEquipped => _currentItem != null;
         public int EquippedSlotIndex { get; private set; } = -1;
 
+        [Header("Ranged")]
+        [SerializeField] private PlayerRangedCombat _rangedCombat;
+
         private void Awake()
         {
             if (Instance == null)
@@ -75,6 +78,16 @@ namespace Assets.Scripts.Player
 
                 Destroy(_currentModel.GetComponent<Pickable>());
                 // Destroy(_currentModel.GetComponent<Collider>());
+
+                // Ищем ArrowSpawnPoint на модели лука
+                if (item.isRanged && _rangedCombat != null)
+                {
+                    Transform spawnPoint = FindDeepChild(_currentModel.transform, "ArrowSpawnPoint");
+                    _rangedCombat.SetArrowSpawnPoint(spawnPoint);
+
+                    if (spawnPoint == null)
+                        Debug.LogWarning($"[PlayerEquipment] У модели '{item.itemName}' нет ArrowSpawnPoint!");
+                }
             }
 
             // Вызываем событие
@@ -86,6 +99,7 @@ namespace Assets.Scripts.Player
 
         public void Unequip()
         {
+            if (_rangedCombat != null) _rangedCombat.SetArrowSpawnPoint(null);
             Equip(null, -1);
 
         }
@@ -120,6 +134,17 @@ namespace Assets.Scripts.Player
         }
 
         public Item GetCurrentItem() => _currentItem;
+
+        private Transform FindDeepChild(Transform parent, string name)
+        {
+            foreach (Transform child in parent)
+            {
+                if (child.name == name) return child;
+                var result = FindDeepChild(child, name);
+                if (result != null) return result;
+            }
+            return null;
+        }
 
     }
 }

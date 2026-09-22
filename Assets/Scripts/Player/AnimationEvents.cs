@@ -9,6 +9,7 @@ namespace Assets.Scripts.Player
         private PlayerMovementSettings _settings;
         private CharacterController _controller;
         private PlayerInteraction _playerInteraction;
+        private PlayerRangedCombat _playerRangedCombat;
         // [SerializeField] private PlayerInteraction _playerInteraction;
 
         private void Start()
@@ -21,7 +22,12 @@ namespace Assets.Scripts.Player
             }
             _controller = pc.CharacterController;
             _settings = pc.settings;
-            if (pc.TryGetComponent<PlayerInteraction>(out var interact)) _playerInteraction = interact;
+
+            if (pc.TryGetComponent<PlayerInteraction>(out var interact))
+                _playerInteraction = interact;
+
+            if (pc.TryGetComponent<PlayerRangedCombat>(out var ranged))
+                _playerRangedCombat = ranged;
         }
 
         // Сделай их public, чтобы они точно были видны в Animation Events
@@ -156,5 +162,15 @@ namespace Assets.Scripts.Player
             if (_playerInteraction != null)
                 _playerInteraction.OnAttackInteractFinished();
         }
+
+
+
+        public void OnArrowReleased()
+        {
+            if (_playerRangedCombat != null)
+                _playerRangedCombat.SpawnArrow();
+        }
+
+
     }
 }

@@ -24,5 +24,15 @@ namespace Assets.Scripts.Core
                  "В ARK мир продолжает жить, тело падает естественно. " +
                  "Рекомендуется false.")]
         public bool deathScreenFreezesWorld = false;
+
+        [Header("Projectiles")]
+        [Tooltip("Время жизни стрелы на земле до исчезновения (сек).")]
+        public float arrowLifetime = 300f;
+
+        [Tooltip("Задержка перед возможностью подобрать стрелу после попадания (сек).")]
+        public float arrowPickupDelay = 1f;
+
+        [Tooltip("Размер пула стрел (создаются заранее).")]
+        public int arrowPoolPrewarm = 20;
     }
 }

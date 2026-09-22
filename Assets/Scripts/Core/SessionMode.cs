@@ -45,5 +45,10 @@ namespace Assets.Scripts.Core
         // === Время жизни ===
         public static float CorpseLifetime => _settings != null ? _settings.corpseLifetime : 1800f;
         public static float LootBagLifetime => _settings != null ? _settings.lootBagLifetime : 1800f;
+        // === Projectiles ===
+        public static float ArrowLifetime => _settings != null ? _settings.arrowLifetime : 300f;
+        public static float ArrowPickupDelay => _settings != null ? _settings.arrowPickupDelay : 1f;
+        public static int ArrowPoolPrewarm => _settings != null ? _settings.arrowPoolPrewarm : 20;
+
     }
 }

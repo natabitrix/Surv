@@ -120,7 +120,11 @@ MonoBehaviour:
     slots: []
   recipeDatabase: {fileID: 11400000, guid: 08b9e5f407896124eafc5f3473a57a93, type: 2}
   itemDatabase: {fileID: 11400000, guid: d19476d9c45a16640979d93431658db2, type: 2}
-  beginnerItems: []
+  beginnerItems:
+  - item: {fileID: 11400000, guid: 48f4b2fa84e55054b9f62349ed39cae7, type: 2}
+    amount: 100
+  - item: {fileID: 11400000, guid: 5f39d66c0f7a9cc4ba138465438b25a2, type: 2}
+    amount: 1
   GiveBeginnerItemsToPlayer: 0
 --- !u!114 &4004378238529973370
 MonoBehaviour:

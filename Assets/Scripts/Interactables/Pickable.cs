@@ -25,31 +25,24 @@ namespace Assets.Scripts.Interactables
         {
             if (_isPickedUp) return;
 
-            // Находим игрока и его ItemPickupHandler
-            // var player = GameObject.FindGameObjectWithTag("Player");
-            // if (player == null)
-            // {
-            //     Debug.LogError("Player not found!");
-            //     return;
-            // }
-            if (playerController == null)
+            var handler = context.PlayerInteraction?.GetComponent<ItemHandler>();
+            if (handler == null)
             {
-                playerController = FindAnyObjectByType<PlayerController>(); // Найти автоматически, если не назначен
+                Debug.LogError("[Pickable] No ItemHandler in context!");
+                return;
             }
 
-            ItemHandler pickupHandler = playerController.GetComponent<ItemHandler>();
-
-            if (pickupHandler != null && pickupHandler.PickupItem(item, amount))
+            if (handler.PickupItem(item, amount))
             {
-                Debug.Log($"Picked up {amount}x {item.itemName}");
                 _isPickedUp = true;
-                Destroy(gameObject);
-            }
-            else
-            {
-                Debug.Log("Inventory is full!");
+
+                if (TryGetComponent<IPickupCallback>(out var callback))
+                    callback.OnPickedUp();
+                else
+                    Destroy(gameObject);
             }
         }
+
         public bool ShouldDetachAfterInteract()
         {
             return _isPickedUp; // после подбора — отключаемся

@@ -247,46 +247,6 @@ namespace Assets.Scripts.Player
 
         #endregion
 
-        // private void Update()
-        // {
-        //     _isPanelOpened = _panelsController != null && _panelsController.IsPanelOpened();
-        //     _isPauseOpened = _pauseManager != null && _pauseManager.IsPauseOpened();
-
-        //     bool isUIOpened = _isPanelOpened || _isPauseOpened;
-
-        //     // Debug.Log("isUIOpened: " + isUIOpened);
-
-        //     // --- Обработка атаки ---
-        //     if (_attackPressedThisFrame)
-        //     {
-        //         if (!isUIOpened && !IsPointerOverUI())
-        //         {
-        //             attack = true;
-        //         }
-        //         else
-        //         {
-        //             attack = false;
-        //         }
-        //         _attackPressedThisFrame = false;
-        //     }
-        //     else
-        //     {
-        //         attack = false;
-        //     }
-
-        //     if (_attackPressedThisFrame &&
-        //         !isUIOpened &&
-        //         Application.isFocused &&
-        //         !IsPointerOverUI())
-        //     {
-        //         LockCamera(false);
-        //         SetCursorVisible(false);
-        //     }
-
-        //     // --- Обработка хотбара ---
-        //     HandleHotbarInput();
-        // }
-
         private void Update()
         {
             _isPanelOpened = _panelsController != null && _panelsController.IsPanelOpened();
@@ -307,8 +267,17 @@ namespace Assets.Scripts.Player
                 attack = false;
             }
 
-            // ⚠️ УБРАН блок, который дёргал SetCursorVisible каждый кадр.
+            // ⚠️ УБРАН блок, который дёргал SetCursorVisible каждый кадр. ????
             // Курсором управляют PauseManager / DeathScreenManager / PanelsUIController.
+
+            // if (_attackPressedThisFrame &&
+            //     !isUIOpened &&
+            //     Application.isFocused &&
+            //     !IsPointerOverUI())
+            // {
+            //     LockCamera(false);
+            //     SetCursorVisible(false);
+            // }
 
             // --- Хотбар ---
             HandleHotbarInput();

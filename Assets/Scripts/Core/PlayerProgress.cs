@@ -168,6 +168,7 @@ namespace Assets.Scripts.Core
                 engramData.FromSerializable(saveData.engrams, recipeDatabase);
 
                 UpdateEngramAvailability();
+                // GiveBeginnerItems(); // Ошибка [PlayerProgress] Save: позиция недоступна! Используется дефолтная.
 
                 if (PlayerSurvivalSystem.Instance != null)
                 {

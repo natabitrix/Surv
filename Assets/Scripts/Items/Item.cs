@@ -38,6 +38,19 @@ namespace Assets.Scripts.Items
         [Tooltip("Используется также в PlayerInteraction.OnAttackInteractFinished для определения издаваемого инструментом звука")]
         public AttackAnimationType attackAnimation = AttackAnimationType.Fists;
 
+        [Header("Ranged Weapon")]
+        [Tooltip("Если true — предмет является оружием дальнего боя (лук, арбалет).")]
+        public bool isRanged;
+
+        [Tooltip("Для лука/арбалета: какой Item является снарядом (стрела, болт).")]
+        public Item projectileItem;
+
+        [Tooltip("Скорость снаряда (м/с).")]
+        public float projectileSpeed = 60f;
+
+        [Tooltip("Множитель гравитации для снаряда. 1 = обычная гравитация.")]
+        public float projectileGravityScale = 1f;
+
         // Автоматическая генерация ID при сохранении (требует редакторного скрипта)
 #if UNITY_EDITOR
         private void OnValidate()
@@ -64,7 +77,8 @@ namespace Assets.Scripts.Items
         Tool, // Инструменты
         Weapon, // Оружие
         Armor, // Броня
-        Placeable // Строительство/устанавливаемый
+        Placeable, // Строительство/устанавливаемый
+        Ammo // Боеприпас
     }
 
 

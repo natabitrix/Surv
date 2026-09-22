@@ -11,8 +11,11 @@ GameObject:
   - component: {fileID: 5109541797076740045}
   - component: {fileID: 8162605704826988648}
   - component: {fileID: 6242993959046143138}
-  - component: {fileID: 321070655265474215}
-  m_Layer: 0
+  - component: {fileID: 2497177325427978450}
+  - component: {fileID: 591921039815582927}
+  - component: {fileID: 1930192328554714009}
+  - component: {fileID: 1731773825276332961}
+  m_Layer: 15
   m_Name: Arrow_04
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -91,8 +94,35 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!64 &321070655265474215
-MeshCollider:
+--- !u!54 &2497177325427978450
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5594435687386807671}
+  serializedVersion: 5
+  m_Mass: 0.05
+  m_LinearDamping: 0.05
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 1
+  m_Interpolate: 1
+  m_Constraints: 0
+  m_CollisionDetection: 2
+--- !u!136 &591921039815582927
+CapsuleCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -109,7 +139,44 @@ MeshCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 1
-  m_CookingOptions: 30
-  m_Mesh: {fileID: -159208425650231603, guid: 14dd357cc5f3a764db1e87e0c3a52aa6, type: 3}
+  serializedVersion: 2
+  m_Radius: 0.02
+  m_Height: 1
+  m_Direction: 2
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &1930192328554714009
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5594435687386807671}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86e9df84bad6f2042b136aaa5db732bb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Combat.Arrow
+  _rb: {fileID: 2497177325427978450}
+  _collider: {fileID: 591921039815582927}
+  _pickable: {fileID: 1731773825276332961}
+  _hitMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  _maxRayDistance: 2
+  _debugFlight: 0
+  _debugHits: 0
+--- !u!114 &1731773825276332961
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5594435687386807671}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 26bc9cd6e196b544ca088bd3c7b0d762, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Interactables.Pickable
+  item: {fileID: 11400000, guid: f9b53d2cdc053be40a678c88e6caf4ce, type: 2}
+  amount: 1
+  playerController: {fileID: 0}

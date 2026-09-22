@@ -28,3 +28,7 @@ MonoBehaviour:
   isLeftHand: 1
   itemType: 4
   attackAnimation: 5
+  isRanged: 1
+  projectileItem: {fileID: 11400000, guid: 48f4b2fa84e55054b9f62349ed39cae7, type: 2}
+  projectileSpeed: 30
+  projectileGravityScale: 1

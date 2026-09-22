@@ -145,7 +145,15 @@ namespace Assets.Scripts.UI
             _isLoading = false;
             _loadingCoroutine = null;
 
+            SetCursorVisible(false);
+
             // Debug.Log("[LoadingScreenManager] Загрузка завершена!");
+        }
+
+        private void SetCursorVisible(bool isCursorVisible)
+        {
+            Cursor.lockState = isCursorVisible ? CursorLockMode.None : CursorLockMode.Locked;
+            Cursor.visible = isCursorVisible;
         }
 
         private IEnumerator RunTask(LoadingTask task)
@@ -159,7 +167,7 @@ namespace Assets.Scripts.UI
         private void SetProgress(float progress, string status = null)
         {
             // Debug.Log($"[LoadingScreenManager] SetProgress: {progress}, status: {status}");
-            
+
             if (_progressBar != null)
                 _progressBar.fillAmount = Mathf.Clamp01(progress);
 
