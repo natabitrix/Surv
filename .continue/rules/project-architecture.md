@@ -525,9 +525,55 @@ All core game data should be ScriptableObjects stored in `Assets/Data/`:
 - **`ChestUI.CreateChestSlots()`** — переиспользует слоты (оптимизация).
 - **`Corpse.OnHarvestComplete()`** — `UnregisterCorpse(InstanceId)` **раскомментирован** (удаляет файл).
 
+### 12. Система камер и прицеливания (ARK-style)
+
+Реализована система камер и прицеливания, вдохновленная ARK: Survival Evolved.
+
+- **`CameraManager.cs`** (Singleton):
+  - Управляет тремя режимами: `ThirdPerson`, `FirstPerson`, `Selfie`.
+  - Переключение TPS ↔ FPS: колесо мыши (вверх — FPS, вниз — TPS).
+  - Переключение Selfie: клавиша `K` (toggle). Запоминает предыдущий режим.
+  - Управляет приоритетами Cinemachine-камер: неактивные — 0, активная — 100, Selfie — 150.
+  - Событие `OnCameraModeChanged`.
+
+- **`SelfieCameraOrbit.cs`**:
+  - Активен только в режиме Selfie.
+  - Вращение мышью вокруг игрока, зум колесом мыши.
+  - Не вращает тело игрока (движение WASD сохраняется).
+
+- **`PlayerAimingSystem.cs`** (Singleton):
+  - Отвечает за **зум** по ПКМ: плавно меняет `Lens.FieldOfView` активной камеры (TPS или FPS) через `Mathf.MoveTowards`.
+  - Берет `aimFov` и `aimBlendTime` из `Item`.
+  - **Зум доступен только для оружия дальнего боя (`Item.isRanged == true`).**
+  - Событие `OnAimingChanged(bool)` — для тех, кому важно именно состояние зума.
+  - Игнорирует зум в режиме Selfie.
+
+- **Видимость прицела (ARK-style):**
+  - `PlayerAimingSystem` также вычисляет `IsCrosshairVisible` и шлёт событие `OnCrosshairVisibilityChanged`.
+  - **Прицел виден всегда**, когда экипировано дальнобойное оружие (`item.isRanged == true`), в FPS и TPS, независимо от ПКМ.
+  - **Прицел скрыт**, если: оружие не экипировано, экипировано не-дальнобойное, активна Selfie-камера.
+  - `AimUI.cs` подписывается на `OnCrosshairVisibilityChanged` и включает/выключает `AimCrosshair`.
+
+- **`AimCanvas` + `AimCrosshair` + `AimUI.cs`**:
+  - UI-прицел в центре экрана.
+  - Показывается/скрывается по событию `PlayerAimingSystem.OnCrosshairVisibilityChanged`.
+  - `Raycast Target: false` на Image.
+
+- **`AimUI.cs` + `AimCanvas` + `AimCrosshair`**:
+  - UI-прицел в центре экрана.
+  - Показывается/скрывается по событию `PlayerAimingSystem.OnAimingChanged`.
+  - `Raycast Target: false` на Image.
+
+- **`Item.cs`**:
+  - Добавлены поля `aimFov` и `aimBlendTime` для настройки зума.
+
+Стрела летит из ArrowSpawnPoint в точку под прицелом камеры (_aimDistance для проецирования).
+Прицел UI управляется отдельным состоянием IsCrosshairVisible в PlayerAimingSystem, а не IsAiming. 
+Скрывается при панелях, паузе, смерти, Selfie.
+
 ## TODO
 
-- [ ] **Выброс вещей → сумка** (`InventoryManager.DropItemFromSlot` → `LootBagManager.CreateLootBagFromItems`).
+- [x] **Выброс вещей → сумка** (`InventoryManager.DropItemFromSlot` → `LootBagManager.CreateLootBagFromItems`).
 - [ ] **Разрушение сундука → сумка** (`ChestController.OnDestroy` → `LootBagManager`).
 - [ ] **Система выбора персонажа** (меши, материалы, blend shapes).
 - [ ] **Мультиплеер** (Mirror / Netcode).
@@ -549,27 +595,26 @@ All core game data should be ScriptableObjects stored in `Assets/Data/`:
 
 ### Обязательно
 - `PROJECT-ARCHITECTURE.md` (этот файл)
-- `CorpseManager.cs`
-- `CorpseSaveData.cs`
-- `Corpse.cs`
-- `LootBagManager.cs`
-- `LootBagSaveData.cs`
-- `LootBag.cs`
-- `PlayerSurvivalSystem.cs`
-- `BaseLivingEntity.cs`
-- `Creature.cs`
-- `CreatureData.cs`
-- `CreatureDatabase.cs`
-- `LoadingScreenManager.cs`
-- `SceneBootstrap.cs`
-- `ChestUI.cs`
-- `ChestInventory.cs`
-- `InventoryManager.cs`
-- `InventoryData.cs`
 
-### По необходимости (для следующей задачи)
-- Для **выброса вещей**: `InventoryManager.cs`, `LootBagManager.cs`, `LootBag.cs`
-- Для **разрушения сундука**: `ChestController.cs`, `ChestInventory.cs`, `LootBagManager.cs`
-- Для **выбора персонажа**: `PlayerController.cs`, `CreatureData.cs`, `Corpse.cs`, `PlayerProgress.cs`
-- Для **мультиплеера**: всё понемногу
 
+
+СТОЛПЫ АРК
++Собирательство/добыча
++Крафт
++Строительство 
++Инвентарь
++Прогрессия
+Боевка
+Приручение существ
+Использование прирученных существ
+Экосистема (хищники/жертвы, респавн)
+Броня
+Температура/погода
+Респавн по регионам или в кровати
+Статы
+Биомы + ресурсы по регионам
+Фермерство
+Разведение
+Племена
+Боссы
+Мультиплеер

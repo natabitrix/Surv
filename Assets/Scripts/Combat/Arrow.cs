@@ -31,17 +31,20 @@ namespace Assets.Scripts.Combat
 
         private Item _arrowItem;
         private float _damage;
+        private float _torpor;
         private uint _ownerId;
         private bool _isFlying;
-        private bool _isStuck;
+        // private bool _isStuck;
+
         private Collider[] _ignoredColliders;
         private int _spawnFrame; // для отладки
 
         // === Запуск ===
-        public void Launch(Item arrowItem, float damage, Vector3 direction, float speed, float gravityScale, uint ownerId = 0)
+        public void Launch(Item arrowItem, float damage, float torpor, Vector3 direction, float speed, float gravityScale, uint ownerId = 0)
         {
             _arrowItem = arrowItem;
             _damage = damage;
+            _torpor = torpor;
             _ownerId = ownerId;
             _spawnFrame = Time.frameCount;
 
@@ -62,7 +65,7 @@ namespace Assets.Scripts.Combat
             _collider.isTrigger = false;
 
             _isFlying = true;
-            _isStuck = false;
+            // _isStuck = false;
 
             if (_pickable != null) _pickable.enabled = false;
 
@@ -95,7 +98,7 @@ namespace Assets.Scripts.Combat
             _collider.isTrigger = false;
 
             _isFlying = false;
-            _isStuck = false;
+            // _isStuck = false;
             _ignoredColliders = null;
 
             if (_debugHits)
@@ -107,7 +110,7 @@ namespace Assets.Scripts.Combat
             _rb.isKinematic = true;
 
             _isFlying = false;
-            _isStuck = false;
+            // _isStuck = false;
             _ignoredColliders = null;
 
             CancelInvoke();
@@ -213,15 +216,15 @@ namespace Assets.Scripts.Combat
         private void OnHit(Collider other, Vector3 point)
         {
             _isFlying = false;
-            _isStuck = true;
+            // _isStuck = true;
 
             // Урон живому существу
             var livingEntity = other.GetComponentInParent<BaseLivingEntity>();
             if (livingEntity != null && livingEntity.IsAlive())
             {
-                livingEntity.TakeDamage(_damage, null);
+                livingEntity.TakeDamage(_damage, _torpor, null);
                 if (_debugHits)
-                    Debug.Log($"[Arrow.OnHit] Нанесён урон {_damage} → {livingEntity.name}");
+                    Debug.Log($"[Arrow.OnHit] Урон {_damage}, Torpor {_torpor} → {livingEntity.name}");
             }
 
             // Останавливаем физику
@@ -288,7 +291,7 @@ namespace Assets.Scripts.Combat
 
             if (_debugHits)
                 Debug.Log($"[Arrow.OnCollisionEnter] Fallback: {collision.gameObject.name}, point={collision.GetContact(0).point}");
-                
+
             OnHit(collision.collider, collision.GetContact(0).point);
         }
 

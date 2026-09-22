@@ -10,28 +10,29 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3ff61b209cfdd7449b5b3cd474dc0c52, type: 3}
-  m_Name: Bow
+  m_Name: ArrowTranq
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Items.Item
-  _id: Bow
-  itemName: "\u041B\u0443\u043A"
+  _id: ArrowTranq
+  itemName: "\u0422\u0440\u0430\u043D\u043A\u0432\u0438\u043B\u0438\u0437\u0438\u0440\u0443\u044F\u0449\u0430\u044F
+    \u0441\u0442\u0440\u0435\u043B\u0430"
   description: 
-  icon: {fileID: 21300000, guid: 8feb04a6358d5fc4a97fb996896cd756, type: 3}
-  maxStack: 1
+  icon: {fileID: 21300000, guid: 869ae436209f3cc41b9aec386a7d2d1c, type: 3}
+  maxStack: 100
   experienceOnPickup: 0
   foodRecoveryAmount: 0
   healthRecoveryAmount: 0
-  damage: 200
-  hasDurability: 1
-  maxDurability: 200
-  model: {fileID: 4099206960519170807, guid: 70bee847d83a9c04aacf06d9fca89210, type: 3}
+  damage: 50
+  hasDurability: 0
+  maxDurability: 0
+  model: {fileID: 1191995087107142565, guid: da83c00b32a5339438e45a772cb91c87, type: 3}
   placeablePrefab: {fileID: 0}
-  isLeftHand: 1
-  itemType: 4
-  attackAnimation: 5
-  isRanged: 1
-  projectileItem: {fileID: 11400000, guid: b19d2f4c7ba131048a2401153ffd9244, type: 2}
-  projectileSpeed: 30
+  isLeftHand: 0
+  itemType: 7
+  attackAnimation: 0
+  isRanged: 0
+  projectileItem: {fileID: 0}
+  projectileSpeed: 60
   projectileGravityScale: 1
-  aimFov: 30
+  aimFov: 0
   aimBlendTime: 0.15
-  torporDamage: 0
+  torporDamage: 25

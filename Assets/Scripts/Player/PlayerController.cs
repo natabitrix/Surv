@@ -776,6 +776,9 @@ namespace Assets.Scripts.Player
 
             if (buildMode != null && buildMode.IsActive() && buildMode.IsRotatingPreview()) return; // Не вращать камеру если вращаем фундамент
 
+            // NEW: при Selfie не вращаем камеру/тело — этим занимается SelfieCameraOrbit
+            if (CameraManager.Instance != null && CameraManager.Instance.IsSelfie) return;
+
 
             // Камера должна следовать глазам, но не должна применяться анимация персонажа к камере, 
             // поэтому прикрепим ее к EyeCenterForCamera, которую установим посредине глаз

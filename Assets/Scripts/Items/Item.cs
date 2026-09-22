@@ -51,6 +51,17 @@ namespace Assets.Scripts.Items
         [Tooltip("Множитель гравитации для снаряда. 1 = обычная гравитация.")]
         public float projectileGravityScale = 1f;
 
+        [Header("Aiming")]
+        [Tooltip("FOV при прицеливании (ПКМ). 0 = не менять FOV.")]
+        public float aimFov = 0f;
+
+        [Tooltip("Время плавного перехода в зум (сек).")]
+        public float aimBlendTime = 0.15f;
+
+        [Header("Torpor")]
+        [Tooltip("Сколько torpor наносит один удар/выстрел. 0 = не наносит.")]
+        public float torporDamage = 0f;
+
         // Автоматическая генерация ID при сохранении (требует редакторного скрипта)
 #if UNITY_EDITOR
         private void OnValidate()

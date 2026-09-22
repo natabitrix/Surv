@@ -1,3 +1,4 @@
+// Assets/Scripts/Player/PlayerRangedCombat.cs
 using Assets.Scripts.Combat;
 using Assets.Scripts.Core;
 using Assets.Scripts.InventorySystem;
@@ -21,6 +22,10 @@ namespace Assets.Scripts.Player
 
         [Tooltip("Fallback: если точки спавна нет — используем эту камеру.")]
         [SerializeField] private Camera _playerCamera;
+
+        [Tooltip("Дистанция, на которую мысленно 'проецируется' точка прицеливания вдоль взгляда камеры. " +
+                 "Нужна только для вычисления направления — сама стрела летит с реальной скоростью и гравитацией.")]
+        [SerializeField] private float _aimDistance = 100f;
 
         public void SetArrowSpawnPoint(Transform point)
         {
@@ -51,27 +56,13 @@ namespace Assets.Scripts.Player
                 return;
             }
 
-            // 3. Точка спавна и направление
-            Vector3 spawnPos;
-            Vector3 direction;
+            // 3. Точка спавна
+            Vector3 spawnPos = ResolveSpawnPosition();
 
-            if (_arrowSpawnPoint != null)
-            {
-                spawnPos = _arrowSpawnPoint.position;
-                direction = _arrowSpawnPoint.forward;
-            }
-            else if (_playerCamera != null)
-            {
-                spawnPos = _playerCamera.transform.position + _playerCamera.transform.forward * 0.5f;
-                direction = _playerCamera.transform.forward;
-            }
-            else
-            {
-                spawnPos = transform.position + transform.forward;
-                direction = transform.forward;
-            }
+            // 4. Направление: из точки спавна к точке прицеливания (камера + forward * distance)
+            Vector3 direction = ResolveShotDirection(spawnPos);
 
-            // 4. Из пула
+            // 5. Из пула
             if (ArrowPool.Instance == null)
             {
                 Debug.LogError("[PlayerRangedCombat] ArrowPool.Instance == null!");
@@ -80,21 +71,62 @@ namespace Assets.Scripts.Player
 
             Arrow arrow = ArrowPool.Instance.GetArrow(spawnPos, Quaternion.identity);
 
-            // 5. Урон = лук + стрела
+            // 6. Урон = лук + стрела
             float totalDamage = bow.damage + bow.projectileItem.damage;
+
+            // 6.1. Torpor = torpor лука + torpor стрелы (транквилизаторная стрела)
+            float totalTorpor = bow.torporDamage + bow.projectileItem.torporDamage;
 
             arrow.SetOwnerColliders(GetComponentsInChildren<Collider>());
 
-            // 6. Запуск
+            // 7. Запуск
             uint ownerId = 0; // Для мультиплеера будет из NetworkIdentity
             arrow.Launch(
                 arrowItem: bow.projectileItem,
                 damage: totalDamage,
+                torpor: totalTorpor,
                 direction: direction,
                 speed: bow.projectileSpeed,
                 gravityScale: bow.projectileGravityScale,
                 ownerId: ownerId
             );
+        }
+
+        private Vector3 ResolveSpawnPosition()
+        {
+            if (_arrowSpawnPoint != null)
+                return _arrowSpawnPoint.position;
+
+            if (_playerCamera != null)
+                return _playerCamera.transform.position + _playerCamera.transform.forward * 0.5f;
+
+            return transform.position + transform.forward;
+        }
+
+        /// <summary>
+        /// Считает направление так, чтобы стрела летела из spawnPos в точку под прицелом.
+        /// Это устраняет эффект «параллакса», когда точка спавна смещена от центра экрана.
+        /// </summary>
+        private Vector3 ResolveShotDirection(Vector3 spawnPos)
+        {
+            if (_playerCamera != null)
+            {
+                // Точка, куда смотрит камера (центр экрана)
+                Vector3 aimPoint = _playerCamera.transform.position
+                                   + _playerCamera.transform.forward * _aimDistance;
+
+                // Направление от точки спавна к цели — компенсирует смещение ArrowSpawnPoint
+                Vector3 dir = (aimPoint - spawnPos).normalized;
+
+                if (dir.sqrMagnitude > 0.0001f)
+                    return dir;
+            }
+
+            // Fallback — вперёд от точки спавна
+            if (_arrowSpawnPoint != null)
+                return _arrowSpawnPoint.forward;
+
+            return transform.forward;
         }
 
         private bool TryConsumeArrow(Item arrowItem)

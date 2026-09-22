@@ -140,17 +140,35 @@ namespace Assets.Scripts.Creatures
         protected abstract float GetMaxStaminaFromConfiguration();
 
         // Общий метод получения урона
+        // Старая перегрузка — для совместимости (ближний бой, harvest и т.п.)
         public virtual void TakeDamage(float damage, PlayerInteraction playerInteraction)
         {
+            TakeDamage(damage, 0f, playerInteraction);
+        }
+
+        // Новая — с torpor
+        public virtual void TakeDamage(float damage, float torporAmount, PlayerInteraction playerInteraction)
+        {
             health -= damage;
+
+            // Накопление torpor
+            if (torporAmount > 0f && !_isDead)
+            {
+                torpor = Mathf.Min(maxTorpor, torpor + torporAmount);
+                Debug.Log($"[{gameObject.name}] Torpor: {torpor:F1} / {maxTorpor}");
+            }
+
             if (animator != null && damage > 0)
             {
                 animator.SetTrigger(animIDTakeDamage);
             }
 
-            Vector3 targetHitPosition = playerInteraction.GetTargetHitPosition();
-            Vector3 targetHitNormal = playerInteraction.GetTargetHitNormal();
-            PlayDamageEffect(targetHitPosition);
+            if (playerInteraction != null)
+            {
+                Vector3 targetHitPosition = playerInteraction.GetTargetHitPosition();
+                Vector3 targetHitNormal = playerInteraction.GetTargetHitNormal();
+                PlayDamageEffect(targetHitPosition);
+            }
 
             if (health <= 0)
             {
