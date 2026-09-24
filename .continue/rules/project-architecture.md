@@ -571,27 +571,131 @@ All core game data should be ScriptableObjects stored in `Assets/Data/`:
 Прицел UI управляется отдельным состоянием IsCrosshairVisible в PlayerAimingSystem, а не IsAiming. 
 Скрывается при панелях, паузе, смерти, Selfie.
 
+### 13. Боевка и Torpor (Knockout)
+
+Реализована система боевки, достаточная для начала приручения.
+
+- **Ближний бой**:
+  - `PlayerInteraction.OnAttackInteractFinished()` — вызывается из Animation Event клипа атаки.
+  - `GetEquippedItemContact()` — `OverlapBox` по геометрии экипированной модели оружия.
+  - `GetHandContact()` — `OverlapSphere` вокруг костей рук (кулаки).
+  - Урон через `PlayerController.GetAttackDamage()` → `BaseLivingEntity.TakeDamage()`.
+  - Трата прочности (`-10` за удар), при `currentDurability <= 0` — оружие ломается.
+  - Звуки ударов через `CombatAudioManager` + `IImpactSoundProvider` (`ImpactType`).
+
+- **Дальний бой**:
+  - `PlayerRangedCombat.SpawnArrow()` — стрела летит из `ArrowSpawnPoint` в точку под прицелом камеры (`_aimDistance`).
+  - `Arrow` — полёт через `RaycastAll` в `FixedUpdate`, fallback на `OnCollisionEnter`.
+  - Урон = `bow.damage + arrowItem.damage`, torpor = `bow.torporDamage + arrowItem.torporDamage`.
+  - Пул стрел через `ArrowPool` + `ObjectPool<Arrow>`.
+  - При попадании — `Pickable` активируется через `_pickupDelay` секунд.
+
+- **Torpor-урон** (для приручения):
+  - `Item.torporDamage` — поле у оружия/стрел.
+  - `Arrow.Launch(..., torpor, ...)` — стрела несёт torpor.
+  - `BaseLivingEntity.TakeDamage(damage, torpor, playerInteraction)` — накапливает torpor.
+  - При `torpor >= maxTorpor` — **мгновенный нокаут** прямо в `TakeDamage`.
+
+- **Knockout (нокаут)**:
+  - `BaseLivingEntity.KnockOut()` — AI отключается, Animator глушится, `RadialMenu` включается, создаётся `ChestInventory` для приручения (100 слотов, ключ `TamingCorpse_{guid}`).
+  - `BaseLivingEntity.RecoverFromKnockout()` — при `torpor <= 0` возвращает существо в нормальное состояние.
+  - `Creature.Update()` — если `knockedOut`, AI не работает; torpor убывает каждый кадр (`torporRecoveryRate`).
+  - Нокаут **обратим**, не путать со смертью.
+
+- **Известные особенности боевки**:
+  - `Corpse` не участвует в нокауте — это отдельная система (`KnockOut` создаёт свой `ChestInventory`, не через `Corpse`).
+  - `GetComponents<IInteractable>()` **возвращает отключённые `MonoBehaviour`** — обязательно фильтровать по `enabled`.
+  - При смерти существа слой переключается на `Corpse` (через `SetLayerRecursively`), чтобы инфо-панель не находила труп.
+  - В `CorpseManager.SpawnCorpseFromData()` слой тоже выставляется на `Corpse` — потому что слой не сохраняется в `corpse_*.save`.
+
+### 14. Инфо-панель над существом (ARK SpyGlass-style)
+
+Screen Space инфо-панель, показывающая статы существа под прицелом. Вдохновлена модом Awesome SpyGlass.
+
+- **`EntityInfoPanelManager`** (Singleton, сцена):
+  - `Raycast` из центра экрана (`Camera.ViewportPointToRay(0.5, 0.5)`).
+  - Ищет `BaseLivingEntity` на слое `Creatures`.
+  - `_holdTime` — задержка перед показом (0.2 сек, против мельтешения).
+  - `_lingerTime` — панель держится 1–2 сек после ухода цели из прицела.
+  - Мгновенно переключается на новую цель.
+  - Игнорирует мёртвые и не-нокаутнутые трупы.
+
+- **`EntityInfoPanel`** (Screen Space UI, левый нижний угол):
+  - Никогда не наклоняется, всегда одного размера, поверх 3D.
+  - Показывает: имя, уровень, статус, health bar + текст, torpor bar + текст.
+  - `Show(target)` / `Hide()` / `Refresh()`.
+  - Torpor bar скрывается, если `torpor == 0` и не в нокауте.
+
+- **`BaseLivingEntity`**:
+  - `GetDisplayName()` — виртуальный, `Creature` переопределяет через `Data.displayName`.
+  - `GetStatusText()` — «Wild · Tamable (KO)», «Tamed» и т.п.
+  - `SetLayerRecursively(obj, layer)` — переключение слоя на `Corpse` при смерти.
+
+- **`CreatureData`**:
+  - Добавлено поле `int level = 1` (уровень существа, для инфо-панели).
+
+- **`Creature`**:
+  - `Level` → `Data?.level ?? 1`.
+  - `GetDisplayName()` — переопределён.
+
+
+
+
+
 ## TODO
 
+### Ближайшее (Боевка — следующий шаг)
+- [ ] **Цифры урона** (floating damage numbers) — всплывающие числа урона.
+- [ ] **Критические удары** (голова/слабое место) — множитель урона.
+- [ ] **Урон существ по игроку в ближнем бою** — фидбек (звук, эффект, тряска камеры).
+- [ ] **Фикс багов** — список собирается перед началом работы.
+
+### Сделано (архив)
 - [x] **Выброс вещей → сумка** (`InventoryManager.DropItemFromSlot` → `LootBagManager.CreateLootBagFromItems`).
+- [x] **Torpor-урон** — Item, Arrow, TakeDamage.
+- [x] **Knockout** — KnockOut/RecoverFromKnockout в BaseLivingEntity.
+- [x] **Инфо-панель** — EntityInfoPanelManager + EntityInfoPanel.
+- [x] **Смена слоя при смерти** — SetLayerRecursively на Corpse.
+
+### Дальше
+- [ ] **Приручение** (Taming: кормление, прогресс, tamed state).
+- [ ] **Использование прирученных** (Riding, команды, инвентарь).
+- [ ] **Экосистема** (хищники/жертвы, respawn по регионам).
+- [ ] **Броня** (защита, прочность, резисты).
+- [ ] **Температура / погода** (гипертермия/гипотермия, биомы).
+- [ ] **Респавн по кроватям** (спальные мешки, точки возрождения).
+- [ ] **Статы** (доводка системы, влияние на геймплей).
+- [ ] **Биомы + ресурсы по регионам**.
+- [ ] **Фермерство**.
+- [ ] **Разведение** (спаривание, imprinting, мутации).
+- [ ] **Племена**.
+- [ ] **Боссы**.
+- [ ] **Мультиплеер** (Mirror / Netcode for GameObjects).
 - [ ] **Разрушение сундука → сумка** (`ChestController.OnDestroy` → `LootBagManager`).
 - [ ] **Система выбора персонажа** (меши, материалы, blend shapes).
-- [ ] **Мультиплеер** (Mirror / Netcode).
 - [ ] **Предзагрузка слотов `ChestUI`** при старте (убрать лаг при первом открытии).
-- [ ] **Температура** (Hyperthermia/Hypothermia).
-- [ ] **Taming** (Knockout / Passive).
-- [ ] **Breeding** (Mating, Imprinting, Mutations).
-- [ ] **Rideable creatures** (Mounted combat).
 - [ ] **Building stability** (Structural integrity).
 - [ ] **Electrical system** (Generators, Cables, Appliances).
 - [ ] **Irrigation system** (Pipes, Taps, Reservoirs).
-- [ ] **Ranged weapons** (Bow, Crossbow, Firearms).
-- [ ] **Armor system** (Protection, Durability).
+- [ ] **Ranged weapons** (Bow, Crossbow, Firearms — расширение).
 - [ ] **Blueprints & Quality tiers**.
+
+
+
+
+
+
+
 
 ## Важные файлы для контекста
 
 При создании нового чата скинуть:
+Продолжаем ARK-клон. Мы закончили [...].
+Теперь делаем  [...]:
+ [...]
+ [...]
+ [...]
+Прикладываю PROJECT-ARCHITECTURE.md и файлы.
 
 ### Обязательно
 - `PROJECT-ARCHITECTURE.md` (этот файл)

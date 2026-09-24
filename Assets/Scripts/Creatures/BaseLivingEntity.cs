@@ -177,6 +177,16 @@ namespace Assets.Scripts.Creatures
         {
             health -= damage;
 
+            // === Floating damage number ===
+            if (damage > 0f)
+            {
+                Vector3 popupPos = playerInteraction != null
+                    ? playerInteraction.GetTargetHitPosition()
+                    : transform.position + Vector3.up;
+
+                DamageNumberPool.Instance?.ShowDamage(damage, popupPos);
+            }
+
             // Накопление torpor
             if (torporAmount > 0f && !_isDead)
             {
