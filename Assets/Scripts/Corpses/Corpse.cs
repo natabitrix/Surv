@@ -124,7 +124,6 @@ namespace Assets.Scripts.Corpses
             }
         }
 
-
         private void UpdateInteractionAnchorPosition()
         {
             if (_centerBone != null)
@@ -196,21 +195,93 @@ namespace Assets.Scripts.Corpses
                 rb.angularVelocity = Vector3.zero;
                 rb.linearDamping = ragdollSettings.linearDamp;
                 rb.angularDamping = ragdollSettings.angularDamp;
-                // rb.linearDamping = 0.5f; //для плеера надо меньше сделать
-                // rb.angularDamping = 0.5f;
                 rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
 
-                // foreach (var otherPart in ragdollSettings.ragdollParts)
-                // {
-                //     if (part != otherPart && otherPart.TryGetComponent<Collider>(out var otherCol))
-                //     {
-                //         if (rb.TryGetComponent<Collider>(out var rbCol))
-                //         {
-                //             Physics.IgnoreCollision(rbCol, otherCol, true);
-                //         }
-                //     }
-                // }
+                CharacterJoint cj = rb.GetComponent<CharacterJoint>();
+                if (cj != null)
+                {
+                    ConfigureLimits(cj);
+                }
+
+                foreach (var otherPart in ragdollSettings.ragdollParts)
+                {
+                    if (part != otherPart && otherPart.TryGetComponent<Collider>(out var otherCol))
+                    {
+                        if (rb.TryGetComponent<Collider>(out var rbCol))
+                        {
+                            Physics.IgnoreCollision(rbCol, otherCol, true);
+                        }
+                    }
+                }
             }
+        }
+
+        void ConfigureLimits(CharacterJoint joint)
+        {
+            // 1. Ограничиваем Twist (скручивание по оси X)
+            // Для колена скручивание почти нулевое (от -5 до 5 градусов)
+            SoftJointLimit twistLow = joint.lowTwistLimit;
+            twistLow.limit = 0f;
+            twistLow.bounciness = 0f; // Убираем отскок, чтобы избежать растяжений
+            joint.lowTwistLimit = twistLow;
+
+            SoftJointLimit twistHigh = joint.highTwistLimit;
+            twistHigh.limit = 5f;
+            twistHigh.bounciness = 0f;
+            joint.highTwistLimit = twistHigh;
+
+
+            // 2. Ограничиваем Swing 1 (размах из стороны в сторону по оси Y)
+            // Колено не должно гулять влево-вправо
+            SoftJointLimit swing1 = joint.swing1Limit;
+            swing1.limit = 5f;
+            swing1.bounciness = 0f;
+            joint.swing1Limit = swing1;
+
+
+            // 3. Ограничиваем Swing 2 (сгибание вперед-назад по оси Z)
+            // Разрешаем сгибание назад (например, на 100 градусов)
+            SoftJointLimit swing2 = joint.swing2Limit;
+            swing2.limit = 100f;
+            swing2.bounciness = 0f;
+            joint.swing2Limit = swing2;
+
+
+            // 4. Защита от растягивания (то, о чем говорили в первом вопросе)
+            joint.enableProjection = true;
+            joint.projectionDistance = 0.01f;
+            joint.projectionAngle = 5f;
+
+            SoftJointLimitSpring twistSpring = joint.twistLimitSpring;
+            twistSpring.spring = 50f;  // Сила возврата
+            twistSpring.damper = 5f;   // Сопротивление (чтобы не качался как желе)
+            joint.twistLimitSpring = twistSpring;
+        }
+
+        void SetMinimalRotation(CharacterJoint joint)
+        {
+            // Создаем лимит с минимальным значением (0.01 или 0 градусов)
+            SoftJointLimit minimalLimit = new SoftJointLimit();
+            minimalLimit.limit = 0.01f; // Полный ноль иногда может вызвать микродергания, 0.01 стабильнее
+            minimalLimit.bounciness = 0f;
+            minimalLimit.contactDistance = 0f;
+
+            // Блокируем скручивание (ось X)
+            joint.lowTwistLimit = minimalLimit;
+            // Для High Twist лимит должен быть положительным
+            SoftJointLimit highMinimalLimit = minimalLimit;
+            highMinimalLimit.limit = 0.01f;
+            joint.highTwistLimit = highMinimalLimit;
+
+            // Блокируем размах в стороны (ось Y)
+            joint.swing1Limit = minimalLimit;
+
+            // Блокируем размах вверх-вниз (ось Z)
+            joint.swing2Limit = minimalLimit;
+
+            // Обязательно включаем проекцию, чтобы сустав не растягивался из-за жесткого блока
+            joint.enableProjection = true;
+            joint.projectionDistance = 0.01f;
         }
 
         public void DeactivateRagdoll()
@@ -679,7 +750,7 @@ namespace Assets.Scripts.Corpses
             _springJointToGrabPoint.connectedAnchor = Vector3.zero;
 
             // Параметры пружины (можно подкорректировать под вес вашей модели)
-            _springJointToGrabPoint.spring = 10000f; // Чуть меньше, чем было, чтобы не рвало суставы при рывке за ногу
+            _springJointToGrabPoint.spring = 10000f; // чтобы не рвало суставы при рывке за ногу
             _springJointToGrabPoint.damper = 200f;  // Больше демпфер, чтобы нога не болталась как макарина
             _springJointToGrabPoint.tolerance = 0.1f;
             _springJointToGrabPoint.minDistance = 0f;

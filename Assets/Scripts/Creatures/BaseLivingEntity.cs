@@ -84,6 +84,11 @@ namespace Assets.Scripts.Creatures
 
         public void Interact(InteractContext context)
         {
+            Debug.Log("tamed: " + tamed);
+            Debug.Log("tamableKO: " + tamableKO);
+            Debug.Log("knockedOut: " + knockedOut);
+            Debug.Log("context.isTargetInventory: " + context.isTargetInventory);
+
             if ((tamed || (tamableKO && knockedOut)) && context.isTargetInventory)
             {
                 OpenInventory();
@@ -155,7 +160,12 @@ namespace Assets.Scripts.Creatures
             if (torporAmount > 0f && !_isDead)
             {
                 torpor = Mathf.Min(maxTorpor, torpor + torporAmount);
-                Debug.Log($"[{gameObject.name}] Torpor: {torpor:F1} / {maxTorpor}");
+
+                // Мгновенный нокаут при достижении порога
+                if (!knockedOut && torpor >= maxTorpor)
+                {
+                    KnockOut();
+                }
             }
 
             if (animator != null && damage > 0)
@@ -169,6 +179,8 @@ namespace Assets.Scripts.Creatures
                 Vector3 targetHitNormal = playerInteraction.GetTargetHitNormal();
                 PlayDamageEffect(targetHitPosition);
             }
+
+            Debug.Log($"[{gameObject.name}] Torpor: {torpor:F1} / {maxTorpor};  Damage: {damage:F1};  Health: {health:F1} / {maxHealth}");
 
             if (health <= 0)
             {
@@ -194,6 +206,7 @@ namespace Assets.Scripts.Creatures
         {
             if (_isDead) return;
             _isDead = true;
+            knockedOut = false;
             health = 0;
 
             CancelInvoke();
@@ -204,7 +217,11 @@ namespace Assets.Scripts.Creatures
 
             // === 2. Отключаем Animator (для ragdoll, НЕ удаляем!) ===
             if (animator != null)
+            {
                 animator.enabled = false;
+                // animator.SetTrigger(animIDDeath);
+            }
+
 
             // === 3. Получаем creatureId из Creature ===
             string creatureId = null;
@@ -269,6 +286,117 @@ namespace Assets.Scripts.Creatures
         }
 
         /// <summary>
+        /// Погружает существо в нокаут: AI выключается, аниматор глушится,
+        /// открывается доступ к инвентарю (RadialMenu + ChestInventory).
+        /// НЕ путать со смертью — это обратимое состояние.
+        /// </summary>
+        public virtual void KnockOut()
+        {
+            if (_isDead || knockedOut) return;
+
+            knockedOut = true;
+            Debug.Log($"[{gameObject.name}] НОКАУТ (torpor={torpor:F1}/{maxTorpor})");
+
+            // 1. Останавливаем AI
+            var agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+            if (agent != null && agent.enabled && agent.isOnNavMesh)
+                agent.isStopped = true;
+            if (agent != null)
+                agent.enabled = false;
+
+            // 2. Глушим аниматор (пока нет анимации «спит»)
+            if (animator != null)
+            {
+                // animator.SetTrigger(animIDDeath);
+                animator.enabled = false;
+            }
+
+            // 3. Отключаем Creature (AI-логику)
+            // var creature = GetComponent<Creature>();
+            // if (creature != null)
+            //     creature.enabled = false;
+
+            // 4. Включаем RadialMenu и инвентарь
+            var menu = GetComponent<RadialMenu>();
+            if (menu != null) menu.enabled = true;
+
+            // 5. Создаём инвентарь, если его нет
+            if (_inventory == null)
+            {
+                var chestInv = gameObject.AddComponent<ChestInventory>();
+                string key = $"TamingCorpse_{System.Guid.NewGuid().ToString().Substring(0, 8)}";
+                chestInv.Initialize(100, key);
+
+                _inventory = chestInv;
+                _chestUI = FindAnyObjectByType<ChestUI>();
+
+                Debug.Log($"[{gameObject.name}] Инвентарь для приручения создан.");
+            }
+
+            // === 4. Активируем Corpse ===
+            // var corpse = GetComponent<Corpse>();
+            // if (corpse != null)
+            // {
+            //     corpse.enabled = true;
+
+            //     // corpse.ActivateRagdoll();
+            //     // corpse.StartCoroutine(corpse.StopMovingRagdoll());
+
+            //     // === Создаём инвентарь ===
+            //     corpse.CreateCorpseInventory(
+            //         "CreatureCorpse",
+            //         100,
+            //         FindAnyObjectByType<ChestUI>()
+            //     );
+            // }
+
+        }
+
+        /// <summary>
+        /// Выводит существо из нокаута: включает AI, аниматор, выключает RadialMenu.
+        /// </summary>
+        public virtual void RecoverFromKnockout()
+        {
+            if (_isDead || !knockedOut) return;
+
+            knockedOut = false;
+            torpor = 0f;
+            Debug.Log($"[{gameObject.name}] ВЫШЕЛ ИЗ НОКАУТА");
+
+            // 1. Включаем AI
+            var agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+            if (agent != null)
+            {
+                agent.enabled = true;
+                if (agent.isOnNavMesh)
+                    agent.isStopped = false;
+                else
+                    Debug.LogWarning($"[{gameObject.name}] NavMeshAgent не на NavMesh после нокаута!");
+            }
+
+            // 2. Включаем аниматор
+            if (animator != null)
+                animator.enabled = true;
+
+            // 3. Включаем Creature
+            var creature = GetComponent<Creature>();
+            if (creature != null)
+                creature.enabled = true;
+
+            var corpse = GetComponent<Corpse>();
+            if (corpse != null)
+                corpse.enabled = false;
+
+            // 4. Выключаем RadialMenu
+            var menu = GetComponent<RadialMenu>();
+            if (menu != null)
+                menu.enabled = false;
+
+            // 5. Закрываем инвентарь
+            CloseInventory();
+        }
+
+        /// <summary>
         /// Вызывается в конце анимации смерти (через Animation Event).
         /// Выключает коллайдер и аниматор
         /// </summary>
@@ -277,6 +405,20 @@ namespace Assets.Scripts.Creatures
             if (animator != null)
             {
                 animator.enabled = false;
+            }
+
+            var menu = GetComponent<RadialMenu>();
+            if (menu != null) menu.enabled = true;
+
+            var corpse = GetComponent<Corpse>();
+            if (corpse != null)
+            {
+                corpse.enabled = true;
+                corpse.CreateCorpseInventory(
+                    "CreatureCorpse",
+                    100,
+                    FindAnyObjectByType<ChestUI>()
+                );
             }
         }
 

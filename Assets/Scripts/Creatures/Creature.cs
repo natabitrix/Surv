@@ -135,24 +135,40 @@ namespace Assets.Scripts.Creatures
 
         void Update()
         {
-            if (!IsAlive() || _agent == null)
+            if (!IsAlive()) return;
+
+            // === Torpor: убывает всегда, даже в нокауте ===
+            if (torpor > 0f)
             {
-                return;
+                float before = torpor;
+                torpor = Mathf.Max(0f, torpor - torporRecoveryRate * Time.deltaTime);
+
+                // Логируем раз в секунду, только в нокауте (чтобы не спамить)
+                if (knockedOut && Mathf.FloorToInt(Time.time) != Mathf.FloorToInt(Time.time - Time.deltaTime))
+                {
+                    // Debug.Log($"[{gameObject.name}] Torpor падает: {torpor:F1} / {maxTorpor}");
+                }
             }
+
+            // === Нокаут: проверяем выход ===
+            // Вход происходит в TakeDamage(), здесь только выход.
+            if (knockedOut)
+            {
+                if (torpor <= 0f)
+                {
+                    RecoverFromKnockout();
+                }
+                return; // пока в нокауте — AI не работает
+            }
+
+            // === Обычный AI ===
+            if (_agent == null) return;
 
             if (_playerTransform == null)
             {
                 SetState(CreatureState.Wander);
                 HandleWandering();
                 return;
-            }
-
-            if (torpor > 0) torpor = Mathf.Max(0, torpor - torporRecoveryRate * Time.deltaTime);
-
-            if (torpor >= maxTorpor && !knockedOut)
-            {
-                knockedOut = true;
-                _agent.isStopped = true;
             }
 
             float distanceToPlayer = Vector3.Distance(transform.position, _playerTransform.position);
@@ -179,7 +195,7 @@ namespace Assets.Scripts.Creatures
 
             UpdateAnimation();
 
-            if(DieManually)
+            if (DieManually)
             {
                 Die();
             }

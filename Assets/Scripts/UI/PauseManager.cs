@@ -80,9 +80,11 @@ namespace Assets.Scripts.UI
             SettingsPanel.SetActive(false);
 
             LockCamera(true);
+            // SetRealPause(true);
             SetCursorVisible(true);
-            SetRealPause(true);
+            
         }
+
 
         public void ResumeFromPause()
         {

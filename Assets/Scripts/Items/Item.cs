@@ -22,6 +22,7 @@ namespace Assets.Scripts.Items
         public float healthRecoveryAmount = 0f; // сколько восстанавливается здоровья за 1ед
 
         public float damage;
+        public float torporDamage = 0f;
 
         // В Item.cs
         [Header("Durability")]
@@ -58,9 +59,6 @@ namespace Assets.Scripts.Items
         [Tooltip("Время плавного перехода в зум (сек).")]
         public float aimBlendTime = 0.15f;
 
-        [Header("Torpor")]
-        [Tooltip("Сколько torpor наносит один удар/выстрел. 0 = не наносит.")]
-        public float torporDamage = 0f;
 
         // Автоматическая генерация ID при сохранении (требует редакторного скрипта)
 #if UNITY_EDITOR

@@ -203,6 +203,9 @@ namespace Assets.Scripts.Player
                 InteractType type2 = target.GetInteractType2();
                 if (type == InteractType.OpenTargetInventory || type2 == InteractType.OpenTargetInventory)
                 {
+                    // Всегда сохраняем цель — и для анимации, и для задержки
+                    _pendingInteractionTarget = target;
+
                     if (_hasAnimator)
                     {
                         _playerAnimator.SetTrigger(_animIDOpenInventory);
@@ -210,7 +213,6 @@ namespace Assets.Scripts.Player
                     else
                     {
                         float delay = 0.5f;
-                        _pendingInteractionTarget = target;
                         Invoke(nameof(OnOpenInventoryFinishedNoArg), delay);
                     }
                     return;
@@ -257,10 +259,44 @@ namespace Assets.Scripts.Player
 
         public void OnOpenInventoryFinished(IInteractable specificTarget = null)
         {
-            // Debug.Log("[PlayerInteraction] OnOpenInventoryFinished(IInteractable specificTarget = null)!");
-            IInteractable target = specificTarget ?? (_allTargets.Count > 0 ? _allTargets[0] : null);
+            Debug.Log("[PlayerInteraction] OnOpenInventoryFinished!");
 
-            if (target == null) return;
+            // Приоритет выбора цели:
+            // 1. Явно переданная цель (specificTarget)
+            // 2. Цель, сохранённая в момент нажатия F (_pendingInteractionTarget)
+            // 3. Первая цель из _allTargets с типом OpenTargetInventory
+            // 4. Первая цель из _allTargets (fallback)
+            IInteractable target = specificTarget ?? _pendingInteractionTarget;
+
+            if (target == null && _allTargets.Count > 0)
+            {
+                foreach (var t in _allTargets)
+                {
+                    if (t is MonoBehaviour mb && !mb.enabled) continue;
+
+                    if (t.GetInteractType() == InteractType.OpenTargetInventory ||
+                        t.GetInteractType2() == InteractType.OpenTargetInventory)
+                    {
+                        target = t;
+                        break;
+                    }
+                }
+
+                // Если не нашли OpenTargetInventory — берём первый попавшийся
+                if (target == null)
+                    target = _allTargets[0];
+            }
+
+            // Сбрасываем сохранённую цель — она нам больше не нужна
+            _pendingInteractionTarget = null;
+
+            if (target == null)
+            {
+                Debug.LogWarning("[PlayerInteraction] OnOpenInventoryFinished: target == null!");
+                return;
+            }
+
+            Debug.Log($"[PlayerInteraction] target = {target.GetType().Name} на {((MonoBehaviour)target).gameObject.name}");
 
             // Если панель уже открыта — закрываем её
             if (target.HasInventory() && _panelsController != null && _panelsController.IsInventoryOpened())
@@ -279,10 +315,14 @@ namespace Assets.Scripts.Player
                 PlayerInteraction = this
             };
 
+            Debug.Log("[PlayerInteraction] target " + target);
+
             target.Interact(context);
 
             if (target.HasInventory() && _panelsController != null)
                 _panelsController.OpenOtherInventory();
+
+            Debug.Log("[PlayerInteraction] OnOpenInventoryFinished3");
         }
 
         // Перегрузка для Animation Event
@@ -705,17 +745,16 @@ namespace Assets.Scripts.Player
             bool hasCorpse = corpse != null && corpse.enabled;
 
             // Ищем все интерактаблы
+
             var interactables = hitObject.GetComponents<IInteractable>();
             foreach (var interactable in interactables)
             {
-                // 🔑 КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: Если есть Corpse, игнорируем BaseLivingEntity
-                if (hasCorpse && interactable is BaseLivingEntity)
-                {
-                    continue; // Пропускаем живое существо, т.к. труп важнее
-                }
+                // Пропускаем отключённые компоненты (GetComponents<IInteractable> возвращает и disabled)
+                if (interactable is MonoBehaviour mb && !mb.enabled)
+                    continue;
 
-                if (!_allTargets.Contains(interactable))
-                    _allTargets.Add(interactable);
+                if (hasCorpse && interactable is BaseLivingEntity) continue;
+                if (!_allTargets.Contains(interactable)) _allTargets.Add(interactable);
             }
 
             // Фоллбэк: поиск в детях (только если нет Corpse на корне)

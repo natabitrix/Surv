@@ -3177,8 +3177,8 @@ MonoBehaviour:
     - {fileID: 7003001226499926126}
     - {fileID: 5673515055020981016}
     - {fileID: 4531184824454117684}
-    linearDamp: 5
-    angularDamp: 5
+    linearDamp: 10
+    angularDamp: 10
     velocityInherit: 0.1
   _dragRigidbody: {fileID: 4119293288162737562}
   _centerBone: {fileID: 1192693056007777315}
@@ -3257,7 +3257,7 @@ MonoBehaviour:
   tamableKO: 0
   knockedOut: 0
   tamablePassive: 0
-  _interactionCollider: {fileID: 0}
+  _interactionCollider: {fileID: 1855417968429868836}
   _inventory: {fileID: 0}
   _chestUI: {fileID: 0}
   torpor: 0

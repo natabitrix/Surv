@@ -17,7 +17,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   description: 
   prefab: {fileID: 9136099890693409341, guid: c3e066d5409bfe945b0c33e6e0ab096b, type: 3}
-  maxHealth: 100
+  maxHealth: 300
   maxStamina: 50
   walkSpeed: 2
   chaseSpeed: 5
@@ -29,8 +29,8 @@ MonoBehaviour:
   minWanderDelay: 2
   maxWanderDelay: 5
   behaviorType: 1
-  tamable: 0
-  tamableKO: 0
+  tamable: 1
+  tamableKO: 1
   tamablePassive: 0
   inventoryLootTable:
   - item: {fileID: 11400000, guid: dc69f91a959d4494c9ba7b0b71c6b2ec, type: 2}
