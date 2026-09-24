@@ -259,8 +259,6 @@ namespace Assets.Scripts.Player
 
         public void OnOpenInventoryFinished(IInteractable specificTarget = null)
         {
-            Debug.Log("[PlayerInteraction] OnOpenInventoryFinished!");
-
             // Приоритет выбора цели:
             // 1. Явно переданная цель (specificTarget)
             // 2. Цель, сохранённая в момент нажатия F (_pendingInteractionTarget)
@@ -296,7 +294,7 @@ namespace Assets.Scripts.Player
                 return;
             }
 
-            Debug.Log($"[PlayerInteraction] target = {target.GetType().Name} на {((MonoBehaviour)target).gameObject.name}");
+            // Debug.Log($"[PlayerInteraction] target = {target.GetType().Name} на {((MonoBehaviour)target).gameObject.name}");
 
             // Если панель уже открыта — закрываем её
             if (target.HasInventory() && _panelsController != null && _panelsController.IsInventoryOpened())
@@ -314,8 +312,6 @@ namespace Assets.Scripts.Player
                 isTargetInventory = true,
                 PlayerInteraction = this
             };
-
-            Debug.Log("[PlayerInteraction] target " + target);
 
             target.Interact(context);
 

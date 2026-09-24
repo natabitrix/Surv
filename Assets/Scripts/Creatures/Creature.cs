@@ -23,6 +23,7 @@ namespace Assets.Scripts.Creatures
         public CreatureData Data => _data;
 
         // === Статы (берутся из _data через свойства) ===
+        public int Level => _data?.level ?? 1;
         public float WanderRange => _data?.wanderRange ?? 20f;
         public float MinWanderDelay => _data?.minWanderDelay ?? 2f;
         public float MaxWanderDelay => _data?.maxWanderDelay ?? 5f;
@@ -131,6 +132,13 @@ namespace Assets.Scripts.Creatures
         public void SetTarget(Transform target)
         {
             _playerTransform = target;
+        }
+
+        public override string GetDisplayName()
+        {
+            if (Data != null && !string.IsNullOrEmpty(Data.displayName))
+                return Data.displayName;
+            return !string.IsNullOrEmpty(creatureId) ? creatureId : gameObject.name;
         }
 
         void Update()

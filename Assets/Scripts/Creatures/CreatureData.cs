@@ -33,6 +33,9 @@ namespace Assets.Scripts.Creatures
         [Tooltip("Единый префаб существа (используется и для живого, и для трупа)")]
         public GameObject prefab;
 
+        [Tooltip("Уровень существа. Для ARK-стиля — 1..150.")]
+        public int level = 1;
+
         [Header("Статы")]
         public float maxHealth = 100f;
         public float maxStamina = 50f;

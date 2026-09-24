@@ -6,6 +6,7 @@ using Assets.Scripts.Effects;
 using Assets.Scripts.Interactables;
 using Assets.Scripts.InventorySystem;
 using Assets.Scripts.Corpses;
+using Assets.Scripts.UI;
 
 namespace Assets.Scripts.Creatures
 {
@@ -27,6 +28,25 @@ namespace Assets.Scripts.Creatures
         [Header("Interaction")]
         [SerializeField] private Collider _interactionCollider;
         public Collider InteractionCollider => _interactionCollider;
+
+        /// <summary>
+        /// Имя существа для UI. Наследники могут переопределить.
+        /// </summary>
+        public virtual string GetDisplayName() => gameObject.name;
+
+        /// <summary>
+        /// Строка статуса для инфо-панели: "Wild · Tamable (KO)", "Tamed" и т.п.
+        /// </summary>
+        public virtual string GetStatusText()
+        {
+            if (tamed) return "Tamed";
+
+            if (tamableKO && tamablePassive) return "Wild · Tamable (KO / Passive)";
+            if (tamableKO) return "Wild · Tamable (KO)";
+            if (tamablePassive) return "Wild · Tamable (Passive)";
+
+            return "Wild";
+        }
 
         // ==========================================
         // === ИНВЕНТАРЬ (Открытие по F) ===
@@ -74,6 +94,7 @@ namespace Assets.Scripts.Creatures
 
             // Инициализация статов
             InitializeStats();
+
         }
 
         // ==========================================
@@ -84,10 +105,10 @@ namespace Assets.Scripts.Creatures
 
         public void Interact(InteractContext context)
         {
-            Debug.Log("tamed: " + tamed);
-            Debug.Log("tamableKO: " + tamableKO);
-            Debug.Log("knockedOut: " + knockedOut);
-            Debug.Log("context.isTargetInventory: " + context.isTargetInventory);
+            // Debug.Log("tamed: " + tamed);
+            // Debug.Log("tamableKO: " + tamableKO);
+            // Debug.Log("knockedOut: " + knockedOut);
+            // Debug.Log("context.isTargetInventory: " + context.isTargetInventory);
 
             if ((tamed || (tamableKO && knockedOut)) && context.isTargetInventory)
             {
@@ -206,6 +227,7 @@ namespace Assets.Scripts.Creatures
         {
             if (_isDead) return;
             _isDead = true;
+
             knockedOut = false;
             health = 0;
 
@@ -271,6 +293,18 @@ namespace Assets.Scripts.Creatures
             var menu = GetComponent<RadialMenu>();
             if (menu != null) menu.enabled = true;
 
+            // === Переключаем слой на Corpse ===
+            int corpseLayer = LayerMask.NameToLayer("Corpse");
+            if (corpseLayer != -1)
+            {
+                SetLayerRecursively(gameObject, corpseLayer);
+            }
+            else
+            {
+                Debug.LogWarning("[BaseLivingEntity] Слой 'Corpse' не найден в проекте! " +
+                                 "Создай его в Project Settings → Tags and Layers.");
+            }
+
             // === 9. Регистрируем труп в CorpseManager ===
             if (CorpseManager.Instance != null)
             {
@@ -311,11 +345,6 @@ namespace Assets.Scripts.Creatures
                 animator.enabled = false;
             }
 
-            // 3. Отключаем Creature (AI-логику)
-            // var creature = GetComponent<Creature>();
-            // if (creature != null)
-            //     creature.enabled = false;
-
             // 4. Включаем RadialMenu и инвентарь
             var menu = GetComponent<RadialMenu>();
             if (menu != null) menu.enabled = true;
@@ -332,23 +361,6 @@ namespace Assets.Scripts.Creatures
 
                 Debug.Log($"[{gameObject.name}] Инвентарь для приручения создан.");
             }
-
-            // === 4. Активируем Corpse ===
-            // var corpse = GetComponent<Corpse>();
-            // if (corpse != null)
-            // {
-            //     corpse.enabled = true;
-
-            //     // corpse.ActivateRagdoll();
-            //     // corpse.StartCoroutine(corpse.StopMovingRagdoll());
-
-            //     // === Создаём инвентарь ===
-            //     corpse.CreateCorpseInventory(
-            //         "CreatureCorpse",
-            //         100,
-            //         FindAnyObjectByType<ChestUI>()
-            //     );
-            // }
 
         }
 
@@ -394,6 +406,7 @@ namespace Assets.Scripts.Creatures
 
             // 5. Закрываем инвентарь
             CloseInventory();
+
         }
 
         /// <summary>
@@ -426,6 +439,22 @@ namespace Assets.Scripts.Creatures
         public virtual void Heal(float amount)
         {
             health = Mathf.Clamp(health + amount, 0, maxHealth);
+        }
+
+
+        /// <summary>
+        /// Переключает слой объекта и всех его детей.
+        /// </summary>
+        protected void SetLayerRecursively(GameObject obj, int layer)
+        {
+            obj.layer = layer;
+            foreach (Transform child in obj.transform)
+                SetLayerRecursively(child.gameObject, layer);
+        }
+
+        private void OnDestroy()
+        {
+
         }
 
         // Геттеры

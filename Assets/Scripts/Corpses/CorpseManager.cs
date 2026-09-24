@@ -305,6 +305,18 @@ namespace Assets.Scripts.Corpses
                 if (corpseGO.TryGetComponent<Animator>(out var anim)) anim.enabled = false;
             }
 
+            // ✅ Устанавливаем слой Corpse для восстановленного трупа,
+            // чтобы инфо-панель и другие системы, ищущие живых существ, его игнорировали.
+            int corpseLayer = LayerMask.NameToLayer("Corpse");
+            if (corpseLayer != -1)
+            {
+                SetLayerRecursively(corpseGO, corpseLayer);
+            }
+            else
+            {
+                Debug.LogWarning("[CorpseManager] Слой 'Corpse' не найден в проекте!");
+            }
+
             var corpse = corpseGO.GetComponentInChildren<Corpse>(true);
             if (corpse == null) return;
 
@@ -338,6 +350,16 @@ namespace Assets.Scripts.Corpses
             corpse.StartDespawnTimer(remainingTime);
 
             _loadedCorpses[data.instanceId] = corpseGO;
+        }
+
+        /// <summary>
+        /// Переключает слой объекта и всех его детей.
+        /// </summary>
+        private void SetLayerRecursively(GameObject obj, int layer)
+        {
+            obj.layer = layer;
+            foreach (Transform child in obj.transform)
+                SetLayerRecursively(child.gameObject, layer);
         }
 
         // ==========================================
