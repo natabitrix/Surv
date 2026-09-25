@@ -45937,6 +45937,10 @@ MonoBehaviour:
   - {fileID: 7881994360618582535, guid: 5b8c8f421cdca80479a335e16589a204, type: 3}
   - {fileID: 7637926901392231714}
   - {fileID: 3372771961369172978}
+  itemDatabase: {fileID: 11400000, guid: d19476d9c45a16640979d93431658db2, type: 2}
+  creatureDatabase: {fileID: 11400000, guid: 475c5b1ef39d77d43ab9f3523b647009, type: 2}
+  gameSettings: {fileID: 11400000, guid: 92f8da4672bb630409835cc71a53b5b0, type: 2}
+  recipeDatabase: {fileID: 11400000, guid: 08b9e5f407896124eafc5f3473a57a93, type: 2}
 --- !u!1001 &932613365
 PrefabInstance:
   m_ObjectHideFlags: 0

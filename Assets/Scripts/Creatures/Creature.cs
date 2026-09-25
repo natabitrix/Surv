@@ -6,6 +6,7 @@ using Assets.Scripts.Player.Data;
 using Assets.Scripts.Interactables;
 using Assets.Scripts.Utils;
 using Assets.Scripts.InventorySystem;
+using Assets.Scripts.UI;
 
 namespace Assets.Scripts.Creatures
 {
@@ -141,9 +142,26 @@ namespace Assets.Scripts.Creatures
             return !string.IsNullOrEmpty(creatureId) ? creatureId : gameObject.name;
         }
 
+        public override float GetDamageMultiplier(Collider hitCollider)
+        {
+            if (hitCollider == null) return 1f;
+
+            var zone = hitCollider.GetComponent<CreatureHitZone>();
+            if (zone != null)
+                return zone.damageMultiplier;
+
+            return 1f;
+        }
+
+        private bool IsSinglePlayerLoading()
+        {
+            return !SessionMode.IsMultiplayer && LoadingScreenManager.Instance.IsLoading;
+        }
+
         void Update()
         {
             if (!IsAlive()) return;
+            if (IsSinglePlayerLoading()) return;
 
             // === Torpor: убывает всегда, даже в нокауте ===
             if (torpor > 0f)

@@ -48,12 +48,21 @@ namespace Assets.Scripts.Creatures
             return "Wild";
         }
 
+        /// <summary>
+        /// Множитель урона для конкретной зоны попадания.
+        /// По умолчанию 1. Creature переопределяет через CreatureHitZone.
+        /// </summary>
+        public virtual float GetDamageMultiplier(Collider hitCollider) => 1f;
+
         // ==========================================
         // === ИНВЕНТАРЬ (Открытие по F) ===
         // ==========================================
         [SerializeField] private ChestInventory _inventory;
         [SerializeField] private ChestUI _chestUI;
         private bool _isOpen = false;
+
+        [Header("Debug")]
+        [SerializeField] private bool _debugDamage = false;
 
         [Header("Taming Stats")]
         public float torpor = 0f;
@@ -94,7 +103,6 @@ namespace Assets.Scripts.Creatures
 
             // Инициализация статов
             InitializeStats();
-
         }
 
         // ==========================================
@@ -105,11 +113,6 @@ namespace Assets.Scripts.Creatures
 
         public void Interact(InteractContext context)
         {
-            // Debug.Log("tamed: " + tamed);
-            // Debug.Log("tamableKO: " + tamableKO);
-            // Debug.Log("knockedOut: " + knockedOut);
-            // Debug.Log("context.isTargetInventory: " + context.isTargetInventory);
-
             if ((tamed || (tamableKO && knockedOut)) && context.isTargetInventory)
             {
                 OpenInventory();
@@ -165,29 +168,51 @@ namespace Assets.Scripts.Creatures
         protected abstract float GetMaxHealthFromConfiguration();
         protected abstract float GetMaxStaminaFromConfiguration();
 
-        // Общий метод получения урона
+        // ==========================================
+        // === УРОН ===
+        // ==========================================
+
         // Старая перегрузка — для совместимости (ближний бой, harvest и т.п.)
         public virtual void TakeDamage(float damage, PlayerInteraction playerInteraction)
-        {
-            TakeDamage(damage, 0f, playerInteraction);
-        }
+            => TakeDamage(damage, 0f, playerInteraction, null, null);
 
-        // Новая — с torpor
+        // Перегрузка с torpor
         public virtual void TakeDamage(float damage, float torporAmount, PlayerInteraction playerInteraction)
+            => TakeDamage(damage, torporAmount, playerInteraction, null, null);
+
+        // Полная перегрузка: + hitCollider (зона) + hitPoint (для цифры и эффекта)
+        public virtual void TakeDamage(
+            float damage,
+            float torporAmount,
+            PlayerInteraction playerInteraction,
+            Collider hitCollider = null,
+            Vector3? hitPoint = null)
         {
-            health -= damage;
+            // === Коллайдер: явный аргумент > из playerInteraction ===
+            Collider col = hitCollider ?? playerInteraction?.GetTargetHitCollider();
+
+            // === Множитель зоны ===
+            float multiplier = GetDamageMultiplier(col);
+            float finalDamage = damage * multiplier;
+
+            health -= finalDamage;
+
+            // === Точка попадания ===
+            Vector3 popupPos;
+            if (hitPoint.HasValue)
+                popupPos = hitPoint.Value;
+            else if (playerInteraction != null)
+                popupPos = playerInteraction.GetTargetHitPosition();
+            else
+                popupPos = transform.position + Vector3.up;
 
             // === Floating damage number ===
-            if (damage > 0f)
+            if (finalDamage > 0f)
             {
-                Vector3 popupPos = playerInteraction != null
-                    ? playerInteraction.GetTargetHitPosition()
-                    : transform.position + Vector3.up;
-
-                DamageNumberPool.Instance?.ShowDamage(damage, popupPos);
+                DamageNumberPool.Instance?.ShowDamage(finalDamage, popupPos);
             }
 
-            // Накопление torpor
+            // === Накопление torpor ===
             if (torporAmount > 0f && !_isDead)
             {
                 torpor = Mathf.Min(maxTorpor, torpor + torporAmount);
@@ -199,20 +224,33 @@ namespace Assets.Scripts.Creatures
                 }
             }
 
-            if (animator != null && damage > 0)
+            // === Анимация получения урона ===
+            if (animator != null && finalDamage > 0)
             {
                 animator.SetTrigger(animIDTakeDamage);
             }
 
-            if (playerInteraction != null)
+            // === Эффект частиц ===
+            if (damageEffect != null && finalDamage > 0)
             {
-                Vector3 targetHitPosition = playerInteraction.GetTargetHitPosition();
-                Vector3 targetHitNormal = playerInteraction.GetTargetHitNormal();
-                PlayDamageEffect(targetHitPosition);
+                PlayDamageEffect(popupPos);
             }
 
-            Debug.Log($"[{gameObject.name}] Torpor: {torpor:F1} / {maxTorpor};  Damage: {damage:F1};  Health: {health:F1} / {maxHealth}");
+            // === Отладка ===
+            if (_debugDamage)
+            {
+                string zoneInfo = "default x1";
+                if (col == null)
+                    zoneInfo = "col=NULL";
+                else if (col.TryGetComponent<CreatureHitZone>(out var zone))
+                    zoneInfo = $"{zone.label} x{zone.damageMultiplier}";
+                else
+                    zoneInfo = $"col={col.name} (no zone)";
 
+                Debug.Log($"[{gameObject.name}] Zone: {zoneInfo};  Damage: {finalDamage:F1} (base {damage:F1});  Collider passed={(hitCollider != null ? hitCollider.name : "null")}");
+            }
+
+            // === Смерть ===
             if (health <= 0)
             {
                 Die();
@@ -251,9 +289,7 @@ namespace Assets.Scripts.Creatures
             if (animator != null)
             {
                 animator.enabled = false;
-                // animator.SetTrigger(animIDDeath);
             }
-
 
             // === 3. Получаем creatureId из Creature ===
             string creatureId = null;
@@ -261,7 +297,7 @@ namespace Assets.Scripts.Creatures
             if (creature != null)
             {
                 creatureId = creature.creatureId;
-                creature.enabled = false;   // ← добавить
+                creature.enabled = false;
             }
 
             // === 4. Активируем Corpse ===
@@ -339,7 +375,7 @@ namespace Assets.Scripts.Creatures
             if (_isDead || knockedOut) return;
 
             knockedOut = true;
-            Debug.Log($"[{gameObject.name}] НОКАУТ (torpor={torpor:F1}/{maxTorpor})");
+            // Debug.Log($"[{gameObject.name}] НОКАУТ (torpor={torpor:F1}/{maxTorpor})");
 
             // 1. Останавливаем AI
             var agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
@@ -351,7 +387,6 @@ namespace Assets.Scripts.Creatures
             // 2. Глушим аниматор (пока нет анимации «спит»)
             if (animator != null)
             {
-                // animator.SetTrigger(animIDDeath);
                 animator.enabled = false;
             }
 
@@ -369,9 +404,8 @@ namespace Assets.Scripts.Creatures
                 _inventory = chestInv;
                 _chestUI = FindAnyObjectByType<ChestUI>();
 
-                Debug.Log($"[{gameObject.name}] Инвентарь для приручения создан.");
+                // Debug.Log($"[{gameObject.name}] Инвентарь для приручения создан.");
             }
-
         }
 
         /// <summary>
@@ -416,12 +450,10 @@ namespace Assets.Scripts.Creatures
 
             // 5. Закрываем инвентарь
             CloseInventory();
-
         }
 
         /// <summary>
         /// Вызывается в конце анимации смерти (через Animation Event).
-        /// Выключает коллайдер и аниматор
         /// </summary>
         public void OnDeathAnimationFinished()
         {
@@ -451,7 +483,6 @@ namespace Assets.Scripts.Creatures
             health = Mathf.Clamp(health + amount, 0, maxHealth);
         }
 
-
         /// <summary>
         /// Переключает слой объекта и всех его детей.
         /// </summary>
@@ -464,7 +495,6 @@ namespace Assets.Scripts.Creatures
 
         private void OnDestroy()
         {
-
         }
 
         // Геттеры

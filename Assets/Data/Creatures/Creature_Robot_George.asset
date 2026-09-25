@@ -18,7 +18,7 @@ MonoBehaviour:
   description: 
   prefab: {fileID: 9136099890693409341, guid: c3e066d5409bfe945b0c33e6e0ab096b, type: 3}
   level: 1
-  maxHealth: 2000
+  maxHealth: 5000
   maxStamina: 50
   walkSpeed: 2
   chaseSpeed: 5

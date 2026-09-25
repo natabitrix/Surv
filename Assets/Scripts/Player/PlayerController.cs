@@ -161,11 +161,9 @@ namespace Assets.Scripts.Player
         {
             _cinemachineTargetYaw = transform.eulerAngles.y;
 
-            // _hasAnimator = TryGetComponent(out _animator);
             _hasAnimator = _animator != null;
 
             AssignAnimationIDs();
-
 
             if (_playerSurvivalSystem == null)
             {

@@ -39,10 +39,10 @@ namespace Assets.Scripts.Player
         [SerializeField] private LayerMask _harvestableLayers;
 
         [Header("Hold Settings")]
-        [SerializeField] private float _holdThreshold = 0.5f; // Время удержания для меню
+        [SerializeField] private float _holdThreshold = 0.5f;
 
         [Header("Combat")]
-        [SerializeField] private LayerMask _damageLayers; // 2. Маска для существ (отдельно от интерактаблов)
+        [SerializeField] private LayerMask _damageLayers;
         [SerializeField] private float _equippedItemContactRadius = 2f;
 
         [Header("Audio")]
@@ -56,12 +56,13 @@ namespace Assets.Scripts.Player
         private PlayerMovementSettings _settings;
         private LayerMask _waterLayers;
 
-        // === Цели (теперь поддерживаем несколько) ===
+        // === Цели ===
         private List<IInteractable> _allTargets = new List<IInteractable>();
         private GameObject _targetGO;
         private Vector3 _targetHitPosition;
         private Vector3 _targetHitNormal;
-
+        private Collider _targetHitCollider;
+        public Collider GetTargetHitCollider() => _targetHitCollider;
         public Vector3 GetTargetHitPosition() => _targetHitPosition;
         public Vector3 GetTargetHitNormal() => _targetHitNormal;
 
@@ -98,9 +99,9 @@ namespace Assets.Scripts.Player
 
         private void OnEnable()
         {
-            _input.OnInteractPressed += HandleInteractStarted;    // Старт таймера (1 раз)
-            _input.OnInteractTriggered += HandleInteractHeld;     // Повтор действия (еда)
-            _input.OnInteractStopPressed += HandleInteractEnded;  // Финал (меню или действие)
+            _input.OnInteractPressed += HandleInteractStarted;
+            _input.OnInteractTriggered += HandleInteractHeld;
+            _input.OnInteractStopPressed += HandleInteractEnded;
             _input.OnTargetInventoryPressed += HandleTargetInventory;
         }
 
@@ -122,14 +123,12 @@ namespace Assets.Scripts.Player
             CheckCorpsePhysicsState();
         }
 
-        // === ЛОГИКА УДЕРЖАНИЯ 
         private void HandleHoldLogic()
         {
             if (_isInteractHeld)
             {
                 _interactionHoldTimer += Time.deltaTime;
 
-                // Если держим дольше порога и меню еще не открыто
                 if (_interactionHoldTimer >= _holdThreshold && !_radialMenuOpenedThisHold)
                 {
                     OpenRadialMenuIfAvailable();
@@ -138,7 +137,6 @@ namespace Assets.Scripts.Player
             }
         }
 
-        // === СТАРТ (Сброс таймера) ===
         private void HandleInteractStarted()
         {
             _isInteractHeld = true;
@@ -146,21 +144,14 @@ namespace Assets.Scripts.Player
             _radialMenuOpenedThisHold = false;
         }
 
-        // === УДЕРЖАНИЕ (Повтор действия, например еда) ===
         private void HandleInteractHeld()
         {
-            // // Выполняем действие только если меню еще НЕ открылось
-            // if (!_radialMenuOpenedThisHold && _triggerTarget != null)
-            // {
-            // }
         }
 
         private void HandleInteractEnded()
         {
-
             _isInteractHeld = false;
 
-            // ПРОВЕРКА: если тащим тело — отпускаем его, НЕЗАВИСИМО от рейкаста
             if (_currentlyDraggingCorpse != null)
             {
                 _currentlyDraggingCorpse.StopDragging(this);
@@ -168,13 +159,11 @@ namespace Assets.Scripts.Player
                 HandleMenuClosed();
                 _interactionHoldTimer = 0f;
                 _radialMenuOpenedThisHold = false;
-                return; // Выходим, чтобы не сработала логика рейкаста
+                return;
             }
 
-            // Если меню НЕ открылось за время удержания -> выполняем обычное действие
             if (!_radialMenuOpenedThisHold)
             {
-                // Ищем первую цель НЕ меню и выполняем
                 foreach (var target in _allTargets)
                 {
                     InteractType type = target.GetInteractType();
@@ -187,7 +176,6 @@ namespace Assets.Scripts.Player
                 }
             }
 
-            // Закрываем меню при отпускании
             HandleMenuClosed();
 
             _interactionHoldTimer = 0f;
@@ -196,14 +184,12 @@ namespace Assets.Scripts.Player
 
         private void HandleTargetInventory()
         {
-            // Ищем первую цель
             foreach (var target in _allTargets)
             {
                 InteractType type = target.GetInteractType();
                 InteractType type2 = target.GetInteractType2();
                 if (type == InteractType.OpenTargetInventory || type2 == InteractType.OpenTargetInventory)
                 {
-                    // Всегда сохраняем цель — и для анимации, и для задержки
                     _pendingInteractionTarget = target;
 
                     if (_hasAnimator)
@@ -231,8 +217,6 @@ namespace Assets.Scripts.Player
 
         public void OnInteractFinished(IInteractable specificTarget = null)
         {
-            // Debug.Log("[PlayerInteraction] OnInteractFinished(IInteractable specificTarget = null)!");
-
             IInteractable target = specificTarget ?? (_allTargets.Count > 0 ? _allTargets[0] : null);
             if (target == null) return;
 
@@ -250,20 +234,13 @@ namespace Assets.Scripts.Player
                 ClearTriggerTarget();
         }
 
-        // Перегрузка для Animation Event
         public void OnInteractFinishedAnimationEvent()
         {
-            // Debug.Log("[PlayerInteraction] OnInteractFinishedAnimationEvent()!");
             OnInteractFinished();
         }
 
         public void OnOpenInventoryFinished(IInteractable specificTarget = null)
         {
-            // Приоритет выбора цели:
-            // 1. Явно переданная цель (specificTarget)
-            // 2. Цель, сохранённая в момент нажатия F (_pendingInteractionTarget)
-            // 3. Первая цель из _allTargets с типом OpenTargetInventory
-            // 4. Первая цель из _allTargets (fallback)
             IInteractable target = specificTarget ?? _pendingInteractionTarget;
 
             if (target == null && _allTargets.Count > 0)
@@ -280,12 +257,10 @@ namespace Assets.Scripts.Player
                     }
                 }
 
-                // Если не нашли OpenTargetInventory — берём первый попавшийся
                 if (target == null)
                     target = _allTargets[0];
             }
 
-            // Сбрасываем сохранённую цель — она нам больше не нужна
             _pendingInteractionTarget = null;
 
             if (target == null)
@@ -294,9 +269,6 @@ namespace Assets.Scripts.Player
                 return;
             }
 
-            // Debug.Log($"[PlayerInteraction] target = {target.GetType().Name} на {((MonoBehaviour)target).gameObject.name}");
-
-            // Если панель уже открыта — закрываем её
             if (target.HasInventory() && _panelsController != null && _panelsController.IsInventoryOpened())
             {
                 _panelsController.CloseAllPanels();
@@ -318,19 +290,15 @@ namespace Assets.Scripts.Player
             if (target.HasInventory() && _panelsController != null)
                 _panelsController.OpenOtherInventory();
 
-            Debug.Log("[PlayerInteraction] OnOpenInventoryFinished3");
         }
 
-        // Перегрузка для Animation Event
         public void OnOpenInventoryFinisheddAnimationEvent()
         {
-            // Debug.Log("[PlayerInteraction] OnOpenInventoryFinisheddAnimationEvent()!");
             OnOpenInventoryFinished();
         }
 
         private void OpenRadialMenuIfAvailable()
         {
-            // Ищем цель с типом RadialMenu среди всех найденных
             foreach (var target in _allTargets)
             {
                 if (target.GetInteractType() == InteractType.RadialMenu)
@@ -341,30 +309,21 @@ namespace Assets.Scripts.Player
             }
         }
 
-        /// <summary>
-        /// Проверяет, находится ли объект в поле зрения камеры и не перекрыт ли он стеной.
-        /// </summary>
-
         private bool IsVisibleByCamera(GameObject target, float maxDistance)
         {
             if (target == null || _playerCamera == null) return false;
 
-            // 1. Проверка дистанции
             float dist = Vector3.Distance(_playerHead.position, target.transform.position);
             if (dist > maxDistance) return false;
 
-            // 2. Проверка поля зрения и позиции относительно камеры
             Vector3 viewportPos = _playerCamera.WorldToViewportPoint(target.transform.position);
 
-            // Если z <= 0, объект находится позади камеры
             if (viewportPos.z <= 0) return false;
 
-            // Проверяем, попадает ли объект в границы экрана
             float edgeMargin = 0.05f;
             if (viewportPos.x < -edgeMargin || viewportPos.x > 1 + edgeMargin ||
                 viewportPos.y < -edgeMargin || viewportPos.y > 1 + edgeMargin)
             {
-                // Если центр объекта за пределами экрана, проверяем Bounds через Frustum
                 Plane[] planes = GeometryUtility.CalculateFrustumPlanes(_playerCamera);
                 Collider col = target.GetComponent<Collider>();
 
@@ -378,14 +337,11 @@ namespace Assets.Scripts.Player
                 }
             }
 
-            // 3. Проверка на препятствия (LineCast)
-            // ВАЖНО: Игнорируем попадание в самого себя и его детей
             Vector3 dir = target.transform.position - _playerHead.position;
             if (Physics.Linecast(_playerHead.position, target.transform.position, out RaycastHit hit, _interactableLayers))
             {
                 bool isPartOfTarget = false;
 
-                // Проверяем прямую иерархию: является ли попавший объект частью цели
                 Transform t = hit.collider.transform;
                 while (t != null)
                 {
@@ -397,7 +353,6 @@ namespace Assets.Scripts.Player
                     t = t.parent;
                 }
 
-                // Проверяем обратную иерархию: является ли цель частью попавшего объекта
                 if (!isPartOfTarget)
                 {
                     t = target.transform;
@@ -418,116 +373,6 @@ namespace Assets.Scripts.Player
             return true;
         }
 
-        // private void PerformInteractionRaycast()
-        // {
-        //     _allTargets.Clear();
-        //     _targetGO = null;
-        //     _hitCreature = null;
-
-        //     float currentInteractionDistance = _playerInteractionRadius; // диапазон
-        //     Vector3 headPos = _playerHead.position;
-        //     Vector3 headDir = _playerHead.forward;
-
-        //     // === 1. Raycast для существ (оставляем точным для боя) ===
-        //     if (Physics.Raycast(headPos, headDir, out RaycastHit hitCreature, 5.0f, _damageLayers))
-        //     {
-        //         TryFindCreature(hitCreature.collider);
-        //     }
-
-        //     // === 2. Поиск интерактивных объектов через OverlapSphere ===
-        //     Collider[] nearbyColliders = Physics.OverlapSphere(headPos, currentInteractionDistance, _interactableLayers);
-
-        //     IInteractable bestTarget = null;
-        //     GameObject bestTargetGO = null;
-        //     float bestScore = -1f;
-
-        //     foreach (var col in nearbyColliders)
-        //     {
-        //         // 🔑 ШАГ 1: Ищем КОРНЕВОЙ объект взаимодействия ВВЕРХ по иерархии
-        //         Transform current = col.transform;
-        //         GameObject candidateRoot = null;
-        //         IInteractable foundInteractable = null;
-
-        //         // Поднимаемся до 10 уровней вверх (был 5)
-        //         for (int i = 0; i < 10 && current != null; i++)
-        //         {
-        //             // ✅ ПРИОРИТЕТ 1: Сначала ищем CORPSE
-        //             if (current.TryGetComponent<Corpse>(out var corpse))
-        //             {
-        //                 bool isCorrectCollider = corpse.InteractionCollider == null ||
-        //                                        corpse.InteractionCollider == col;
-
-        //                 if (isCorrectCollider && corpse.enabled)
-        //                 {
-        //                     candidateRoot = current.gameObject;
-        //                     foundInteractable = corpse;
-        //                     break;
-        //                 }
-        //             }
-
-        //             // ✅ ПРИОРИТЕТ 2: BaseLivingEntity (живые существа)
-        //             if (current.TryGetComponent<BaseLivingEntity>(out var livingEntity))
-        //             {
-        //                 bool isCorrectCollider = livingEntity.InteractionCollider == null ||
-        //                                        livingEntity.InteractionCollider == col;
-
-        //                 if (isCorrectCollider && livingEntity.IsAlive())
-        //                 {
-        //                     candidateRoot = current.gameObject;
-        //                     foundInteractable = livingEntity;
-        //                     break;
-        //                 }
-        //             }
-
-        //             // ✅ ПРИОРИТЕТ 3: Обычные интерактаблы (сундуки, двери)
-        //             if (foundInteractable == null)
-        //             {
-        //                 var interactable = current.GetComponent<IInteractable>();
-        //                 if (interactable != null && !(interactable is Corpse) && !(interactable is BaseLivingEntity))
-        //                 {
-        //                     candidateRoot = current.gameObject;
-        //                     foundInteractable = interactable;
-        //                     break;
-        //                 }
-        //             }
-
-        //             current = current.parent;
-        //         }
-
-        //         // Если не нашли корневого объекта — пропускаем
-        //         if (candidateRoot == null || foundInteractable == null) continue;
-
-        //         // 🔑 ШАГ 2: УПРОЩЕННАЯ проверка видимости (БЕЗ LineCast)
-        //         // Просто проверяем дистанцию и общее направление
-        //         Vector3 toTarget = candidateRoot.transform.position - headPos;
-        //         float distToTarget = toTarget.magnitude;
-
-        //         if (distToTarget > currentInteractionDistance) continue;
-
-        //         // Проверяем: находится ли цель в пределах ~ 120 градусов от взгляда
-        //         // Это позволит видеть цели сбоку и даже немного сзади
-        //         float angle = Vector3.Angle(headDir, toTarget.normalized);
-        //         if (angle > 120f) continue; // был 90, теперь 120
-
-        //         // 🔑 ШАГ 3: Расчет приоритета (ближайшая цель выигрывает)
-        //         float score = (1f - (angle / 120f)) * 0.3f + (1f - (distToTarget / currentInteractionDistance)) * 0.7f;
-
-        //         if (score > bestScore)
-        //         {
-        //             bestScore = score;
-        //             bestTargetGO = candidateRoot;
-        //             bestTarget = foundInteractable;
-        //         }
-        //     }
-
-        //     // Добавляем в список ТОЛЬКО лучшую цель
-        //     if (bestTarget != null)
-        //     {
-        //         ProcessHitObject(bestTargetGO);
-        //     }
-
-        // }
-
         private void PerformInteractionRaycast()
         {
             _allTargets.Clear();
@@ -538,9 +383,6 @@ namespace Assets.Scripts.Player
             Vector3 headDir = _playerHead.forward;
             float dist = _playerInteractionRadius;
 
-            // === 1. Точный рейкаст из головы ===
-            // QueryTriggerInteraction.Collide — иначе триггер-коллайдеры (InteractionCollider)
-            // не будут найдены.
             if (Physics.Raycast(
                     headPos,
                     headDir,
@@ -549,13 +391,11 @@ namespace Assets.Scripts.Player
                     _interactableLayers,
                     QueryTriggerInteraction.Collide))
             {
+                _targetHitCollider = hit.collider;
                 if (TryProcessHit(hit.collider.gameObject, hit.point))
-                    return; // нашли и обработали — выходим
+                    return;
             }
 
-            // === 2. SphereCast fallback ===
-            // «Прощает» промахи, когда рейкаст из головы летит мимо коллайдера
-            // (например, ragdoll лёг неудачно, или игрок смотрит чуть в сторону).
             const float sphereRadius = 0.35f;
             if (Physics.SphereCast(
                     headPos,
@@ -566,46 +406,33 @@ namespace Assets.Scripts.Player
                     _interactableLayers,
                     QueryTriggerInteraction.Collide))
             {
+                _targetHitCollider = sphereHit.collider;
                 if (TryProcessHit(sphereHit.collider.gameObject, sphereHit.point))
                     return;
             }
-
-            // === 3. Ничего не нашли — цель отсутствует ===
-            // (опционально) Можно попробовать дочерние коллайдеры через OverlapSphere,
-            // но обычно для активного взаимодействия этого не требуется.
         }
 
-        /// <summary>
-        /// Проверяет, есть ли на объекте (или его родителях) IInteractable,
-        /// и если да — регистрирует его как цель.
-        /// Возвращает true, если цель найдена и обработана.
-        /// </summary>
         private bool TryProcessHit(GameObject hitObject, Vector3 hitPoint)
         {
             if (hitObject == null) return false;
 
-            // 🔑 Поднимаемся по иерархии до 10 уровней — ищем корневой объект взаимодействия.
-            // Приоритет: Corpse > BaseLivingEntity > обычные IInteractable.
             Transform current = hitObject.transform;
             GameObject candidateRoot = null;
 
             for (int i = 0; i < 10 && current != null; i++)
             {
-                // ПРИОРИТЕТ 1: Corpse
                 if (current.TryGetComponent<Corpse>(out var corpse) && corpse.enabled)
                 {
                     candidateRoot = current.gameObject;
                     break;
                 }
 
-                // ПРИОРИТЕТ 2: BaseLivingEntity (живое существо)
                 if (current.TryGetComponent<BaseLivingEntity>(out var living) && living.IsAlive())
                 {
                     candidateRoot = current.gameObject;
                     break;
                 }
 
-                // ПРИОРИТЕТ 3: обычные IInteractable (сундуки, двери, ресурсы)
                 var interactable = current.GetComponent<IInteractable>();
                 if (interactable != null
                     && !(interactable is Corpse)
@@ -620,26 +447,21 @@ namespace Assets.Scripts.Player
 
             if (candidateRoot == null) return false;
 
-            // Дополнительно: проверим дистанцию до BOUNDS, а не до transform.position.
-            // Для крупных объектов и ragdoll это критично.
             Collider col = hitObject.GetComponent<Collider>();
             Vector3 targetPoint = (col != null) ? col.ClosestPoint(_playerHead.position) : candidateRoot.transform.position;
             float distToTarget = Vector3.Distance(_playerHead.position, targetPoint);
 
-            if (distToTarget > _playerInteractionRadius + 0.2f) // небольшой запас
+            if (distToTarget > _playerInteractionRadius + 0.2f)
                 return false;
 
-            // Заполняем _targetHitPosition для системы урона/эффектов
             _targetHitPosition = hitPoint;
             _targetHitNormal = _playerHead.forward;
 
-            // Обрабатываем и добавляем цель в _allTargets
             ProcessHitObject(candidateRoot);
 
             return _allTargets.Count > 0;
         }
 
-        // Поиск всех компонентов IInteractable на объекте
         private void FindInteractablesOnObject(GameObject obj)
         {
             var interactables = obj.GetComponents<IInteractable>();
@@ -650,21 +472,17 @@ namespace Assets.Scripts.Player
             }
         }
 
-        // === 3. ОБНОВЛЕНИЕ UI (Две надписи) ===
         private void UpdateInteractionUI()
         {
-            // === ЕСЛИ ТАЩИМ ТЕЛО — показываем только «Отпустить» ===
             if (_currentlyDraggingCorpse != null)
             {
                 if (interactionUI != null)
                 {
-                    // interactionText.text = "[E] Отпустить тело";
                     interactionUI.SetActive(false);
                 }
                 return;
             }
 
-            // === Обычная логика ===
             StringBuilder sb = new StringBuilder();
             bool isInventoryOpened = _panelsController?.IsInventoryOpened() == true;
             bool isMenuAlreadyOpen = _panelsController?.IsRadialMenuOpened() == true;
@@ -675,18 +493,14 @@ namespace Assets.Scripts.Player
                 InteractType type = target.GetInteractType();
                 InteractType type2 = target.GetInteractType2();
 
-                // Проверка активности компонента, если он является MonoBehaviour
-                // Это скроет надпись и для Corpse, и для RadialMenu, если они disabled
                 bool isActive = true;
                 if (target is MonoBehaviour mb)
                 {
                     isActive = mb.enabled && mb.gameObject.activeInHierarchy;
                 }
 
-                // Если компонент не активен, пропускаем его отображение в UI
                 if (!isActive) continue;
 
-                // 1. Надпись для действия (Открыть, Подобрать, Тащить тело)
                 if (type != InteractType.RadialMenu)
                 {
                     string actionText = GetActionText(type, _targetGO);
@@ -697,7 +511,6 @@ namespace Assets.Scripts.Player
                     }
                 }
 
-                // 2. Надпись для второго действия (Открыть инвентарь)
                 if (type2 != InteractType.None && type2 != InteractType.RadialMenu)
                 {
                     string actionText2 = GetActionText(type2, _targetGO);
@@ -708,11 +521,9 @@ namespace Assets.Scripts.Player
                     }
                 }
 
-                // 3. Надпись для Меню
                 if (type == InteractType.RadialMenu && !isMenuAlreadyOpen)
                 {
                     if (sb.Length > 0) sb.AppendLine();
-                    // sb.Append("Удерживайте [E] для меню " + _targetGO.name);
                     sb.Append("Удерживайте [E] для меню");
                 }
             }
@@ -724,28 +535,16 @@ namespace Assets.Scripts.Player
             }
         }
 
-        /// <summary>
-        /// Обрабатывает попадание в объект. 
-        /// Так как вызывается из PerformInteractionRaycast с уже найденной лучшей целью,
-        /// поиск IInteractable упрощен до проверки самого объекта.
-        /// </summary>
-
         private void ProcessHitObject(GameObject hitObject)
         {
             if (hitObject == null) return;
 
-            // === БЛОК 1: Поиск IInteractable с ПРИОРИТЕТОМ CORPSE ===
-
-            // Сначала проверяем, есть ли на объекте Corpse
             var corpse = hitObject.GetComponent<Corpse>();
             bool hasCorpse = corpse != null && corpse.enabled;
-
-            // Ищем все интерактаблы
 
             var interactables = hitObject.GetComponents<IInteractable>();
             foreach (var interactable in interactables)
             {
-                // Пропускаем отключённые компоненты (GetComponents<IInteractable> возвращает и disabled)
                 if (interactable is MonoBehaviour mb && !mb.enabled)
                     continue;
 
@@ -753,13 +552,11 @@ namespace Assets.Scripts.Player
                 if (!_allTargets.Contains(interactable)) _allTargets.Add(interactable);
             }
 
-            // Фоллбэк: поиск в детях (только если нет Corpse на корне)
             if (!hasCorpse && _allTargets.Count == 0)
             {
                 var childInteractables = hitObject.GetComponentsInChildren<IInteractable>();
                 foreach (var child in childInteractables)
                 {
-                    // Та же фильтрация для детей
                     var childCorpse = child as Corpse;
                     var childBLE = child as BaseLivingEntity;
 
@@ -776,19 +573,9 @@ namespace Assets.Scripts.Player
                 _targetGO = hitObject;
             }
 
-            // === БЛОК 2: Поиск BaseLivingEntity (только для боя/урона) ===
-            // Здесь оставляем поиск существа, но только если НЕТ трупа
-            // Или если труп есть, но нам нужно нанести урон самому трупу (harvest)
             if (_hitCreature == null)
             {
-                // Если есть Corpse, считаем его целью для harvest, а не BaseLivingEntity
-                if (hasCorpse)
-                {
-                    // Можно установить corpse как _hitCreature для системы урона, 
-                    // если она поддерживает IImpactSoundProvider
-                    // Но обычно _hitCreature используется только для TakeDamage живых
-                }
-                else
+                if (!hasCorpse)
                 {
                     _hitCreature = hitObject.GetComponent<BaseLivingEntity>() ??
                                   hitObject.GetComponentInChildren<BaseLivingEntity>();
@@ -809,21 +596,15 @@ namespace Assets.Scripts.Player
             }
         }
 
-        /// <summary>
-        /// Быстрая проверка только на BaseLivingEntit y (для raycast-атаки).
-        /// Используется в PerformInteractionRaycast для оптимизации.
-        /// </summary>
         private void TryFindCreature(Collider collider)
         {
-            if (_hitCreature != null) return; // Уже есть цель
+            if (_hitCreature != null) return;
 
             var creature = collider.GetComponent<BaseLivingEntity>() ??
                           collider.GetComponentInChildren<BaseLivingEntity>();
 
             if (creature != null)
                 _hitCreature = creature;
-
-            // Debug.Log("_hitCreature: " + _hitCreature);
         }
 
         private void HandleMenuOpened(GameObject targetGO)
@@ -842,13 +623,8 @@ namespace Assets.Scripts.Player
             }
         }
 
-        /// <summary>
-        /// Вызывается в конце анимации атаки (через Animation Event).
-        /// Запускает проверку попадания в зависимости от экипировки.
-        /// </summary>
         public void OnAttackInteractFinished()
         {
-            // Не обрабатываем ближний бой для дальнего оружия
             Item equipped = GetEquippedTool();
             if (equipped != null && equipped.isRanged) return;
 
@@ -859,20 +635,15 @@ namespace Assets.Scripts.Player
             Vector3? hitPosition = null;
             ImpactType? hitImpactType = null;
 
-
-            // === Проверка попаданий ===
             if (equippedTool != null)
             {
-                // Оружие/инструмент: проверяем пересечение модели
-                GetEquippedItemContact(); // заполняет _allTargets
+                GetEquippedItemContact();
             }
             else
             {
-                // Кулаки: проверяем сферу вокруг кистей
-                GetHandContact(); //  заполняет _allTargets
+                GetHandContact();
             }
 
-            // === Собираем информацию для звуков из найденных целей ===
             if (_allTargets.Count > 0)
             {
                 foreach (var target in _allTargets)
@@ -888,23 +659,20 @@ namespace Assets.Scripts.Player
                             hitImpactType = impactProvider.GetImpactType();
                             hitPosition = go.transform.position;
                             hitSomething = true;
-                            break; // Берём первую цель со звуком
+                            break;
                         }
                     }
                 }
             }
 
-            // === Нанесение урона существам ===
             if (_hitCreature != null)
             {
                 if (_hitCreature.IsAlive())
                 {
                     float damage = _playerController.GetAttackDamage();
-                    // Debug.Log($"[PlayerInteraction] Атака по {_hitCreature.gameObject.name}, урон: {damage}");
                     _hitCreature.TakeDamage(damage, this);
                 }
 
-                // Получаем тип воздействия от существа
                 if (_hitCreature is IImpactSoundProvider provider)
                 {
                     hitImpactType = provider.GetImpactType();
@@ -914,16 +682,12 @@ namespace Assets.Scripts.Player
                 _hitCreature = null;
             }
 
-
-            //  === ПРОВЕРКА: если тащим тело и нажали атаку — бросаем его ===
             if (_currentlyDraggingCorpse != null)
             {
                 _currentlyDraggingCorpse.InterruptByAttack(this);
                 CombatAudioManager.Instance?.PlayMissSound(AttackAnimationType.Fists, transform.position);
-                // Не return! Пусть дальше сработает логика атаки по другим целям
             }
 
-            // === Воспроизведение звука удара ===
             if (hitSomething && hitPosition.HasValue)
             {
                 var equipment = GetComponent<PlayerEquipment>();
@@ -931,18 +695,13 @@ namespace Assets.Scripts.Player
 
                 if (slot != null && slot.item != null && slot.currentDurability > 0)
                 {
-                    // Уменьшаем прочность
-                    slot.currentDurability -= 10.0f; // Или значение из конфига предмета
+                    slot.currentDurability -= 10.0f;
                     PlayerProgress.Instance.mainInventoryData.NotifyChanged();
                     PlayerProgress.Instance.hotbarInventoryData.NotifyChanged();
 
                     if (slot.currentDurability <= 0)
                     {
-                        // Логика поломки:
-                        // 1. Убрать предмет из руки (Unequip)
-                        // 2. Возможно, удалить предмет из слота (slot.item = null)
                         equipment.Unequip();
-                        // PlayerProgress.Instance.mainInventoryData.RemoveItemFromSlot(equipment.EquippedSlotIndex);
                         NotificationManager.Instance.Show("Инструмент сломался!", null);
                     }
                 }
@@ -952,14 +711,11 @@ namespace Assets.Scripts.Player
             }
             else
             {
-                // Промах — звук воздуха
                 CombatAudioManager.Instance?.PlayMissSound(weaponType, transform.position);
             }
 
-            // === Обработка ресурсов (Harvest) ===
             foreach (var target in _allTargets)
             {
-                // Debug.Log("target.GetInteractType(): " + target.GetInteractType());
                 if (target.GetInteractType() == InteractType.Harvest || target is Corpse)
                 {
                     var context = new InteractContext
@@ -973,17 +729,10 @@ namespace Assets.Scripts.Player
                     if (target.ShouldDetachAfterInteract())
                         ClearTriggerTarget();
 
-                    // Прерываем после первого Harvest — обычно атакуют один ресурс за раз
                     return;
                 }
             }
         }
-        // === Вспомогательные методы (добавить в класс) ===
-
-        /// <summary>
-        /// Проверяет пересечение модели экипированного предмета с миром.
-        /// Используется для добычи ресурсов (Harvest) и melee-атаки оружием.
-        /// </summary>
 
         private void GetEquippedItemContact()
         {
@@ -1002,28 +751,26 @@ namespace Assets.Scripts.Player
 
             Bounds localBounds = meshFilter.sharedMesh.bounds;
 
-            // 🔹 1. Мировой центр коробки = центр геометрии меша, а не пивот/рука
             Vector3 boxCenterWorld = itemModel.TransformPoint(localBounds.center);
-
-            // 🔹 2. Стабильные полуразмеры в мировых единицах
             Vector3 boxExtents = Vector3.Scale(localBounds.extents, itemModel.lossyScale) * _equippedItemContactRadius;
 
             itemModel.transform.GetPositionAndRotation(out Vector3 placementPosition, out Quaternion placementRotation);
 
-            // 🔹 3. Detекция теперь точно совпадает с визуалом лезвия
             Collider[] hits = Physics.OverlapBox(
-                boxCenterWorld,      // ← смещённый центр
-                boxExtents,          // ← стабильные полуразмеры
+                boxCenterWorld,
+                boxExtents,
                 placementRotation,
-                _damageLayers | _harvestableLayers
-            );
+                _damageLayers | _harvestableLayers,
+                QueryTriggerInteraction.Collide);
 
             foreach (var hit in hits)
             {
+                _targetHitCollider = hit;
+
                 if (hit.TryGetComponent<Collider>(out var targetCollider))
                     _targetHitPosition = targetCollider.ClosestPoint(boxCenterWorld);
                 else
-                    _targetHitPosition = placementPosition; // или boxCenterWorld
+                    _targetHitPosition = placementPosition;
 
                 ProcessHitObject(hit.gameObject);
             }
@@ -1031,10 +778,6 @@ namespace Assets.Scripts.Player
             _targetHitNormal = _playerController.transform.forward;
         }
 
-        /// <summary>
-        /// Проверяет пересечение сферы вокруг кисти с миром.
-        /// Используется для melee-атаки кулаками.
-        /// </summary>
         private void GetHandContact()
         {
             Transform rightHand = _playerAnimator?.GetBoneTransform(HumanBodyBones.RightHand);
@@ -1049,24 +792,26 @@ namespace Assets.Scripts.Player
 
             if (rightHand != null)
             {
-                Collider[] hits = Physics.OverlapSphere(rightHand.position, hitRadius, layerMask);
+                Collider[] hits = Physics.OverlapSphere(rightHand.position, hitRadius, layerMask, QueryTriggerInteraction.Collide);
                 foreach (var hit in hits)
                 {
                     if (processedHits.Add(hit))
                     {
-                        ProcessHitObject(hit.gameObject); // ← ВАЖНО: заполняет _allTargets и _hitCreature
+                        _targetHitCollider = hit;
+                        ProcessHitObject(hit.gameObject);
                     }
                 }
             }
 
             if (leftHand != null)
             {
-                Collider[] hits = Physics.OverlapSphere(leftHand.position, hitRadius, layerMask);
+                Collider[] hits = Physics.OverlapSphere(leftHand.position, hitRadius, layerMask, QueryTriggerInteraction.Collide);
                 foreach (var hit in hits)
                 {
                     if (processedHits.Add(hit))
                     {
-                        ProcessHitObject(hit.gameObject); // ← ВАЖНО: заполняет _allTargets и _hitCreature
+                        _targetHitCollider = hit;
+                        ProcessHitObject(hit.gameObject);
                     }
                 }
             }
@@ -1105,7 +850,6 @@ namespace Assets.Scripts.Player
             string targetName = "";
             if (targetGO != null)
             {
-                // targetName = " " + targetGO.name;
                 if (type == InteractType.Interact)
                 {
                     if (targetGO.TryGetComponent(out DoorController doorController))
@@ -1123,14 +867,14 @@ namespace Assets.Scripts.Player
 
             return type switch
             {
-                InteractType.None => "", // Явная обработка None
+                InteractType.None => "",
                 InteractType.OpenTargetInventory => "[F] Открыть" + targetName,
                 InteractType.Interact => "[E] Использовать" + targetName,
                 InteractType.Pickup => "[E] Подобрать" + targetName,
                 InteractType.Gather => "[E] Собрать" + targetName,
                 InteractType.Drink => "[E] Пить" + targetName,
                 InteractType.Harvest => "[ЛКМ] Добывать" + targetName,
-                InteractType.RadialMenu => "", // Скрыто, обрабатывается отдельно
+                InteractType.RadialMenu => "",
                 _ => "[E] Взаимодействовать" + targetName
             };
         }
@@ -1139,17 +883,14 @@ namespace Assets.Scripts.Player
         {
             if (audioClip != null)
             {
-                // Получаем глобальную громкость
                 float globalVolume = 1f;
                 if (AudioManager.Instance != null)
                 {
                     globalVolume = AudioManager.Instance.masterVolume;
                 }
 
-                // Итоговая громкость = Глобальная * Настройка существа
                 float finalVolume = globalVolume * audioClipVolume;
 
-                // Создаем источник вручную с правильной громкостью
                 GameObject soundObj = new GameObject($"{audioClip.name}");
                 soundObj.transform.position = transform.position;
 
@@ -1185,7 +926,6 @@ namespace Assets.Scripts.Player
             return AttackAnimationType.Fists;
         }
 
-        // === Методы для управления перетаскиванием тела ===
         public void RegisterDraggingCorpse(Corpse corpse)
         {
             _currentlyDraggingCorpse = corpse;
@@ -1197,14 +937,12 @@ namespace Assets.Scripts.Player
                 _currentlyDraggingCorpse = null;
         }
 
-        // Проверка: тащим ли мы сейчас тело?
         public bool IsDraggingCorpse() => _currentlyDraggingCorpse != null;
 
         public void TryClosePanels()
         {
             if (_panelsController != null && _panelsController.IsPanelOpened())
             {
-                // Если открыт инвентарь цели или радиальное меню - закрываем
                 if (_panelsController.IsInventoryOpened() || _panelsController.IsRadialMenuOpened())
                 {
                     _panelsController.CloseAllPanels();
@@ -1212,23 +950,18 @@ namespace Assets.Scripts.Player
             }
         }
 
-        // В файле PlayerInteraction.cs
-
         private void CheckCorpsePhysicsState()
         {
             if (_currentlyDraggingCorpse == null) return;
 
-            // Получаем скорость через новое публичное свойство PlayerController
             float currentSpeed = 0f;
             if (_playerController != null)
             {
                 currentSpeed = _playerController.CurrentHorizontalSpeed;
             }
 
-            // Если скорость очень маленькая, стабилизируем тело (гасим колебания)
             bool shouldStabilize = currentSpeed < 0.3f;
 
-            // Вызываем метод стабилизации у трупа
             _currentlyDraggingCorpse.StabilizeRagdoll(shouldStabilize);
         }
 
@@ -1241,60 +974,16 @@ namespace Assets.Scripts.Player
             Vector3 headPos = _playerHead != null ? _playerHead.position : transform.position;
             Vector3 headDir = _playerHead != null ? _playerHead.forward : transform.forward;
 
-            // Рисуем луч взгляда
             Debug.DrawRay(headPos, headDir * 5.0f, Color.orange);
 
-            // Рисуем линию до целевого объекта
             if (_targetGO != null)
             {
                 Debug.DrawLine(headPos, _targetGO.transform.position, Color.green);
             }
 
-            // Рисуем сферу поиска
             Gizmos.color = new Color(0, 1, 0, 0.1f);
             Gizmos.DrawWireSphere(headPos, currentInteractionDistance);
-
-
-            // Item equippedItem = GetEquippedTool();
-            // if (equippedItem == null) return;
-
-            // var equipment = GetComponent<PlayerEquipment>();
-            // if (equipment == null || equipment.toolAttachPoint == null) return;
-
-            // Transform toolParent = equipment.toolAttachPoint;
-            // if (toolParent.childCount == 0) return;
-            // Transform itemModel = toolParent.GetChild(0);
-
-            // var meshFilter = itemModel.GetComponent<MeshFilter>();
-            // if (meshFilter == null || meshFilter.sharedMesh == null) return;
-
-            // Bounds localBounds = meshFilter.sharedMesh.bounds;
-            // Vector3 boxCenterWorld = itemModel.TransformPoint(localBounds.center);
-            // Vector3 boxExtents = Vector3.Scale(localBounds.extents, itemModel.lossyScale) * _equippedItemContactRadius;
-
-            // itemModel.transform.GetPositionAndRotation(out Vector3 _, out Quaternion rot);
-
-            // // 🔹 Рисуем короб ровно там, где работает OverlapBox
-            // Matrix4x4 oldMatrix = Gizmos.matrix;
-            // Gizmos.matrix = Matrix4x4.TRS(boxCenterWorld, rot, Vector3.one);
-
-            // Gizmos.color = new Color(1f, 0.4f, 0f, 0.5f);
-            // Gizmos.DrawCube(Vector3.zero, boxExtents * 2f);
-
-            // Gizmos.color = Color.white;
-            // Gizmos.DrawWireCube(Vector3.zero, boxExtents * 2f);
-            // Gizmos.matrix = oldMatrix;
-
-            // // 🔹 Визуально покажем разницу: пивот (жёлтый) vs центр удара (голубой)
-            // Gizmos.color = Color.yellow;
-            // Gizmos.DrawSphere(itemModel.position, 0.05f); // пивот/рука
-
-            // Gizmos.color = Color.cyan;
-            // Gizmos.DrawSphere(boxCenterWorld, 0.07f); // центр лезвия
-            // Gizmos.DrawLine(itemModel.position, boxCenterWorld);
         }
 #endif
-
-
     }
 }

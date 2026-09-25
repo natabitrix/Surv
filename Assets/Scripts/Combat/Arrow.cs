@@ -34,10 +34,9 @@ namespace Assets.Scripts.Combat
         private float _torpor;
         private uint _ownerId;
         private bool _isFlying;
-        // private bool _isStuck;
 
         private Collider[] _ignoredColliders;
-        private int _spawnFrame; // для отладки
+        private int _spawnFrame;
 
         // === Запуск ===
         public void Launch(Item arrowItem, float damage, float torpor, Vector3 direction, float speed, float gravityScale, uint ownerId = 0)
@@ -48,15 +47,12 @@ namespace Assets.Scripts.Combat
             _ownerId = ownerId;
             _spawnFrame = Time.frameCount;
 
-            // ✅ Сначала сбрасываем физику и ставим позицию
             _rb.isKinematic = true;
-            _rb.position = transform.position;      // ← синхронизация Rigidbody.position
+            _rb.position = transform.position;
             _rb.rotation = Quaternion.LookRotation(-direction);
 
-            // ✅ Применяем поворот к трансформу
             transform.rotation = Quaternion.LookRotation(-direction);
 
-            // ✅ Теперь включаем физику и задаём скорость
             _rb.isKinematic = false;
             _rb.useGravity = true;
             _rb.linearVelocity = direction.normalized * speed;
@@ -65,7 +61,6 @@ namespace Assets.Scripts.Combat
             _collider.isTrigger = false;
 
             _isFlying = true;
-            // _isStuck = false;
 
             if (_pickable != null) _pickable.enabled = false;
 
@@ -93,12 +88,10 @@ namespace Assets.Scripts.Combat
             _rb.linearVelocity = Vector3.zero;
             _rb.angularVelocity = Vector3.zero;
 
-            // ✅ ЯВНЫЙ СБРОС КОЛЛАЙДЕРА (иначе может остаться isTrigger от прошлой жизни)
             _collider.enabled = true;
             _collider.isTrigger = false;
 
             _isFlying = false;
-            // _isStuck = false;
             _ignoredColliders = null;
 
             if (_debugHits)
@@ -110,7 +103,6 @@ namespace Assets.Scripts.Combat
             _rb.isKinematic = true;
 
             _isFlying = false;
-            // _isStuck = false;
             _ignoredColliders = null;
 
             CancelInvoke();
@@ -122,11 +114,7 @@ namespace Assets.Scripts.Combat
         // === Полёт через Raycast ===
         private void FixedUpdate()
         {
-            if (!_isFlying)
-            {
-                // if (_debugFlight) Debug.Log($"[Arrow.FixedUpdate] {name}: не летит (isFlying=false)");
-                return;
-            }
+            if (!_isFlying) return;
 
             if (_rb.isKinematic)
             {
@@ -158,7 +146,6 @@ namespace Assets.Scripts.Combat
 
             if (hits.Length == 0 && _debugFlight && Time.frameCount % 5 == 0)
             {
-                // Если RaycastAll ничего не нашёл — SphereCast радиусом 0.3м
                 if (Physics.SphereCast(transform.position, 0.3f, direction, out RaycastHit sphereHit, distance, _hitMask, QueryTriggerInteraction.Collide))
                 {
                     Debug.Log($"[Arrow] SphereCast нашёл: {sphereHit.collider.name} (dist={sphereHit.distance}), но RaycastAll — НЕТ!");
@@ -170,15 +157,10 @@ namespace Assets.Scripts.Combat
             }
 
             if (hits.Length == 0)
-            {
-                // Ничего не нашли — летим дальше
                 return;
-            }
 
-            // Сортируем по дистанции (ближайшее первое)
             System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
 
-            // Ищем первое НЕ игнорируемое
             foreach (var hit in hits)
             {
                 if (IsIgnored(hit.collider))
@@ -216,15 +198,15 @@ namespace Assets.Scripts.Combat
         private void OnHit(Collider other, Vector3 point)
         {
             _isFlying = false;
-            // _isStuck = true;
 
-            // Урон живому существу
+            // Урон живому существу — передаём коллайдер и точку для зон урона
             var livingEntity = other.GetComponentInParent<BaseLivingEntity>();
             if (livingEntity != null && livingEntity.IsAlive())
             {
-                livingEntity.TakeDamage(_damage, _torpor, null);
+                livingEntity.TakeDamage(_damage, _torpor, null, other, point);
+
                 if (_debugHits)
-                    Debug.Log($"[Arrow.OnHit] Урон {_damage}, Torpor {_torpor} → {livingEntity.name}");
+                    Debug.Log($"[Arrow.OnHit] Урон {_damage}, Torpor {_torpor} → {livingEntity.name}, collider={other.name}");
             }
 
             // Останавливаем физику
@@ -276,7 +258,6 @@ namespace Assets.Scripts.Combat
         {
             if (!_isFlying) return;
 
-            // Игнорируем свои коллайдеры
             if (_ignoredColliders != null)
             {
                 foreach (var col in _ignoredColliders)
@@ -286,7 +267,6 @@ namespace Assets.Scripts.Combat
                 }
             }
 
-            // Игнорируем другие стрелы
             if (collision.collider.GetComponentInParent<Arrow>() != null) return;
 
             if (_debugHits)

@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Assets.Scripts.Core;
+using Assets.Scripts.Player;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -27,7 +29,10 @@ namespace Assets.Scripts.UI
         [SerializeField] private float _physicsSettleTime = 2f;
 
         private List<LoadingTask> _tasks = new();
+
         private bool _isLoading = false;
+        public bool IsLoading = true;
+
         private Coroutine _loadingCoroutine;
 
         private class LoadingTask
@@ -107,6 +112,9 @@ namespace Assets.Scripts.UI
         private IEnumerator LoadingRoutine()
         {
             _isLoading = true;
+            var _playerController = PlayerController.Instance;
+            if (_playerController != null)
+                _playerController.LockCameraOnEsc = true;
 
             Show("Загрузка...");
             yield return null; // Даем экрану отрисоваться
@@ -143,9 +151,12 @@ namespace Assets.Scripts.UI
 
             _tasks.Clear();
             _isLoading = false;
+            IsLoading = false;
             _loadingCoroutine = null;
 
             SetCursorVisible(false);
+            if (_playerController != null)
+                _playerController.LockCameraOnEsc = false;
 
             // Debug.Log("[LoadingScreenManager] Загрузка завершена!");
         }
@@ -155,7 +166,7 @@ namespace Assets.Scripts.UI
             Cursor.lockState = isCursorVisible ? CursorLockMode.None : CursorLockMode.Locked;
             Cursor.visible = isCursorVisible;
         }
-
+        
         private IEnumerator RunTask(LoadingTask task)
         {
             // Debug.Log($"[LoadingScreenManager] Начинаем: {task.Name}");
