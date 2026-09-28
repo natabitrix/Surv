@@ -223,6 +223,7 @@ All core game data should be ScriptableObjects stored in `Assets/Data/`:
 | `ContextMenuManager`        | Контекстное меню с кнопками для слотов инвентаря 
 | `PauseManager`              | Окно паузы с оверлеем и кнопками 
 | `DeathScreenManager`        | Окно экрана смерти с оверлеем и кнопками 
+| `DamageNumberPool`          | Пул всплывающих чисел урона
 
 ### 2.2 Компоненты на объекте `===InventoryManager===` на сцене
 | Компонент                   | Назначение           
@@ -638,16 +639,106 @@ Screen Space инфо-панель, показывающая статы суще
   - `Level` → `Data?.level ?? 1`.
   - `GetDisplayName()` — переопределён.
 
+### 15. Floating Damage Numbers (всплывающие цифры урона)
 
+Screen Space всплывающие числа урона над точкой удара. Вдохновлено ARK.
+
+- **`DamageNumber`** (MonoBehaviour, на префабе):
+  - `TextMeshProUGUI _text` — текст числа.
+  - `_lifetime`, `_riseDistance`, `_alphaCurve` — настройки движения и затухания.
+  - `Show(amount, worldPos)` — ставит текст, активирует.
+  - В `Update`: `worldPos + Vector3.up * (_riseDistance * t)` → `Camera.main.WorldToScreenPoint` → `transform.position`.
+  - Alpha по `_alphaCurve`, возврат в пул по истечении `_lifetime`.
+  - Всегда одного размера, не наклоняется (Screen Space Overlay).
+
+- **`DamageNumberPool`** (MonoBehaviour, на `===GameManagers===`):
+  - `_prefab` — префаб `DamageNumber`.
+  - `_canvasRoot` — RectTransform `DamageNumberCanvas`.
+  - `_initialSize = 20`, `_spawnOffsetY = 0.3f`.
+  - `ShowDamage(amount, worldPos)` — берёт из пула, ставит как child `_canvasRoot`.
+  - `Return(num)` — возвращает в пул.
+
+- **`DamageNumberCanvas`** — Canvas (Screen Space Overlay, Sort Order 100) в `UICanvases`. Дети — числа урона.
+
+- **Интеграция**:
+  - `BaseLivingEntity.TakeDamage()` — вызывает `DamageNumberPool.Instance.ShowDamage(finalDamage, popupPos)`.
+  - `popupPos = playerInteraction.GetTargetHitPosition()` или `hitPoint` (для стрел).
+  - По игроку чисел **нет** — у него HUD.
+
+### 16. Зоны урона (Crit / Armor)
+
+- **`CreatureHitZone`** (MonoBehaviour) — маркер на кости (голова, панцирь):
+  - `damageMultiplier` — множитель (>1 крит, <1 броня, 1 дефолт).
+  - `label` — имя для отладки.
+  - `owner` — ссылка на `BaseLivingEntity`, заполняется в `Awake` из родителя.
+  - Визуализация в редакторе через `OnDrawGizmosSelected` (красный/синий/серый).
+
+- **Как работает**:
+  - В `PlayerInteraction.GetEquippedItemContact` / `GetHandContact` — `OverlapBox` / `OverlapSphere` собирает коллайдеры, запоминает последний в `_targetHitCollider`.
+  - `BaseLivingEntity.TakeDamage()` — спрашивает `GetDamageMultiplier(col)`, умножает урон.
+  - `Creature.GetDamageMultiplier(col)` — `col.GetComponent<CreatureHitZone>()?.damageMultiplier ?? 1f`.
+
+- **Настройка**: на префабе существа на кость головы добавить `CreatureHitZone` (и, при необходимости, коллайдер).
+
+- **Важное:** `CharacterJoint` может конфликтовать с триггер-коллайдером на голове. Проверено — работает при правильной настройке коллайдера.
+
+### 17. Фидбек при получении урона игроком
+
+- **`PlayerSurvivalSystem.OnPlayerDamaged`** — событие `Action<float>`, вызывается в `TakeDamage(damage)`.
+
+- **`PlayerDamageFeedback`** (MonoBehaviour, на `---Player---`):
+  - `_impulseSource` — `CinemachineImpulseSource`. Тряска: `GenerateImpulse(force)`, где `force = Mathf.Min(damage * _impulsePerDamage, _maxImpulse)`.
+  - `_hurtClips[]` — массив клипов боли, выбирается случайный.
+  - `_hurtVolume` — громкость.
+  - `_damageVignette` — Image с радиальным градиентом.
+  - `_flashPeak`, `_flashFadeSpeed` — вспышка при ударе, линейное затухание в `Update`.
+  - Подписка на `OnPlayerDamaged` через `TrySubscribe()` (в `OnEnable` и `Start`, флаг `_subscribed`).
+
+- **Cinemachine Impulse**:
+  - `CinemachineImpulseSource` — на `---Player---`.
+  - `CinemachineImpulseListener` — на **всех трёх** Cinemachine-камерах (`_thirdPersonVcam`, `_firstPersonVcam`, `_selfieVcam`).
+  - Иначе тряска работает только на той камере, где стоит listener.
+
+- **`DamageVignetteCanvas`** — Canvas (Screen Space Overlay, Sort Order 50) в `UICanvases`. Внутри — Image `DamageVignette` (растянут на весь экран, `Raycast Target: false`, `Color` с alpha=0).
+
+### 18. Ragdoll трупов — итоговая схема
+
+После нескольких итераций принята следующая логика:
+
+- **Анимация смерти у существ убрана.** В `BaseLivingEntity.Die()` сразу вызывается `CreateCorpse()`, без `SetTrigger(animIDDeath)`.
+  - Причина: Animator оставлял кости в позе смерти, и при активации ragdoll joint-ы «выталкивали» их в T-позу → дёргание и разлёт.
+  - Реалистично: существа падают как куклы сразу после смерти (как в ARK).
+
+- **`BaseLivingEntity.CreateCorpse()`** — новый подход:
+  - **`Instantiate(creature.Data.prefab, position, rotation)`** вместо модификации живого робота.
+  - `corpseGO` — свежий инстанс префаба, кости в T-позе, joint-ы в норме → поведение идентично загрузке из сохранения.
+  - До `ActivateRagdoll`:
+    - `Creature.enabled = false`.
+    - `NavMeshAgent` — `Destroy`.
+    - Все `Animator` в детях — `enabled = false`.
+    - `SetLayerRecursively(corpseGO, Corpse)`.
+  - Затем: `Corpse.enabled = true`, копирование лута из `CreatureData`, `CreateCorpseInventory`, `PopulateInventoryFromLootTable`.
+  - **`CorpseManager.RegisterCorpse(corpseGO, "world", creatureId)`** — передаётся **corpseGO**, а не живой робот. Иначе `Corpse.GetInventory() == null` и инвентарь не сохраняется.
+  - В конце — `Destroy(gameObject)` старого робота.
+
+- **`Corpse.ActivateRagdoll()`** — сброс поз:
+  - `CaptureInitialPoses()` в `Awake` — запоминает `localPosition` / `localRotation` каждой кости из `ragdollSettings.ragdollParts`.
+  - `ResetPosesToInitial()` в начале `ActivateRagdoll()` — восстанавливает их перед `isKinematic = false`.
+  - `Physics.SyncTransforms()` после сброса.
+  - Это устраняет дёргание и разлёт.
+
+- **`CreateCorpse` вызывается напрямую из `Die()`**, не через `OnDeathAnimationFinished`. `OnDeathAnimationFinished` оставлен для совместимости (если где-то ещё есть), но не используется.
+
+- **Известные особенности**:
+  - «Щелчок» из позы смерти в T-позу при включённой анимации смерти — неизбежен. Поэтому анимация смерти **отключена**.
+  - Труп — отдельный объект, не тот же самый. Ссылки на убитого робота инвалидируются (`Destroy`).
 
 
 
 ## TODO
 
 ### Ближайшее (Боевка — следующий шаг)
-- [ ] **Цифры урона** (floating damage numbers) — всплывающие числа урона.
-- [ ] **Критические удары** (голова/слабое место) — множитель урона.
-- [ ] **Урон существ по игроку в ближнем бою** — фидбек (звук, эффект, тряска камеры).
+
 - [ ] **Фикс багов** — список собирается перед началом работы.
 
 ### Сделано (архив)
@@ -656,6 +747,9 @@ Screen Space инфо-панель, показывающая статы суще
 - [x] **Knockout** — KnockOut/RecoverFromKnockout в BaseLivingEntity.
 - [x] **Инфо-панель** — EntityInfoPanelManager + EntityInfoPanel.
 - [x] **Смена слоя при смерти** — SetLayerRecursively на Corpse.
+- [x] **Цифры урона** (floating damage numbers) — всплывающие числа урона.
+- [x] **Критические удары** (голова/слабое место) — множитель урона.
+- [x] **Урон существ по игроку в ближнем бою** — фидбек (звук, эффект, тряска камеры).
 
 ### Дальше
 - [ ] **Приручение** (Taming: кормление, прогресс, tamed state).
@@ -683,18 +777,11 @@ Screen Space инфо-панель, показывающая статы суще
 
 
 
-
-
-
-
 ## Важные файлы для контекста
 
 При создании нового чата скинуть:
-Продолжаем ARK-клон. Мы закончили [...].
-Теперь делаем  [...]:
- [...]
- [...]
- [...]
+Продолжаем ARK-клон. Мы закончили боевку (цифры урона, криты, фидбек урона по игроку, ragdoll трупов).
+Теперь делаем приручение (Taming): кормление нокаутнутого существа, прогресс, torpor, наркотики, tamed state.
 Прикладываю PROJECT-ARCHITECTURE.md и файлы.
 
 ### Обязательно
@@ -708,7 +795,7 @@ Screen Space инфо-панель, показывающая статы суще
 +Строительство 
 +Инвентарь
 +Прогрессия
-Боевка
++Боевка
 Приручение существ
 Использование прирученных существ
 Экосистема (хищники/жертвы, респавн)
