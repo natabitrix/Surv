@@ -94,6 +94,7 @@ namespace Assets.Scripts.Corpses
 
         private void Awake()
         {
+            CaptureInitialPoses();
             creature = GetComponent<Creature>();
 
             if (creature != null && creature.IsAlive())
@@ -103,6 +104,8 @@ namespace Assets.Scripts.Corpses
 
             if (shatterer == null) shatterer = GetComponent<Shatterer>();
             if (hitDecaler == null) hitDecaler = GetComponent<HitDecaler>();
+
+
         }
 
         private void Start()
@@ -155,6 +158,11 @@ namespace Assets.Scripts.Corpses
         public bool HasInventory() => _inventory != null;
         public bool ShouldDetachAfterInteract() => _isDepleted;
 
+        // Сохраняем позы костей при Awake (когда GameObject ещё "живой")
+        private Vector3[] _initialLocalPositions;
+        private Quaternion[] _initialLocalRotations;
+        private bool _initialPosesCaptured = false;
+
         public void Interact(InteractContext context)
         {
 
@@ -179,8 +187,50 @@ namespace Assets.Scripts.Corpses
             }
         }
 
+
+        private void CaptureInitialPoses()
+        {
+            if (_initialPosesCaptured) return;
+            if (ragdollSettings == null || ragdollSettings.ragdollParts == null) return;
+
+            int n = ragdollSettings.ragdollParts.Length;
+            _initialLocalPositions = new Vector3[n];
+            _initialLocalRotations = new Quaternion[n];
+
+            for (int i = 0; i < n; i++)
+            {
+                var part = ragdollSettings.ragdollParts[i];
+                if (part == null) continue;
+
+                _initialLocalPositions[i] = part.localPosition;
+                _initialLocalRotations[i] = part.localRotation;
+            }
+
+            _initialPosesCaptured = true;
+            // Debug.Log($"[Corpse] Позы костей сохранены ({n} шт.)");
+        }
+
+        private void ResetPosesToInitial()
+        {
+            if (!_initialPosesCaptured) return;
+
+            int n = ragdollSettings.ragdollParts.Length;
+            for (int i = 0; i < n; i++)
+            {
+                var part = ragdollSettings.ragdollParts[i];
+                if (part == null) continue;
+
+                part.localPosition = _initialLocalPositions[i];
+                part.localRotation = _initialLocalRotations[i];
+            }
+        }
+
         public void ActivateRagdoll()
         {
+
+            ResetPosesToInitial();
+            Physics.SyncTransforms(); 
+
             foreach (var part in ragdollSettings.ragdollParts)
             {
                 if (part == null) continue;
@@ -197,22 +247,22 @@ namespace Assets.Scripts.Corpses
                 rb.angularDamping = ragdollSettings.angularDamp;
                 rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
 
-                CharacterJoint cj = rb.GetComponent<CharacterJoint>();
-                if (cj != null)
-                {
-                    ConfigureLimits(cj);
-                }
+                // CharacterJoint cj = rb.GetComponent<CharacterJoint>();
+                // if (cj != null)
+                // {
+                //     ConfigureLimits(cj);
+                // }
 
-                foreach (var otherPart in ragdollSettings.ragdollParts)
-                {
-                    if (part != otherPart && otherPart.TryGetComponent<Collider>(out var otherCol))
-                    {
-                        if (rb.TryGetComponent<Collider>(out var rbCol))
-                        {
-                            Physics.IgnoreCollision(rbCol, otherCol, true);
-                        }
-                    }
-                }
+                // foreach (var otherPart in ragdollSettings.ragdollParts)
+                // {
+                //     if (part != otherPart && otherPart.TryGetComponent<Collider>(out var otherCol))
+                //     {
+                //         if (rb.TryGetComponent<Collider>(out var rbCol))
+                //         {
+                //             Physics.IgnoreCollision(rbCol, otherCol, true);
+                //         }
+                //     }
+                // }
             }
         }
 

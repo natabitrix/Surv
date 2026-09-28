@@ -7,6 +7,8 @@ using Assets.Scripts.Interactables;
 using Assets.Scripts.InventorySystem;
 using Assets.Scripts.Corpses;
 using Assets.Scripts.UI;
+using System.Collections;
+using UnityEngine.AI;
 
 namespace Assets.Scripts.Creatures
 {
@@ -181,12 +183,7 @@ namespace Assets.Scripts.Creatures
             => TakeDamage(damage, torporAmount, playerInteraction, null, null);
 
         // Полная перегрузка: + hitCollider (зона) + hitPoint (для цифры и эффекта)
-        public virtual void TakeDamage(
-            float damage,
-            float torporAmount,
-            PlayerInteraction playerInteraction,
-            Collider hitCollider = null,
-            Vector3? hitPoint = null)
+        public virtual void TakeDamage(float damage, float torporAmount, PlayerInteraction playerInteraction, Collider hitCollider = null, Vector3? hitPoint = null)
         {
             // === Коллайдер: явный аргумент > из playerInteraction ===
             Collider col = hitCollider ?? playerInteraction?.GetTargetHitCollider();
@@ -281,89 +278,158 @@ namespace Assets.Scripts.Creatures
 
             CancelInvoke();
 
-            // === 1. Отключаем NavMeshAgent ===
-            var agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
-            if (agent != null) Destroy(agent);
+            CreateCorpse();
 
-            // === 2. Отключаем Animator (для ragdoll, НЕ удаляем!) ===
-            if (animator != null)
+            // Вызываем событие смерти
+            OnDeath?.Invoke(this);
+        }
+
+
+        float _deathAnimationDuration = 0.3f;
+
+        private IEnumerator DeathRoutine()
+        {
+            // === 1. Анимация смерти (если есть) ===
+            // if (animator != null && animator.enabled && animIDDeath > 0)
+            // {
+            //     animator.SetTrigger(animIDDeath);
+            //     // Ждём длину клипа (или фиксированное время)
+            //     yield return new WaitForSeconds(_deathAnimationDuration);
+            // }
+
+            // === 2. Отключаем ВСЁ, что может двигать кости ===
+            // Найти все Animator-ы в детях
+            // foreach (var anim in GetComponentsInChildren<Animator>())
+            // {
+            //     anim.enabled = false;
+            // }
+
+            // Отключаем NavMeshAgent
+            // var agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+            // if (agent != null) Destroy(agent);
+
+            // Отключаем Creature
+            var creature = GetComponent<Creature>();
+            if (creature != null) creature.enabled = false;
+
+            // === 3. Один кадр подождать, чтобы Unity применила отключение ===
+            yield return null;
+
+            // === 4. Создаём труп ===
+            CreateCorpse();
+
+            // === 5. Удаляем живого ===
+            // Destroy(gameObject);
+
+            yield return new WaitForSeconds(_deathAnimationDuration);
+        }
+
+        /// <summary>
+        /// Вызывается в конце анимации смерти (через Animation Event).
+        /// </summary>
+
+        public void OnDeathAnimationFinished()
+        {
+            animator.enabled = false;
+            // StartCoroutine(DeathRoutine());
+            CreateCorpse();
+        }
+
+        private void CreateCorpse()
+        {
+
+            var creature = GetComponent<Creature>();
+            GameObject prefab = creature.Data.prefab;
+
+            if (creature == null)
             {
-                animator.enabled = false;
+                Debug.LogError("[CreateCorpse] Не найден Creature!");
+                return;
             }
 
-            // === 3. Получаем creatureId из Creature ===
-            string creatureId = null;
-            Creature creature = GetComponent<Creature>();
-            if (creature != null)
+            if (creature.Data == null)
             {
-                creatureId = creature.creatureId;
-                creature.enabled = false;
+                Debug.LogError("[CreateCorpse] Не найден creature.Data!");
+                return;
             }
 
-            // === 4. Активируем Corpse ===
-            var corpse = GetComponent<Corpse>();
-            if (corpse != null)
+            if (prefab == null)
             {
-                corpse.enabled = true;
-                corpse.ActivateRagdoll();
-                corpse.StartCoroutine(corpse.StopMovingRagdoll());
-                corpse.InitializeCorpse();
-
-                // === 5. Копируем настройки лута из CreatureData ===
-                if (creature != null && creature.Data != null)
-                {
-                    var data = creature.Data;
-
-                    corpse.harvestDrops = data.harvestDrops;
-                    corpse.inventoryLootTable = data.inventoryLootTable;
-                    corpse.maxHarvestHits = data.maxHarvestHits;
-                    corpse.allowFists = data.allowFists;
-                    corpse.allowAxe = data.allowAxe;
-                    corpse.allowPickaxe = data.allowPickaxe;
-                    corpse.allowSword = data.allowSword;
-                    corpse.allowSickle = data.allowSickle;
-                }
-
-                // === 6. Создаём инвентарь трупа ===
-                corpse.CreateCorpseInventory(
-                    "CreatureCorpse",
-                    100,
-                    FindAnyObjectByType<ChestUI>()
-                );
-
-                // === 7. Заполняем инвентарь лутом из inventoryLootTable ===
-                corpse.PopulateInventoryFromLootTable();
+                Debug.LogError("[CreateCorpse] Не найден префаб существа в CreatureData!");
+                return;
             }
 
-            // === 8. Активируем RadialMenu ===
-            var menu = GetComponent<RadialMenu>();
-            if (menu != null) menu.enabled = true;
+            gameObject.transform.GetPositionAndRotation(out Vector3 position, out Quaternion rotation);
+            GameObject corpseGO = Instantiate(prefab, position, rotation);
 
-            // === Переключаем слой на Corpse ===
+            if (corpseGO.TryGetComponent<NavMeshAgent>(out var agent)) Destroy(agent);
+            if (corpseGO.TryGetComponent<Animator>(out var anim)) anim.enabled = false;
+
+            // ✅ Устанавливаем слой Corpse для восстановленного трупа,
+            // чтобы инфо-панель и другие системы, ищущие живых существ, его игнорировали.
             int corpseLayer = LayerMask.NameToLayer("Corpse");
             if (corpseLayer != -1)
             {
-                SetLayerRecursively(gameObject, corpseLayer);
+                SetLayerRecursively(corpseGO, corpseLayer);
             }
             else
             {
-                Debug.LogWarning("[BaseLivingEntity] Слой 'Corpse' не найден в проекте! " +
-                                 "Создай его в Project Settings → Tags and Layers.");
+                Debug.LogWarning("[CorpseManager] Слой 'Corpse' не найден в проекте!");
             }
 
-            // === 9. Регистрируем труп в CorpseManager ===
+            var corpse = corpseGO.GetComponentInChildren<Corpse>(true);
+            if (corpse == null) return;
+
+            // Настраиваем Corpse
+            corpse.enabled = true;
+            string creatureId = null;
+
+            if (creature != null && creature.Data != null)
+            {
+                var data = creature.Data;
+                creatureId = creature.creatureId;
+                corpse.InstanceId = creatureId;
+
+                corpse.harvestDrops = data.harvestDrops;
+                corpse.inventoryLootTable = data.inventoryLootTable;
+                corpse.maxHarvestHits = data.maxHarvestHits;
+                corpse.allowFists = data.allowFists;
+                corpse.allowAxe = data.allowAxe;
+                corpse.allowPickaxe = data.allowPickaxe;
+                corpse.allowSword = data.allowSword;
+                corpse.allowSickle = data.allowSickle;
+            }
+
+            corpse.ActivateRagdoll();
+            corpse.StartCoroutine(corpse.StopMovingRagdoll());
+            corpse.InitializeCorpse();
+
+            // === Создаём инвентарь трупа ===
+            corpse.CreateCorpseInventory(
+                "CreatureCorpse",
+                100,
+                FindAnyObjectByType<ChestUI>()
+            );
+
+            // === Заполняем инвентарь лутом из inventoryLootTable ===
+            corpse.PopulateInventoryFromLootTable();
+
+            // RadialMenu
+            if (corpse.TryGetComponent<RadialMenu>(out var menu)) menu.enabled = true;
+
+            // === Регистрируем труп в CorpseManager ===
             if (CorpseManager.Instance != null)
             {
                 CorpseManager.Instance.RegisterCorpse(
-                    gameObject,
+                    corpseGO,
                     "world",
                     creatureId
                 );
             }
 
-            // Вызываем событие смерти
-            OnDeath?.Invoke(this);
+            Destroy(gameObject);
         }
+
 
         /// <summary>
         /// Погружает существо в нокаут: AI выключается, аниматор глушится,
@@ -452,30 +518,6 @@ namespace Assets.Scripts.Creatures
             CloseInventory();
         }
 
-        /// <summary>
-        /// Вызывается в конце анимации смерти (через Animation Event).
-        /// </summary>
-        public void OnDeathAnimationFinished()
-        {
-            if (animator != null)
-            {
-                animator.enabled = false;
-            }
-
-            var menu = GetComponent<RadialMenu>();
-            if (menu != null) menu.enabled = true;
-
-            var corpse = GetComponent<Corpse>();
-            if (corpse != null)
-            {
-                corpse.enabled = true;
-                corpse.CreateCorpseInventory(
-                    "CreatureCorpse",
-                    100,
-                    FindAnyObjectByType<ChestUI>()
-                );
-            }
-        }
 
         // Метод для восстановления здоровья
         public virtual void Heal(float amount)

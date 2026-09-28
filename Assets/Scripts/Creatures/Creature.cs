@@ -290,8 +290,10 @@ namespace Assets.Scripts.Creatures
             {
                 _animator.SetTrigger(_animIDAttack);
             }
-
-            Invoke(nameof(DealDamageToPlayer), 0.5f);
+            else
+            {
+                Invoke(nameof(DealDamageToPlayer), 0.5f);
+            }
 
             Invoke(nameof(ResetAttackState), AttackCooldown);
         }

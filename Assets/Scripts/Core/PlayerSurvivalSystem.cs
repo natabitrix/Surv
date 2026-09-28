@@ -72,6 +72,9 @@ namespace Assets.Scripts.Core
         // === СОБЫТИЯ ===
         public event Action OnSurvivalStatsChanged;
 
+        /// <summary>Вызывается при получении урона игроком. Аргумент — величина урона.</summary>
+        public event Action<float> OnPlayerDamaged;
+
         /// <summary>Вызывается после отключения живых компонентов, создания трупа
         /// и задержки на падение ragdoll.</summary>
         public event Action OnPlayerDied;
@@ -163,8 +166,7 @@ namespace Assets.Scripts.Core
                     PlayerProgress.Instance.hotbarInventoryData
                 );
 
-                var menu = corpse.GetComponent<RadialMenu>();
-                if (menu != null) menu.enabled = true;
+                if (corpse.TryGetComponent<RadialMenu>(out var menu)) menu.enabled = true;
             }
 
             // 4. Регистрируем труп
@@ -342,6 +344,9 @@ namespace Assets.Scripts.Core
         {
             _health = Mathf.Max(0f, _health - damage);
             OnSurvivalStatsChanged?.Invoke();
+
+            if (damage > 0f)
+                OnPlayerDamaged?.Invoke(damage);
         }
 
         public void AddTorpidity(float amount)
