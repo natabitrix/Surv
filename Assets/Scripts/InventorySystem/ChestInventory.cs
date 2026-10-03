@@ -110,6 +110,7 @@ namespace Assets.Scripts.InventorySystem
             return saveKey.StartsWith("Corpse_") ||
                    saveKey.StartsWith("PlayerCorpse_") ||
                    saveKey.StartsWith("CreatureCorpse_") ||
+                   saveKey.StartsWith("TamingCorpse_") ||
                    saveKey.StartsWith("LootBag_");
         }
 

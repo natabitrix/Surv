@@ -21,11 +21,21 @@ namespace Assets.Scripts.UI
         [SerializeField] private Image _healthFill;
         [SerializeField] private TextMeshProUGUI _healthText;
 
+        [Header("Food")]
+        [SerializeField] private GameObject _foodBarRoot;
+        [SerializeField] private Image _foodFill;
+        [SerializeField] private TextMeshProUGUI _foodText;
+
         [Header("Torpor Bar")]
         [Tooltip("Скрывается целиком, если torpor == 0 и существо не в нокауте.")]
         [SerializeField] private GameObject _torporBarRoot;
         [SerializeField] private Image _torporFill;
         [SerializeField] private TextMeshProUGUI _torporText;
+
+        [Header("Taming Bar")]
+        [SerializeField] private GameObject _tamingBarRoot;
+        [SerializeField] private Image _tamingFill;
+        [SerializeField] private TextMeshProUGUI _tamingText;
 
         private BaseLivingEntity _target;
 
@@ -89,6 +99,15 @@ namespace Assets.Scripts.UI
             if (_healthFill != null) _healthFill.fillAmount = healthNorm;
             if (_healthText != null) _healthText.text = $"{Mathf.RoundToInt(health)} / {Mathf.RoundToInt(maxHealth)} Health";
 
+            // === Food ===
+            float food = _target.GetFood();
+            float maxFood = _target.GetMaxFood();
+            float foodNorm = maxFood > 0f ? Mathf.Clamp01(food / maxFood) : 0f;
+
+            if (_foodBarRoot != null && !_foodBarRoot.activeSelf) _foodBarRoot.SetActive(true);
+            if (_foodFill != null) _foodFill.fillAmount = foodNorm;
+            if (_foodText != null) _foodText.text = $"{Mathf.RoundToInt(food)} / {Mathf.RoundToInt(maxFood)} Food";
+
             // === Torpor ===
             float torpor = _target.torpor;
             float maxTorpor = _target.maxTorpor;
@@ -97,6 +116,18 @@ namespace Assets.Scripts.UI
             if (_torporBarRoot != null && !_torporBarRoot.activeSelf) _torporBarRoot.SetActive(true);
             if (_torporFill != null) _torporFill.fillAmount = torporNorm;
             if (_torporText != null) _torporText.text = $"{Mathf.RoundToInt(torpor)} / {Mathf.RoundToInt(maxTorpor)} Torpor";
+
+            // === Taming Progress ===
+            bool showTamingBar = _target.knockedOut && !_target.tamed;
+            if (_tamingBarRoot != null) _tamingBarRoot.SetActive(showTamingBar);
+
+            if (showTamingBar)
+            {
+                float progress = _target.tamingProgress;
+                float progressNorm = progress / 100f;
+                if (_tamingFill != null) _tamingFill.fillAmount = progressNorm;
+                if (_tamingText != null) _tamingText.text = $"Taming: {Mathf.RoundToInt(progress)}%";
+            } 
         }
 
         private string GetCreatureId(BaseLivingEntity entity)

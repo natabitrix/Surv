@@ -201,8 +201,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2667161108696082994}
-  - component: {fileID: 332612943758858268}
   - component: {fileID: 8110214882767286766}
+  - component: {fileID: 332612943758858268}
   - component: {fileID: 4213062699136978969}
   m_Layer: 12
   m_Name: Torso
@@ -227,6 +227,33 @@ Transform:
   - {fileID: 4827754145812537935}
   m_Father: {fileID: 1192693056007777315}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!54 &8110214882767286766
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 460801910971657519}
+  serializedVersion: 5
+  m_Mass: 10
+  m_LinearDamping: 1.5
+  m_AngularDamping: 3
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!65 &332612943758858268
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -248,33 +275,6 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.01, y: 0.02, z: 0.01}
   m_Center: {x: 0.000000023283064, y: 0.012740725, z: 0.0019566687}
---- !u!54 &8110214882767286766
-Rigidbody:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 460801910971657519}
-  serializedVersion: 5
-  m_Mass: 40
-  m_LinearDamping: 1.5
-  m_AngularDamping: 3
-  m_CenterOfMass: {x: 0, y: 0, z: 0}
-  m_InertiaTensor: {x: 1, y: 1, z: 1}
-  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ImplicitCom: 1
-  m_ImplicitTensor: 1
-  m_UseGravity: 1
-  m_IsKinematic: 1
-  m_Interpolate: 0
-  m_Constraints: 0
-  m_CollisionDetection: 0
 --- !u!144 &4213062699136978969
 CharacterJoint:
   m_ObjectHideFlags: 0
@@ -421,7 +421,7 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 938422666532245660}
   serializedVersion: 5
-  m_Mass: 2
+  m_Mass: 4
   m_LinearDamping: 1.5
   m_AngularDamping: 3
   m_CenterOfMass: {x: 0, y: 0, z: 0}
@@ -552,7 +552,7 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1161765465454009349}
   serializedVersion: 5
-  m_Mass: 3
+  m_Mass: 5
   m_LinearDamping: 1.5
   m_AngularDamping: 3
   m_CenterOfMass: {x: 0, y: 0, z: 0}
@@ -1165,7 +1165,7 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2871391255329605170}
   serializedVersion: 5
-  m_Mass: 10
+  m_Mass: 5
   m_LinearDamping: 1.5
   m_AngularDamping: 3
   m_CenterOfMass: {x: 0, y: 0, z: 0}
@@ -1361,7 +1361,7 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3401522806523449559}
   serializedVersion: 5
-  m_Mass: 2
+  m_Mass: 4
   m_LinearDamping: 1.5
   m_AngularDamping: 3
   m_CenterOfMass: {x: 0, y: 0, z: 0}
@@ -1632,7 +1632,7 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4617944589733227988}
   serializedVersion: 5
-  m_Mass: 20
+  m_Mass: 60
   m_LinearDamping: 1.5
   m_AngularDamping: 3
   m_CenterOfMass: {x: 0, y: 0, z: 0}
@@ -2579,7 +2579,7 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7699145721328997671}
   serializedVersion: 5
-  m_Mass: 10
+  m_Mass: 5
   m_LinearDamping: 1.5
   m_AngularDamping: 3
   m_CenterOfMass: {x: 0, y: 0, z: 0}
@@ -2709,7 +2709,7 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7831443178719084325}
   serializedVersion: 5
-  m_Mass: 5
+  m_Mass: 4
   m_LinearDamping: 1.5
   m_AngularDamping: 3
   m_CenterOfMass: {x: 0, y: 0, z: 0}
@@ -2876,7 +2876,7 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8065223055463674625}
   serializedVersion: 5
-  m_Mass: 3
+  m_Mass: 5
   m_LinearDamping: 1.5
   m_AngularDamping: 3
   m_CenterOfMass: {x: 0, y: 0, z: 0}
@@ -3212,6 +3212,9 @@ GameObject:
   - component: {fileID: 3656229583173167061}
   - component: {fileID: 6296707825184828124}
   - component: {fileID: 592354814697281613}
+  - component: {fileID: -7122809779282849588}
+  - component: {fileID: -6779586722763855289}
+  - component: {fileID: -1522704912489940676}
   m_Layer: 12
   m_Name: Robot_George
   m_TagString: Untagged
@@ -3249,24 +3252,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58cd31a1b2f00848bf1cbc7cca71af0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Creatures.Corpse
-  ragdollSettings:
-    ragdollParts:
-    - {fileID: 1192693056007777315}
-    - {fileID: 2667161108696082994}
-    - {fileID: 7349211913000307822}
-    - {fileID: 800232688832682600}
-    - {fileID: 4786476414176639416}
-    - {fileID: 8751961739807864346}
-    - {fileID: 6867616986479450567}
-    - {fileID: 8390295413710327205}
-    - {fileID: 1533911625500643868}
-    - {fileID: 2436036987080181185}
-    - {fileID: 7003001226499926126}
-    - {fileID: 5673515055020981016}
-    - {fileID: 4531184824454117684}
-    linearDamp: 1.5
-    angularDamp: 3
-    velocityInherit: 0.1
+  _ragdollController: {fileID: -7122809779282849588}
   _dragRigidbody: {fileID: 4119293288162737562}
   _centerBone: {fileID: 1192693056007777315}
   _interactionCollider: {fileID: 1855417968429868836}
@@ -3344,13 +3330,15 @@ MonoBehaviour:
   tamableKO: 0
   knockedOut: 0
   tamablePassive: 0
+  tamingProgress: 0
   _interactionCollider: {fileID: 1855417968429868836}
   _inventory: {fileID: 0}
   _chestUI: {fileID: 0}
   _debugDamage: 0
   torpor: 0
   maxTorpor: 100
-  torporRecoveryRate: 1
+  food: 100
+  maxFood: 100
   creatureDatabase: {fileID: 11400000, guid: 475c5b1ef39d77d43ab9f3523b647009, type: 2}
   creatureId: Robot_George
   FootstepAudioClip: {fileID: 8300000, guid: 4aba2b70bf550d74d9905d0982f22892, type: 3}
@@ -3414,5 +3402,83 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Interactables.RadialMenu
   item: {fileID: 0}
-  corpse: {fileID: 349144926695817794}
+  corpse: {fileID: 0}
   creature: {fileID: 0}
+--- !u!114 &-7122809779282849588
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9136099890693409341}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 95cb3d8b366f402498b53cbcf52785a8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Creatures.RagdollController
+  ragdollSettings:
+    ragdollParts:
+    - {fileID: 1192693056007777315}
+    - {fileID: 2667161108696082994}
+    - {fileID: 7349211913000307822}
+    - {fileID: 800232688832682600}
+    - {fileID: 4786476414176639416}
+    - {fileID: 8751961739807864346}
+    - {fileID: 6867616986479450567}
+    - {fileID: 8390295413710327205}
+    - {fileID: 1533911625500643868}
+    - {fileID: 2436036987080181185}
+    - {fileID: 7003001226499926126}
+    - {fileID: 5673515055020981016}
+    - {fileID: 4531184824454117684}
+    linearDamp: 3
+    angularDamp: 5
+    velocityInherit: 0.1
+--- !u!54 &-6779586722763855289
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9136099890693409341}
+  serializedVersion: 5
+  m_Mass: 100
+  m_LinearDamping: 10
+  m_AngularDamping: 10
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
+--- !u!65 &-1522704912489940676
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9136099890693409341}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}

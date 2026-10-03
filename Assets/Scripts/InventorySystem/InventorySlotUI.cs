@@ -52,13 +52,14 @@ namespace Assets.Scripts.InventorySystem
         private InventoryManager _inventoryManager;
         private TooltipTrigger _tooltipTrigger;
         [SerializeField] private PlayerInputHandler _inputHandler;
+        [SerializeField] private ItemUsageRouter _itemUsageRouter;
 
         private void Awake()
         {
             if (_inputHandler == null)
-            {
                 _inputHandler = FindAnyObjectByType<PlayerInputHandler>();
-            }
+            if (_itemUsageRouter == null)
+                _itemUsageRouter = FindAnyObjectByType<ItemUsageRouter>();
         }
 
         // Заменяем ссылки на MonoBehaviour индексами и флагами
@@ -111,7 +112,11 @@ namespace Assets.Scripts.InventorySystem
             {
                 if (IsChestSlot)
                 {
-                    return chestUI?.GetSlot(index);
+                    var slot = chestUI?.GetSlot(index);
+                    Debug.Log($"[GetSlot] Chest: chestUI={(chestUI == null ? "null" : chestUI.name)}, " +
+                              $"index={index}, " +
+                              $"slot={(slot == null ? "null" : (slot.IsEmpty ? "empty" : slot.item?.itemName))}");
+                    return slot;
                 }
                 else if (IsHotBarSlot)
                 {
@@ -124,9 +129,6 @@ namespace Assets.Scripts.InventorySystem
                 }
                 else if (IsMainInventorySlot)
                 {
-                    // var data = PlayerProgress.Instance.inventoryData;
-                    // if (data != null && index >= 0 && index < data.slots.Count)
-                    //     return data.slots[index];
                     if (progress.mainInventoryData != null &&
                         index >= 0 && index < progress.mainInventoryData.slots.Count)
                     {
@@ -353,6 +355,13 @@ namespace Assets.Scripts.InventorySystem
 
         public void OnDrop(PointerEventData eventData)
         {
+            Debug.Log($"[OnDrop] target: owner={owner}, index={index}, " +
+                      $"chestUI={chestUI?.name ?? "null"}, " +
+                      $"dragged={(DragContext.draggedItem == null ? "null" : DragContext.draggedItem.itemName)}, " +
+                      $"draggedCount={DragContext.draggedCount}, " +
+                      $"fromOwner={DragContext.fromOwner}, " +
+                      $"fromIndex={DragContext.fromSlotIndex}");
+
             if (DragContext.draggedItem == null || DragContext.draggedCount <= 0)
             {
                 CleanupDragContext();
@@ -363,6 +372,8 @@ namespace Assets.Scripts.InventorySystem
             bool success = false;
             var targetSlot = GetSlot();
 
+            Debug.Log($"[OnDrop] targetSlot={(targetSlot == null ? "null" : (targetSlot.IsEmpty ? "empty" : targetSlot.item?.itemName))}");
+
             if (targetSlot != null)
             {
                 success = MoveItemToSlot(targetSlot, DragContext.draggedItem, DragContext.draggedCount);
@@ -372,8 +383,6 @@ namespace Assets.Scripts.InventorySystem
                     Item item = DragContext.draggedItem;
                     int moved = DragContext.draggedCount;
 
-                    // Debug.Log($"item {item.itemName} {index}");
-                    // PlayerProgress.Instance.MarkItemAsHotbarPreferred(item, index);
                     // === ВАЖНО: помечаем ТОЛЬКО при дропе в хотбар ===
                     if (IsHotBarSlot)
                     {
@@ -591,12 +600,20 @@ namespace Assets.Scripts.InventorySystem
                 {
                     ContextMenuManager.Show(
                         slot.item,
-                        null,
-                        null,
+                        () =>
+                        {
+                            _inventoryManager.SelectSlot(index, owner, this);
+                            HighLightHoverSlot(true);
+                            _itemUsageRouter.UseItem(slot, owner, index); // Use (для наркотика/еды)
+                        },
                         () =>
                         {
                             _inventoryManager.DropItemFromSlot(index, owner);
                             HighLightHoverSlot(false);
+                        },
+                        () =>
+                        {
+                            _inventoryManager.TryRepairItem(index, owner);
                         },
                         clickPosition
                     );
@@ -609,8 +626,7 @@ namespace Assets.Scripts.InventorySystem
                         {
                             _inventoryManager.SelectSlot(index, owner, this);
                             HighLightHoverSlot(true);
-                            _inventoryManager.UseItemFromSlot();//!!!!!
-                            // HighLightHoverSlot(false);
+                            _itemUsageRouter.UseItem(slot, owner, index, this);
                         },
                         () =>
                         {

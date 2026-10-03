@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Assets.Scripts.Building;
 using Assets.Scripts.Core;
 using Assets.Scripts.Crafting;
+using Assets.Scripts.Interactables;
 using Assets.Scripts.Items;
 using Assets.Scripts.Loot;
 using Assets.Scripts.Player;
@@ -37,6 +38,7 @@ namespace Assets.Scripts.InventorySystem
         [Header("Other Managers")]
         public NotificationManager notificationManager;
         [SerializeField] private PanelsUIController _panelsController;
+        [SerializeField] private ItemUsageRouter _itemUsageRouter;
 
         private List<StatUI> _statRows = new List<StatUI>();
         private PlayerProgress _playerProgress;
@@ -45,9 +47,9 @@ namespace Assets.Scripts.InventorySystem
         private SlotOwner _selectedSlotOwner = SlotOwner.Inventory;
         private InventorySlotUI _selectedSlotUI = null;
 
-        // Поля для отслеживания сессии поедания
-        private int _accumulatedFoodCount = 0;
-        private Item _currentFoodItem = null;
+        // // Поля для отслеживания сессии поедания
+        // private int _accumulatedFoodCount = 0;
+        // private Item _currentFoodItem = null;
 
         private void Awake()
         {
@@ -164,6 +166,12 @@ namespace Assets.Scripts.InventorySystem
                     slot = progress.mainInventoryData.slots[index];
                 }
             }
+            else if (_selectedSlotOwner == SlotOwner.Chest)  // ← НОВОЕ
+            {
+                var chestUI = ChestUI.CurrentOpenChest;
+                if (chestUI != null)
+                    slot = chestUI.GetSlot(index);
+            }
 
             return slot;
         }
@@ -211,97 +219,126 @@ namespace Assets.Scripts.InventorySystem
         }
 
 
-        public void UseItemFromSlot()
+        // public void UseItemFromSlot()
+        // {
+        //     if (_selectedSlotIndex < 0) return;
+
+        //     var progress = PlayerProgress.Instance;
+        //     if (progress == null) return;
+
+        //     // Получаем слот
+        //     InventorySlot slot = GetSlotByIndex(_selectedSlotIndex);
+        //     if (slot == null || slot.IsEmpty || slot.item == null) return;
+
+        //     int globalSlotIndex = GetGlobalSlotIndex(_selectedSlotIndex);
+
+        //     // Если уже экипирован — снимаем
+        //     // Если навели и нажали Е на другом — снимаем этот и экипируем другой 
+        //     if (slot.item.itemType == ItemType.Tool || slot.item.itemType == ItemType.Weapon)
+        //     {
+        //         int equippedSlotIndex = equipment.EquippedSlotIndex;
+        //         if (equipment.IsEquipped && slot.item == equipment.GetCurrentItem())
+        //         {
+        //             equipment.Unequip();
+        //             if (globalSlotIndex == equippedSlotIndex) return;
+        //         }
+        //     }
+        //     else if (slot.item.itemType == ItemType.Placeable)
+        //     {
+        //         int activeBuildSlotIndex = buildMode.ActiveBuildSlotIndex;
+        //         if (buildMode.IsActive() && slot.item == buildMode.GetCurrentItem())
+        //         {
+        //             buildMode.ExitBuildMode();
+        //             if (globalSlotIndex == activeBuildSlotIndex) return;
+        //         }
+        //     }
+
+        //     switch (slot.item.itemType)
+        //     {
+        //         case ItemType.Tool:
+        //         case ItemType.Weapon:
+        //             buildMode.ExitBuildMode();
+
+        //             // Если предмет сломан запрещаем экипировку
+        //             if (slot.currentDurability > 0) equipment.Equip(slot.item, globalSlotIndex);
+        //             break;
+
+        //         case ItemType.Food:
+        //             itemUsageSystem.UseItem(slot.item, 1); //съедаем по одной шт.
+
+        //             // Удаляем ОДНУ штуку из правильного контейнера
+        //             if (_selectedSlotOwner == SlotOwner.Hotbar)
+        //             {
+        //                 progress.hotbarInventoryData.RemoveItemFromSlot(_selectedSlotIndex, 1);
+        //                 progress.hotbarInventoryData.NotifyChanged();
+        //             }
+        //             else if (_selectedSlotOwner == SlotOwner.Inventory)
+        //             {
+        //                 progress.mainInventoryData.RemoveItemFromSlot(_selectedSlotIndex, 1);
+        //                 progress.mainInventoryData.NotifyChanged();
+        //             }
+        //             else if (_selectedSlotOwner == SlotOwner.Chest)
+        //             {
+        //                 var chestUI = ChestUI.CurrentOpenChest;
+
+        //                 ChestController sourceChest = chestUI.SourceChest;
+        //                 IInteractable sourceInteractable = chestUI.SourceChest;
+
+        //                 Debug.Log("UseItemFromSlot sourceChest: " + sourceChest);
+        //                 Debug.Log("UseItemFromSlot sourceInteractable: " + sourceInteractable);
+
+        //                 var chestData = chestUI.Data;
+        //                 if (chestUI == null)
+        //                 {
+        //                     Debug.LogError("Нет открытого чужого инвентаря!");
+        //                     return;
+        //                 }
+        //                 chestData.RemoveItemFromSlot(_selectedSlotIndex, 1);
+
+        //             }
+
+        //             // Накапливаем СЕЙЧАС, в контексте текущего слота
+        //             if (_currentFoodItem == null)
+        //             {
+        //                 _currentFoodItem = slot.item;
+        //             }
+        //             else if (_currentFoodItem != slot.item)
+        //             {
+        //                 // Сменили еду — сбрасываем (или игнорируем)
+        //                 _accumulatedFoodCount = 0;
+        //                 _currentFoodItem = slot.item;
+        //             }
+        //             _accumulatedFoodCount++;
+
+        //             if (_selectedSlotUI != null)
+        //                 _selectedSlotUI.SetVisualState(true, false, true); // flash
+
+        //             break;
+
+        //         case ItemType.Placeable:
+        //             equipment.Unequip();
+        //             buildMode.ExitBuildMode();
+        //             buildMode.StartBuildMode(slot.item, globalSlotIndex);
+
+        //             _panelsController.CloseAllPanels();
+        //             break;
+        //     }
+
+        //     progress.Save("InventoryManager.UseItemFromSlot");
+
+        // }
+
+        public void UseSelectedSlot()
         {
+            // Не использовать, если панели не открыты
+            // if (_panelsController == null || !_panelsController.IsPanelOpened()) return;
             if (_selectedSlotIndex < 0) return;
+            if (_selectedSlotUI == null) return;
 
-            var progress = PlayerProgress.Instance;
-            if (progress == null) return;
+            var slot = GetSlotByIndex(_selectedSlotIndex);
+            if (slot == null || slot.IsEmpty) return;
 
-            // Получаем слот
-            InventorySlot slot = GetSlotByIndex(_selectedSlotIndex);
-            if (slot.IsEmpty || slot.item == null)
-            {
-                return;
-            }
-
-            int globalSlotIndex = GetGlobalSlotIndex(_selectedSlotIndex);
-
-            // Если уже экипирован — снимаем
-            // Если навели и нажали Е на другом — снимаем этот и экипируем другой 
-            if (slot.item.itemType == ItemType.Tool || slot.item.itemType == ItemType.Weapon)
-            {
-                int equippedSlotIndex = equipment.EquippedSlotIndex;
-                if (equipment.IsEquipped && slot.item == equipment.GetCurrentItem())
-                {
-                    equipment.Unequip();
-                    if (globalSlotIndex == equippedSlotIndex) return;
-                }
-            }
-            else if (slot.item.itemType == ItemType.Placeable)
-            {
-                int activeBuildSlotIndex = buildMode.ActiveBuildSlotIndex;
-                if (buildMode.IsActive() && slot.item == buildMode.GetCurrentItem())
-                {
-                    buildMode.ExitBuildMode();
-                    if (globalSlotIndex == activeBuildSlotIndex) return;
-                }
-            }
-
-            switch (slot.item.itemType)
-            {
-                case ItemType.Tool:
-                case ItemType.Weapon:
-                    buildMode.ExitBuildMode();
-
-                    // Если предмет сломан запрещаем экипировку
-                    if (slot.currentDurability > 0) equipment.Equip(slot.item, globalSlotIndex);
-                    break;
-
-                case ItemType.Food:
-                    itemUsageSystem.UseItem(slot.item, 1); //съедаем по одной шт.
-
-                    // Удаляем ОДНУ штуку из правильного контейнера
-                    if (_selectedSlotOwner == SlotOwner.Hotbar)
-                    {
-                        progress.hotbarInventoryData.RemoveItemFromSlot(_selectedSlotIndex, 1);
-                        progress.hotbarInventoryData.NotifyChanged();
-                    }
-                    else if (_selectedSlotOwner == SlotOwner.Inventory)
-                    {
-                        progress.mainInventoryData.RemoveItemFromSlot(_selectedSlotIndex, 1);
-                        progress.mainInventoryData.NotifyChanged();
-                    }
-
-                    // Накапливаем СЕЙЧАС, в контексте текущего слота
-                    if (_currentFoodItem == null)
-                    {
-                        _currentFoodItem = slot.item;
-                    }
-                    else if (_currentFoodItem != slot.item)
-                    {
-                        // Сменили еду — сбрасываем (или игнорируем)
-                        _accumulatedFoodCount = 0;
-                        _currentFoodItem = slot.item;
-                    }
-                    _accumulatedFoodCount++;
-
-                    if (_selectedSlotUI != null)
-                        _selectedSlotUI.SetVisualState(true, false, true); // flash
-
-                    break;
-
-                case ItemType.Placeable:
-                    equipment.Unequip();
-                    buildMode.ExitBuildMode();
-                    buildMode.StartBuildMode(slot.item, globalSlotIndex);
-
-                    _panelsController.CloseAllPanels();
-                    break;
-            }
-
-            progress.Save("InventoryManager.UseItemFromSlot");
-
+            _itemUsageRouter.UseItem(slot, _selectedSlotOwner, _selectedSlotIndex, _selectedSlotUI);
         }
 
         private void HandleStructurePlaced()
@@ -325,68 +362,25 @@ namespace Assets.Scripts.InventorySystem
             progress.Save("InventoryManager.HandleStructurePlaced");
         }
 
-        public void OnUseItemFinished()
-        {
-            if (_accumulatedFoodCount > 0 && _currentFoodItem != null)
-            {
-                if (NotificationManager.Instance != null)
-                {
-                    NotificationManager.Instance.Show(
-                        $"Использовано: {_currentFoodItem.itemName} x{_accumulatedFoodCount}",
-                        _currentFoodItem.icon
-                    );
-                }
-            }
-
-            // Сброс состояния сессии
-            _accumulatedFoodCount = 0;
-            _currentFoodItem = null;
-        }
-
-        // === DROP ===
-
-        // public void DropItemFromSlot(int localSlotIndex, SlotOwner owner)
+        // public void OnUseItemFinished()
         // {
-        //     var progress = PlayerProgress.Instance;
-        //     if (progress == null) return;
-
-        //     InventorySlot slot = null;
-        //     if (owner == SlotOwner.Hotbar && localSlotIndex < progress.hotbarInventoryData.slots.Count)
+        //     if (_accumulatedFoodCount > 0 && _currentFoodItem != null)
         //     {
-        //         slot = progress.hotbarInventoryData.slots[localSlotIndex];
-        //     }
-        //     else if (owner == SlotOwner.Inventory && localSlotIndex < progress.mainInventoryData.slots.Count)
-        //     {
-        //         slot = progress.mainInventoryData.slots[localSlotIndex];
+        //         if (NotificationManager.Instance != null)
+        //         {
+        //             NotificationManager.Instance.Show(
+        //                 $"Использовано: {_currentFoodItem.itemName} x{_accumulatedFoodCount}",
+        //                 _currentFoodItem.icon
+        //             );
+        //         }
         //     }
 
-        //     if (slot?.IsEmpty != false || slot.item == null) return;
-
-        //     string itemName = slot.item.itemName;
-        //     Sprite icon = slot.item.icon;
-
-        //     // Удаляем из правильного контейнера
-        //     if (owner == SlotOwner.Hotbar)
-        //     {
-        //         progress.hotbarInventoryData.RemoveItemFromSlot(localSlotIndex);
-        //         progress.hotbarInventoryData.NotifyChanged();
-
-        //     }
-        //     else if (owner == SlotOwner.Inventory)
-        //     {
-        //         progress.mainInventoryData.RemoveItemFromSlot(localSlotIndex);
-        //         progress.mainInventoryData.NotifyChanged();
-        //     }
-
-        //     progress.Save("InventoryManager.DropItemFromSlot");
-
-        //     if (NotificationManager.Instance != null)
-        //     {
-        //         NotificationManager.Instance.Show($"Выброшено: {itemName}", icon);
-        //     }
+        //     // Сброс состояния сессии
+        //     _accumulatedFoodCount = 0;
+        //     _currentFoodItem = null;
         // }
 
-
+        // === DROP ===
 
         public void DropItemFromSlot(int localSlotIndex, SlotOwner owner)
         {
@@ -471,50 +465,6 @@ namespace Assets.Scripts.InventorySystem
                 NotificationManager.Instance.Show($"Выброшено: {itemToDrop.itemName} x{countToDrop} в сумку", itemToDrop.icon);
             }
         }
-
-        // Вызывается по кнопке PlayerInventoryDropButton "Выбросить всё"
-        // public void DropItemsFromInventory()
-        // {
-        //     var progress = PlayerProgress.Instance;
-        //     if (progress == null || progress.mainInventoryData == null) return;
-
-        //     var mainInventory = progress.mainInventoryData;
-        //     List<(Item item, int count)> droppedItems = new List<(Item, int)>();
-
-        //     // Собираем все предметы из основного инвентаря (100 слотов)
-        //     for (int i = 0; i < mainInventory.slots.Count; i++)
-        //     {
-        //         var slot = mainInventory.slots[i];
-        //         if (slot?.IsEmpty == false && slot.item != null && slot.count > 0)
-        //         {
-        //             // Сохраняем для уведомления
-        //             droppedItems.Add((slot.item, slot.count));
-
-        //             // Очищаем слот
-        //             slot.item = null;
-        //             slot.count = 0;
-        //             slot.currentDurability = -1f;
-        //         }
-        //     }
-
-        //     // Показываем уведомления (одно на каждый стек)
-        //     foreach (var (item, count) in droppedItems)
-        //     {
-        //         if (NotificationManager.Instance != null)
-        //         {
-        //             NotificationManager.Instance.Show(
-        //                 $"Выброшено: {item.itemName} x{count}",
-        //                 item.icon
-        //             );
-        //         }
-        //     }
-
-        //     // Обновляем UI и сохраняем прогресс
-        //     mainInventory.NotifyChanged();
-        //     progress.Save("InventoryManager.DropItemsFromInventory");
-
-
-        // }
 
         // Вызывается по кнопке PlayerInventoryDropButton "Выбросить всё"
         public void DropItemsFromInventory()
@@ -720,9 +670,7 @@ namespace Assets.Scripts.InventorySystem
             }
         }
 
-        // ===  ===
-        // В Assets/Scripts/InventorySystem/InventoryManager.cs
-
+        // === Ремонт предмета ===
         public void TryRepairItem(int slotIndex, SlotOwner owner)
         {
             InventorySlot slot = GetSlotByIndex(slotIndex); // У тебя уже есть этот метод
@@ -773,7 +721,6 @@ namespace Assets.Scripts.InventorySystem
                 NotificationManager.Instance.Show("Недостаточно ресурсов для ремонта!", null);
             }
         }
-
 
         // === Жизненный цикл ===
         private void Start()

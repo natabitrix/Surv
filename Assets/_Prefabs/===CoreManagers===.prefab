@@ -20,6 +20,8 @@ GameObject:
   - component: {fileID: 3233292048576178556}
   - component: {fileID: 4767239474800819420}
   - component: {fileID: 5028408784032169699}
+  - component: {fileID: -4145463956794795677}
+  - component: {fileID: 2280655131810271477}
   m_Layer: 0
   m_Name: ===CoreManagers===
   m_TagString: Untagged
@@ -60,6 +62,7 @@ MonoBehaviour:
   _statusText: {fileID: 8797378990931335956}
   _minShowTime: 1
   _physicsSettleTime: 2.5
+  IsLoading: 1
 --- !u!114 &4963310491301221465
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -228,6 +231,33 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: caf19e42a74bffd4fbbd480c7949d73c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Core.SceneBootstrap
+--- !u!114 &-4145463956794795677
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2098013993127847153}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9bf698836976bb84291bfd1268cca288, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Core.GameTimeUpdater
+  _saveInterval: 30
+--- !u!114 &2280655131810271477
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2098013993127847153}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c21176714ccbc344bb81e77ba3f6a39, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Creatures.Taming.TamingManager
+  creatureDatabase: {fileID: 11400000, guid: 475c5b1ef39d77d43ab9f3523b647009, type: 2}
+  itemDatabase: {fileID: 11400000, guid: d19476d9c45a16640979d93431658db2, type: 2}
 --- !u!1 &2566256272502617309
 GameObject:
   m_ObjectHideFlags: 0

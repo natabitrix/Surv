@@ -241,6 +241,7 @@ namespace Assets.Scripts.Player
 
         public void OnOpenInventoryFinished(IInteractable specificTarget = null)
         {
+            _pendingInteractionTarget = null;
             IInteractable target = specificTarget ?? _pendingInteractionTarget;
 
             if (target == null && _allTargets.Count > 0)
@@ -257,15 +258,15 @@ namespace Assets.Scripts.Player
                     }
                 }
 
-                if (target == null)
-                    target = _allTargets[0];
+                // if (target == null)
+                //     target = _allTargets[0];
             }
 
-            _pendingInteractionTarget = null;
+            
 
             if (target == null)
             {
-                Debug.LogWarning("[PlayerInteraction] OnOpenInventoryFinished: target == null!");
+                Debug.LogWarning("[OnOpenInventoryFinished] target == null — пропускаем");
                 return;
             }
 
@@ -963,6 +964,8 @@ namespace Assets.Scripts.Player
             bool shouldStabilize = currentSpeed < 0.3f;
 
             _currentlyDraggingCorpse.StabilizeRagdoll(shouldStabilize);
+
+            _currentlyDraggingCorpse.StabilizeRagdoll(true);
         }
 
 #if UNITY_EDITOR

@@ -1,4 +1,5 @@
 using Assets.Scripts.Core;
+using Assets.Scripts.Creatures.Taming;
 using Assets.Scripts.Player;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -80,9 +81,10 @@ namespace Assets.Scripts.UI
             SettingsPanel.SetActive(false);
 
             LockCamera(true);
-            // SetRealPause(true);
+            SetRealPause(true);
             SetCursorVisible(true);
-            
+
+            // Debug.Log("SetPause()");
         }
 
 
@@ -98,6 +100,8 @@ namespace Assets.Scripts.UI
             SetCursorVisible(false);
             LockCamera(false);
             SetRealPause(false);
+
+            // Debug.Log("ResumeFromPause()");
         }
 
         // === КНОПКИ ===
@@ -153,8 +157,11 @@ namespace Assets.Scripts.UI
 
         public void LoadMainMenuScene()
         {
-            if (PlayerProgress.Instance != null)
-                PlayerProgress.Instance.Save("ReturnToMainMenu");
+            TamingManager.Instance?.SaveAll();
+
+            GameTime.Save();
+
+            PlayerProgress.Instance?.Save("ReturnToMainMenu");
 
             SetRealPause(false);
             SceneManager.LoadScene(MainMenuScene);

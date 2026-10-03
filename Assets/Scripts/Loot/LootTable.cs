@@ -2,7 +2,7 @@ using Assets.Scripts.Items;
 using System;
 using UnityEngine;
 
-namespace Assets.Scripts.InventorySystem
+namespace Assets.Scripts.Loot
 {
     [Serializable]
     public class LootEntry

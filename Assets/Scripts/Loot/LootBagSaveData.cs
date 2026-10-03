@@ -14,7 +14,8 @@ namespace Assets.Scripts.Loot
         public float rotX, rotY, rotZ, rotW;
 
         // Время
-        public long creationTimeUtc;
+        // public long creationTimeUtc;
+        public long savedAtTime;          // GameTime.Now на момент создания/сохранения
         public float despawnDuration;
 
         // Инвентарь

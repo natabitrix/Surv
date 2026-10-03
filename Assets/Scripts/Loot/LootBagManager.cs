@@ -167,7 +167,8 @@ namespace Assets.Scripts.Loot
                 rotZ = lootBagGO.transform.rotation.z,
                 rotW = lootBagGO.transform.rotation.w,
 
-                creationTimeUtc = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                // creationTimeUtc = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                savedAtTime = GameTime.Now,
                 despawnDuration = lifetime,
 
                 inventorySaveKey = lootBag.GetInventory()?.saveKey,
@@ -253,13 +254,20 @@ namespace Assets.Scripts.Loot
 
                     if (data == null) continue;
 
-                    long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                    long age = now - data.creationTimeUtc;
+                    // long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                    // long age = now - data.creationTimeUtc;
 
-                    if (age >= data.despawnDuration)
+                    // if (age >= data.despawnDuration)
+                    // {
+                    //     File.Delete(file);
+                    //     // Debug.Log($"[LootBagManager] Сумка {data.instanceId} истекла. Удалена.");
+                    //     continue;
+                    // }
+
+                    float elapsed = GameTime.ElapsedSeconds(data.savedAtTime, GameTime.Now);
+                    if (elapsed >= data.despawnDuration)
                     {
                         File.Delete(file);
-                        // Debug.Log($"[LootBagManager] Сумка {data.instanceId} истекла. Удалена.");
                         continue;
                     }
 
@@ -325,7 +333,10 @@ namespace Assets.Scripts.Loot
             lootBag.SetPersistenceData(data.instanceId, data.ownerPlayerId);
 
             // Устанавливаем оставшееся время
-            float remainingTime = data.despawnDuration - (DateTimeOffset.UtcNow.ToUnixTimeSeconds() - data.creationTimeUtc);
+            // float remainingTime = data.despawnDuration - (DateTimeOffset.UtcNow.ToUnixTimeSeconds() - data.creationTimeUtc);
+            float elapsed = GameTime.ElapsedSeconds(data.savedAtTime, GameTime.Now);
+            float remainingTime = data.despawnDuration - elapsed;
+            
             lootBag.SetRemainingTime(remainingTime);
 
             _loadedLootBags[data.instanceId] = lootBagGO;

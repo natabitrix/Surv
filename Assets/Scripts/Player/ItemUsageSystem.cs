@@ -1,10 +1,11 @@
 // Assets/Scripts/Core/ItemUsageSystem.cs
+using Assets.Scripts.Core;
 using Assets.Scripts.InventorySystem;
 using Assets.Scripts.Items;
 using Assets.Scripts.UI;
 using UnityEngine;
 
-namespace Assets.Scripts.Core
+namespace Assets.Scripts.Player
 {
     public class ItemUsageSystem : MonoBehaviour
     {

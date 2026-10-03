@@ -282,8 +282,6 @@ namespace Assets.Scripts.Core
             }
         }
 
-
-        // ===== СОХРАНЕНИЕ =====
         // ===== СОХРАНЕНИЕ =====
         private void SaveDirtyChunks()
         {

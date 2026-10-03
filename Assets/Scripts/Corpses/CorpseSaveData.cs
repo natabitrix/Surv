@@ -18,7 +18,8 @@ namespace Assets.Scripts.Corpses
         public float rotX, rotY, rotZ, rotW;
 
         // Время
-        public long creationTimeUtc;       // Unix timestamp (UTC) создания
+        // public long creationTimeUtc;       // Unix timestamp (UTC) создания
+        public long savedAtTime;          // GameTime.Now на момент создания/сохранения
         public float despawnDuration;      // сколько секунд живет труп
         public bool isLootBag;             // это труп или сумка
 

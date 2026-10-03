@@ -20,7 +20,8 @@ MonoBehaviour:
   experienceOnPickup: 0
   foodRecoveryAmount: 0
   healthRecoveryAmount: 0
-  damage: 300
+  damage: 1500
+  torporDamage: 0
   hasDurability: 1
   maxDurability: 200
   model: {fileID: 6451571286819398674, guid: 5e381f009dd8f1c47b56a5fdf59a1f09, type: 3}
@@ -28,3 +29,9 @@ MonoBehaviour:
   isLeftHand: 0
   itemType: 4
   attackAnimation: 4
+  isRanged: 0
+  projectileItem: {fileID: 0}
+  projectileSpeed: 60
+  projectileGravityScale: 1
+  aimFov: 0
+  aimBlendTime: 0.15

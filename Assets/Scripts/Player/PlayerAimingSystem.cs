@@ -2,6 +2,7 @@
 using UnityEngine;
 using Unity.Cinemachine;
 using Assets.Scripts.Items;
+using Assets.Scripts.UI;
 
 namespace Assets.Scripts.Player
 {
@@ -18,6 +19,7 @@ namespace Assets.Scripts.Player
         [Header("References")]
         [SerializeField] private PlayerInputHandler _input;
         [SerializeField] private PlayerEquipment _equipment;
+        [SerializeField] private PanelsUIController _panelsUIController;
 
         [Header("Cameras (назначить те же, что в CameraManager)")]
         [SerializeField] private CinemachineCamera _thirdPersonVcam;
@@ -79,6 +81,9 @@ namespace Assets.Scripts.Player
 
             // Не прицеливаемся в Selfie
             if (CameraManager.Instance != null && CameraManager.Instance.IsSelfie)
+                wantAim = false;
+
+            if (_panelsUIController.IsPanelOpened())
                 wantAim = false;
 
             // Не прицеливаемся, если не экипировано дальнобойное оружие

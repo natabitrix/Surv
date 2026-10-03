@@ -1,5 +1,7 @@
 // Assets/Scripts/InventorySystem/ChestUI.cs
 using Assets.Scripts.Core;
+using Assets.Scripts.Corpses;
+using Assets.Scripts.Creatures;
 using Assets.Scripts.Interactables;
 using Assets.Scripts.Items;
 using Assets.Scripts.Player;
@@ -47,6 +49,8 @@ namespace Assets.Scripts.InventorySystem
             if (_currentChest?.Data?.slots == null) return;
 
             int requiredSize = _currentChest.Data.slots.Count;
+
+            Debug.Log($"[ChestUI.CreateChestSlots] required={_currentChest.Data.slots.Count}, currentUIs={slotUIs?.Count ?? 0}, saveKey={_currentChest.saveKey}");
 
             if (slotUIs == null) slotUIs = new List<InventorySlotUI>();
 
@@ -162,11 +166,10 @@ namespace Assets.Scripts.InventorySystem
         public void OpenWith(ChestInventory chest, IInteractable source = null)
         {
 
+            Debug.Log($"[ChestUI.OpenWith] ДО: _currentChest={(_currentChest == null ? "null" : _currentChest.saveKey)}, newChest={(chest == null ? "null" : chest.saveKey)}, source={(source as MonoBehaviour)?.gameObject.name}");
+
             // ВСЕГДА закрываем старый инвентарь перед открытием нового
-            if (_currentChest != null)
-            {
-                Close();  // ← Это гарантирует отписку и очистку
-            }
+            Close();   // ← всегда, без проверки
 
             _currentChest = chest;
             CurrentOpenChest = this;
@@ -174,6 +177,8 @@ namespace Assets.Scripts.InventorySystem
             // Сохраняем источник (может быть ChestController или Corpse)
             SourceInteractable = source;
             SourceChest = source as ChestController; // Будет null, если это Corpse
+
+            Debug.Log($"[ChestUI.OpenWith] ПОСЛЕ: _currentChest={_currentChest.saveKey}");
 
             // Подписываемся на новый
             if (_currentChest?.Data != null)
@@ -186,6 +191,10 @@ namespace Assets.Scripts.InventorySystem
 
         public void Close()
         {
+            if (slotUIs != null)
+                foreach (var s in slotUIs) s?.SetSlot(null);
+
+            Debug.Log($"[ChestUI.Close] closing: {(_currentChest == null ? "null" : _currentChest.saveKey)}");
 
             if (_currentChest?.Data != null)
             {

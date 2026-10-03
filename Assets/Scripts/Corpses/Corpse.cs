@@ -16,7 +16,8 @@ namespace Assets.Scripts.Corpses
     public class Corpse : MonoBehaviour, IInteractable, IImpactSoundProvider
     {
         [Header("Ragdoll")]
-        public RagdollSettings ragdollSettings;
+        [Tooltip("Компонент, управляющий ragdoll-физикой. Живёт на этом же объекте.")]
+        [SerializeField] private RagdollController _ragdollController;
 
         public bool IsDragging { get; private set; }
         public bool IsHarvested { get; private set; } = false;
@@ -26,8 +27,6 @@ namespace Assets.Scripts.Corpses
         [SerializeField] private Rigidbody _dragRigidbody;
         [SerializeField] private Transform _centerBone;
         private SpringJoint _springJointToGrabPoint;
-        private FixedJoint _fixedJointToGrabPoint;
-        private CharacterJoint _characterJointToGrabPoint;
 
         private Creature creature;
 
@@ -92,9 +91,15 @@ namespace Assets.Scripts.Corpses
         private bool _isDepleted = false;
         private Coroutine _despawnCoroutine;
 
+        // === Публичный доступ к RagdollController (для тех, кому нужно) ===
+        public RagdollController RagdollController => _ragdollController;
+
         private void Awake()
         {
-            CaptureInitialPoses();
+            // Автопоиск RagdollController, если не назначен в инспекторе
+            if (_ragdollController == null)
+                _ragdollController = GetComponent<RagdollController>();
+
             creature = GetComponent<Creature>();
 
             if (creature != null && creature.IsAlive())
@@ -104,8 +109,6 @@ namespace Assets.Scripts.Corpses
 
             if (shatterer == null) shatterer = GetComponent<Shatterer>();
             if (hitDecaler == null) hitDecaler = GetComponent<HitDecaler>();
-
-
         }
 
         private void Start()
@@ -115,7 +118,6 @@ namespace Assets.Scripts.Corpses
             if (_despawnCoroutine != null)
                 StopCoroutine(_despawnCoroutine);
             _despawnCoroutine = StartCoroutine(DespawnAfterTime());
-
         }
 
         private void LateUpdate()
@@ -127,21 +129,25 @@ namespace Assets.Scripts.Corpses
             }
         }
 
+
         private void UpdateInteractionAnchorPosition()
         {
             if (_centerBone != null)
             {
-                transform.position = _centerBone.position;
+                // transform.position = _centerBone.position;
                 if (_interactionAnchor != null)
                 {
                     _interactionAnchor.position = _centerBone.position;
+                }
+                if (IsDragging)
+                {
+                    transform.position = _centerBone.position;
                 }
             }
         }
 
         public void InitializeCorpse()
         {
-
             if (harvestDrops != null && harvestDrops.Length > 0)
             {
                 _remainingAmounts = new int[harvestDrops.Length];
@@ -158,14 +164,8 @@ namespace Assets.Scripts.Corpses
         public bool HasInventory() => _inventory != null;
         public bool ShouldDetachAfterInteract() => _isDepleted;
 
-        // Сохраняем позы костей при Awake (когда GameObject ещё "живой")
-        private Vector3[] _initialLocalPositions;
-        private Quaternion[] _initialLocalRotations;
-        private bool _initialPosesCaptured = false;
-
         public void Interact(InteractContext context)
         {
-
             if (!enabled || (_isDepleted && context.IsAttack)) return;
 
             if (IsDragging) StopDragging(context.PlayerInteraction);
@@ -187,217 +187,57 @@ namespace Assets.Scripts.Corpses
             }
         }
 
-
-        private void CaptureInitialPoses()
-        {
-            if (_initialPosesCaptured) return;
-            if (ragdollSettings == null || ragdollSettings.ragdollParts == null) return;
-
-            int n = ragdollSettings.ragdollParts.Length;
-            _initialLocalPositions = new Vector3[n];
-            _initialLocalRotations = new Quaternion[n];
-
-            for (int i = 0; i < n; i++)
-            {
-                var part = ragdollSettings.ragdollParts[i];
-                if (part == null) continue;
-
-                _initialLocalPositions[i] = part.localPosition;
-                _initialLocalRotations[i] = part.localRotation;
-            }
-
-            _initialPosesCaptured = true;
-            // Debug.Log($"[Corpse] Позы костей сохранены ({n} шт.)");
-        }
-
-        private void ResetPosesToInitial()
-        {
-            if (!_initialPosesCaptured) return;
-
-            int n = ragdollSettings.ragdollParts.Length;
-            for (int i = 0; i < n; i++)
-            {
-                var part = ragdollSettings.ragdollParts[i];
-                if (part == null) continue;
-
-                part.localPosition = _initialLocalPositions[i];
-                part.localRotation = _initialLocalRotations[i];
-            }
-        }
+        // ==========================================
+        // === RAGDOLL (делегируем в RagdollController) ===
+        // ==========================================
 
         public void ActivateRagdoll()
         {
-
-            ResetPosesToInitial();
-            Physics.SyncTransforms(); 
-
-            foreach (var part in ragdollSettings.ragdollParts)
-            {
-                if (part == null) continue;
-                var rb = part.GetComponent<Rigidbody>();
-                if (rb == null) continue;
-
-                rb.isKinematic = false;
-                rb.useGravity = true;
-                rb.interpolation = RigidbodyInterpolation.Interpolate;
-
-                rb.linearVelocity = Vector3.zero;
-                rb.angularVelocity = Vector3.zero;
-                rb.linearDamping = ragdollSettings.linearDamp;
-                rb.angularDamping = ragdollSettings.angularDamp;
-                rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-
-                // CharacterJoint cj = rb.GetComponent<CharacterJoint>();
-                // if (cj != null)
-                // {
-                //     ConfigureLimits(cj);
-                // }
-
-                // foreach (var otherPart in ragdollSettings.ragdollParts)
-                // {
-                //     if (part != otherPart && otherPart.TryGetComponent<Collider>(out var otherCol))
-                //     {
-                //         if (rb.TryGetComponent<Collider>(out var rbCol))
-                //         {
-                //             Physics.IgnoreCollision(rbCol, otherCol, true);
-                //         }
-                //     }
-                // }
-            }
+            _ragdollController?.ActivateRagdoll();
         }
 
-        void ConfigureLimits(CharacterJoint joint)
+        public IEnumerator ActivateRagdollCoroutine(float delay = 1f)
         {
-            // 1. Ограничиваем Twist (скручивание по оси X)
-            // Для колена скручивание почти нулевое (от -5 до 5 градусов)
-            SoftJointLimit twistLow = joint.lowTwistLimit;
-            twistLow.limit = 0f;
-            twistLow.bounciness = 0f; // Убираем отскок, чтобы избежать растяжений
-            joint.lowTwistLimit = twistLow;
-
-            SoftJointLimit twistHigh = joint.highTwistLimit;
-            twistHigh.limit = 5f;
-            twistHigh.bounciness = 0f;
-            joint.highTwistLimit = twistHigh;
-
-
-            // 2. Ограничиваем Swing 1 (размах из стороны в сторону по оси Y)
-            // Колено не должно гулять влево-вправо
-            SoftJointLimit swing1 = joint.swing1Limit;
-            swing1.limit = 5f;
-            swing1.bounciness = 0f;
-            joint.swing1Limit = swing1;
-
-
-            // 3. Ограничиваем Swing 2 (сгибание вперед-назад по оси Z)
-            // Разрешаем сгибание назад (например, на 100 градусов)
-            SoftJointLimit swing2 = joint.swing2Limit;
-            swing2.limit = 100f;
-            swing2.bounciness = 0f;
-            joint.swing2Limit = swing2;
-
-
-            // 4. Защита от растягивания (то, о чем говорили в первом вопросе)
-            joint.enableProjection = true;
-            joint.projectionDistance = 0.01f;
-            joint.projectionAngle = 5f;
-
-            SoftJointLimitSpring twistSpring = joint.twistLimitSpring;
-            twistSpring.spring = 50f;  // Сила возврата
-            twistSpring.damper = 5f;   // Сопротивление (чтобы не качался как желе)
-            joint.twistLimitSpring = twistSpring;
-        }
-
-        void SetMinimalRotation(CharacterJoint joint)
-        {
-            // Создаем лимит с минимальным значением (0.01 или 0 градусов)
-            SoftJointLimit minimalLimit = new SoftJointLimit();
-            minimalLimit.limit = 0.01f; // Полный ноль иногда может вызвать микродергания, 0.01 стабильнее
-            minimalLimit.bounciness = 0f;
-            minimalLimit.contactDistance = 0f;
-
-            // Блокируем скручивание (ось X)
-            joint.lowTwistLimit = minimalLimit;
-            // Для High Twist лимит должен быть положительным
-            SoftJointLimit highMinimalLimit = minimalLimit;
-            highMinimalLimit.limit = 0.01f;
-            joint.highTwistLimit = highMinimalLimit;
-
-            // Блокируем размах в стороны (ось Y)
-            joint.swing1Limit = minimalLimit;
-
-            // Блокируем размах вверх-вниз (ось Z)
-            joint.swing2Limit = minimalLimit;
-
-            // Обязательно включаем проекцию, чтобы сустав не растягивался из-за жесткого блока
-            joint.enableProjection = true;
-            joint.projectionDistance = 0.01f;
+            yield return new WaitForSecondsRealtime(delay);
+            _ragdollController?.ActivateRagdoll();
+            StartCoroutine(StopMovingRagdoll());
         }
 
         public void DeactivateRagdoll()
         {
-            foreach (var part in ragdollSettings.ragdollParts)
-            {
-                if (part == null) continue;
-                var rb = part.GetComponent<Rigidbody>();
-                if (rb != null && rb.isKinematic == false)
-                {
-                    rb.isKinematic = true;
-
-                    if (rb.linearVelocity.magnitude < 0.1f && rb.angularVelocity.magnitude < 0.1f)
-                    {
-                        rb.Sleep();
-                    }
-                }
-            }
+            _ragdollController?.DeactivateRagdoll();
         }
 
         public IEnumerator StopMovingRagdoll()
         {
-            yield return new WaitForSecondsRealtime(2.5f);
-            DeactivateRagdoll();
+            if (_ragdollController != null)
+                yield return _ragdollController.StopMovingRagdoll();
         }
 
         public IEnumerator StopMovingCorpse(bool isPlayerCorpse = false)
         {
             yield return new WaitForSecondsRealtime(2.5f);
 
-            Animator animator = GetComponent<Animator>();
-            if (animator != null) Destroy(animator);
+            Animator anim = GetComponent<Animator>();
+            if (anim != null) Destroy(anim);
 
             DeactivateRagdoll();
         }
 
         public void StabilizeRagdoll(bool stabilize)
         {
-            foreach (var part in ragdollSettings.ragdollParts)
-            {
-                if (part == null) continue;
-                var rb = part.GetComponent<Rigidbody>();
-                if (rb != null && !rb.isKinematic)
-                {
-                    if (stabilize)
-                    {
-                        // Высокое демпфирование "замораживает" болтание частей тела
-                        rb.linearDamping = 10f;
-                        rb.angularDamping = 10f;
-                    }
-                    else
-                    {
-                        // Возвращаем обычные настройки физики
-                        rb.linearDamping = ragdollSettings.linearDamp;
-                        rb.angularDamping = ragdollSettings.angularDamp;
-                    }
-                }
-            }
+            _ragdollController?.StabilizeRagdoll(stabilize);
         }
+
+        // ==========================================
+        // === ИНВЕНТАРЬ ===
+        // ==========================================
 
         public void CreateCorpseInventory(
             string corpseName,
             int invCapacity,
             ChestUI chestUI)
         {
-            // Добавляем к трупу и инициализируем компонент ChestInventory
             var chestInv = gameObject.AddComponent<ChestInventory>();
             string corpseKey = $"{corpseName}_{System.Guid.NewGuid().ToString()}";
             chestInv.Initialize(invCapacity, corpseKey);
@@ -407,10 +247,6 @@ namespace Assets.Scripts.Corpses
             _corpseName = corpseName;
         }
 
-        /// <summary>
-        /// Заполняет инвентарь трупа лутом из inventoryLootTable.
-        /// Используется для существ.
-        /// </summary>
         public void PopulateInventoryFromLootTable()
         {
             if (_inventory?.Data == null)
@@ -443,7 +279,6 @@ namespace Assets.Scripts.Corpses
         {
             if (_inventory?.Data == null) return;
 
-            // Копируем вещи из основного инвентаря
             if (mainInventory?.slots != null)
             {
                 foreach (var slot in mainInventory.slots)
@@ -455,7 +290,6 @@ namespace Assets.Scripts.Corpses
                 }
             }
 
-            // Копируем вещи из хотбара
             if (hotbarInventory?.slots != null)
             {
                 foreach (var slot in hotbarInventory.slots)
@@ -480,14 +314,11 @@ namespace Assets.Scripts.Corpses
 
         public void OpenInventory()
         {
-
-            // Если уже открыт - сначала закрываем
             if (_isOpen)
             {
                 CloseInventory();
             }
 
-            // Теперь открываем (даже если был закрыт)
             if (_chestUI != null)
             {
                 _chestUI.OpenWith(_inventory, this);
@@ -501,13 +332,16 @@ namespace Assets.Scripts.Corpses
 
         public void CloseInventory()
         {
-
             if (_isOpen && _chestUI != null)
             {
                 _chestUI.Close();
                 _isOpen = false;
             }
         }
+
+        // ==========================================
+        // === HARVEST ===
+        // ==========================================
 
         private void HandleHarvest(InteractContext context)
         {
@@ -640,7 +474,6 @@ namespace Assets.Scripts.Corpses
 
             if (CorpseManager.Instance != null && !string.IsNullOrEmpty(InstanceId))
             {
-                // Труп разобран — можно удалить запись (лут перенесен в LootBag)
                 CorpseManager.Instance.UnregisterCorpse(InstanceId);
             }
 
@@ -668,14 +501,11 @@ namespace Assets.Scripts.Corpses
                 return;
             }
 
-            // Создаём сумку
             GameObject bagGO = Instantiate(_lootBagPrefab, transform.position, Quaternion.identity);
             bagGO.name = $"LootBag_{_corpseName}";
 
-            // Создаём инвентарь для сумки
             ChestInventory bagInventory = bagGO.AddComponent<ChestInventory>();
 
-            // Копируем содержимое из инвентаря корпуса
             if (_inventory?.Data?.slots != null)
             {
                 string saveKey = $"LootBag_{_corpseName}_{System.Guid.NewGuid().ToString().Substring(0, 8)}";
@@ -694,7 +524,6 @@ namespace Assets.Scripts.Corpses
             {
                 lootBag.Initialize(bagInventory, _chestUI, _corpseDisappearTime, lootBag);
 
-                // ✅ Регистрируем сумку в LootBagManager
                 if (LootBagManager.Instance != null)
                 {
                     LootBagManager.Instance.RegisterLootBag(bagGO, "world");
@@ -713,98 +542,73 @@ namespace Assets.Scripts.Corpses
 
             if (!IsHarvested)
             {
-                // Debug.Log($"[Corpse] Труп исчез по таймеру на {transform.position}");
                 Destroy(gameObject);
             }
         }
 
-        public void StartDragging_(PlayerInteraction player)
+        // ==========================================
+        // === DRAG ===
+        // ==========================================
+
+
+        private Transform _dragGrabPoint;
+        private float _dragBodyVelocity = 100f;
+
+        // В FixedUpdate — двигаем кость
+        private void FixedUpdate()
         {
-            if (IsDragging || _dragRigidbody == null) return;
-            IsDragging = true;
+            if (!IsDragging || _dragRigidbody == null || _dragGrabPoint == null) return;
 
-            player.RegisterDraggingCorpse(this);
-            ActivateRagdoll();
+            // Debug.Log("_dragGrabPoint.position: " + _dragGrabPoint.position);
 
-            var equip = player.GetComponent<PlayerEquipment>();
-            Transform grabPoint = equip ? equip.corpseDragAnchor : player.transform;
-            if (grabPoint == null) grabPoint = player.transform;
 
-            if (_interactionCollider != null) _interactionCollider.enabled = false;
+            _dragRigidbody.linearVelocity = (_dragGrabPoint.position - _dragRigidbody.position) * _dragBodyVelocity;
 
-            _dragRigidbody.WakeUp();
-
-            // FixedJoint
-            // _fixedJointToGrabPoint = _dragRigidbody.gameObject.AddComponent<FixedJoint>();
-            // _fixedJointToGrabPoint.connectedBody = grabPoint.gameObject.GetComponent<Rigidbody>();
-            // _fixedJointToGrabPoint.enablePreprocessing = false;
-            // _fixedJointToGrabPoint.enableCollision = false;
-
-            // CharacterJoint
-            // _characterJointToGrabPoint = _dragRigidbody.gameObject.AddComponent<CharacterJoint>();
-            // _characterJointToGrabPoint.connectedBody = grabPoint.gameObject.GetComponent<Rigidbody>();
-            // _characterJointToGrabPoint.enablePreprocessing = false;
-            // _characterJointToGrabPoint.enableCollision = false;
-
-            // SpringJoint
-            _springJointToGrabPoint = _dragRigidbody.gameObject.AddComponent<SpringJoint>();
-            _springJointToGrabPoint.connectedBody = grabPoint.gameObject.GetComponent<Rigidbody>();
-            _springJointToGrabPoint.autoConfigureConnectedAnchor = false;
-            _springJointToGrabPoint.anchor = Vector3.zero;          // Точка крепления на самом предмете (центр)
-            _springJointToGrabPoint.connectedAnchor = Vector3.zero; // Точка крепления на руке (центр руки)
-
-            _springJointToGrabPoint.spring = 10000f;                  // Сила притягивания (чем выше, тем жестче пружина)
-            _springJointToGrabPoint.damper = 100f;                   // Гашение колебаний (чтобы предмет не качался бесконечно)
-            _springJointToGrabPoint.tolerance = 0.01f;              // Погрешность расстояния
-            _springJointToGrabPoint.minDistance = 0f;               // Минимальное расстояние между рукой и предметом
-            _springJointToGrabPoint.maxDistance = 0f;               // Максимальное расстояние (0 означает, что предмет стремится ровно в точку руки)
         }
 
         public void StartDragging(PlayerInteraction player)
         {
             if (IsDragging || _dragRigidbody == null) return;
 
-            // ВАЖНО: Убедимся, что физика включена именно для той кости, за которую тянем
+            _ragdollController?.ResetVelocities();
+
             _dragRigidbody.isKinematic = false;
             _dragRigidbody.WakeUp();
 
             IsDragging = true;
             player.RegisterDraggingCorpse(this);
-
-            // Активируем весь рагдолл
             ActivateRagdoll();
+
+            // Обнуляем все velocity — чистое состояние
+            _ragdollController?.ResetVelocities();
 
             var equip = player.GetComponent<PlayerEquipment>();
             Transform grabPoint = equip ? equip.corpseDragAnchor : player.transform;
             if (grabPoint == null) grabPoint = player.transform;
 
-            // Получаем Rigidbody игрока (или его якоря)
+            // Сохраняем ссылку на grabPoint
+            _dragGrabPoint = grabPoint;
+
             Rigidbody playerRb = grabPoint.GetComponent<Rigidbody>();
             if (playerRb == null)
             {
-                // Если у якоря нет RB, ищем на самом игроке
                 playerRb = player.GetComponent<Rigidbody>();
             }
 
             if (_interactionCollider != null) _interactionCollider.enabled = false;
 
-            // Добавляем SpringJoint именно на ту кость, которая назначена в _dragRigidbody
-            _springJointToGrabPoint = _dragRigidbody.gameObject.AddComponent<SpringJoint>();
-            _springJointToGrabPoint.connectedBody = playerRb;
+            // _springJointToGrabPoint = _dragRigidbody.gameObject.AddComponent<SpringJoint>();
+            // _springJointToGrabPoint.connectedBody = playerRb;
 
-            // Настройки для стабильного перетаскивания за конечность:
-            _springJointToGrabPoint.autoConfigureConnectedAnchor = false;
+            // _springJointToGrabPoint.autoConfigureConnectedAnchor = false;
+            // _springJointToGrabPoint.anchor = Vector3.zero;
+            // _springJointToGrabPoint.connectedAnchor = Vector3.zero;
 
-            // Anchor: точка на теле трупа. Vector3.zero означает центр самого объекта (кости ноги)
-            _springJointToGrabPoint.anchor = Vector3.zero;
-            _springJointToGrabPoint.connectedAnchor = Vector3.zero;
-
-            // Параметры пружины (можно подкорректировать под вес вашей модели)
-            _springJointToGrabPoint.spring = 10000f; // чтобы не рвало суставы при рывке за ногу
-            _springJointToGrabPoint.damper = 200f;  // Больше демпфер, чтобы нога не болталась как макарина
-            _springJointToGrabPoint.tolerance = 0.1f;
-            _springJointToGrabPoint.minDistance = 0f;
-            _springJointToGrabPoint.maxDistance = 0f;
+            // _springJointToGrabPoint.spring = 10000f; // 10000f 2000f
+            // _springJointToGrabPoint.damper = 200f; // 200f 500f
+            // _springJointToGrabPoint.tolerance = 0.1f; // 0.1f 0.5f
+            // _springJointToGrabPoint.minDistance = 0f;
+            // _springJointToGrabPoint.maxDistance = 0f;
         }
 
         public void StopDragging(PlayerInteraction player)
@@ -814,65 +618,44 @@ namespace Assets.Scripts.Corpses
 
             player.UnregisterDraggingCorpse(this);
 
-            // if (_fixedJointToGrabPoint != null)
+            // if (_springJointToGrabPoint != null)
             // {
-            //     Destroy(_fixedJointToGrabPoint);
+            //     _springJointToGrabPoint.connectedBody = null;
+            //     Destroy(_springJointToGrabPoint);
+            //     _springJointToGrabPoint = null;
             // }
 
-            // if (_characterJointToGrabPoint != null)
-            // {
-            //     Destroy(_characterJointToGrabPoint);
-            // }
+            // Гасим velocity — труп падает плавно
+            _ragdollController?.ResetVelocities();
 
-            if (_springJointToGrabPoint != null)
-            {
-                _springJointToGrabPoint.connectedBody = null;
-                Destroy(_springJointToGrabPoint);
-                _springJointToGrabPoint = null;
-            }
-
-
-            // if (_dragRigidbody != null)
-            // {
-            //     if (!_dragRigidbody.isKinematic)
-            //     {
-            //         _dragRigidbody.linearVelocity *= 0.2f;
-            //         _dragRigidbody.angularVelocity *= 0.2f;
-            //     }
-
-            //     _dragRigidbody.isKinematic = true;
-
-            // }
-
-            // 3. "Будим" все части тела и даем им небольшой случайный толчок
-            // Это нужно, чтобы ragdoll не застыл в одной позе, а красиво рассыпался
-            foreach (var part in ragdollSettings.ragdollParts)
-            {
-                if (part == null) continue;
-                var rb = part.GetComponent<Rigidbody>();
-                if (rb != null)
-                {
-                    rb.linearDamping = ragdollSettings.linearDamp;
-                    rb.angularDamping = ragdollSettings.angularDamp;
-                    rb.isKinematic = false; // Важно! Включаем физику
-                    rb.WakeUp();
-
-                    // Добавляем случайный микро-импульс для естественности падения
-                    rb.AddForce(Random.insideUnitSphere * 2f, ForceMode.Impulse);
-                }
-            }
+            // «Будим» все кости — ragdoll рассыпается
+            _ragdollController?.WakeAllRigidbodies();
 
             if (_interactionCollider != null) _interactionCollider.enabled = true;
 
-
             StartCoroutine(StopMovingRagdoll());
-
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         public void InterruptByAttack(PlayerInteraction player) => StopDragging(player);
 
-        public int GetHarvestHits() => _harvestHits;
+        // ==========================================
+        // === ДАННЫЕ / ПЕРСИСТЕНТНОСТЬ ===
+        // ==========================================
 
+        public int GetHarvestHits() => _harvestHits;
         public int GetInventoryCapacity() => _inventory?.Data?.size ?? 100;
 
         public void StartDespawnTimer(float lifetime)
@@ -910,7 +693,6 @@ namespace Assets.Scripts.Corpses
 
         public void LoadHarvestData(CorpseSaveData data)
         {
-            // Восстанавливаем добычу
             if (data.harvestDrops != null && data.harvestDrops.Count > 0)
             {
                 var itemDb = PlayerProgress.Instance?.itemDatabase?.ItemLookup;
@@ -931,14 +713,12 @@ namespace Assets.Scripts.Corpses
                 harvestDrops = newDrops.ToArray();
             }
 
-            // Восстанавливаем оставшиеся количества
             if (data.remainingAmounts != null && data.remainingAmounts.Count > 0)
             {
                 _remainingAmounts = data.remainingAmounts.ToArray();
             }
             else if (harvestDrops != null)
             {
-                // Если не было сохранено — считаем, что все на месте
                 _remainingAmounts = new int[harvestDrops.Length];
                 for (int i = 0; i < harvestDrops.Length; i++)
                     _remainingAmounts[i] = harvestDrops[i].totalAmount;
@@ -948,16 +728,12 @@ namespace Assets.Scripts.Corpses
             _isDepleted = data.isDepleted;
         }
 
-        // Перегрузка DespawnAfterTime
         private IEnumerator DespawnAfterTime(float lifetime)
         {
             yield return new WaitForSeconds(lifetime);
 
             if (!IsHarvested)
             {
-                // Debug.Log($"[Corpse] Труп исчез по таймеру: {InstanceId}");
-
-                // Уведомляем менеджер
                 if (CorpseManager.Instance != null && !string.IsNullOrEmpty(InstanceId))
                 {
                     CorpseManager.Instance.UnregisterCorpse(InstanceId);
@@ -971,19 +747,12 @@ namespace Assets.Scripts.Corpses
         {
             if (CorpseManager.Instance != null && !string.IsNullOrEmpty(InstanceId))
             {
-                // Не удаляем файл при выходе из игры
                 if (!CorpseManager.Instance.IsQuitting)
                 {
                     CorpseManager.Instance.UnregisterCorpse(InstanceId);
-                    // Debug.Log($"[Corpse] OnDestroy — файл {InstanceId} удален");
                 }
-                // else
-                // {
-                //     Debug.Log($"[Corpse] OnDestroy при выходе — файл {InstanceId} сохранён");
-                // }
             }
         }
-
     }
 
     [System.Serializable]
@@ -993,7 +762,6 @@ namespace Assets.Scripts.Corpses
         [Header("Физика после смерти")]
         public float linearDamp = 0.5f;
         public float angularDamp = 2f;
-        // public float massMultiplier = 0.5f;
         [Range(0, 1)] public float velocityInherit = 0.1f;
     }
 }

@@ -9,6 +9,7 @@ using Assets.Scripts.Corpses;
 using Assets.Scripts.UI;
 using System.Collections;
 using UnityEngine.AI;
+using Assets.Scripts.Creatures.Taming;
 
 namespace Assets.Scripts.Creatures
 {
@@ -21,11 +22,15 @@ namespace Assets.Scripts.Creatures
         [Header("ParticleSystem for Damage Effect")]
         public ParticleSystem damageEffect;
 
+        [Header("Taming")]
         public bool tamed = false;          // прирученное существо
         public bool tamable = false;        // приручаемое существо
         public bool tamableKO = false;      // приручаемое оглушением
         public bool knockedOut = false;     // оглушенное существо
         public bool tamablePassive = false; // приручаемое пассивным (кормлением, другими механиками)
+        public float tamingProgress = 0f; // 0..100
+
+        public string TamingInstanceId { get; set; } = "";
 
         [Header("Interaction")]
         [SerializeField] private Collider _interactionCollider;
@@ -69,11 +74,20 @@ namespace Assets.Scripts.Creatures
         [Header("Taming Stats")]
         public float torpor = 0f;
         public float maxTorpor = 100f;
-        public float torporRecoveryRate = 1f; // Как быстро просыпается
+        // public float torporRecoveryRate = 1f; // Как быстро просыпается
+
+        [Header("Food")]
+        public float food = 100f;
+        public float maxFood = 100f;
+
+        public virtual float GetMaxFood() => maxFood;
+        public float GetFood() => food;
 
         // Ссылки на системы
+        protected PlayerController playerController;
         protected PlayerProgress playerProgress;
         protected PlayerSurvivalSystem survivalSystem;
+        protected RagdollController ragdollController;
 
         // Статы, специфичные для этого существа
         protected float health;
@@ -83,6 +97,9 @@ namespace Assets.Scripts.Creatures
 
         // Ссылка на аниматор
         protected Animator animator;
+        protected int animIDIsMoving;
+        protected int animIDSpeed;
+        protected int animIDAttack;
         protected int animIDTakeDamage;
         protected int animIDDeath;
 
@@ -95,13 +112,21 @@ namespace Assets.Scripts.Creatures
             playerProgress = PlayerProgress.Instance;
             survivalSystem = PlayerSurvivalSystem.Instance;
 
+            if (playerProgress != null && playerProgress.playerController != null)
+                playerController = playerProgress.playerController;
+
             // Получаем аниматор
             animator = GetComponent<Animator>();
             if (animator != null)
             {
+                animIDIsMoving = Animator.StringToHash("IsMoving");
+                animIDSpeed = Animator.StringToHash("Speed");
+                animIDAttack = Animator.StringToHash("Attack");
                 animIDTakeDamage = Animator.StringToHash("TakeDamage");
                 animIDDeath = Animator.StringToHash("Death");
             }
+
+            ragdollController = GetComponent<RagdollController>();
 
             // Инициализация статов
             InitializeStats();
@@ -131,14 +156,21 @@ namespace Assets.Scripts.Creatures
         public void OpenInventory()
         {
             if (_isOpen) CloseInventory();
-            else if (_chestUI != null)
-            {
-                _chestUI.OpenWith(_inventory);
-                _isOpen = true;
-            }
             else
             {
-                Debug.LogError("[BaseLivingEntity] _chestUI не назначен! Инвентарь не откроется.");
+                if (_chestUI == null) _chestUI = FindAnyObjectByType<ChestUI>();
+
+                Debug.Log($"[OpenInventory] obj={gameObject.name}, _isOpen={_isOpen}, _inventory={(_inventory == null ? "null" : _inventory.saveKey)}");
+
+                if (_chestUI != null)
+                {
+                    _chestUI.OpenWith(_inventory, this);
+                    _isOpen = true;
+                }
+                else
+                {
+                    Debug.LogError("[BaseLivingEntity] _chestUI не назначен!");
+                }
             }
         }
 
@@ -164,11 +196,15 @@ namespace Assets.Scripts.Creatures
 
             maxStamina = GetMaxStaminaFromConfiguration();
             stamina = maxStamina;
+
+            maxFood = GetMaxFoodFromConfiguration();
+            food = maxFood;
         }
 
         // Абстрактные методы, которые должны реализовать наследники
         protected abstract float GetMaxHealthFromConfiguration();
         protected abstract float GetMaxStaminaFromConfiguration();
+        protected abstract float GetMaxFoodFromConfiguration();
 
         // ==========================================
         // === УРОН ===
@@ -276,71 +312,60 @@ namespace Assets.Scripts.Creatures
             knockedOut = false;
             health = 0;
 
+            // Удаляем сохранение нокаута/приручения — труп сохранит CorpseManager
+            if (!string.IsNullOrEmpty(TamingInstanceId) && TamingManager.Instance != null)
+            {
+                TamingManager.Instance.UnregisterCreature(TamingInstanceId);
+                TamingInstanceId = "";
+            }
+
             CancelInvoke();
-
             CreateCorpse();
-
-            // Вызываем событие смерти
+            SetBodyRagdoll();
             OnDeath?.Invoke(this);
         }
 
-
-        float _deathAnimationDuration = 0.3f;
-
-        private IEnumerator DeathRoutine()
+        private void SetBodyRagdoll(bool destroyAgent = false)
         {
-            // === 1. Анимация смерти (если есть) ===
-            // if (animator != null && animator.enabled && animIDDeath > 0)
-            // {
-            //     animator.SetTrigger(animIDDeath);
-            //     // Ждём длину клипа (или фиксированное время)
-            //     yield return new WaitForSeconds(_deathAnimationDuration);
-            // }
+            // Отключаем аниматор
+            if (animator != null)
+            {
+                animator.WriteDefaultValues();
+                animator.enabled = false;
+            }
 
-            // === 2. Отключаем ВСЁ, что может двигать кости ===
-            // Найти все Animator-ы в детях
-            // foreach (var anim in GetComponentsInChildren<Animator>())
-            // {
-            //     anim.enabled = false;
-            // }
+            // Запускаем рэгдолл и корутину остановки рэгдолл
+            if (ragdollController != null)
+            {
+                ragdollController.ActivateRagdoll();
+                StartCoroutine(ragdollController.StopMovingRagdoll());
+            }
 
-            // Отключаем NavMeshAgent
-            // var agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
-            // if (agent != null) Destroy(agent);
+            var agent = GetComponent<NavMeshAgent>();
 
-            // Отключаем Creature
-            var creature = GetComponent<Creature>();
-            if (creature != null) creature.enabled = false;
-
-            // === 3. Один кадр подождать, чтобы Unity применила отключение ===
-            yield return null;
-
-            // === 4. Создаём труп ===
-            CreateCorpse();
-
-            // === 5. Удаляем живого ===
-            // Destroy(gameObject);
-
-            yield return new WaitForSeconds(_deathAnimationDuration);
+            if (agent != null)
+            {
+                if (agent.enabled && agent.isOnNavMesh) agent.isStopped = true;
+                agent.enabled = false;
+                if (destroyAgent)
+                {
+                    Destroy(agent);
+                }
+            }
         }
 
         /// <summary>
         /// Вызывается в конце анимации смерти (через Animation Event).
         /// </summary>
 
-        public void OnDeathAnimationFinished()
-        {
-            animator.enabled = false;
-            // StartCoroutine(DeathRoutine());
-            CreateCorpse();
-        }
+        // public void OnDeathAnimationFinished()
+        // {
+        //     CreateCorpse();
+        // }
 
         private void CreateCorpse()
         {
-
             var creature = GetComponent<Creature>();
-            GameObject prefab = creature.Data.prefab;
-
             if (creature == null)
             {
                 Debug.LogError("[CreateCorpse] Не найден Creature!");
@@ -353,31 +378,12 @@ namespace Assets.Scripts.Creatures
                 return;
             }
 
-            if (prefab == null)
-            {
-                Debug.LogError("[CreateCorpse] Не найден префаб существа в CreatureData!");
-                return;
-            }
-
-            gameObject.transform.GetPositionAndRotation(out Vector3 position, out Quaternion rotation);
-            GameObject corpseGO = Instantiate(prefab, position, rotation);
-
-            if (corpseGO.TryGetComponent<NavMeshAgent>(out var agent)) Destroy(agent);
-            if (corpseGO.TryGetComponent<Animator>(out var anim)) anim.enabled = false;
-
-            // ✅ Устанавливаем слой Corpse для восстановленного трупа,
+            // Устанавливаем слой Corpse для восстановленного трупа,
             // чтобы инфо-панель и другие системы, ищущие живых существ, его игнорировали.
             int corpseLayer = LayerMask.NameToLayer("Corpse");
-            if (corpseLayer != -1)
-            {
-                SetLayerRecursively(corpseGO, corpseLayer);
-            }
-            else
-            {
-                Debug.LogWarning("[CorpseManager] Слой 'Corpse' не найден в проекте!");
-            }
+            if (corpseLayer != -1) SetLayerRecursively(gameObject, corpseLayer);
 
-            var corpse = corpseGO.GetComponentInChildren<Corpse>(true);
+            var corpse = GetComponent<Corpse>();
             if (corpse == null) return;
 
             // Настраиваем Corpse
@@ -398,10 +404,10 @@ namespace Assets.Scripts.Creatures
                 corpse.allowPickaxe = data.allowPickaxe;
                 corpse.allowSword = data.allowSword;
                 corpse.allowSickle = data.allowSickle;
+
+                // creature.enabled = false;
             }
 
-            corpse.ActivateRagdoll();
-            corpse.StartCoroutine(corpse.StopMovingRagdoll());
             corpse.InitializeCorpse();
 
             // === Создаём инвентарь трупа ===
@@ -421,15 +427,12 @@ namespace Assets.Scripts.Creatures
             if (CorpseManager.Instance != null)
             {
                 CorpseManager.Instance.RegisterCorpse(
-                    corpseGO,
+                    gameObject,
                     "world",
                     creatureId
                 );
             }
-
-            Destroy(gameObject);
         }
-
 
         /// <summary>
         /// Погружает существо в нокаут: AI выключается, аниматор глушится,
@@ -441,26 +444,18 @@ namespace Assets.Scripts.Creatures
             if (_isDead || knockedOut) return;
 
             knockedOut = true;
-            // Debug.Log($"[{gameObject.name}] НОКАУТ (torpor={torpor:F1}/{maxTorpor})");
 
-            // 1. Останавливаем AI
-            var agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
-            if (agent != null && agent.enabled && agent.isOnNavMesh)
-                agent.isStopped = true;
-            if (agent != null)
-                agent.enabled = false;
+            Debug.Log($"[KnockOut] ДО: _inventory={(_inventory == null ? "null" : _inventory.saveKey)}, " +
+                      $"_chestUI={(_chestUI == null ? "null" : _chestUI.name)}, " +
+                      $"HasCorpse={TryGetComponent<Corpse>(out var c) && c.enabled}");
 
-            // 2. Глушим аниматор (пока нет анимации «спит»)
-            if (animator != null)
-            {
-                animator.enabled = false;
-            }
+            SetBodyRagdoll(false);
 
-            // 4. Включаем RadialMenu и инвентарь
-            var menu = GetComponent<RadialMenu>();
-            if (menu != null) menu.enabled = true;
+            if (TryGetComponent<Corpse>(out var corpse))
+                corpse.enabled = false;
 
-            // 5. Создаём инвентарь, если его нет
+            if (TryGetComponent<RadialMenu>(out var menu)) menu.enabled = true;
+
             if (_inventory == null)
             {
                 var chestInv = gameObject.AddComponent<ChestInventory>();
@@ -470,8 +465,41 @@ namespace Assets.Scripts.Creatures
                 _inventory = chestInv;
                 _chestUI = FindAnyObjectByType<ChestUI>();
 
-                // Debug.Log($"[{gameObject.name}] Инвентарь для приручения создан.");
+                Debug.Log($"[KnockOut] Создан инвентарь: {key}");
             }
+
+            if (string.IsNullOrEmpty(TamingInstanceId) && TamingManager.Instance != null)
+            {
+                TamingInstanceId = TamingManager.Instance.RegisterCreature(gameObject, "player_001");
+            }
+
+            Debug.Log($"[KnockOut] ПОСЛЕ: _inventory={_inventory?.saveKey}, " +
+                      $"_chestUI={_chestUI?.name}, TamingInstanceId={TamingInstanceId}");
+        }
+
+        /// <summary>
+        /// Применяет состояние нокаута при загрузке (без регистрации в TamingManager).
+        /// </summary>
+        public virtual void KnockOutFromLoad()
+        {
+            knockedOut = true;
+            SetBodyRagdoll(false);
+            SetCreatureLayer();
+            if (TryGetComponent<RadialMenu>(out var menu)) menu.enabled = true;
+            // Инвентарь уже восстановлен в TamingManager.SpawnFromData
+        }
+
+        /// <summary>
+        /// Применяет состояние прирученного при загрузке.
+        /// </summary>
+        public virtual void TamedFromLoad()
+        {
+            tamed = true;
+            knockedOut = false;
+            SetCreatureLayer();
+            if (TryGetComponent<RadialMenu>(out var menu)) menu.enabled = true;
+            // Animator уже включён, существо просто стоит.
+            // Позже: AI прирученного (Follow/Stay).
         }
 
         /// <summary>
@@ -479,45 +507,67 @@ namespace Assets.Scripts.Creatures
         /// </summary>
         public virtual void RecoverFromKnockout()
         {
-            if (_isDead || !knockedOut) return;
+            if (_isDead) return;
+            if (!knockedOut) return;   // ← оставляем проверку как есть
+            ExitKnockoutState();
+        }
 
+        protected virtual void ExitKnockoutState()
+        {
             knockedOut = false;
             torpor = 0f;
             Debug.Log($"[{gameObject.name}] ВЫШЕЛ ИЗ НОКАУТА");
 
-            // 1. Включаем AI
-            var agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
-            if (agent != null)
+            // Если просыпается диким — удаляем сохранение
+            if (!tamed && !string.IsNullOrEmpty(TamingInstanceId) && TamingManager.Instance != null)
             {
-                agent.enabled = true;
-                if (agent.isOnNavMesh)
-                    agent.isStopped = false;
-                else
-                    Debug.LogWarning($"[{gameObject.name}] NavMeshAgent не на NavMesh после нокаута!");
+                TamingManager.Instance.UnregisterCreature(TamingInstanceId);
+                TamingInstanceId = "";
             }
 
-            // 2. Включаем аниматор
-            if (animator != null)
-                animator.enabled = true;
+            // 1. Деактивируем ragdoll — ДО включения Animator, чтобы не было конфликта
+            if (ragdollController != null)
+                ragdollController.DeactivateRagdoll();
 
-            // 3. Включаем Creature
-            var creature = GetComponent<Creature>();
-            if (creature != null)
+            // 2. Включаем AI
+            if (TryGetComponent<NavMeshAgent>(out var agent))
+            {
+                if (!agent.isOnNavMesh)
+                {
+                    if (NavMesh.SamplePosition(transform.position, out var hit, 5f, NavMesh.AllAreas))
+                        agent.Warp(hit.position);
+                    else
+                        Debug.LogWarning($"[{gameObject.name}] Не удалось вернуть на NavMesh после нокаута!");
+                }
+
+                agent.enabled = true;
+                if (agent.isOnNavMesh) agent.isStopped = false;
+            }
+
+            // 3. Включаем аниматор и сбрасываем позу в idle
+            if (animator != null)
+            {
+                animator.Rebind();          // сбрасывает Animator в default state (T-поза)
+                animator.Update(0f);        // применяет default позу немедленно
+                animator.enabled = true;
+                animator.SetFloat(animIDSpeed, 0f);
+                animator.SetBool(animIDIsMoving, false);
+            }
+
+            // 4. Включаем Creature
+            if (TryGetComponent<Creature>(out var creature))
                 creature.enabled = true;
 
-            var corpse = GetComponent<Corpse>();
-            if (corpse != null)
+            if (TryGetComponent<Corpse>(out var corpse))
                 corpse.enabled = false;
 
-            // 4. Выключаем RadialMenu
-            var menu = GetComponent<RadialMenu>();
-            if (menu != null)
+            // 5. Выключаем RadialMenu
+            if (TryGetComponent<RadialMenu>(out var menu))
                 menu.enabled = false;
 
-            // 5. Закрываем инвентарь
+            // 6. Закрываем инвентарь
             CloseInventory();
         }
-
 
         // Метод для восстановления здоровья
         public virtual void Heal(float amount)
@@ -535,8 +585,78 @@ namespace Assets.Scripts.Creatures
                 SetLayerRecursively(child.gameObject, layer);
         }
 
-        private void OnDestroy()
+
+        // ==========================================
+        // === ПРИРУЧЕНИЕ ===
+        // ==========================================
+
+        /// <summary>
+        /// Добавляет прогресс к приручению. Возвращает true, если приручение завершено.
+        /// </summary>
+        public bool AddTamingProgress(float amount)
         {
+            if (tamed) return true;
+
+            tamingProgress = Mathf.Min(100f, tamingProgress + amount);
+            if (tamingProgress >= 100f)
+            {
+                FinishTaming();
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Завершает процесс приручения.
+        /// </summary>
+        protected virtual void FinishTaming()
+        {
+            tamed = true;
+            tamingProgress = 100f;
+
+            // НЕ трогаем knockedOut, torpor — их сбросит ExitKnockoutState
+            ExitKnockoutState();
+            SetCreatureLayer();
+
+            // Сбрасываем агро на игрока
+            if (this is Creature c) c.SetTarget(null);
+
+            // Сохраняем новое состояние (tamed = true)
+            if (!string.IsNullOrEmpty(TamingInstanceId) && TamingManager.Instance != null)
+            {
+                TamingManager.Instance.UpdateSave(TamingInstanceId, "player_001");
+            }
+
+            if (TryGetComponent<RadialMenu>(out var menu)) menu.enabled = true;
+
+            Debug.Log($"[{gameObject.name}] Приручение завершено!");
+        }
+
+        /// <summary>
+        /// Добавляет торпор (например, от наркотиков).
+        /// </summary>
+        public void AddTorpor(float amount)
+        {
+            torpor = Mathf.Min(maxTorpor, torpor + amount);
+            // Мгновенный нокаут, если торпор превысил максимум (на всякий случай)
+            if (!knockedOut && torpor >= maxTorpor)
+            {
+                KnockOut();
+            }
+        }
+
+        public void AddFood(float amount)
+        {
+            food = Mathf.Min(maxFood, food + amount);
+        }
+
+        /// <summary>
+        /// Уменьшает еду на amount (не ниже 0). Возвращает true, если еда достигла 0.
+        /// </summary>
+        public bool ConsumeFood(float amount)
+        {
+            food = Mathf.Max(0f, food - amount);
+            return food <= 0f;
         }
 
         // Геттеры
@@ -547,5 +667,19 @@ namespace Assets.Scripts.Creatures
         public float GetStamina() => stamina;
         public float GetMaxStamina() => maxStamina;
         public bool IsAlive() => !_isDead && health > 0;
+
+        // Сеттеры для загрузки
+        public void SetHealth(float value) => health = Mathf.Clamp(value, 0f, maxHealth);
+        public void SetFood(float value) => food = Mathf.Clamp(value, 0f, maxFood);
+        public void SetStamina(float value) => stamina = Mathf.Clamp(value, 0f, maxStamina);
+        public void SetChestUI(ChestUI chestUI) => _chestUI = chestUI;
+
+        protected void SetCreatureLayer()
+        {
+            int creatureLayer = LayerMask.NameToLayer("Creature");
+            if (creatureLayer != -1) SetLayerRecursively(gameObject, creatureLayer);
+            else Debug.LogWarning("[BaseLivingEntity] Слой 'Creature' не найден!");
+        }
+
     }
 }

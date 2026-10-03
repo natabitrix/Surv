@@ -100,6 +100,7 @@ namespace Assets.Scripts.Core
         public const float RATE = 0.1f;
         private static LevelTableData _levelTable;
         private Vector3 _lastKnownPlayerPosition;
+        private Quaternion _lastKnownPlayerRotation;
         private bool _hasLastKnownPosition = false;
 
 
@@ -136,6 +137,7 @@ namespace Assets.Scripts.Core
             if (_playerController != null)
             {
                 _lastKnownPlayerPosition = _playerController.transform.position;
+                _lastKnownPlayerRotation = _playerController.transform.rotation;
                 _hasLastKnownPosition = true;
             }
         }
@@ -218,8 +220,18 @@ namespace Assets.Scripts.Core
                     _loadedSaveData.playerPositionY,
                     _loadedSaveData.playerPositionZ
                 );
+
+                // поворот
+                _playerController.transform.rotation = Quaternion.Euler(
+                    _loadedSaveData.playerRotationX,
+                    _loadedSaveData.playerRotationY,
+                    _loadedSaveData.playerRotationZ
+                );
+                
                 // Debug.Log($"[PlayerProgress] Позиция загружена: {_playerController.transform.position}");
             }
+
+
 
             if (_inventoryManager != null && _loadedSaveData != null)
             {
@@ -238,7 +250,7 @@ namespace Assets.Scripts.Core
         public void RegisterPlayerController(PlayerController controller)
         {
             _playerController = controller;
-            ApplyData(); 
+            ApplyData();
         }
 
         public void RegisterInventoryManager(InventoryManager manager)
@@ -514,6 +526,12 @@ namespace Assets.Scripts.Core
                 saveData.playerPositionX = _playerController.transform.position.x;
                 saveData.playerPositionY = _playerController.transform.position.y;
                 saveData.playerPositionZ = _playerController.transform.position.z;
+
+                var euler = _playerController.transform.rotation.eulerAngles;
+                saveData.playerRotationX = euler.x;
+                saveData.playerRotationY = euler.y;
+                saveData.playerRotationZ = euler.z;
+
                 // Debug.Log($"[PlayerProgress] Save: позиция из живого контроллера: {_playerController.transform.position}");
             }
             else if (_hasLastKnownPosition)
@@ -521,6 +539,12 @@ namespace Assets.Scripts.Core
                 saveData.playerPositionX = _lastKnownPlayerPosition.x;
                 saveData.playerPositionY = _lastKnownPlayerPosition.y;
                 saveData.playerPositionZ = _lastKnownPlayerPosition.z;
+
+                var euler = _lastKnownPlayerRotation.eulerAngles;
+                saveData.playerRotationX = euler.x;
+                saveData.playerRotationY = euler.y;
+                saveData.playerRotationZ = euler.z;
+
                 // Debug.LogWarning($"[PlayerProgress] Save: _playerController null, используем кэш: {_lastKnownPlayerPosition}");
             }
             else
@@ -565,6 +589,10 @@ namespace Assets.Scripts.Core
         public float playerPositionX = 187.5f;
         public float playerPositionY = 5.26f;
         public float playerPositionZ = 110.9f;
+
+        public float playerRotationX = 0f;
+        public float playerRotationY = 0f;
+        public float playerRotationZ = 0f;
 
         public int equippedSlotIndex = -1;
         public SlotOwner equippedSlotOwner = SlotOwner.Hotbar;

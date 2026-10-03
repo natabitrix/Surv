@@ -1,7 +1,6 @@
 using Assets.Scripts.Creatures;
 using UnityEngine;
 
-[RequireComponent(typeof(BaseLivingEntity))]
 public class HealthMaterialBlender : MonoBehaviour
 {
     [Header("Настройки")]
@@ -26,6 +25,7 @@ public class HealthMaterialBlender : MonoBehaviour
     private void Awake()
     {
         _entity = GetComponent<BaseLivingEntity>();
+        if(_entity == null) return;
         if (targetRenderer == null) targetRenderer = GetComponent<Renderer>();
 
         _block = new MaterialPropertyBlock();
@@ -41,6 +41,7 @@ public class HealthMaterialBlender : MonoBehaviour
 
     private void Update()
     {
+        if(_entity == null) return;
         if (Time.time < _nextCheckTime) return;
         _nextCheckTime = Time.time + checkInterval;
 

@@ -733,12 +733,101 @@ Screen Space всплывающие числа урона над точкой у
   - «Щелчок» из позы смерти в T-позу при включённой анимации смерти — неизбежен. Поэтому анимация смерти **отключена**.
   - Труп — отдельный объект, не тот же самый. Ссылки на убитого робота инвалидируются (`Destroy`).
 
+### 19. Приручение (Taming) и сохранение существ
 
+Реализована система приручения (нокаут + кормление + прогресс) и сохранение нокаутнутых и прирученных существ между сессиями.
+
+#### 19.1 Food-стат существ
+
+- **`CreatureData`** — новые поля:
+  - `maxFood` — максимум еды (100).
+  - `foodDrainRateKnockedOut` — скорость падения еды в нокауте (0.5/сек).
+  - `foodDrainRateTamed` — скорость падения еды у прирученного (0.1/сек).
+  - `foodEatThresholdPercent` — порог (0..1), ниже которого существо ест.
+  - `starvationDamagePerSecond` — урон при food == 0.
+  - `torporRecoveryRate` — как быстро падает torpor (перенесено из `BaseLivingEntity`).
+  - `narcoticItem`, `narcoticTorporAmount` — наркотик и его эффект.
+
+- **`BaseLivingEntity`** — новые поля:
+  - `food`, `maxFood`, `GetFood()`, `AddFood()`, `ConsumeFood()`.
+  - `SetFood()`, `SetHealth()`, `SetStamina()` — сеттеры для загрузки.
+
+- **`Creature.Update`** — food-тик:
+  - Падает у нокаутнутых (`foodDrainRateKnockedOut`) и прирученных (`foodDrainRateTamed`).
+  - При `food <= maxFood * foodEatThresholdPercent` — `TryEatFood()`.
+  - `TryEatFood` — ищет еду из `tamingFoodPreferences`, восстанавливает food, добавляет `tamingProgress`.
+  - При завершении приручения — `FinishTaming()`.
+  - **Сохранение сразу после еды** — `TamingManager.UpdateSave`.
+
+#### 19.2 `TamingManager` (Singleton, `===CoreManagers===`)
+
+По аналогии с `CorpseManager` и `LootBagManager`:
+
+- Папка `persistentDataPath/Taming/`, файлы `taming_{guid}.save`.
+- `RegisterCreature(creatureGO, ownerPlayerId)` — регистрирует нокаутнутое/прирученное, возвращает GUID.
+- `UpdateSave(instanceId, ownerPlayerId)` — пересохраняет состояние.
+- `UnregisterCreature(instanceId)` — удаляет файл (при пробуждении дикого, смерти, отмене).
+- `LoadAllTamingCreaturesAsync()` — загрузка с проверкой времени через `GameTime`.
+- `SpawnFromData(data)` — создаёт существо из префаба, восстанавливает состояние.
+- `SaveAll()` — сохраняет **все** загруженные существа. Вызывается в `OnApplicationQuit`, `OnApplicationPause(true)`, `OnApplicationFocus(false)`.
+- Периодическое сохранение — раз в 10 секунд из `Creature.Update` (при `knockedOut || tamed`).
+
+#### 19.3 `TamingSaveData`
+
+- `instanceId`, `creatureId`.
+- Состояние: `knockedOut`, `tamed`, `torpor`, `maxTorpor`, `tamingProgress`, `health`, `food`, `stamina`.
+- `torporRecoveryRate`, `foodDrainRateKnockedOut`, `foodDrainRateTamed` — для расчёта времени.
+- Позиция/поворот.
+- `ownerPlayerId`, `customName`, `tamedState` — задел на будущее.
+- `savedAtTime` — `GameTime.Now`.
+- `inventoryData` — `SerializableInventory`.
+
+#### 19.4 Загрузка нокаутнутого/прирученного
+
+- **`BaseLivingEntity.KnockOutFromLoad()`** — применяет состояние нокаута без регистрации.
+- **`BaseLivingEntity.TamedFromLoad()`** — применяет состояние прирученного.
+- **`BaseLivingEntity.ExitKnockoutState()`** — общая логика выхода из нокаута: `DeactivateRagdoll`, включение AI, `animator.Rebind()`, `SetCreatureLayer()`.
+- **`BaseLivingEntity.FinishTaming()`** — вызывает `ExitKnockoutState`, сохраняет `tamed = true`.
+- **`BaseLivingEntity.Die()`** — удаляет сохранение приручения (`UnregisterCreature`), потом создаёт труп через `CorpseManager`.
+
+#### 19.5 Смена слоя `Corpse` ↔ `Creature`
+
+- **`SetCreatureLayer()`** — метод в `BaseLivingEntity`, ставит слой `Creature` рекурсивно.
+- Вызывается в `FinishTaming`, `TamedFromLoad`, `KnockOutFromLoad`.
+- При смерти — `SetLayerRecursively(gameObject, Corpse)`.
+
+#### 19.6 Единая система времени (`GameTime`)
+
+- **`GameTime.cs`** (статический):
+  - `Now` — `long`. SinglePlayer: накопленное игровое время. Multiplayer: Unix timestamp UTC.
+  - `ElapsedSeconds(from, to)` — сколько секунд прошло.
+  - `Initialize()`, `AddTime()`, `Save()`.
+- **`GameTimeUpdater.cs`** — компонент на `===CoreManagers===`:
+  - Тикает `GameTime`, только если `Time.timeScale > 0` и `Application.isFocused`.
+  - Сохраняет раз в 30 секунд, при `OnApplicationPause`, `OnApplicationFocus`, `OnApplicationQuit`.
+- Используется в `CorpseManager`, `LootBagManager`, `TamingManager` — `savedAtTime` вместо `creationTimeUtc`.
+
+#### 19.7 Использование наркотиков
+
+- **`ItemUsageRouter.UseFromOtherInventory`** — обрабатывает использование наркотика на нокаутнутом.
+- `target.AddTorpor(narcoticTorporAmount)`, сохранение через `TamingManager.UpdateSave`.
+
+#### 19.8 Известные особенности
+
+- **`ChestUI` — источник багов.** `FindAnyObjectByType<ChestUI>()` в каждом открывающем объекте + `_currentChest` в `ChestUI` + `_isOpen` в `BaseLivingEntity`/`Corpse` — три состояния, которые **рассинхронизируются**. Проявляется как «открывается не тот инвентарь».
+- **Корень проблемы** — нет **единой точки входа**. Планируется `ChestUIManager`.
+- **`SetChestUI`** — добавлен в `BaseLivingEntity` для загрузки прирученных.
+- **`RadialMenu`** — на префабе `corpse`/`creature` назначены **вручную**. Логика выбора в `PanelsUIController.OpenRadialMenu` учитывает `Corpse.enabled` и `BaseLivingEntity.tamed/knockedOut`.
 
 ## TODO
 
-### Ближайшее (Боевка — следующий шаг)
+### Ближайшее (Следующий шаг)
 
+- [ ] **`ChestUIManager`** — единый менеджер открытия/закрытия инвентарей. Устраняет рассинхрон `ChestUI._currentChest` / `BaseLivingEntity._isOpen` / `Corpse._isOpen`. **Критично** — иначе баг «открывается не тот инвентарь».
+- [ ] **Сброс слотов `ChestUI.Close`** — принудительный `SetSlot(null)` для всех слотов.
+- [ ] **`ChestUI.ForceSetChest`** — страховка в `OpenWith` (проверка, что `_currentChest` обновился).
+- [ ] **AI прирученных существ** — Follow/Stay/Idle/Attack команды через `RadialMenu`.
+- [ ] **Радиальное меню для существ** — команды вместо `ТЕЛО`.
 - [ ] **Фикс багов** — список собирается перед началом работы.
 
 ### Сделано (архив)
@@ -750,28 +839,38 @@ Screen Space всплывающие числа урона над точкой у
 - [x] **Цифры урона** (floating damage numbers) — всплывающие числа урона.
 - [x] **Критические удары** (голова/слабое место) — множитель урона.
 - [x] **Урон существ по игроку в ближнем бою** — фидбек (звук, эффект, тряска камеры).
+- [x] **Food-стат у существ** — падение, поедание, порог.
+- [x] **Taming: прогресс** — кормление, torpor, наркотики.
+- [x] **Сохранение нокаутнутых** — `TamingManager`, `TamingSaveData`.
+- [x] **Сохранение прирученных** — тот же `TamingManager`.
+- [x] **`GameTime`** — единая система времени (сингл/мульти).
+- [x] **Миграция `Corpse`/`LootBag` на `GameTime`** — `savedAtTime` вместо `creationTimeUtc`.
+- [x] **Смена слоя Corpse↔Creature** — `SetCreatureLayer()`.
+- [x] **Сохранение поворота игрока** — Euler углы.
+- [x] **Исправление `Self referencing loop`** — фикс сериализации `Quaternion`.
+- [x] **Логика `IsVisibleByCamera`** — набросок, но не подключена.
+- [x] **`OnApplicationQuit/Pause/Focus` в `TamingManager`** — `SaveAll`.
 
 ### Дальше
 - [ ] **Приручение** (Taming: кормление, прогресс, tamed state).
 - [ ] **Использование прирученных** (Riding, команды, инвентарь).
+- [ ] **Респавн по кроватям** (спальные мешки, точки возрождения).
 - [ ] **Экосистема** (хищники/жертвы, respawn по регионам).
 - [ ] **Броня** (защита, прочность, резисты).
+- [ ] **Разрушение сундука → сумка** (`ChestController.OnDestroy` → `LootBagManager`).
+- [ ] **Карта местности**.
+- [ ] **Фермерство**.
 - [ ] **Температура / погода** (гипертермия/гипотермия, биомы).
-- [ ] **Респавн по кроватям** (спальные мешки, точки возрождения).
 - [ ] **Статы** (доводка системы, влияние на геймплей).
 - [ ] **Биомы + ресурсы по регионам**.
-- [ ] **Фермерство**.
 - [ ] **Разведение** (спаривание, imprinting, мутации).
 - [ ] **Племена**.
 - [ ] **Боссы**.
 - [ ] **Мультиплеер** (Mirror / Netcode for GameObjects).
-- [ ] **Разрушение сундука → сумка** (`ChestController.OnDestroy` → `LootBagManager`).
 - [ ] **Система выбора персонажа** (меши, материалы, blend shapes).
-- [ ] **Предзагрузка слотов `ChestUI`** при старте (убрать лаг при первом открытии).
 - [ ] **Building stability** (Structural integrity).
 - [ ] **Electrical system** (Generators, Cables, Appliances).
 - [ ] **Irrigation system** (Pipes, Taps, Reservoirs).
-- [ ] **Ranged weapons** (Bow, Crossbow, Firearms — расширение).
 - [ ] **Blueprints & Quality tiers**.
 
 

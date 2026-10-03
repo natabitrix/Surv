@@ -64,7 +64,7 @@ namespace Assets.Scripts.Corpses
         private IEnumerator Start()
         {
             while (PlayerProgress.Instance == null) yield return null;
-            PlayerProgress.Instance.OnPlayerLoaded += OnPlayerLoadedHandler;
+            // PlayerProgress.Instance.OnPlayerLoaded += OnPlayerLoadedHandler;
             while (PlayerProgress.Instance.playerController == null) yield return null;
         }
 
@@ -81,7 +81,7 @@ namespace Assets.Scripts.Corpses
             {
                 var file = files[i];
 
-                // ✅ try-catch только для синхронной логики
+                // try-catch только для синхронной логики
                 try
                 {
                     string json = File.ReadAllText(file);
@@ -89,13 +89,18 @@ namespace Assets.Scripts.Corpses
 
                     if (data == null) continue;
 
-                    long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                    long age = now - data.creationTimeUtc;
-
-                    if (age >= data.despawnDuration)
+                    // long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                    // long age = now - data.creationTimeUtc;
+                    // if (age >= data.despawnDuration)
+                    // {
+                    //     File.Delete(file);
+                    //     // Debug.Log($"[CorpseManager] Труп {data.instanceId} истек. Удален.");
+                    //     continue;
+                    // }
+                    float elapsed = GameTime.ElapsedSeconds(data.savedAtTime, GameTime.Now);
+                    if (elapsed >= data.despawnDuration)
                     {
                         File.Delete(file);
-                        // Debug.Log($"[CorpseManager] Труп {data.instanceId} истек. Удален.");
                         continue;
                     }
 
@@ -108,7 +113,7 @@ namespace Assets.Scripts.Corpses
                     continue;
                 }
 
-                // ✅ yield return СНАРУЖИ try-catch
+                // yield return СНАРУЖИ try-catch
                 if (i % 5 == 0)
                     yield return null;
             }
@@ -116,16 +121,16 @@ namespace Assets.Scripts.Corpses
             // Debug.Log($"[CorpseManager] Загружено трупов: {loaded}");
         }
 
-        private void OnDestroy()
-        {
-            if (PlayerProgress.Instance != null)
-                PlayerProgress.Instance.OnPlayerLoaded -= OnPlayerLoadedHandler;
-        }
+        // private void OnDestroy()
+        // {
+        //     if (PlayerProgress.Instance != null)
+        //         PlayerProgress.Instance.OnPlayerLoaded -= OnPlayerLoadedHandler;
+        // }
 
-        private void OnPlayerLoadedHandler()
-        {
-            // LoadAllCorpses();
-        }
+        // private void OnPlayerLoadedHandler()
+        // {
+        //     LoadAllCorpses();
+        // }
 
         // ==========================================
         // === РЕГИСТРАЦИЯ ===
@@ -158,7 +163,7 @@ namespace Assets.Scripts.Corpses
 
             float lifetime = GetLifetime(creatureId);
 
-            // ✅ ЗАПОЛНЯЕМ ВСЕ ПОЛЯ
+            // ЗАПОЛНЯЕМ ВСЕ ПОЛЯ
             var saveData = new CorpseSaveData
             {
                 instanceId = instanceId,
@@ -176,7 +181,8 @@ namespace Assets.Scripts.Corpses
                 rotW = corpseGO.transform.rotation.w,
 
                 // Время
-                creationTimeUtc = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                // creationTimeUtc = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                savedAtTime = GameTime.Now,
                 despawnDuration = lifetime,
                 isLootBag = false,
 
@@ -188,7 +194,7 @@ namespace Assets.Scripts.Corpses
                 isDepleted = corpse.IsHarvested,
             };
 
-            // ✅ СОХРАНЯЕМ ИНВЕНТАРЬ ВНУТРЬ JSON ТРУПА
+            // СОХРАНЯЕМ ИНВЕНТАРЬ ВНУТРЬ JSON ТРУПА
             var inventory = corpse.GetInventory();
             if (inventory?.Data != null)
             {
@@ -297,15 +303,17 @@ namespace Assets.Scripts.Corpses
 
             GameObject corpseGO = Instantiate(prefab, position, rotation);
 
-            // ✅ Отключаем живые компоненты для существ
+            // Отключаем живые компоненты для существ
             if (data.corpseType == "CreatureCorpse")
             {
-                if (corpseGO.TryGetComponent<Creature>(out var creature)) creature.enabled = false;
+                // if (corpseGO.TryGetComponent<Creature>(out var creature)) creature.enabled = false;
+                if (corpseGO.TryGetComponent<Creature>(out var creature)) Destroy(creature);
                 if (corpseGO.TryGetComponent<NavMeshAgent>(out var agent)) Destroy(agent);
-                if (corpseGO.TryGetComponent<Animator>(out var anim)) anim.enabled = false;
+                // if (corpseGO.TryGetComponent<Animator>(out var anim)) anim.enabled = false;
+                if (corpseGO.TryGetComponent<Animator>(out var anim)) Destroy(anim);
             }
 
-            // ✅ Устанавливаем слой Corpse для восстановленного трупа,
+            // Устанавливаем слой Corpse для восстановленного трупа,
             // чтобы инфо-панель и другие системы, ищущие живых существ, его игнорировали.
             int corpseLayer = LayerMask.NameToLayer("Corpse");
             if (corpseLayer != -1)
@@ -342,11 +350,13 @@ namespace Assets.Scripts.Corpses
             corpse.LoadFromCorpseData(data.inventoryData, itemDatabase);
 
             // RadialMenu
-            var menu = corpse.GetComponent<RadialMenu>();
-            if (menu != null) menu.enabled = true;
+            if (corpse.TryGetComponent<RadialMenu>(out var menu)) menu.enabled = true;
 
             // Таймер
-            float remainingTime = data.despawnDuration - (DateTimeOffset.UtcNow.ToUnixTimeSeconds() - data.creationTimeUtc);
+            // float remainingTime = data.despawnDuration - (DateTimeOffset.UtcNow.ToUnixTimeSeconds() - data.creationTimeUtc);
+            float elapsed = GameTime.ElapsedSeconds(data.savedAtTime, GameTime.Now);
+            float remainingTime = data.despawnDuration - elapsed;
+            
             corpse.StartDespawnTimer(remainingTime);
 
             _loadedCorpses[data.instanceId] = corpseGO;

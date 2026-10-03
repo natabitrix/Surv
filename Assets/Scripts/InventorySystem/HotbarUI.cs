@@ -114,7 +114,7 @@ namespace Assets.Scripts.InventorySystem
                 }
 
                 inventoryManager.SelectSlot(slotIndex, SlotOwner.Hotbar, targetSlotUI);
-                inventoryManager.UseItemFromSlot();
+                inventoryManager.UseSelectedSlot();
             }
         }
 

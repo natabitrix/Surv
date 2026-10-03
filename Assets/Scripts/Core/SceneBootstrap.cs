@@ -4,6 +4,7 @@ using Assets.Scripts.Core;
 using Assets.Scripts.Corpses;
 using Assets.Scripts.Loot;
 using Assets.Scripts.UI;
+using Assets.Scripts.Creatures.Taming;
 
 namespace Assets.Scripts.Core
 {
@@ -47,6 +48,11 @@ namespace Assets.Scripts.Core
             if (LootBagManager.Instance != null)
             {
                 lsm.RegisterTask("Загрузка сумок...", LootBagManager.Instance.LoadAllLootBagsAsync());
+            }
+
+            if (TamingManager.Instance != null)
+            {
+                lsm.RegisterTask("Загрузка прирученных...", TamingManager.Instance.LoadAllTamingCreaturesAsync());
             }
 
             if (WorldManager.Instance != null)

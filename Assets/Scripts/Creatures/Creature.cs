@@ -7,6 +7,7 @@ using Assets.Scripts.Interactables;
 using Assets.Scripts.Utils;
 using Assets.Scripts.InventorySystem;
 using Assets.Scripts.UI;
+using Assets.Scripts.Creatures.Taming;
 
 namespace Assets.Scripts.Creatures
 {
@@ -57,15 +58,14 @@ namespace Assets.Scripts.Creatures
         private bool isAttacking = false;
         private bool isWandering = false;
 
-        private Animator _animator;
-        private int _animIDSpeed;
-        private int _animIDIsMoving;
-        private int _animIDAttack;
+        private float _tamingSaveTimer = 0f;
+        private const float TamingSaveInterval = 10f;
 
         public bool DieManually = false;
 
         protected override void Awake()
         {
+
             base.Awake();
 
             // === Загружаем данные из базы ===
@@ -87,6 +87,7 @@ namespace Assets.Scripts.Creatures
                 Debug.LogError($"[Creature] Существо '{creatureId}' не найдено в базе!");
                 return;
             }
+
 
             // === Применяем поведение ===
             tamable = _data.tamable;
@@ -111,19 +112,17 @@ namespace Assets.Scripts.Creatures
             health = maxHealth;
             maxStamina = _data.maxStamina;
             stamina = maxStamina;
+            maxFood = _data.maxFood;
+            food = maxFood;
 
             // === Инициализация компонентов ===
             _agent = GetComponent<NavMeshAgent>();
-            _animator = GetComponent<Animator>();
 
-            if (_animator != null)
+            if (playerController != null)
             {
-                _animIDSpeed = Animator.StringToHash("Speed");
-                _animIDIsMoving = Animator.StringToHash("IsMoving");
-                _animIDAttack = Animator.StringToHash("Attack");
+                _playerTransform = playerController.transform;
             }
-
-            if (_playerTransform == null)
+            else if (_playerTransform == null)
             {
                 GameObject player = GameObject.FindGameObjectWithTag("Player");
                 if (player != null) _playerTransform = player.transform;
@@ -166,13 +165,25 @@ namespace Assets.Scripts.Creatures
             // === Torpor: убывает всегда, даже в нокауте ===
             if (torpor > 0f)
             {
-                float before = torpor;
-                torpor = Mathf.Max(0f, torpor - torporRecoveryRate * Time.deltaTime);
+                torpor = Mathf.Max(0f, torpor - Data.torporRecoveryRate * Time.deltaTime);
+            }
 
-                // Логируем раз в секунду, только в нокауте (чтобы не спамить)
-                if (knockedOut && Mathf.FloorToInt(Time.time) != Mathf.FloorToInt(Time.time - Time.deltaTime))
+            // Food — падает у нокаутнутых и прирученных
+            if (knockedOut || tamed)
+            {
+                float drain = knockedOut ? Data.foodDrainRateKnockedOut : Data.foodDrainRateTamed;
+                TickFood(drain);
+                if (ShouldEat()) TryEatFood();
+            }
+
+            // Периодическое сохранение нокаутнутого/прирученного
+            if ((knockedOut || tamed) && !string.IsNullOrEmpty(TamingInstanceId))
+            {
+                _tamingSaveTimer += Time.deltaTime;
+                if (_tamingSaveTimer >= TamingSaveInterval)
                 {
-                    // Debug.Log($"[{gameObject.name}] Torpor падает: {torpor:F1} / {maxTorpor}");
+                    _tamingSaveTimer = 0f;
+                    TamingManager.Instance?.UpdateSave(TamingInstanceId, "player_001");
                 }
             }
 
@@ -180,12 +191,31 @@ namespace Assets.Scripts.Creatures
             // Вход происходит в TakeDamage(), здесь только выход.
             if (knockedOut)
             {
-                if (torpor <= 0f)
+                // Просыпается, если torpor 0 и не приручен
+                if (torpor <= 0f && !tamed)
                 {
                     RecoverFromKnockout();
+                    // Сбрасываем прогресс, если не приручен
+                    tamingProgress = 0f;
                 }
+
                 return; // пока в нокауте — AI не работает
             }
+
+            // === Прирученное существо ===
+            if (tamed)
+            {
+                // Сбрасываем анимацию — существо стоит
+                if (animator != null)
+                {
+                    animator.SetFloat(animIDSpeed, 0f);
+                    animator.SetBool(animIDIsMoving, false);
+                }
+                // TODO: AI прирученного (Follow/Stay/Idle) — отдельная система,
+                // сейчас просто Wander или Idle. Можно оставить как есть для теста.
+                return;
+            }
+
 
             // === Обычный AI ===
             if (_agent == null) return;
@@ -267,6 +297,22 @@ namespace Assets.Scripts.Creatures
 
         private void HandleWandering()
         {
+            // === ФИКС: проверяем, что агент активен и на NavMesh ===
+            if (_agent == null)
+            {
+                Debug.LogError("_agent == null");
+                return;
+            }
+            if (!_agent.enabled)
+            {
+                Debug.LogError("!_agent.enabled");
+                return;
+            }
+            if (!_agent.isOnNavMesh)
+            {
+                Debug.LogError("!_agent.isOnNavMesh");
+                return;
+            }
             if (Time.time >= nextWanderTime)
             {
                 StartWandering();
@@ -276,7 +322,7 @@ namespace Assets.Scripts.Creatures
             {
                 if (_agent.velocity.magnitude < 0.1f)
                 {
-                    _animator?.SetBool(_animIDIsMoving, false);
+                    animator?.SetBool(animIDIsMoving, false);
                 }
             }
         }
@@ -286,9 +332,9 @@ namespace Assets.Scripts.Creatures
             isAttacking = true;
             lastAttackTime = Time.time;
 
-            if (_animator != null)
+            if (animator != null)
             {
-                _animator.SetTrigger(_animIDAttack);
+                animator.SetTrigger(animIDAttack);
             }
             else
             {
@@ -319,11 +365,11 @@ namespace Assets.Scripts.Creatures
 
         private void UpdateAnimation()
         {
-            if (_animator != null && !isAttacking)
+            if (animator != null && !isAttacking)
             {
                 float currentSpeed = _agent.velocity.magnitude;
-                _animator.SetFloat(_animIDSpeed, currentSpeed);
-                _animator.SetBool(_animIDIsMoving, currentSpeed > 0.1f);
+                animator.SetFloat(animIDSpeed, currentSpeed);
+                animator.SetBool(animIDIsMoving, currentSpeed > 0.1f);
             }
         }
 
@@ -361,6 +407,82 @@ namespace Assets.Scripts.Creatures
         protected override float GetMaxStaminaFromConfiguration()
         {
             return _data?.maxStamina ?? 50f;
+        }
+
+        protected override float GetMaxFoodFromConfiguration()
+        {
+            return _data?.maxFood ?? 100f;
+        }
+
+        private void TickFood(float drainRate)
+        {
+            food = Mathf.Max(0f, food - drainRate * Time.deltaTime);
+
+            // Голодная смерть (по аналогии с игроком)
+            if (food <= 0f && Data.starvationDamagePerSecond > 0f)
+            {
+                // Наносим урон через TakeDamage, чтобы работали попапы/смерть
+                // Но осторожно: TakeDamage шлёт popup и анимацию. Лучше — прямой health -=.
+                health = Mathf.Max(0f, health - Data.starvationDamagePerSecond * Time.deltaTime);
+                if (health <= 0f) Die();
+            }
+        }
+
+        private bool ShouldEat()
+        {
+            if (Data.maxFood <= 0f) return false;
+            return food <= Data.maxFood * Data.foodEatThresholdPercent;
+        }
+
+        /// <summary>
+        /// Пытается найти и съесть подходящую еду в инвентаре.
+        /// </summary>
+        private bool TryEatFood()
+        {
+            if (GetInventory()?.Data == null || Data.tamingFoodPreferences == null
+                || Data.tamingFoodPreferences.Length == 0)
+                return false;
+
+            var inventoryData = GetInventory().Data;
+
+            foreach (var pref in Data.tamingFoodPreferences)
+            {
+                if (pref.food == null) continue;
+
+                var slot = inventoryData.slots.Find(s => !s.IsEmpty && s.item == pref.food);
+                if (slot != null)
+                {
+                    var eaten = slot.item;
+                    inventoryData.RemoveItemFromSlot(inventoryData.slots.IndexOf(slot), 1);
+
+                    float recovery = eaten.foodRecoveryAmount > 0f ? eaten.foodRecoveryAmount : 10f;
+                    AddFood(recovery);
+
+                    // Прогресс приручения — только если ещё не приручен
+                    if (!tamed)
+                    {
+                        bool finished = AddTamingProgress(pref.progressAmount);
+
+                        if (finished)
+                        {
+                            Debug.Log($"[{gameObject.name}] Съел {eaten.itemName}, food: {food:F1}, progress: 100,0% (ПРИРУЧЕН)");
+                        }
+                        else
+                        {
+                            Debug.Log($"[{gameObject.name}] Съел {eaten.itemName}, food: {food:F1}, progress: {tamingProgress:F1}%");
+                        }
+                    }
+
+                    // === СРАЗУ СОХРАНЯЕМ ===
+                    if (!string.IsNullOrEmpty(TamingInstanceId))
+                    {
+                        TamingManager.Instance?.UpdateSave(TamingInstanceId, "player_001");
+                    }
+
+                    return true;
+                }
+            }
+            return false;
         }
 
         // === Звуки через Animation Events ===

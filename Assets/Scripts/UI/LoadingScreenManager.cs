@@ -113,8 +113,7 @@ namespace Assets.Scripts.UI
         {
             _isLoading = true;
             var _playerController = PlayerController.Instance;
-            if (_playerController != null)
-                _playerController.LockCameraOnEsc = true;
+            // if (_playerController != null) _playerController.LockCameraOnEsc = true;
 
             Show("Загрузка...");
             yield return null; // Даем экрану отрисоваться
@@ -155,8 +154,7 @@ namespace Assets.Scripts.UI
             _loadingCoroutine = null;
 
             SetCursorVisible(false);
-            if (_playerController != null)
-                _playerController.LockCameraOnEsc = false;
+            // if (_playerController != null) _playerController.LockCameraOnEsc = false;
 
             // Debug.Log("[LoadingScreenManager] Загрузка завершена!");
         }

@@ -59,12 +59,10 @@ namespace Assets.Scripts.UI
         public Button RadialMenuDragCorpseButton;
 
         [Header("Other Managers")]
-        [SerializeField] private InventoryManager inventoryManager;
-        [SerializeField] private CharacterPreviewManager previewManager;
-        [SerializeField] private TooltipManager tooltipManager;
-        
-        // [SerializeField] private PauseManager pauseManager;
-        // [SerializeField] private DeathScreenManager deathScreenManager;
+        [SerializeField] private InventoryManager _inventoryManager;
+        [SerializeField] private CharacterPreviewManager _previewManager;
+        [SerializeField] private TooltipManager _tooltipManager;
+        [SerializeField] private ItemUsageRouter _itemUsageRouter;
 
         private bool _isInventoryOpened = false;
         private bool _isRadialMenuOpened = false;
@@ -72,6 +70,67 @@ namespace Assets.Scripts.UI
 
         public Item RadialMenuCurrentTarget = null;
         public GameObject RadialMenuCurrentTargetGO = null;
+
+        private void Start()
+        {
+            // Top Buttons
+            EngramsPanelButton.onClick.AddListener(() => ShowEngramsPanel());
+            TooltipTrigger.AddTooltip(EngramsPanelButton.gameObject, "Энграммы");
+            EngramsPanelButton.AddComponent<ButtonScaleEffect>();
+
+            InventoryPanelButton.onClick.AddListener(() => ShowInventoryPanel());
+            TooltipTrigger.AddTooltip(InventoryPanelButton.gameObject, "Инвентарь");
+            InventoryPanelButton.AddComponent<ButtonScaleEffect>();
+
+            CloseAllButton.onClick.AddListener(() => CloseAllPanels());
+            TooltipTrigger.AddTooltip(CloseAllButton.gameObject, "Закрыть");
+            CloseAllButton.AddComponent<ButtonScaleEffect>();
+
+            CloseRadialMenuButton.onClick.AddListener(() => CloseRadialMenu());
+            TooltipTrigger.AddTooltip(CloseRadialMenuButton.gameObject, "Закрыть");
+            CloseRadialMenuButton.AddComponent<ButtonScaleEffect>();
+
+            // Left Header Buttons
+            InventorySlotsButton.onClick.AddListener(() => ShowInventorySlots());
+            TooltipTrigger.AddTooltip(InventorySlotsButton.gameObject, "Инвентарь");
+
+            CraftingSlotsButton.onClick.AddListener(() => ShowCraftingSlots());
+            TooltipTrigger.AddTooltip(CraftingSlotsButton.gameObject, "Ремесло");
+
+            // Left Action Buttons
+            PlayerInventoryDropButton.onClick.AddListener(() => _inventoryManager?.DropItemsFromInventory());
+            TooltipTrigger.AddTooltip(PlayerInventoryDropButton.gameObject, "Выбросить всё");
+            PlayerInventoryDropButton.AddComponent<ButtonScaleEffect>();
+
+            PlayerInventoryMoveButton.onClick.AddListener(() => _inventoryManager?.MoveAllToChest());
+            TooltipTrigger.AddTooltip(PlayerInventoryMoveButton.gameObject, "Переложить всё");
+            PlayerInventoryMoveButton.AddComponent<ButtonScaleEffect>();
+
+            // Right Action Buttons
+            OtherInventoryDropButton.onClick.AddListener(() => _inventoryManager?.DropItemsFromChest());
+            TooltipTrigger.AddTooltip(OtherInventoryDropButton.gameObject, "Выбросить всё");
+            OtherInventoryDropButton.AddComponent<ButtonScaleEffect>();
+
+            OtherInventoryMoveButton.onClick.AddListener(() => _inventoryManager?.MoveAllToPlayer());
+            TooltipTrigger.AddTooltip(OtherInventoryMoveButton.gameObject, "Забрать всё");
+            OtherInventoryMoveButton.AddComponent<ButtonScaleEffect>();
+
+            // Radial Menu Buttons
+            RadialMenuPickupButton.onClick.AddListener(() => RadialMenuPickup());
+            RadialMenuPickupButton.AddComponent<ButtonScaleEffect>();
+
+            RadialMenuDestroyButton.onClick.AddListener(() => RadialMenuDestroy());
+            RadialMenuDestroyButton.AddComponent<ButtonScaleEffect>();
+
+            RadialMenuDragCorpseButton.onClick.AddListener(() => RadialMenuDragCorpse());
+            RadialMenuDragCorpseButton.AddComponent<ButtonScaleEffect>();
+        }
+
+        private void Update()
+        {
+            ToggleInventory();
+            _inventoryManager.DropItemFromSlotByDropKey();
+        }
 
         // === TOGGLE PANELS ===
         // Управление состоянием панелей и курсора
@@ -97,17 +156,17 @@ namespace Assets.Scripts.UI
             OtherRightPanel.SetActive(false);
             ShowInventorySlots();
 
-            if (previewManager != null) previewManager.OpenPreview();
-            if (inventoryManager != null) inventoryManager.RefreshPlayerStatsDisplay();
+            if (_previewManager != null) _previewManager.OpenPreview();
+            if (_inventoryManager != null) _inventoryManager.RefreshPlayerStatsDisplay();
 
-            if (inventoryManager.equipment != null)
+            if (_inventoryManager.equipment != null)
             {
-                inventoryManager.equipment.OnEquipped += RefreshPreview;
-                inventoryManager.equipment.OnUnequipped += RefreshPreview;
+                _inventoryManager.equipment.OnEquipped += RefreshPreview;
+                _inventoryManager.equipment.OnUnequipped += RefreshPreview;
             }
 
-            _input.OnInteractTriggered += inventoryManager.UseItemFromSlot;
-            _input.OnInteractStopPressed += inventoryManager.OnUseItemFinished;
+            _input.OnInteractTriggered += _inventoryManager.UseSelectedSlot;
+            _input.OnInteractStopPressed += _itemUsageRouter.OnUseItemFinished;
         }
 
         // Открытие чужого инвентаря (сундука)
@@ -120,32 +179,66 @@ namespace Assets.Scripts.UI
             PlayerCenterPanel.SetActive(false);
             PlayerRightPanel.SetActive(false);
             PlayerInventoryMoveButton.interactable = true;
-            if (previewManager != null) previewManager.ClosePreview();
+            if (_previewManager != null) _previewManager.ClosePreview();
             PanelMode(true);
+
+            _input.OnInteractTriggered += _inventoryManager.UseSelectedSlot;
+            _input.OnInteractStopPressed += _itemUsageRouter.OnUseItemFinished;
         }
 
         public void OpenRadialMenu(GameObject targetGO)
         {
-            // ✅ ПРОВЕРКА: Не открывать если уже открыто
-            if (_isRadialMenuOpened)
-            {
-                // Debug.Log("[PanelsUIController] CloseRadialMenu: меню уже закрыто, пропускаем");
-                return;
-            }
+            if (_isRadialMenuOpened) return;
 
             if (targetGO == null)
             {
                 Debug.LogError("[PanelsUIController] Target GameObject не найден!");
                 return;
             }
+
             Item targetItem = null;
             Creature targetCreature = null;
             Corpse targetCorpse = null;
+
             if (targetGO.TryGetComponent(out RadialMenu menu))
             {
+                // if (menu.item != null) targetItem = menu.item;
+                // else if (menu.creature != null) targetCreature = menu.creature;
+                // else if (menu.corpse != null) targetCorpse = menu.corpse;
+
+                // 1. Item — из поля
                 if (menu.item != null) targetItem = menu.item;
-                else if (menu.creature != null) targetCreature = menu.creature;
-                else if (menu.corpse != null) targetCorpse = menu.corpse;
+
+                // 2. Если есть живое существо — приоритет ему
+                var living = targetGO.GetComponent<BaseLivingEntity>();
+                if (living != null)
+                {
+                    // Нокаутнутое или прирученное — существо
+                    if (living is Creature c)
+                        targetCreature = c;
+                }
+
+                // 3. Если это труп (Corpse.enabled) — приоритет трупу
+                var corpseComp = targetGO.GetComponent<Corpse>();
+                if (corpseComp != null && corpseComp.enabled)
+                {
+                    // Труп. Но если есть также Creature и оно tamed/knockedOut — приоритет существу.
+                    if (living == null || (!living.tamed && !living.knockedOut))
+                    {
+                        targetCorpse = corpseComp;
+                        targetCreature = null;
+                    }
+                }
+
+                // 4. Fallback — из полей RadialMenu
+                if (targetCreature == null && targetCorpse == null)
+                {
+                    if (menu.creature != null) targetCreature = menu.creature;
+                    else if (menu.corpse != null) targetCorpse = menu.corpse;
+                }
+
+
+
             }
 
             if (targetItem == null && targetCreature == null && targetCorpse == null)
@@ -162,10 +255,10 @@ namespace Assets.Scripts.UI
                 if (targetItem != null)
                     RadialMenuTargetName.text = $"{targetItem.itemName}";
 
-                if (targetCreature != null)
+                else if (targetCreature != null)
                     RadialMenuTargetName.text = $"СУЩЕСТВО {targetCreature.gameObject.name}";
 
-                if (targetCorpse != null)
+                else if (targetCorpse != null)
                     RadialMenuTargetName.text = $"ТЕЛО {targetCorpse.gameObject.name}";
             }
 
@@ -193,8 +286,8 @@ namespace Assets.Scripts.UI
             _isRadialMenuOpened = false;
             PanelMode(false);
 
-            if (tooltipManager != null)
-                tooltipManager.HideTooltip();
+            if (_tooltipManager != null)
+                _tooltipManager.HideTooltip();
 
 
         }
@@ -209,17 +302,17 @@ namespace Assets.Scripts.UI
             PlayerCenterPanel.SetActive(false);
             PlayerRightPanel.SetActive(false);
 
-            if (previewManager != null) previewManager.ClosePreview();
-            if (tooltipManager != null) tooltipManager.HideTooltip();
+            if (_previewManager != null) _previewManager.ClosePreview();
+            if (_tooltipManager != null) _tooltipManager.HideTooltip();
 
-            if (inventoryManager.equipment != null)
+            if (_inventoryManager.equipment != null)
             {
-                inventoryManager.equipment.OnEquipped -= RefreshPreview;
-                inventoryManager.equipment.OnUnequipped -= RefreshPreview;
+                _inventoryManager.equipment.OnEquipped -= RefreshPreview;
+                _inventoryManager.equipment.OnUnequipped -= RefreshPreview;
             }
 
-            _input.OnInteractTriggered -= inventoryManager.UseItemFromSlot;
-            _input.OnInteractStopPressed -= inventoryManager.OnUseItemFinished;
+            _input.OnInteractTriggered -= _inventoryManager.UseSelectedSlot;
+            _input.OnInteractStopPressed -= _itemUsageRouter.OnUseItemFinished;
         }
 
         // Закрытие панели энграмм
@@ -254,6 +347,9 @@ namespace Assets.Scripts.UI
                 // 2. Очищаем данные в UI
                 openChestUI.Close();
             }
+
+            _input.OnInteractTriggered -= _inventoryManager.UseSelectedSlot;
+            _input.OnInteractStopPressed -= _itemUsageRouter.OnUseItemFinished;
         }
 
         // Закрытие всех панелей
@@ -335,60 +431,6 @@ namespace Assets.Scripts.UI
 
 
         // === Подписки на события ===
-        private void Start()
-        {
-            // Top Buttons
-            EngramsPanelButton.onClick.AddListener(() => ShowEngramsPanel());
-            TooltipTrigger.AddTooltip(EngramsPanelButton.gameObject, "Энграммы");
-            EngramsPanelButton.AddComponent<ButtonScaleEffect>();
-
-            InventoryPanelButton.onClick.AddListener(() => ShowInventoryPanel());
-            TooltipTrigger.AddTooltip(InventoryPanelButton.gameObject, "Инвентарь");
-            InventoryPanelButton.AddComponent<ButtonScaleEffect>();
-
-            CloseAllButton.onClick.AddListener(() => CloseAllPanels());
-            TooltipTrigger.AddTooltip(CloseAllButton.gameObject, "Закрыть");
-            CloseAllButton.AddComponent<ButtonScaleEffect>();
-
-            CloseRadialMenuButton.onClick.AddListener(() => CloseRadialMenu());
-            TooltipTrigger.AddTooltip(CloseRadialMenuButton.gameObject, "Закрыть");
-            CloseRadialMenuButton.AddComponent<ButtonScaleEffect>();
-
-            // Left Header Buttons
-            InventorySlotsButton.onClick.AddListener(() => ShowInventorySlots());
-            TooltipTrigger.AddTooltip(InventorySlotsButton.gameObject, "Инвентарь");
-
-            CraftingSlotsButton.onClick.AddListener(() => ShowCraftingSlots());
-            TooltipTrigger.AddTooltip(CraftingSlotsButton.gameObject, "Ремесло");
-
-            // Left Action Buttons
-            PlayerInventoryDropButton.onClick.AddListener(() => inventoryManager?.DropItemsFromInventory());
-            TooltipTrigger.AddTooltip(PlayerInventoryDropButton.gameObject, "Выбросить всё");
-            PlayerInventoryDropButton.AddComponent<ButtonScaleEffect>();
-
-            PlayerInventoryMoveButton.onClick.AddListener(() => inventoryManager?.MoveAllToChest());
-            TooltipTrigger.AddTooltip(PlayerInventoryMoveButton.gameObject, "Переложить всё");
-            PlayerInventoryMoveButton.AddComponent<ButtonScaleEffect>();
-
-            // Right Action Buttons
-            OtherInventoryDropButton.onClick.AddListener(() => inventoryManager?.DropItemsFromChest());
-            TooltipTrigger.AddTooltip(OtherInventoryDropButton.gameObject, "Выбросить всё");
-            OtherInventoryDropButton.AddComponent<ButtonScaleEffect>();
-
-            OtherInventoryMoveButton.onClick.AddListener(() => inventoryManager?.MoveAllToPlayer());
-            TooltipTrigger.AddTooltip(OtherInventoryMoveButton.gameObject, "Забрать всё");
-            OtherInventoryMoveButton.AddComponent<ButtonScaleEffect>();
-
-            // Radial Menu Buttons
-            RadialMenuPickupButton.onClick.AddListener(() => RadialMenuPickup());
-            RadialMenuPickupButton.AddComponent<ButtonScaleEffect>();
-
-            RadialMenuDestroyButton.onClick.AddListener(() => RadialMenuDestroy());
-            RadialMenuDestroyButton.AddComponent<ButtonScaleEffect>();
-
-            RadialMenuDragCorpseButton.onClick.AddListener(() => RadialMenuDragCorpse());
-            RadialMenuDragCorpseButton.AddComponent<ButtonScaleEffect>();
-        }
 
         private void RadialMenuPickup()
         {
@@ -423,15 +465,9 @@ namespace Assets.Scripts.UI
             CloseRadialMenu();
         }
 
-        private void Update()
-        {
-            ToggleInventory();
-            inventoryManager.DropItemFromSlotByDropKey();
-        }
-
         private void RefreshPreview()
         {
-            if (previewManager != null) previewManager.RefreshPreview();
+            if (_previewManager != null) _previewManager.RefreshPreview();
         }
     }
 }

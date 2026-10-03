@@ -232,11 +232,11 @@ CharacterJoint:
     spring: 0
     damper: 0
   m_LowTwistLimit:
-    limit: -20
+    limit: 0
     bounciness: 0
     contactDistance: 0
   m_HighTwistLimit:
-    limit: 70
+    limit: 120
     bounciness: 0
     contactDistance: 0
   m_SwingLimitSpring:
@@ -702,11 +702,11 @@ CharacterJoint:
     spring: 0
     damper: 0
   m_LowTwistLimit:
-    limit: -70
+    limit: 0
     bounciness: 0
     contactDistance: 0
   m_HighTwistLimit:
-    limit: 10
+    limit: 120
     bounciness: 0
     contactDistance: 0
   m_SwingLimitSpring:
@@ -738,9 +738,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1164035763396051585}
-  - component: {fileID: 414091665750332367}
-  - component: {fileID: 370236474111194238}
-  - component: {fileID: 2420749263202467254}
   m_Layer: 17
   m_Name: foot.L
   m_TagString: Untagged
@@ -765,102 +762,6 @@ Transform:
   - {fileID: 9208200194635479629}
   m_Father: {fileID: 8267036372871253820}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!54 &414091665750332367
-Rigidbody:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2144467990723005989}
-  serializedVersion: 5
-  m_Mass: 1
-  m_LinearDamping: 0
-  m_AngularDamping: 0.05
-  m_CenterOfMass: {x: 0, y: 0, z: 0}
-  m_InertiaTensor: {x: 1, y: 1, z: 1}
-  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ImplicitCom: 1
-  m_ImplicitTensor: 1
-  m_UseGravity: 1
-  m_IsKinematic: 1
-  m_Interpolate: 0
-  m_Constraints: 0
-  m_CollisionDetection: 0
---- !u!144 &370236474111194238
-CharacterJoint:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2144467990723005989}
-  serializedVersion: 3
-  m_ConnectedBody: {fileID: 352166797029476889}
-  m_ConnectedArticulationBody: {fileID: 0}
-  m_Anchor: {x: 0, y: 0, z: 0}
-  m_Axis: {x: 1, y: 0, z: 0}
-  m_AutoConfigureConnectedAnchor: 1
-  m_ConnectedAnchor: {x: 0, y: 0, z: 0}
-  m_SwingAxis: {x: 0, y: 0, z: -1}
-  m_TwistLimitSpring:
-    spring: 0
-    damper: 0
-  m_LowTwistLimit:
-    limit: -80
-    bounciness: 0
-    contactDistance: 0
-  m_HighTwistLimit:
-    limit: 0
-    bounciness: 0
-    contactDistance: 0
-  m_SwingLimitSpring:
-    spring: 0
-    damper: 0
-  m_Swing1Limit:
-    limit: 0
-    bounciness: 0
-    contactDistance: 0
-  m_Swing2Limit:
-    limit: 0
-    bounciness: 0
-    contactDistance: 0
-  m_EnableProjection: 0
-  m_ProjectionDistance: 0.1
-  m_ProjectionAngle: 180
-  m_BreakForce: Infinity
-  m_BreakTorque: Infinity
-  m_EnableCollision: 0
-  m_EnablePreprocessing: 0
-  m_MassScale: 1
-  m_ConnectedMassScale: 1
---- !u!136 &2420749263202467254
-CapsuleCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2144467990723005989}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.14
-  m_Height: 0.32
-  m_Direction: 1
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &2253684722377209835
 GameObject:
   m_ObjectHideFlags: 0
@@ -1028,11 +929,11 @@ CharacterJoint:
     spring: 0
     damper: 0
   m_LowTwistLimit:
-    limit: -80
+    limit: 0
     bounciness: 0
     contactDistance: 0
   m_HighTwistLimit:
-    limit: 0
+    limit: 120
     bounciness: 0
     contactDistance: 0
   m_SwingLimitSpring:
@@ -1353,11 +1254,11 @@ CharacterJoint:
     spring: 0
     damper: 0
   m_LowTwistLimit:
-    limit: -90
+    limit: 0
     bounciness: 0
     contactDistance: 0
   m_HighTwistLimit:
-    limit: 0
+    limit: 120
     bounciness: 0
     contactDistance: 0
   m_SwingLimitSpring:
@@ -1642,11 +1543,11 @@ CharacterJoint:
     spring: 0
     damper: 0
   m_LowTwistLimit:
-    limit: -80
+    limit: 0
     bounciness: 0
     contactDistance: 0
   m_HighTwistLimit:
-    limit: 0
+    limit: 120
     bounciness: 0
     contactDistance: 0
   m_SwingLimitSpring:
@@ -1773,11 +1674,11 @@ CharacterJoint:
     spring: 0
     damper: 0
   m_LowTwistLimit:
-    limit: -90
+    limit: 0
     bounciness: 0
     contactDistance: 0
   m_HighTwistLimit:
-    limit: 0
+    limit: 120
     bounciness: 0
     contactDistance: 0
   m_SwingLimitSpring:
@@ -1904,8 +1805,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1977493426630750914}
-  - component: {fileID: 5433613125973482258}
   - component: {fileID: 7841739363189515229}
+  - component: {fileID: 5433613125973482258}
   - component: {fileID: 5182177373384514873}
   m_Layer: 17
   m_Name: spine.001
@@ -1930,27 +1831,6 @@ Transform:
   - {fileID: 3069810891470808962}
   m_Father: {fileID: 1150119814400764130}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!65 &5433613125973482258
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5659406269548133237}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.50007296, y: 0.4981758, z: 0.28775704}
-  m_Center: {x: 0.007253051, y: 0.24908842, z: 0.021778852}
 --- !u!54 &7841739363189515229
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1978,6 +1858,27 @@ Rigidbody:
   m_Interpolate: 1
   m_Constraints: 0
   m_CollisionDetection: 2
+--- !u!65 &5433613125973482258
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5659406269548133237}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.50007296, y: 0.4981758, z: 0.28775704}
+  m_Center: {x: 0.007253051, y: 0.24908842, z: 0.021778852}
 --- !u!144 &5182177373384514873
 CharacterJoint:
   m_ObjectHideFlags: 0
@@ -1997,11 +1898,11 @@ CharacterJoint:
     spring: 0
     damper: 0
   m_LowTwistLimit:
-    limit: -20
+    limit: 0
     bounciness: 0
     contactDistance: 0
   m_HighTwistLimit:
-    limit: 20
+    limit: 120
     bounciness: 0
     contactDistance: 0
   m_SwingLimitSpring:
@@ -2223,11 +2124,11 @@ CharacterJoint:
     spring: 0
     damper: 0
   m_LowTwistLimit:
-    limit: -70
+    limit: 0
     bounciness: 0
     contactDistance: 0
   m_HighTwistLimit:
-    limit: 10
+    limit: 120
     bounciness: 0
     contactDistance: 0
   m_SwingLimitSpring:
@@ -2630,11 +2531,11 @@ CharacterJoint:
     spring: 0
     damper: 0
   m_LowTwistLimit:
-    limit: -40
+    limit: 0
     bounciness: 0
     contactDistance: 0
   m_HighTwistLimit:
-    limit: 25
+    limit: 120
     bounciness: 0
     contactDistance: 0
   m_SwingLimitSpring:
@@ -2824,11 +2725,11 @@ CharacterJoint:
     spring: 0
     damper: 0
   m_LowTwistLimit:
-    limit: -20
+    limit: 0
     bounciness: 0
     contactDistance: 0
   m_HighTwistLimit:
-    limit: 70
+    limit: 120
     bounciness: 0
     contactDistance: 0
   m_SwingLimitSpring:
@@ -2864,6 +2765,7 @@ GameObject:
   - component: {fileID: 4448035314227675115}
   - component: {fileID: 8025109148827972457}
   - component: {fileID: 3350142690217425088}
+  - component: {fileID: 3321671290676940435}
   m_Layer: 17
   m_Name: ---PlayerCorpse---
   m_TagString: Untagged
@@ -2949,23 +2851,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58cd31a1b2f00848bf1cbc7cca71af0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Creatures.Corpse
-  ragdollSettings:
-    ragdollParts:
-    - {fileID: 1150119814400764130}
-    - {fileID: 1977493426630750914}
-    - {fileID: 4792775661271827781}
-    - {fileID: 5934516625409033493}
-    - {fileID: 8725182982668655773}
-    - {fileID: 2581827106994613368}
-    - {fileID: 7183280094652099060}
-    - {fileID: 1060356342752038445}
-    - {fileID: 8267036372871253820}
-    - {fileID: 5955443550431743504}
-    - {fileID: 2061271704534065008}
-    linearDamp: 1
-    angularDamp: 3
-    velocityInherit: 0.1
-  _dragRigidbody: {fileID: 414091665750332367}
+  _ragdollController: {fileID: 3321671290676940435}
+  _dragRigidbody: {fileID: 6529509373495793384}
   _centerBone: {fileID: 1150119814400764130}
   _interactionCollider: {fileID: 5906720190356917627}
   _interactionAnchor: {fileID: 1502837383900671138}
@@ -3006,6 +2893,34 @@ MonoBehaviour:
   item: {fileID: 0}
   corpse: {fileID: 8025109148827972457}
   creature: {fileID: 0}
+--- !u!114 &3321671290676940435
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7881994360618582535}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 95cb3d8b366f402498b53cbcf52785a8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Creatures.RagdollController
+  ragdollSettings:
+    ragdollParts:
+    - {fileID: 1150119814400764130}
+    - {fileID: 1977493426630750914}
+    - {fileID: 4792775661271827781}
+    - {fileID: 5934516625409033493}
+    - {fileID: 8725182982668655773}
+    - {fileID: 2581827106994613368}
+    - {fileID: 7183280094652099060}
+    - {fileID: 1060356342752038445}
+    - {fileID: 8267036372871253820}
+    - {fileID: 5955443550431743504}
+    - {fileID: 2061271704534065008}
+    linearDamp: 1
+    angularDamp: 3
+    velocityInherit: 0.1
 --- !u!1 &8012638579492073318
 GameObject:
   m_ObjectHideFlags: 0

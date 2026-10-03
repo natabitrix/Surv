@@ -24,6 +24,10 @@ namespace Assets.Scripts.Core
                 Instantiate(_managersPrefab);
                 _managersCreated = true;
                 // Debug.Log("[ManagersSpawner] Менеджеры созданы");
+
+                // Инициализация GameTime
+                GameTime.Initialize();
+
             }
             else
             {

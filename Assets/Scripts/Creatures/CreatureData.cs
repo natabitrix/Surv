@@ -3,6 +3,7 @@ using Assets.Scripts.Items;
 using Assets.Scripts.Corpses;
 using Assets.Scripts.Audio;
 using Assets.Scripts.InventorySystem;
+using Assets.Scripts.Loot;
 
 namespace Assets.Scripts.Creatures
 {
@@ -12,6 +13,14 @@ namespace Assets.Scripts.Creatures
         Aggressive,   // Атакует игрока
         Skittish,     // Убегает при приближении
         Territorial,  // Атакует, если игрок близко
+    }
+
+    [System.Serializable]
+    public struct TamingFoodPreference
+    {
+        public Item food;
+        [Tooltip("Сколько процентов прогресса приручения дает одна единица этой еды.")]
+        public float progressAmount;
     }
 
     [CreateAssetMenu(fileName = "Creature_", menuName = "Game/Creature Data")]
@@ -32,7 +41,7 @@ namespace Assets.Scripts.Creatures
         [Header("Префаб")]
         [Tooltip("Единый префаб существа (используется и для живого, и для трупа)")]
         public GameObject prefab;
-
+        
         [Tooltip("Уровень существа. Для ARK-стиля — 1..150.")]
         public int level = 1;
 
@@ -90,5 +99,33 @@ namespace Assets.Scripts.Creatures
         [Header("Ограничения (опционально)")]
         [Tooltip("Если > 0, переопределяет глобальное время жизни трупа. Если -1, используется глобальное.")]
         public float corpseLifetimeOverride = -1f;
+
+        [Header("Приручение")]
+        [Tooltip("Массив предпочтений в еде для приручения.")]
+        public TamingFoodPreference[] tamingFoodPreferences;
+
+        [Tooltip("Предмет, который считается наркотиком для этого существа.")]
+        public Item narcoticItem;
+
+        [Tooltip("Сколько единиц торпора восстанавливает одна единица наркотика.")]
+        public float narcoticTorporAmount = 40f;
+        [Tooltip("Как быстро просыпается")]
+        public float torporRecoveryRate = 1f;
+
+        [Header("Food / Hunger")]
+        [Tooltip("Максимальный запас еды.")]
+        public float maxFood = 100f;
+
+        [Tooltip("Скорость падения еды в нокауте (единиц/сек). В ARK быстрее, чем у прирученного.")]
+        public float foodDrainRateKnockedOut = 0.5f;
+
+        [Tooltip("Скорость падения еды у прирученного (единиц/сек).")]
+        public float foodDrainRateTamed = 0.1f;
+
+        [Tooltip("Порог в процентах от максимума (0..1), ниже которого существо ест.")]
+        [Range(0f, 1f)] public float foodEatThresholdPercent = 0.5f;
+
+        [Tooltip("Сколько здоровья теряется в секунду, когда food == 0.")]
+        public float starvationDamagePerSecond = 1f;
     }
 }
