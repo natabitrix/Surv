@@ -450,21 +450,25 @@ namespace Assets.Scripts.InventorySystem
             else
             {
                 // Swap
+                var originalSlot = GetOriginalSlot();
+                if (originalSlot == null)
+                {
+                    Debug.LogError("[MoveItemToSlot] Swap: originalSlot == null! Отмена, targetSlot не трогаем.");
+                    return false;
+                }
+
                 var tempItem = targetSlot.item;
                 var tempCount = targetSlot.count;
-                var tempDurability = targetSlot.currentDurability; // <--- ПЕРЕНОС
+                var tempDurability = targetSlot.currentDurability;
 
                 targetSlot.item = item;
                 targetSlot.count = count;
-                targetSlot.currentDurability = droppedDurability; // <--- ПЕРЕНОС
+                targetSlot.currentDurability = droppedDurability;
 
-                var originalSlot = GetOriginalSlot();
-                if (originalSlot != null)
-                {
-                    originalSlot.item = tempItem;
-                    originalSlot.count = tempCount;
-                    originalSlot.currentDurability = tempDurability; // <--- ПЕРЕНОС
-                }
+                originalSlot.item = tempItem;
+                originalSlot.count = tempCount;
+                originalSlot.currentDurability = tempDurability;
+
                 return true;
             }
         }
@@ -490,7 +494,8 @@ namespace Assets.Scripts.InventorySystem
                     else if (DragContext.fromOwner == SlotOwner.Inventory)
                     {
                         var mainInv = PlayerProgress.Instance?.mainInventoryData;
-                        int mainIndex = DragContext.fromSlotIndex - 10;
+                        // int mainIndex = DragContext.fromSlotIndex - 10;
+                        int mainIndex = DragContext.fromSlotIndex;
 
                         if (mainInv != null && mainIndex >= 0 && mainIndex < mainInv.slots.Count)
                             return mainInv.slots[mainIndex];
