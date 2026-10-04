@@ -57,6 +57,7 @@ crashlytics-build.properties
 .idea/
 *.sln.iml
 
+copy_rename.py
 
 Assets/TextMesh\ Pro/
 Assets/_Recovery/
@@ -68,3 +69,7 @@ Assets/Animations_Pack/
 Assets/Audio/
 Assets/Materials/
 Assets/Art/
+Assets/Audio/
+
+.continue/
+.kilo/
