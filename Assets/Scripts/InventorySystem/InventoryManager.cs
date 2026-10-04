@@ -166,9 +166,9 @@ namespace Assets.Scripts.InventorySystem
                     slot = progress.mainInventoryData.slots[index];
                 }
             }
-            else if (_selectedSlotOwner == SlotOwner.Chest)  // ← НОВОЕ
+            else if (_selectedSlotOwner == SlotOwner.Chest)
             {
-                var chestUI = ChestUI.CurrentOpenChest;
+                var chestUI = ChestUI.Instance;
                 if (chestUI != null)
                     slot = chestUI.GetSlot(index);
             }
@@ -219,115 +219,6 @@ namespace Assets.Scripts.InventorySystem
         }
 
 
-        // public void UseItemFromSlot()
-        // {
-        //     if (_selectedSlotIndex < 0) return;
-
-        //     var progress = PlayerProgress.Instance;
-        //     if (progress == null) return;
-
-        //     // Получаем слот
-        //     InventorySlot slot = GetSlotByIndex(_selectedSlotIndex);
-        //     if (slot == null || slot.IsEmpty || slot.item == null) return;
-
-        //     int globalSlotIndex = GetGlobalSlotIndex(_selectedSlotIndex);
-
-        //     // Если уже экипирован — снимаем
-        //     // Если навели и нажали Е на другом — снимаем этот и экипируем другой 
-        //     if (slot.item.itemType == ItemType.Tool || slot.item.itemType == ItemType.Weapon)
-        //     {
-        //         int equippedSlotIndex = equipment.EquippedSlotIndex;
-        //         if (equipment.IsEquipped && slot.item == equipment.GetCurrentItem())
-        //         {
-        //             equipment.Unequip();
-        //             if (globalSlotIndex == equippedSlotIndex) return;
-        //         }
-        //     }
-        //     else if (slot.item.itemType == ItemType.Placeable)
-        //     {
-        //         int activeBuildSlotIndex = buildMode.ActiveBuildSlotIndex;
-        //         if (buildMode.IsActive() && slot.item == buildMode.GetCurrentItem())
-        //         {
-        //             buildMode.ExitBuildMode();
-        //             if (globalSlotIndex == activeBuildSlotIndex) return;
-        //         }
-        //     }
-
-        //     switch (slot.item.itemType)
-        //     {
-        //         case ItemType.Tool:
-        //         case ItemType.Weapon:
-        //             buildMode.ExitBuildMode();
-
-        //             // Если предмет сломан запрещаем экипировку
-        //             if (slot.currentDurability > 0) equipment.Equip(slot.item, globalSlotIndex);
-        //             break;
-
-        //         case ItemType.Food:
-        //             itemUsageSystem.UseItem(slot.item, 1); //съедаем по одной шт.
-
-        //             // Удаляем ОДНУ штуку из правильного контейнера
-        //             if (_selectedSlotOwner == SlotOwner.Hotbar)
-        //             {
-        //                 progress.hotbarInventoryData.RemoveItemFromSlot(_selectedSlotIndex, 1);
-        //                 progress.hotbarInventoryData.NotifyChanged();
-        //             }
-        //             else if (_selectedSlotOwner == SlotOwner.Inventory)
-        //             {
-        //                 progress.mainInventoryData.RemoveItemFromSlot(_selectedSlotIndex, 1);
-        //                 progress.mainInventoryData.NotifyChanged();
-        //             }
-        //             else if (_selectedSlotOwner == SlotOwner.Chest)
-        //             {
-        //                 var chestUI = ChestUI.CurrentOpenChest;
-
-        //                 ChestController sourceChest = chestUI.SourceChest;
-        //                 IInteractable sourceInteractable = chestUI.SourceChest;
-
-        //                 Debug.Log("UseItemFromSlot sourceChest: " + sourceChest);
-        //                 Debug.Log("UseItemFromSlot sourceInteractable: " + sourceInteractable);
-
-        //                 var chestData = chestUI.Data;
-        //                 if (chestUI == null)
-        //                 {
-        //                     Debug.LogError("Нет открытого чужого инвентаря!");
-        //                     return;
-        //                 }
-        //                 chestData.RemoveItemFromSlot(_selectedSlotIndex, 1);
-
-        //             }
-
-        //             // Накапливаем СЕЙЧАС, в контексте текущего слота
-        //             if (_currentFoodItem == null)
-        //             {
-        //                 _currentFoodItem = slot.item;
-        //             }
-        //             else if (_currentFoodItem != slot.item)
-        //             {
-        //                 // Сменили еду — сбрасываем (или игнорируем)
-        //                 _accumulatedFoodCount = 0;
-        //                 _currentFoodItem = slot.item;
-        //             }
-        //             _accumulatedFoodCount++;
-
-        //             if (_selectedSlotUI != null)
-        //                 _selectedSlotUI.SetVisualState(true, false, true); // flash
-
-        //             break;
-
-        //         case ItemType.Placeable:
-        //             equipment.Unequip();
-        //             buildMode.ExitBuildMode();
-        //             buildMode.StartBuildMode(slot.item, globalSlotIndex);
-
-        //             _panelsController.CloseAllPanels();
-        //             break;
-        //     }
-
-        //     progress.Save("InventoryManager.UseItemFromSlot");
-
-        // }
-
         public void UseSelectedSlot()
         {
             // Не использовать, если панели не открыты
@@ -362,23 +253,6 @@ namespace Assets.Scripts.InventorySystem
             progress.Save("InventoryManager.HandleStructurePlaced");
         }
 
-        // public void OnUseItemFinished()
-        // {
-        //     if (_accumulatedFoodCount > 0 && _currentFoodItem != null)
-        //     {
-        //         if (NotificationManager.Instance != null)
-        //         {
-        //             NotificationManager.Instance.Show(
-        //                 $"Использовано: {_currentFoodItem.itemName} x{_accumulatedFoodCount}",
-        //                 _currentFoodItem.icon
-        //             );
-        //         }
-        //     }
-
-        //     // Сброс состояния сессии
-        //     _accumulatedFoodCount = 0;
-        //     _currentFoodItem = null;
-        // }
 
         // === DROP ===
 
@@ -556,8 +430,8 @@ namespace Assets.Scripts.InventorySystem
         // вызывается по кнопке OtherInventoryDropButton "Выбросить всё"
         public void DropItemsFromChest()
         {
-            var chestUI = ChestUI.CurrentOpenChest;
-            if (chestUI == null)
+            var chestUI = ChestUI.Instance;
+            if (chestUI == null || !ChestUIManager.Instance.IsOpened)
             {
                 Debug.LogError("Нет открытого сундука!");
                 return;
@@ -583,8 +457,8 @@ namespace Assets.Scripts.InventorySystem
 
         public void MoveAllToChest()
         {
-            var chestUI = ChestUI.CurrentOpenChest;
-            if (chestUI == null)
+            var chestUI = ChestUI.Instance;
+            if (chestUI == null || !ChestUIManager.Instance.IsOpened)
             {
                 Debug.LogError("Нет открытого сундука!");
                 return;
@@ -592,7 +466,7 @@ namespace Assets.Scripts.InventorySystem
             var progress = PlayerProgress.Instance;
             if (progress == null) return;
 
-            var playerData = progress.mainInventoryData; // это mainInventoryData
+            var playerData = progress.mainInventoryData;
             if (playerData == null)
             {
                 Debug.LogError("Инвентарь игрока недоступен!");
@@ -606,10 +480,8 @@ namespace Assets.Scripts.InventorySystem
                 return;
             }
 
-            // Переносим из основного инвентаря игрока → в сундук
             var movedItems = playerData.TransferAllTo(chestData);
 
-            // Показываем одно уведомление на каждый тип предмета
             foreach (var kvp in movedItems)
             {
                 NotificationManager.Instance?.Show(
@@ -621,8 +493,8 @@ namespace Assets.Scripts.InventorySystem
 
         public void MoveAllToPlayer()
         {
-            var chestUI = ChestUI.CurrentOpenChest;
-            if (chestUI == null)
+            var chestUI = ChestUI.Instance;
+            if (chestUI == null || !ChestUIManager.Instance.IsOpened)
             {
                 Debug.LogError("Нет открытого сундука!");
                 return;

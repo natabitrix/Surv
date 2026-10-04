@@ -113,9 +113,6 @@ namespace Assets.Scripts.InventorySystem
                 if (IsChestSlot)
                 {
                     var slot = chestUI?.GetSlot(index);
-                    Debug.Log($"[GetSlot] Chest: chestUI={(chestUI == null ? "null" : chestUI.name)}, " +
-                              $"index={index}, " +
-                              $"slot={(slot == null ? "null" : (slot.IsEmpty ? "empty" : slot.item?.itemName))}");
                     return slot;
                 }
                 else if (IsHotBarSlot)
@@ -355,12 +352,6 @@ namespace Assets.Scripts.InventorySystem
 
         public void OnDrop(PointerEventData eventData)
         {
-            Debug.Log($"[OnDrop] target: owner={owner}, index={index}, " +
-                      $"chestUI={chestUI?.name ?? "null"}, " +
-                      $"dragged={(DragContext.draggedItem == null ? "null" : DragContext.draggedItem.itemName)}, " +
-                      $"draggedCount={DragContext.draggedCount}, " +
-                      $"fromOwner={DragContext.fromOwner}, " +
-                      $"fromIndex={DragContext.fromSlotIndex}");
 
             if (DragContext.draggedItem == null || DragContext.draggedCount <= 0)
             {
@@ -371,8 +362,6 @@ namespace Assets.Scripts.InventorySystem
 
             bool success = false;
             var targetSlot = GetSlot();
-
-            Debug.Log($"[OnDrop] targetSlot={(targetSlot == null ? "null" : (targetSlot.IsEmpty ? "empty" : targetSlot.item?.itemName))}");
 
             if (targetSlot != null)
             {
@@ -486,9 +475,9 @@ namespace Assets.Scripts.InventorySystem
             {
                 if (DragContext.isDragFromChest)
                 {
-                    var currentChestUI = ChestUI.CurrentOpenChest;
-                    if (currentChestUI != null)
-                        return currentChestUI.GetSlot(DragContext.fromSlotIndex);
+                    var chestUI = ChestUI.Instance;
+                    if (chestUI != null)
+                        return chestUI.GetSlot(DragContext.fromSlotIndex);
                 }
                 else
                 {
@@ -501,7 +490,7 @@ namespace Assets.Scripts.InventorySystem
                     else if (DragContext.fromOwner == SlotOwner.Inventory)
                     {
                         var mainInv = PlayerProgress.Instance?.mainInventoryData;
-                        int mainIndex = DragContext.fromSlotIndex - 10; // конвертация!
+                        int mainIndex = DragContext.fromSlotIndex - 10;
 
                         if (mainInv != null && mainIndex >= 0 && mainIndex < mainInv.slots.Count)
                             return mainInv.slots[mainIndex];

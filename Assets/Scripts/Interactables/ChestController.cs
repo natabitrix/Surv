@@ -5,53 +5,82 @@ using UnityEngine;
 namespace Assets.Scripts.Interactables
 {
     [RequireComponent(typeof(Collider))]
-    public class ChestController : MonoBehaviour, IInteractable
+    public class ChestController : MonoBehaviour, IInteractable, IInventorySource
     {
+        [Header("Animation")]
         public Animator chestAnim;
-        public bool HasInventory() => true;
-        public bool ShouldDetachAfterInteract() => false;
-        public InteractType GetInteractType() => InteractType.OpenTargetInventory; // E - Открыть
-        // public InteractType GetInteractType2() => InteractType.OpenTargetInventory; // F - Открыть
-        [SerializeField] private ChestUI _chestUI;
-        [SerializeField] private PlayerInputHandler _input;
+
+        [Header("Inventory")]
+        [SerializeField] private ChestInventory _inventory;
+
         private bool _isOpen = false;
 
-        private void Update()
+        private void Awake()
         {
-            // Обработка нажатия клавиши openInventory (tab) для закрытия инвентаря
-            if (_input.openInventory && _isOpen)
+            if (_inventory == null)
+                _inventory = GetComponent<ChestInventory>();
+        }
+
+        // === IInteractable ===
+        public InteractType GetInteractType() => InteractType.OpenTargetInventory;
+        public InteractType GetInteractType2() => InteractType.None;
+        public bool ShouldDetachAfterInteract() => false;
+
+        public void Interact(InteractContext context)
+        {
+            if (!context.isTargetInventory) return;
+            Open();
+        }
+
+        // === IInventorySource ===
+        public ChestInventory GetInventory() => _inventory;
+        public bool HasInventory() => _inventory != null;
+
+        public void OnInventoryOpened()
+        {
+            _isOpen = true;
+            if (chestAnim != null) chestAnim.SetTrigger("open");
+        }
+
+        public void OnInventoryClosed()
+        {
+            _isOpen = false;
+            if (chestAnim != null) chestAnim.SetTrigger("close");
+        }
+
+        // === Управление через менеджер ===
+        public void Open()
+        {
+            if (ChestUIManager.Instance == null)
             {
-                if (chestAnim != null) chestAnim.SetTrigger("close"); // закрыть
-                _isOpen = false;
+                Debug.LogError("[ChestController] ChestUIManager не найден!");
+                return;
             }
+
+            if (_inventory == null)
+            {
+                Debug.LogError($"[ChestController] _inventory == null на {gameObject.name}!");
+                return;
+            }
+
+            ChestUIManager.Instance.Toggle(this);
         }
 
         public void Close()
         {
-            if (chestAnim != null) chestAnim.SetTrigger("close");
-            _isOpen = false;
-            _chestUI.Close();
-        }
-
-        public void Interact(InteractContext context)
-        {
-            if (_isOpen)
+            if (_isOpen && ChestUIManager.Instance != null)
             {
-                Close();
-            }
-            else
-            {
-                if (chestAnim != null) chestAnim.SetTrigger("open");
-                var chestInventory = GetComponent<ChestInventory>();
-                _chestUI.OpenWith(chestInventory, this);
-                _isOpen = true;
+                ChestUIManager.Instance.Close();
             }
         }
 
-
-        public ChestInventory GetInventory()
+        private void OnDestroy()
         {
-            return null;
+            // Если этот сундук был открыт — закрываем UI
+            if (ChestUIManager.Instance != null && ReferenceEquals(ChestUIManager.Instance.CurrentSource, this))
+            {
+                ChestUIManager.Instance.Close();
+            }
         }
     }
 }

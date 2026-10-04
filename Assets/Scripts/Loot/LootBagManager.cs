@@ -117,12 +117,11 @@ namespace Assets.Scripts.Loot
                 Destroy(bagGO);
                 return null;
             }
-            
-            var chestUI = FindAnyObjectByType<ChestUI>();
+
             float lifetime = SessionMode.LootBagLifetime;
             
-            // Initialize(инвентарь, UI, время_жизни, источник)
-            lootBag.Initialize(bagInventory, chestUI, lifetime, lootBag);
+            // Initialize(инвентарь, время_жизни, источник)
+            lootBag.Initialize(bagInventory, lifetime, lootBag);
 
             // Регистрируем в системе сохранения
             string instanceId = RegisterLootBag(bagGO, ownerPlayerId);
@@ -254,16 +253,6 @@ namespace Assets.Scripts.Loot
 
                     if (data == null) continue;
 
-                    // long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                    // long age = now - data.creationTimeUtc;
-
-                    // if (age >= data.despawnDuration)
-                    // {
-                    //     File.Delete(file);
-                    //     // Debug.Log($"[LootBagManager] Сумка {data.instanceId} истекла. Удалена.");
-                    //     continue;
-                    // }
-
                     float elapsed = GameTime.ElapsedSeconds(data.savedAtTime, GameTime.Now);
                     if (elapsed >= data.despawnDuration)
                     {
@@ -325,9 +314,8 @@ namespace Assets.Scripts.Loot
             }
 
             // Инициализируем сумку
-            var chestUI = FindAnyObjectByType<ChestUI>();
             float lifetime = data.despawnDuration;
-            lootBag.Initialize(chestInv, chestUI, lifetime, lootBag);
+            lootBag.Initialize(chestInv, lifetime, lootBag);
 
             // Устанавливаем данные для сохранения
             lootBag.SetPersistenceData(data.instanceId, data.ownerPlayerId);

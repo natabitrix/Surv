@@ -302,6 +302,7 @@ namespace Assets.Scripts.Corpses
             Quaternion rotation = new Quaternion(data.rotX, data.rotY, data.rotZ, data.rotW);
 
             GameObject corpseGO = Instantiate(prefab, position, rotation);
+            corpseGO.name = $"{data.creatureId}_corpse_{data.instanceId.Substring(0, 6)}";
 
             // Отключаем живые компоненты для существ
             if (data.corpseType == "CreatureCorpse")
@@ -343,8 +344,7 @@ namespace Assets.Scripts.Corpses
             int inventorySize = data.inventoryData?.slots?.Length ?? 100;
             corpse.CreateCorpseInventory(
                 data.corpseType,  // ← "PlayerCorpse" или "CreatureCorpse"
-                inventorySize,
-                FindAnyObjectByType<ChestUI>()
+                inventorySize
             );
             // Загружаем вещи из сохранения
             corpse.LoadFromCorpseData(data.inventoryData, itemDatabase);

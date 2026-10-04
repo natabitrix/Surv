@@ -9,8 +9,8 @@ namespace Assets.Scripts.Interactables
         void Interact(InteractContext context);
         InteractType GetInteractType();
         InteractType GetInteractType2() => InteractType.None;
-        bool HasInventory();
         bool ShouldDetachAfterInteract();
+        bool HasInventory();
         ChestInventory GetInventory();
 
     }

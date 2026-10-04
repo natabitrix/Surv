@@ -13,9 +13,7 @@ namespace Assets.Scripts.InventorySystem
 {
     public class ChestUI : MonoBehaviour
     {
-        // === СТАТИЧЕСКАЯ ССЫЛКА НА ОТКРЫТЫЙ СУНДУК ===
         public static ChestUI Instance { get; private set; }
-        public static ChestUI CurrentOpenChest { get; private set; }
 
         public InventoryManager inventoryManager;
         public Transform playerSlotParent;
@@ -29,6 +27,7 @@ namespace Assets.Scripts.InventorySystem
 
         // ✅ Прямой доступ к данным инвентаря сундука
         public InventoryData Data => _currentChest?.Data;
+        public ChestInventory CurrentChest => _currentChest;
 
         // Поддержка как ChestController, так и Corpse (или любого IInteractable)
         public ChestController SourceChest { get; private set; }
@@ -49,8 +48,6 @@ namespace Assets.Scripts.InventorySystem
             if (_currentChest?.Data?.slots == null) return;
 
             int requiredSize = _currentChest.Data.slots.Count;
-
-            Debug.Log($"[ChestUI.CreateChestSlots] required={_currentChest.Data.slots.Count}, currentUIs={slotUIs?.Count ?? 0}, saveKey={_currentChest.saveKey}");
 
             if (slotUIs == null) slotUIs = new List<InventorySlotUI>();
 
@@ -78,7 +75,6 @@ namespace Assets.Scripts.InventorySystem
             }
         }
 
-
         public InventorySlot GetSlot(int index)
         {
             if (_currentChest?.Data?.slots != null && index >= 0 && index < _currentChest.Data.slots.Count)
@@ -104,20 +100,16 @@ namespace Assets.Scripts.InventorySystem
                 var slot = chestData.slots[i];
                 if (slot.IsEmpty || slot.item == null) continue;
 
-                // Сохраняем item ДО любых изменений слота!
                 Item item = slot.item;
                 int countToMove = slot.count;
                 float originalDurability = slot.currentDurability;
 
-                // Переносим столько, сколько возможно
                 int actuallyMoved = progress.AddItemToPlayerInventory(item, countToMove, originalDurability);
 
                 if (actuallyMoved > 0)
                 {
-                    // Удаляем из сундука РЕАЛЬНО перенесённое количество
                     chestData.RemoveItemFromSlot(i, actuallyMoved);
 
-                    // Агрегируем для уведомления (используем сохранённый item!)
                     if (summary.ContainsKey(item))
                         summary[item] += actuallyMoved;
                     else
@@ -137,15 +129,12 @@ namespace Assets.Scripts.InventorySystem
             if (slot.IsEmpty || slot.item == null)
                 return;
 
-            // 🔸 Сохраняем данные ДО удаления
             string itemName = slot.item.itemName;
             Sprite icon = slot.item.icon;
             int countBefore = slot.count;
 
-            // Удаляем ВЕСЬ слот
             _currentChest.Data.RemoveItemFromSlot(slotIndex);
 
-            // Показываем уведомление
             if (NotificationManager.Instance != null)
             {
                 NotificationManager.Instance.Show(
@@ -163,22 +152,31 @@ namespace Assets.Scripts.InventorySystem
             }
         }
 
+        /// <summary>
+        /// Открыть UI с указанным инвентарём.
+        /// ⚠️ НЕ вызывать напрямую — используй ChestUIManager.Open().
+        /// </summary>
         public void OpenWith(ChestInventory chest, IInteractable source = null)
         {
+            if (chest == null)
+            {
+                Debug.LogError("[ChestUI.OpenWith] chest == null!");
+                return;
+            }
 
-            Debug.Log($"[ChestUI.OpenWith] ДО: _currentChest={(_currentChest == null ? "null" : _currentChest.saveKey)}, newChest={(chest == null ? "null" : chest.saveKey)}, source={(source as MonoBehaviour)?.gameObject.name}");
+            // Всегда закрываем старый перед открытием нового
+            Close();
 
-            // ВСЕГДА закрываем старый инвентарь перед открытием нового
-            Close();   // ← всегда, без проверки
-
+            // === ForceSetChest: страховка ===
             _currentChest = chest;
-            CurrentOpenChest = this;
+            if (_currentChest != chest)
+            {
+                Debug.LogError("[ChestUI.OpenWith] _currentChest не установился! Принудительно.");
+                _currentChest = chest;
+            }
 
-            // Сохраняем источник (может быть ChestController или Corpse)
             SourceInteractable = source;
-            SourceChest = source as ChestController; // Будет null, если это Corpse
-
-            Debug.Log($"[ChestUI.OpenWith] ПОСЛЕ: _currentChest={_currentChest.saveKey}");
+            SourceChest = source as ChestController;
 
             // Подписываемся на новый
             if (_currentChest?.Data != null)
@@ -189,28 +187,34 @@ namespace Assets.Scripts.InventorySystem
             CreateChestSlots();
         }
 
+        /// <summary>
+        /// Закрыть UI.
+        /// ⚠️ НЕ вызывать напрямую — используй ChestUIManager.Close().
+        /// </summary>
         public void Close()
         {
+
+            // 1. Принудительный сброс всех слотов UI
             if (slotUIs != null)
-                foreach (var s in slotUIs) s?.SetSlot(null);
+            {
+                foreach (var s in slotUIs)
+                    s?.SetSlot(null);
+            }
 
-            Debug.Log($"[ChestUI.Close] closing: {(_currentChest == null ? "null" : _currentChest.saveKey)}");
-
+            // 2. Отписка от события
             if (_currentChest?.Data != null)
             {
                 _currentChest.Data.OnInventoryChanged -= RefreshUI;
             }
 
+            // 3. Сброс ссылок
             _currentChest = null;
             SourceChest = null;
             SourceInteractable = null;
-            CurrentOpenChest = null;
-
         }
 
         public void RefreshUI()
         {
-
             // Проверяем, что текущий инвентарь все еще действителен
             if (_currentChest == null || _currentChest.gameObject == null || slotUIs == null)
             {
@@ -231,7 +235,6 @@ namespace Assets.Scripts.InventorySystem
 
         void OnDestroy()
         {
-
             if (Instance == this) Instance = null;
 
             if (_currentChest?.Data != null)
@@ -239,10 +242,5 @@ namespace Assets.Scripts.InventorySystem
                 _currentChest.Data.OnInventoryChanged -= RefreshUI;
             }
         }
-
-
-
-
     }
-
 }

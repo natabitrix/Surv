@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class ChestDemo : MonoBehaviour {
+    private static readonly int CloseHash = Animator.StringToHash("close");
+    private static readonly int OpenHash = Animator.StringToHash("open");
 
     //This script goes on the ChestComplete prefab;
 
@@ -21,11 +23,11 @@ public class ChestDemo : MonoBehaviour {
     IEnumerator OpenCloseChest()
     {
         //play open animation;
-        chestAnim.SetTrigger("open");
+        chestAnim.SetTrigger(OpenHash);
         //wait 2 seconds;
         yield return new WaitForSeconds(2);
         //play close animation;
-        chestAnim.SetTrigger("close");
+        chestAnim.SetTrigger(CloseHash);
         //wait 2 seconds;
         yield return new WaitForSeconds(2);
         //Do it again;

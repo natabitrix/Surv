@@ -13,17 +13,15 @@ using Assets.Scripts.Loot;
 
 namespace Assets.Scripts.Corpses
 {
-    public class Corpse : MonoBehaviour, IInteractable, IImpactSoundProvider
+    public class Corpse : MonoBehaviour, IInteractable, IImpactSoundProvider, IInventorySource
     {
         [Header("Ragdoll")]
-        [Tooltip("Компонент, управляющий ragdoll-физикой. Живёт на этом же объекте.")]
         [SerializeField] private RagdollController _ragdollController;
 
         public bool IsDragging { get; private set; }
         public bool IsHarvested { get; private set; } = false;
 
         [Header("Drag Target")]
-        [Tooltip("Кость, за которую тянем (Torso/Hips).")]
         [SerializeField] private Rigidbody _dragRigidbody;
         [SerializeField] private Transform _centerBone;
         private SpringJoint _springJointToGrabPoint;
@@ -33,14 +31,12 @@ namespace Assets.Scripts.Corpses
         [Header("Interaction")]
         [SerializeField] private Collider _interactionCollider;
         public Collider InteractionCollider => _interactionCollider;
+
         [Header("Interaction Anchor (для стабильного рейкаста)")]
-        [Tooltip("Пустой GameObject с коллайдером, который следует за центром ragdoll. " +
-                 "Если не назначен — коллайдер берётся напрямую.")]
         [SerializeField] private Transform _interactionAnchor;
 
         [Header("Inventory")]
         [SerializeField] private ChestInventory _inventory;
-        [SerializeField] private ChestUI _chestUI;
         private bool _isOpen = false;
 
         [Header("Harvesting")]
@@ -51,7 +47,6 @@ namespace Assets.Scripts.Corpses
         public bool allowSword = true;
         public bool allowSickle = false;
 
-        [Tooltip("Предметы, которые рандомно попадут в инвентарь трупа (мясо, шкуры, детали)")]
         public LootEntry[] inventoryLootTable;
 
         [System.Serializable]
@@ -69,9 +64,7 @@ namespace Assets.Scripts.Corpses
         [SerializeField] private ImpactType _impactType = ImpactType.Metal;
         public ImpactType GetImpactType() => _impactType;
 
-        [Tooltip("Ресурсы, которые выпадают при разбивании тела (железо, электроника, кости)")]
         public ResourceDrop[] harvestDrops;
-        [Tooltip("Сколько ударов нужно, чтобы полностью разобрать тело")]
         public int maxHarvestHits = 5;
 
         [Header("Despawn Settings")]
@@ -91,12 +84,10 @@ namespace Assets.Scripts.Corpses
         private bool _isDepleted = false;
         private Coroutine _despawnCoroutine;
 
-        // === Публичный доступ к RagdollController (для тех, кому нужно) ===
         public RagdollController RagdollController => _ragdollController;
 
         private void Awake()
         {
-            // Автопоиск RagdollController, если не назначен в инспекторе
             if (_ragdollController == null)
                 _ragdollController = GetComponent<RagdollController>();
 
@@ -122,19 +113,16 @@ namespace Assets.Scripts.Corpses
 
         private void LateUpdate()
         {
-            // Если мы в состоянии трупа и есть anchor
             if (enabled && _interactionAnchor != null)
             {
                 UpdateInteractionAnchorPosition();
             }
         }
 
-
         private void UpdateInteractionAnchorPosition()
         {
             if (_centerBone != null)
             {
-                // transform.position = _centerBone.position;
                 if (_interactionAnchor != null)
                 {
                     _interactionAnchor.position = _centerBone.position;
@@ -160,9 +148,21 @@ namespace Assets.Scripts.Corpses
 
         public InteractType GetInteractType() => InteractType.OpenTargetInventory;
         public InteractType GetInteractType2() => InteractType.Interact;
+
+        // === IInventorySource ===
         public ChestInventory GetInventory() => _inventory;
         public bool HasInventory() => _inventory != null;
         public bool ShouldDetachAfterInteract() => _isDepleted;
+
+        public void OnInventoryOpened()
+        {
+            _isOpen = true;
+        }
+
+        public void OnInventoryClosed()
+        {
+            _isOpen = false;
+        }
 
         public void Interact(InteractContext context)
         {
@@ -188,7 +188,7 @@ namespace Assets.Scripts.Corpses
         }
 
         // ==========================================
-        // === RAGDOLL (делегируем в RagdollController) ===
+        // === RAGDOLL ===
         // ==========================================
 
         public void ActivateRagdoll()
@@ -233,17 +233,13 @@ namespace Assets.Scripts.Corpses
         // === ИНВЕНТАРЬ ===
         // ==========================================
 
-        public void CreateCorpseInventory(
-            string corpseName,
-            int invCapacity,
-            ChestUI chestUI)
+        public void CreateCorpseInventory(string corpseName, int invCapacity)
         {
             var chestInv = gameObject.AddComponent<ChestInventory>();
             string corpseKey = $"{corpseName}_{System.Guid.NewGuid().ToString()}";
             chestInv.Initialize(invCapacity, corpseKey);
 
             _inventory = chestInv;
-            _chestUI = chestUI;
             _corpseName = corpseName;
         }
 
@@ -314,28 +310,20 @@ namespace Assets.Scripts.Corpses
 
         public void OpenInventory()
         {
-            if (_isOpen)
+            if (ChestUIManager.Instance == null)
             {
-                CloseInventory();
+                Debug.LogError("[Corpse] ChestUIManager не найден!");
+                return;
             }
 
-            if (_chestUI != null)
-            {
-                _chestUI.OpenWith(_inventory, this);
-                _isOpen = true;
-            }
-            else
-            {
-                Debug.LogError("[Corpse] _chestUI не назначен! Инвентарь не откроется.");
-            }
+            ChestUIManager.Instance.Toggle(this);
         }
 
         public void CloseInventory()
         {
-            if (_isOpen && _chestUI != null)
+            if (_isOpen && ChestUIManager.Instance != null)
             {
-                _chestUI.Close();
-                _isOpen = false;
+                ChestUIManager.Instance.Close();
             }
         }
 
@@ -522,7 +510,7 @@ namespace Assets.Scripts.Corpses
             var lootBag = bagGO.GetComponent<LootBag>();
             if (lootBag != null)
             {
-                lootBag.Initialize(bagInventory, _chestUI, _corpseDisappearTime, lootBag);
+                lootBag.Initialize(bagInventory, _corpseDisappearTime, lootBag);
 
                 if (LootBagManager.Instance != null)
                 {
@@ -550,20 +538,14 @@ namespace Assets.Scripts.Corpses
         // === DRAG ===
         // ==========================================
 
-
         private Transform _dragGrabPoint;
         private float _dragBodyVelocity = 100f;
 
-        // В FixedUpdate — двигаем кость
         private void FixedUpdate()
         {
             if (!IsDragging || _dragRigidbody == null || _dragGrabPoint == null) return;
 
-            // Debug.Log("_dragGrabPoint.position: " + _dragGrabPoint.position);
-
-
             _dragRigidbody.linearVelocity = (_dragGrabPoint.position - _dragRigidbody.position) * _dragBodyVelocity;
-
         }
 
         public void StartDragging(PlayerInteraction player)
@@ -579,14 +561,12 @@ namespace Assets.Scripts.Corpses
             player.RegisterDraggingCorpse(this);
             ActivateRagdoll();
 
-            // Обнуляем все velocity — чистое состояние
             _ragdollController?.ResetVelocities();
 
             var equip = player.GetComponent<PlayerEquipment>();
             Transform grabPoint = equip ? equip.corpseDragAnchor : player.transform;
             if (grabPoint == null) grabPoint = player.transform;
 
-            // Сохраняем ссылку на grabPoint
             _dragGrabPoint = grabPoint;
 
             Rigidbody playerRb = grabPoint.GetComponent<Rigidbody>();
@@ -596,19 +576,6 @@ namespace Assets.Scripts.Corpses
             }
 
             if (_interactionCollider != null) _interactionCollider.enabled = false;
-
-            // _springJointToGrabPoint = _dragRigidbody.gameObject.AddComponent<SpringJoint>();
-            // _springJointToGrabPoint.connectedBody = playerRb;
-
-            // _springJointToGrabPoint.autoConfigureConnectedAnchor = false;
-            // _springJointToGrabPoint.anchor = Vector3.zero;
-            // _springJointToGrabPoint.connectedAnchor = Vector3.zero;
-
-            // _springJointToGrabPoint.spring = 10000f; // 10000f 2000f
-            // _springJointToGrabPoint.damper = 200f; // 200f 500f
-            // _springJointToGrabPoint.tolerance = 0.1f; // 0.1f 0.5f
-            // _springJointToGrabPoint.minDistance = 0f;
-            // _springJointToGrabPoint.maxDistance = 0f;
         }
 
         public void StopDragging(PlayerInteraction player)
@@ -618,36 +585,13 @@ namespace Assets.Scripts.Corpses
 
             player.UnregisterDraggingCorpse(this);
 
-            // if (_springJointToGrabPoint != null)
-            // {
-            //     _springJointToGrabPoint.connectedBody = null;
-            //     Destroy(_springJointToGrabPoint);
-            //     _springJointToGrabPoint = null;
-            // }
-
-            // Гасим velocity — труп падает плавно
             _ragdollController?.ResetVelocities();
-
-            // «Будим» все кости — ragdoll рассыпается
             _ragdollController?.WakeAllRigidbodies();
 
             if (_interactionCollider != null) _interactionCollider.enabled = true;
 
             StartCoroutine(StopMovingRagdoll());
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
         public void InterruptByAttack(PlayerInteraction player) => StopDragging(player);
 
@@ -745,6 +689,12 @@ namespace Assets.Scripts.Corpses
 
         private void OnDestroy()
         {
+            // Если этот труп был открыт — закрываем UI
+            if (ChestUIManager.Instance != null && ReferenceEquals(ChestUIManager.Instance.CurrentSource, this))
+            {
+                ChestUIManager.Instance.Close();
+            }
+
             if (CorpseManager.Instance != null && !string.IsNullOrEmpty(InstanceId))
             {
                 if (!CorpseManager.Instance.IsQuitting)

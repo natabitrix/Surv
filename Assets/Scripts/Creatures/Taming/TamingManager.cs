@@ -79,9 +79,9 @@ namespace Assets.Scripts.Creatures.Taming
             var saveData = BuildSaveData(instanceId, livingEntity, creature, ownerPlayerId);
             SaveToDisk(saveData);
 
-            Debug.Log($"[TamingManager] Saved: progress={saveData.tamingProgress:F1}, " +
-                      $"torpor={saveData.torpor:F1}, food={saveData.food:F1}, " +
-                      $"inv={saveData.inventoryData != null}, tamed={saveData.tamed}");
+            // Debug.Log($"[TamingManager] Saved: progress={saveData.tamingProgress:F1}, " +
+            //           $"torpor={saveData.torpor:F1}, food={saveData.food:F1}, " +
+            //           $"inv={saveData.inventoryData != null}, tamed={saveData.tamed}");
         }
 
         /// <summary>
@@ -93,7 +93,16 @@ namespace Assets.Scripts.Creatures.Taming
             _loadedCreatures.Remove(instanceId);
 
             string path = GetSavePath(instanceId);
-            if (File.Exists(path)) File.Delete(path);
+            // if (File.Exists(path)) File.Delete(path);
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+                Debug.Log($"[TamingManager] Удалён файл: {instanceId}");
+            }
+            else
+            {
+                Debug.LogWarning($"[TamingManager] Файл не найден: {instanceId}");
+            }
         }
 
         // ==========================================
@@ -171,7 +180,8 @@ namespace Assets.Scripts.Creatures.Taming
             Quaternion rot = new Quaternion(data.rotX, data.rotY, data.rotZ, data.rotW);
 
             GameObject go = Instantiate(creatureData.prefab, pos, rot);
-            go.name = $"{data.creatureId}_{data.instanceId.Substring(0, 6)}";
+            string statusName = data.tamed ? "tamed" : "knockedout";
+            go.name = $"{data.creatureId}_{statusName}_{data.instanceId.Substring(0, 6)}";
 
             var livingEntity = go.GetComponent<BaseLivingEntity>();
             var creature = go.GetComponent<Creature>();
@@ -201,13 +211,9 @@ namespace Assets.Scripts.Creatures.Taming
                 if (chestInv == null) chestInv = go.AddComponent<ChestInventory>();
 
                 int size = data.inventoryData.slots?.Length ?? 100;
-                chestInv.Initialize(size, $"Taming_{data.instanceId}");
+                chestInv.Initialize(size, $"TamingCorpse_{data.instanceId}");
                 chestInv.Data.FromSerializable(data.inventoryData, itemDatabase.ItemLookup);
                 livingEntity.SetInventory(chestInv);
-
-                // Устанавливаем _chestUI
-                var chestUI = FindAnyObjectByType<ChestUI>();
-                livingEntity.SetChestUI(chestUI);
             }
 
             // Применяем состояние

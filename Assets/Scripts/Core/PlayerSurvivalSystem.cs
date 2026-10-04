@@ -157,8 +157,7 @@ namespace Assets.Scripts.Core
 
                 corpse.CreateCorpseInventory(
                     "PlayerCorpse",
-                    110,
-                    FindAnyObjectByType<ChestUI>()
+                    110
                 );
 
                 corpse.CopyPlayerItemsToCorpse(

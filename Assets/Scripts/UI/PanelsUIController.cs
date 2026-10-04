@@ -324,29 +324,7 @@ namespace Assets.Scripts.UI
         // Закрытие сундука
         public void CloseChestPanel()
         {
-            var openChestUI = ChestUI.CurrentOpenChest;
-
-            if (openChestUI != null)
-            {
-                // 1. Пробуем закрыть через универсальный интерфейс IInteractable
-                if (openChestUI.SourceInteractable != null)
-                {
-                    // Если у интерактивного объекта есть метод Close(), вызываем его
-                    // Для этого можно использовать динамический вызов или проверку типов
-                    if (openChestUI.SourceInteractable is ChestController chest)
-                    {
-                        chest.Close();
-                    }
-                    else if (openChestUI.SourceInteractable is Corpse corpse)
-                    {
-                        corpse.CloseInventory();
-                    }
-                    // Можно добавить другие типы, если они поддерживают закрытие
-                }
-
-                // 2. Очищаем данные в UI
-                openChestUI.Close();
-            }
+            ChestUIManager.Instance?.Close();
 
             _input.OnInteractTriggered -= _inventoryManager.UseSelectedSlot;
             _input.OnInteractStopPressed -= _itemUsageRouter.OnUseItemFinished;
@@ -356,10 +334,7 @@ namespace Assets.Scripts.UI
         public void CloseAllPanels()
         {
 
-            if (ChestUI.CurrentOpenChest != null)
-            {
-                ChestUI.CurrentOpenChest.Close();
-            }
+            ChestUIManager.Instance?.Close();
 
             CloseInventoryPanel();
             CloseEngramsPanel();

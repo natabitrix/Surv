@@ -3,7 +3,6 @@ using Assets.Scripts.Interactables;
 using Assets.Scripts.InventorySystem;
 using Assets.Scripts.Core;
 using System.Collections;
-using Assets.Scripts.UI;
 
 namespace Assets.Scripts.Loot
 {
@@ -11,15 +10,13 @@ namespace Assets.Scripts.Loot
     /// Сумка с вещами. Появляется при разборе трупа, выбрасывании вещей,
     /// разрушении сундука и т.д. Исчезает по таймеру или когда вещи забрали.
     /// </summary>
-    public class LootBag : MonoBehaviour, IInteractable
+    public class LootBag : MonoBehaviour, IInteractable, IInventorySource
     {
         [Header("Interaction")]
         [SerializeField] private Collider _interactionCollider;
         public Collider InteractionCollider => _interactionCollider;
 
         [SerializeField] private ChestInventory _inventory;
-        [SerializeField] private ChestUI _chestUI;
-        private IInteractable _source;
         private bool _isOpen = false;
 
         [Header("Despawn Settings")]
@@ -45,12 +42,17 @@ namespace Assets.Scripts.Loot
 
         private void OnDestroy()
         {
+            // Если сумка была открыта — закрываем UI
+            if (ChestUIManager.Instance != null && ReferenceEquals(ChestUIManager.Instance.CurrentSource, this))
+            {
+                ChestUIManager.Instance.Close();
+            }
+
             if (_inventory?.Data != null)
             {
                 _inventory.Data.OnInventoryChanged -= OnInventoryChanged;
             }
 
-            // ✅ Уведомляем менеджер
             if (LootBagManager.Instance != null && !string.IsNullOrEmpty(InstanceId))
             {
                 if (!LootBagManager.Instance.IsQuitting)
@@ -70,39 +72,28 @@ namespace Assets.Scripts.Loot
         }
 
         /// <summary>
-        /// Инициализация через источник (труп, сундук и т.д.)
+        /// Инициализация сумки. ChestUI больше не нужен — открытие через ChestUIManager.
         /// </summary>
-        public void Initialize(ChestInventory inventory, ChestUI chestUI, float disappearTime, IInteractable source = null)
+        public void Initialize(ChestInventory inventory, float disappearTime, IInteractable source = null)
         {
             _inventory = inventory;
-            _chestUI = chestUI;
             _bagDisappearTime = disappearTime;
-            _source = source ?? this;
         }
 
-        /// <summary>
-        /// Устанавливает данные из сохранения.
-        /// </summary>
         public void SetPersistenceData(string instanceId, string ownerPlayerId)
         {
             InstanceId = instanceId;
             OwnerPlayerId = ownerPlayerId;
         }
 
-        /// <summary>
-        /// Устанавливает оставшееся время жизни.
-        /// </summary>
         public void SetRemainingTime(float remainingTime)
         {
             _bagDisappearTime = remainingTime;
         }
 
         // === IInteractable ===
-
         public InteractType GetInteractType() => InteractType.OpenTargetInventory;
         public InteractType GetInteractType2() => InteractType.None;
-        public ChestInventory GetInventory() => _inventory;
-        public bool HasInventory() => _inventory != null;
         public bool ShouldDetachAfterInteract() => false;
 
         public void Interact(InteractContext context)
@@ -113,27 +104,43 @@ namespace Assets.Scripts.Loot
             }
         }
 
+        // === IInventorySource ===
+        public ChestInventory GetInventory() => _inventory;
+        public bool HasInventory() => _inventory != null;
+
+        public void OnInventoryOpened()
+        {
+            _isOpen = true;
+        }
+
+        public void OnInventoryClosed()
+        {
+            _isOpen = false;
+        }
+
+        // === Открытие/закрытие через менеджер ===
         public void OpenInventory()
         {
-            if (_isOpen) CloseInventory();
+            if (ChestUIManager.Instance == null)
+            {
+                Debug.LogError("[LootBag] ChestUIManager не найден!");
+                return;
+            }
 
-            if (_chestUI != null)
+            if (_inventory == null)
             {
-                _chestUI.OpenWith(_inventory, _source);
-                _isOpen = true;
+                Debug.LogError("[LootBag] _inventory == null!");
+                return;
             }
-            else
-            {
-                Debug.LogError("[LootBag] _chestUI не назначен!");
-            }
+
+            ChestUIManager.Instance.Toggle(this);
         }
 
         public void CloseInventory()
         {
-            if (_isOpen && _chestUI != null)
+            if (_isOpen && ChestUIManager.Instance != null)
             {
-                _chestUI.Close();
-                _isOpen = false;
+                ChestUIManager.Instance.Close();
             }
         }
 
@@ -158,7 +165,6 @@ namespace Assets.Scripts.Loot
             {
                 if (IsInventoryEmpty())
                 {
-                    // Debug.Log($"[LootBag] Сумка исчезла — весь лут забран.");
                     ForceDespawn();
                     yield break;
                 }
@@ -167,7 +173,6 @@ namespace Assets.Scripts.Loot
                 elapsed += 1f;
             }
 
-            // Debug.Log($"[LootBag] Сумка исчезла по таймеру.");
             ForceDespawn();
         }
 
@@ -187,12 +192,10 @@ namespace Assets.Scripts.Loot
                 _inventory.Data.OnInventoryChanged -= OnInventoryChanged;
             }
 
-            CloseInventory();
-
-            var panelsController = FindAnyObjectByType<PanelsUIController>();
-            if (panelsController != null)
+            // Закрываем UI, если сумка была открыта
+            if (ChestUIManager.Instance != null && ReferenceEquals(ChestUIManager.Instance.CurrentSource, this))
             {
-                panelsController.CloseAllPanels();
+                ChestUIManager.Instance.Close();
             }
 
             Destroy(gameObject);

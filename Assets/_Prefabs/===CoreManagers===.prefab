@@ -22,6 +22,7 @@ GameObject:
   - component: {fileID: 5028408784032169699}
   - component: {fileID: -4145463956794795677}
   - component: {fileID: 2280655131810271477}
+  - component: {fileID: -7405114905586943660}
   m_Layer: 0
   m_Name: ===CoreManagers===
   m_TagString: Untagged
@@ -258,6 +259,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Creatures.Taming.TamingManager
   creatureDatabase: {fileID: 11400000, guid: 475c5b1ef39d77d43ab9f3523b647009, type: 2}
   itemDatabase: {fileID: 11400000, guid: d19476d9c45a16640979d93431658db2, type: 2}
+--- !u!114 &-7405114905586943660
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2098013993127847153}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59c688f09c19f24408e3f930cf06ba75, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.InventorySystem.ChestUIManager
+  _chestUI: {fileID: 0}
 --- !u!1 &2566256272502617309
 GameObject:
   m_ObjectHideFlags: 0

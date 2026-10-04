@@ -106,8 +106,7 @@ namespace Assets.Scripts.InventorySystem
         // === Чужой инвентарь: только существа, никаких сундуков ===
         private void UseFromOtherInventory(InventorySlot slot, int localIndex)
         {
-
-            var chestUI = ChestUI.CurrentOpenChest;
+            var chestUI = ChestUI.Instance;
             if (chestUI == null) return;
 
             // Только нокаутнутое существо
@@ -115,7 +114,6 @@ namespace Assets.Scripts.InventorySystem
 
             if (!target.knockedOut || target.tamed) return;
 
-            // Нужен доступ к CreatureData
             if (target is not Creature creature || creature.Data == null) return;
 
             var data = creature.Data;
@@ -123,7 +121,6 @@ namespace Assets.Scripts.InventorySystem
             // Наркотик → torpor
             if (data.narcoticItem != null && slot.item == data.narcoticItem)
             {
-                // Сохраняем ДО удаления
                 var usedItem = slot.item;
                 var usedIcon = slot.item.icon;
 
@@ -133,7 +130,7 @@ namespace Assets.Scripts.InventorySystem
                 {
                     TamingManager.Instance?.UpdateSave(target.TamingInstanceId, "player_001");
                 }
-                
+
                 NotificationManager.Instance?.Show(
                     $"Наркотик: {usedItem.itemName}. Torpor: {target.torpor:F0}/{target.maxTorpor:F0}",
                     usedIcon
@@ -154,7 +151,6 @@ namespace Assets.Scripts.InventorySystem
                 }
             }
 
-            // Всё остальное — нельзя
             NotificationManager.Instance?.Show(
                 "Этот предмет нельзя использовать на существе.",
                 null
