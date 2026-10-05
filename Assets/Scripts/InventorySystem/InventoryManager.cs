@@ -1,4 +1,5 @@
 // Assets/Scripts/InventorySystem/InventoryManager.cs
+using System.Collections;
 using System.Collections.Generic;
 using Assets.Scripts.Building;
 using Assets.Scripts.Core;
@@ -46,15 +47,6 @@ namespace Assets.Scripts.InventorySystem
         private int _selectedSlotIndex = -1;
         private SlotOwner _selectedSlotOwner = SlotOwner.Inventory;
         private InventorySlotUI _selectedSlotUI = null;
-
-        // // Поля для отслеживания сессии поедания
-        // private int _accumulatedFoodCount = 0;
-        // private Item _currentFoodItem = null;
-
-        private void Awake()
-        {
-            PlayerProgress.Instance?.RegisterInventoryManager(this);
-        }
 
         // === STATS ===
         // Обновление отображения уровня, опыта и очков
@@ -514,22 +506,22 @@ namespace Assets.Scripts.InventorySystem
         // === Экипирует сохраненный инструмент при загрузке ===
         public void EquipSavedEquippedItem(PlayerSaveData saveData)
         {
-            int savedIndex = saveData.equippedSlotIndex; //globalSlotIndex
+            if (saveData == null) return;
+            if (equipment == null) return;
 
-            // Debug.Log("EquipSavedEquippedItem savedIndex: " + savedIndex);
-            if (savedIndex > -1 && equipment != null)
+            int savedIndex = saveData.equippedSlotIndex;
+            if (savedIndex <= -1) return;
+
+            SlotOwner owner = saveData.equippedSlotOwner;
+            int localSlotIndex = GetLocalSlotIndex(savedIndex, owner);
+            if (localSlotIndex < 0) return;
+
+            SelectSlot(localSlotIndex, owner);
+
+            InventorySlot slot = GetSlotByIndex(localSlotIndex);
+            if (slot != null && !slot.IsEmpty && slot.item != null)
             {
-                SlotOwner owner = saveData.equippedSlotOwner;
-                // Debug.Log("EquipSavedEquippedItem equippedSlotOwner: " + owner);
-                int localSlotIndex = GetLocalSlotIndex(savedIndex, owner);
-                SelectSlot(localSlotIndex, owner);
-
-                InventorySlot slot = GetSlotByIndex(localSlotIndex);
-
-                if (!slot.IsEmpty && slot.item != null)
-                {
-                    equipment.Equip(slot.item, savedIndex); //globalSlotIndex
-                }
+                equipment.Equip(slot.item, savedIndex);
             }
         }
 
@@ -537,8 +529,19 @@ namespace Assets.Scripts.InventorySystem
         {
             if (equipment != null && equipment.IsEquipped)
             {
-                saveData.equippedSlotIndex = equipment.EquippedSlotIndex; //globalSlotIndex
-                saveData.equippedSlotOwner = _selectedSlotOwner;
+                int globalIdx = equipment.EquippedSlotIndex;
+                saveData.equippedSlotIndex = globalIdx;
+
+                // Владелец определяется по глобальному индексу, а не по _selectedSlotOwner
+                saveData.equippedSlotOwner = (globalIdx >= 0 && globalIdx < 10)
+                    ? SlotOwner.Hotbar
+                    : SlotOwner.Inventory;
+            }
+            else
+            {
+                // Ничего не экипировано — сбрасываем
+                saveData.equippedSlotIndex = -1;
+                saveData.equippedSlotOwner = SlotOwner.Hotbar;
             }
         }
 
@@ -595,8 +598,16 @@ namespace Assets.Scripts.InventorySystem
         }
 
         // === Жизненный цикл ===
-        private void Start()
+
+        private IEnumerator Start()
         {
+            // Ждём PlayerProgress
+            while (PlayerProgress.Instance == null)
+                yield return null;
+
+            // Регистрируемся
+            PlayerProgress.Instance.RegisterInventoryManager(this);
+
             InitializeStatRows();
 
             if (PlayerProgress.Instance != null)

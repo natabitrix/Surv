@@ -227,11 +227,9 @@ namespace Assets.Scripts.Core
                     _loadedSaveData.playerRotationY,
                     _loadedSaveData.playerRotationZ
                 );
-                
+
                 // Debug.Log($"[PlayerProgress] Позиция загружена: {_playerController.transform.position}");
             }
-
-
 
             if (_inventoryManager != null && _loadedSaveData != null)
             {
@@ -255,7 +253,15 @@ namespace Assets.Scripts.Core
 
         public void RegisterInventoryManager(InventoryManager manager)
         {
+ 
             _inventoryManager = manager;
+
+            // Если PlayerController уже готов, а InventoryManager только что зарегистрировался —
+            // доводим ApplyData до конца (экипировка).
+            if (_playerController != null && _loadedSaveData != null)
+            {
+                _inventoryManager.EquipSavedEquippedItem(_loadedSaveData);
+            }
         }
 
         public static void InitializeLevelTable()
@@ -559,14 +565,20 @@ namespace Assets.Scripts.Core
 
             // сохранение экипированного предмета
             if (inventoryManager != null)
+            {
                 inventoryManager.SaveEquippedItem(saveData);
+            }
+            else
+            {
+                Debug.LogWarning("[PlayerProgress.Save] inventoryManager is null!");
+            }
 
             string json = JsonConvert.SerializeObject(saveData, Formatting.Indented);
             string path = Path.Combine(Application.persistentDataPath, SAVE_FILE_NAME);
             File.WriteAllText(path, json);
 
             // Debug.Log($"[PlayerProgress] Сохранено в {path}");
-            // Debug.Log($"Сохранено из [{noteFrom}]");
+            Debug.Log($"Сохранено из [{noteFrom}]");
 
         }
     }

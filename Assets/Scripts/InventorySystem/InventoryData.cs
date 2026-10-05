@@ -72,33 +72,6 @@ namespace Assets.Scripts.InventorySystem
             return added;
         }
 
-        // public void MoveOrSwap(int from, int to)
-        // {
-        //     if (from == to) return;
-
-        //     var slotFrom = slots[from];
-        //     var slotTo = slots[to];
-
-        //     // Сохраняем значения из первого слота
-        //     var tmpItem = slotFrom.item;
-        //     var tmpCount = slotFrom.count;
-        //     var tmpDurability = slotFrom.currentDurability; // ОБЯЗАТЕЛЬНО сохраняем прочность
-
-        //     // Переносим данные из второго в первый
-        //     slotFrom.item = slotTo.item;
-        //     slotFrom.count = slotTo.count;
-        //     slotFrom.currentDurability = slotTo.currentDurability; // Переносим прочность
-
-        //     // Переносим сохраненные данные во второй
-        //     slotTo.item = tmpItem;
-        //     slotTo.count = tmpCount;
-        //     slotTo.currentDurability = tmpDurability; // Переносим прочность
-
-        //     Debug.Log("MoveOrSwap");
-
-        //     NotifyChanged();
-        // }
-
 
         public void ClearSlot(int index)
         {
@@ -176,7 +149,6 @@ namespace Assets.Scripts.InventorySystem
             return summary;
         }
 
-
         // Проверяет, достаточно ли ингредиентов в этом инвентаре
         public bool HasIngredients(Recipe recipe)
         {
@@ -239,8 +211,7 @@ namespace Assets.Scripts.InventorySystem
             return true;
         }
 
-
-        // 1. Проверка наличия ресурсов с учетом множителя
+        // Проверка наличия ресурсов с учетом множителя
         public bool HasIngredientsForRepair(Recipe recipe, float multiplier)
         {
             foreach (var ing in recipe.ingredients)
@@ -251,7 +222,7 @@ namespace Assets.Scripts.InventorySystem
             return true;
         }
 
-        // 2. Потребление ресурсов
+        // Потребление ресурсов
         public void ConsumeRepairIngredients(Recipe recipe, float multiplier)
         {
             foreach (var ing in recipe.ingredients)
@@ -262,7 +233,7 @@ namespace Assets.Scripts.InventorySystem
             NotifyChanged();
         }
 
-        // 3. Исправленный метод RemoveItemAmount (универсальный для снятия любого количества)
+        // Исправленный метод RemoveItemAmount (универсальный для снятия любого количества)
         private void RemoveItemAmount(Item item, int amount)
         {
             int remaining = amount;
@@ -299,53 +270,6 @@ namespace Assets.Scripts.InventorySystem
         }
 
         // Методы сохранения/загрузки
-
-        // public void FromSerializable(SerializableInventory serializable, Dictionary<string, Item> itemDatabase)
-        // {
-        //     if (serializable?.slots == null || serializable.slots.Length != size)
-        //     {
-        //         Debug.LogWarning("Несоответствие размера инвентаря при загрузке.");
-        //         return;
-        //     }
-
-        //     for (int i = 0; i < size; i++)
-        //     {
-        //         var saved = serializable.slots[i];
-        //         // if (saved.itemId == -1)
-        //         if (string.IsNullOrEmpty(saved.itemId))
-        //         {
-        //             slots[i] = new InventorySlot();
-        //         }
-        //         else if (itemDatabase.TryGetValue(saved.itemId, out var item))
-        //         {
-        //             slots[i] = new InventorySlot
-        //             {
-        //                 item = item,
-        //                 count = saved.count,
-        //                 // Если прочность в файле < 0, принудительно ставим макс. прочность
-        //                 currentDurability = (saved.durability < 0 && item.hasDurability)
-        //                 ? item.maxDurability
-        //                 : saved.durability
-        //             };
-
-        //             // ФИКС: Если прочность -1, но предмет — инструмент, починим её
-        //             if (slots[i].currentDurability < 0 && item.hasDurability)
-        //             {
-        //                 slots[i].currentDurability = item.maxDurability;
-        //             }
-
-        //         }
-        //         else
-        //         {
-        //             slots[i] = new InventorySlot();
-        //             Debug.LogError($"Item ID {saved.itemId} не найден!");
-        //         }
-        //     }
-
-        //     NotifyChanged();
-        // }
-
-
 
         public void FromSerializable(SerializableInventory serializable, Dictionary<string, Item> itemDatabase)
         {
@@ -424,11 +348,6 @@ namespace Assets.Scripts.InventorySystem
             // === 5. Уведомляем об изменениях ===
             NotifyChanged();
         }
-
-
-
-
-
 
         public SerializableInventory ToSerializable(int size)
         {

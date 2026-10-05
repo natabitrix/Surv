@@ -160,8 +160,6 @@ namespace Assets.Scripts.Creatures.Taming
 
                 if (i % 5 == 0) yield return null;
             }
-
-            Debug.Log($"[TamingManager] Загружено: {loaded}");
         }
 
         private void SpawnFromData(TamingSaveData data)
