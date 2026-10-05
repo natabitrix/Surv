@@ -3,6 +3,7 @@ using Assets.Scripts.Core;
 using Assets.Scripts.Interactables;
 using Assets.Scripts.UI;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Assets.Scripts.InventorySystem
 {
@@ -43,8 +44,8 @@ namespace Assets.Scripts.InventorySystem
             if (_chestUI == null)
                 _chestUI = FindAnyObjectByType<ChestUI>();
 
-            if (_chestUI == null)
-                Debug.LogError("[ChestUIManager] ChestUI не найден в сцене!");
+            // if (_chestUI == null)
+            //     Debug.LogError("[ChestUIManager] ChestUI не найден в сцене!");
         }
 
         /// <summary>
@@ -139,6 +140,23 @@ namespace Assets.Scripts.InventorySystem
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
+        }
+
+        private void OnEnable()
+        {
+            SceneManager.sceneLoaded += OnSceneLoaded;
+        }
+
+        private void OnDisable()
+        {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+        }
+
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            _chestUI = FindAnyObjectByType<ChestUI>();
+            if (_chestUI == null)
+                Debug.LogWarning($"[ChestUIManager] ChestUI не найден в сцене {scene.name}");
         }
     }
 }

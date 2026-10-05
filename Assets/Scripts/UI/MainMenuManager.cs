@@ -89,8 +89,10 @@ namespace Assets.Scripts.UI
             // ✅ Показываем загрузочный экран
             if (LoadingScreenManager.Instance != null)
             {
+                LoadingScreenManager.Instance.ForceReset();
                 LoadingScreenManager.Instance.Show("Загрузка игры...");
             }
+            
             SceneManager.LoadScene(GameScene);
         }
 

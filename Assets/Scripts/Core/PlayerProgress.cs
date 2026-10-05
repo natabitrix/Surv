@@ -253,7 +253,7 @@ namespace Assets.Scripts.Core
 
         public void RegisterInventoryManager(InventoryManager manager)
         {
- 
+
             _inventoryManager = manager;
 
             // Если PlayerController уже готов, а InventoryManager только что зарегистрировался —
@@ -511,6 +511,10 @@ namespace Assets.Scripts.Core
             Save("PlayerProgress.UnmarkItemAsHotbarPreferred");
         }
 
+        public void UnregisterPlayerController()
+        {
+            _playerController = null;
+        }
 
         public void Save(string noteFrom = "")
         {

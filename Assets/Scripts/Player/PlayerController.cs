@@ -124,6 +124,7 @@ namespace Assets.Scripts.Player
 
         private void Awake()
         {
+
             // 2. Реализуем паттерн Синглтон
             if (Instance != null && Instance != this)
             {
@@ -160,6 +161,11 @@ namespace Assets.Scripts.Player
         private void Start()
         {
             _cinemachineTargetYaw = transform.eulerAngles.y;
+
+            // Сбрасываем возможный мусор в input'е от Input System
+            // (при инициализации дельта может быть гигантской)
+            _input.look = Vector2.zero;
+            _input.mouseScrollDelta = 0f;
 
             _hasAnimator = _animator != null;
 
@@ -775,9 +781,9 @@ namespace Assets.Scripts.Player
 
             if (buildMode != null && buildMode.IsActive() && buildMode.IsRotatingPreview()) return; // Не вращать камеру если вращаем фундамент
 
-            // NEW: при Selfie не вращаем камеру/тело — этим занимается SelfieCameraOrbit
-            if (CameraManager.Instance != null && CameraManager.Instance.IsSelfie) return;
+            if (LoadingScreenManager.Instance != null && LoadingScreenManager.Instance.IsLoading) return; // Не вращать камеру пока загрузочный экран
 
+            if (CameraManager.Instance != null && CameraManager.Instance.IsSelfie) return; // Не вращать камеру при Selfie — этим занимается SelfieCameraOrbit
 
             // Камера должна следовать глазам, но не должна применяться анимация персонажа к камере, 
             // поэтому прикрепим ее к EyeCenterForCamera, которую установим посредине глаз
@@ -793,6 +799,29 @@ namespace Assets.Scripts.Player
                 _cinemachineTargetYaw += _input.look.x * deltaTimeMultiplier;
                 _cinemachineTargetPitch += _input.look.y * deltaTimeMultiplier;
             }
+
+            // if (_input.look.sqrMagnitude >= _threshold)
+            // {
+            //     // Защита от мусорного ввода Input System (гигантская дельта при инициализации)
+            //     const float MAX_LOOK_PER_FRAME = 200f;
+            //     Vector2 safeLook = _input.look;
+
+            //     if (safeLook.sqrMagnitude > MAX_LOOK_PER_FRAME * MAX_LOOK_PER_FRAME)
+            //     {
+            //         Debug.LogWarning($"[CameraRotation] Отброшен мусорный look: {safeLook}");
+            //         safeLook = Vector2.zero;
+            //         _input.look = Vector2.zero;   // сбрасываем, чтобы не повторялся
+            //     }
+
+            //     if (safeLook.sqrMagnitude >= _threshold)
+            //     {
+            //         float deltaTimeMultiplier = IsCurrentDeviceMouse ? 1.0f : Time.deltaTime;
+            //         _cinemachineTargetYaw += safeLook.x * deltaTimeMultiplier;
+            //         _cinemachineTargetPitch += safeLook.y * deltaTimeMultiplier;
+            //     }
+            // }
+
+            _input.look = Vector2.zero;
 
             _cinemachineTargetYaw = PlayerUtils.ClampAngle(_cinemachineTargetYaw, float.MinValue, float.MaxValue);
             _cinemachineTargetPitch = PlayerUtils.ClampAngle(_cinemachineTargetPitch, settings.BottomClamp, settings.TopClamp);
@@ -974,6 +1003,15 @@ namespace Assets.Scripts.Player
                     Gizmos.DrawWireSphere(CinemachineCameraTarget.transform.position, 0.1f);
                 }
             }
+        }
+
+        private void OnDestroy()
+        {
+            if (PlayerProgress.Instance != null && PlayerProgress.Instance.playerController == this)
+            {
+                PlayerProgress.Instance.UnregisterPlayerController();
+            }
+            if (Instance == this) Instance = null;
         }
 
         private void AssignAnimationIDs()

@@ -97,6 +97,8 @@ namespace Assets.Scripts.UI
         /// </summary>
         public void StartLoading()
         {
+            Debug.Log($"[LoadingScreenManager] StartLoading: _isLoading={_isLoading}, tasks={_tasks.Count}");
+            
             if (_isLoading)
             {
                 Debug.LogWarning("[LoadingScreenManager] Загрузка уже идет!");
@@ -164,7 +166,7 @@ namespace Assets.Scripts.UI
             Cursor.lockState = isCursorVisible ? CursorLockMode.None : CursorLockMode.Locked;
             Cursor.visible = isCursorVisible;
         }
-        
+
         private IEnumerator RunTask(LoadingTask task)
         {
             // Debug.Log($"[LoadingScreenManager] Начинаем: {task.Name}");
@@ -182,6 +184,20 @@ namespace Assets.Scripts.UI
 
             if (_statusText != null && !string.IsNullOrEmpty(status))
                 _statusText.text = status;
+        }
+
+
+        public void ForceReset()
+        {
+            if (_loadingCoroutine != null)
+            {
+                StopCoroutine(_loadingCoroutine);
+                _loadingCoroutine = null;
+            }
+            _tasks.Clear();
+            _isLoading = false;
+            IsLoading = false;
+            Hide();
         }
     }
 }
