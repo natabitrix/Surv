@@ -71,6 +71,8 @@ namespace Assets.Scripts.UI
         public Item RadialMenuCurrentTarget = null;
         public GameObject RadialMenuCurrentTargetGO = null;
 
+        public static PanelsUIController Instance { get; private set; }
+
         private void Start()
         {
             // Top Buttons
@@ -126,6 +128,21 @@ namespace Assets.Scripts.UI
             RadialMenuDragCorpseButton.AddComponent<ButtonScaleEffect>();
         }
 
+        private void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
+        }
+
         private void Update()
         {
             ToggleInventory();
@@ -178,7 +195,17 @@ namespace Assets.Scripts.UI
             OtherRightPanel.SetActive(true);
             PlayerCenterPanel.SetActive(false);
             PlayerRightPanel.SetActive(false);
+
             PlayerInventoryMoveButton.interactable = true;
+
+            // === Определяем тип источника: сундук vs существо/труп/сумка ===
+            var source = ChestUIManager.Instance?.CurrentSource;
+            bool isChest = source is ChestController;
+
+            // Сундук — нельзя «выбросить всё» (нельзя выбросить предметы из сундука)
+            // Существо / труп / сумка — можно
+            OtherInventoryDropButton.interactable = !isChest;
+
             if (_previewManager != null) _previewManager.ClosePreview();
             PanelMode(true);
 

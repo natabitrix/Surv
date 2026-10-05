@@ -1,6 +1,7 @@
 // Assets/Scripts/InventorySystem/ChestUIManager.cs
 using Assets.Scripts.Core;
 using Assets.Scripts.Interactables;
+using Assets.Scripts.UI;
 using UnityEngine;
 
 namespace Assets.Scripts.InventorySystem
@@ -127,6 +128,12 @@ namespace Assets.Scripts.InventorySystem
 
             // 3. Сбрасываем состояние
             CurrentSource = null;
+
+            // 4. Закрываем панели (Canvas, курсор, PanelMode)
+            if (PanelsUIController.Instance != null)
+            {
+                PanelsUIController.Instance.CloseAllPanels();
+            }
         }
 
         private void OnDestroy()

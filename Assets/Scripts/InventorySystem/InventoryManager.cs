@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using Assets.Scripts.Building;
 using Assets.Scripts.Core;
 using Assets.Scripts.Crafting;
+using Assets.Scripts.Creatures;
+using Assets.Scripts.Creatures.Taming;
 using Assets.Scripts.Interactables;
 using Assets.Scripts.Items;
 using Assets.Scripts.Loot;
@@ -336,9 +338,73 @@ namespace Assets.Scripts.InventorySystem
         public void DropItemsFromInventory()
         {
             var progress = PlayerProgress.Instance;
-            if (progress == null || progress.mainInventoryData == null) return;
+            if (progress?.mainInventoryData == null)
+            {
+                Debug.LogError("[InventoryManager] mainInventoryData недоступен!");
+                return;
+            }
 
-            var playerController = progress.playerController;
+            DropAllItemsToBag(
+                sourceData: progress.mainInventoryData,
+                ownerPlayerId: "player_001",
+                unequipIfFromMainInventory: true
+            );
+        }
+
+        // Вызывается по кнопке OtherInventoryDropButton "Выбросить всё"
+        public void DropItemsFromChest()
+        {
+            var chestUI = ChestUI.Instance;
+            if (chestUI == null || ChestUIManager.Instance == null || !ChestUIManager.Instance.IsOpened)
+            {
+                Debug.LogError("[InventoryManager] Нет открытого чужого инвентаря!");
+                return;
+            }
+
+            // Сундук — запрещено
+            if (ChestUIManager.Instance.CurrentSource is ChestController)
+            {
+                NotificationManager.Instance?.Show("Нельзя выбросить всё из сундука.", null);
+                return;
+            }
+
+            if (chestUI.Data == null)
+            {
+                Debug.LogError("[InventoryManager] Данные чужого инвентаря недоступны!");
+                return;
+            }
+
+            DropAllItemsToBag(
+                sourceData: chestUI.Data,
+                ownerPlayerId: "player_001",
+                unequipIfFromMainInventory: false
+            );
+
+            // Если источник — нокаутнутое существо, обновляем его сейв,
+            // чтобы при перезагрузке пустой инвентарь не вернулся.
+            if (ChestUIManager.Instance.CurrentSource is BaseLivingEntity living
+                && !string.IsNullOrEmpty(living.TamingInstanceId))
+            {
+                TamingManager.Instance?.UpdateSave(living.TamingInstanceId, "player_001");
+            }
+        }
+
+        /// <summary>
+        /// Выбрасывает все предметы из указанного InventoryData в сумку перед игроком.
+        /// Общая логика для «выбросить всё» из инвентаря игрока и из чужого инвентаря.
+        /// </summary>
+        private void DropAllItemsToBag(
+            InventoryData sourceData,
+            string ownerPlayerId,
+            bool unequipIfFromMainInventory)
+        {
+            if (sourceData?.slots == null)
+            {
+                Debug.LogError("[InventoryManager] DropAllItemsToBag: sourceData == null!");
+                return;
+            }
+
+            var playerController = PlayerProgress.Instance?.playerController;
             if (playerController == null)
             {
                 Debug.LogError("[InventoryManager] PlayerController не найден!");
@@ -351,13 +417,11 @@ namespace Assets.Scripts.InventorySystem
                 return;
             }
 
-            var mainInventory = progress.mainInventoryData;
-
-            // Собираем все предметы
+            // === Собираем предметы ===
             var itemsToDrop = new List<(Item item, int count, float durability)>();
-            for (int i = 0; i < mainInventory.slots.Count; i++)
+            for (int i = 0; i < sourceData.slots.Count; i++)
             {
-                var slot = mainInventory.slots[i];
+                var slot = sourceData.slots[i];
                 if (slot?.IsEmpty == false && slot.item != null && slot.count > 0)
                 {
                     itemsToDrop.Add((slot.item, slot.count, slot.currentDurability));
@@ -366,13 +430,12 @@ namespace Assets.Scripts.InventorySystem
 
             if (itemsToDrop.Count == 0)
             {
-                if (NotificationManager.Instance != null)
-                    NotificationManager.Instance.Show("Нечего выбрасывать.", null);
+                NotificationManager.Instance?.Show("Нечего выбрасывать.", null);
                 return;
             }
 
-            // === Снимаем экипировку, если предмет из основного инвентаря ===
-            if (equipment != null && equipment.IsEquipped)
+            // === Снимаем экипировку, если предмет из mainInventory ===
+            if (unequipIfFromMainInventory && equipment != null && equipment.IsEquipped)
             {
                 int equippedGlobalIndex = equipment.EquippedSlotIndex;
                 // Индексы 10+ принадлежат mainInventory
@@ -382,7 +445,7 @@ namespace Assets.Scripts.InventorySystem
                 }
             }
 
-            // === Позиция для сумки ===
+            // === Позиция перед игроком ===
             Vector3 dropPosition = playerController.transform.position
                                  + playerController.transform.forward * 2f
                                  + playerController.transform.up * 0.5f;
@@ -392,16 +455,13 @@ namespace Assets.Scripts.InventorySystem
                 dropPosition = hit.point + Vector3.up * 0.1f;
             }
 
-            // === Создаём сумку со всеми предметами ===
-            // Примечание: если предметов больше, чем слотов в сумке — часть не поместится.
-            // Нужно либо увеличить размер сумки, либо создавать несколько сумок.
-            int totalSlotsNeeded = itemsToDrop.Count;
-            LootBagManager.Instance.CreateLootBagFromItems(itemsToDrop, dropPosition, "player_001");
+            // === Создаём сумку ===
+            LootBagManager.Instance.CreateLootBagFromItems(itemsToDrop, dropPosition, ownerPlayerId);
 
-            // === Очищаем инвентарь ===
-            for (int i = 0; i < mainInventory.slots.Count; i++)
+            // === Очищаем слоты ===
+            for (int i = 0; i < sourceData.slots.Count; i++)
             {
-                var slot = mainInventory.slots[i];
+                var slot = sourceData.slots[i];
                 if (slot?.IsEmpty == false)
                 {
                     slot.item = null;
@@ -410,25 +470,9 @@ namespace Assets.Scripts.InventorySystem
                 }
             }
 
-            mainInventory.NotifyChanged();
-            progress.Save("InventoryManager.DropItemsFromInventory");
+            sourceData.NotifyChanged();
 
-            if (NotificationManager.Instance != null)
-            {
-                NotificationManager.Instance.Show($"Выброшено в сумку: {itemsToDrop.Count} стаков", null);
-            }
-        }
-
-        // вызывается по кнопке OtherInventoryDropButton "Выбросить всё"
-        public void DropItemsFromChest()
-        {
-            var chestUI = ChestUI.Instance;
-            if (chestUI == null || !ChestUIManager.Instance.IsOpened)
-            {
-                Debug.LogError("Нет открытого сундука!");
-                return;
-            }
-            chestUI.RemoveItemsFromChest();
+            NotificationManager.Instance?.Show($"Выброшено в сумку: {itemsToDrop.Count} стаков", null);
         }
 
         // вызывается по клавише _input.drop "Выбросить"

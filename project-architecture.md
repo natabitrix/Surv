@@ -906,6 +906,9 @@ Screen Space всплывающие числа урона над точкой у
 - [ ] **Экосистема** (хищники/жертвы, respawn по регионам).
 - [ ] **Броня** (защита, прочность, резисты).
 - [ ] **Разрушение сундука → сумка** (`ChestController.OnDestroy` → `LootBagManager`).
+- [ ] **Отображение владельца сумок/трупов в UI:**
+  - В `PanelsUIController` — заголовок панели чужого инвентаря с `OwnerPlayerId` / именем существа.
+  - В `EntityInfoPanelManager` — показывать владельца для `LootBag` и `Corpse`.
 - [ ] **Карта местности**.
 - [ ] **Фермерство**.
 - [ ] **Температура / погода** (гипертермия/гипотермия, биомы).
@@ -920,7 +923,6 @@ Screen Space всплывающие числа урона над точкой у
 - [ ] **Electrical system** (Generators, Cables, Appliances).
 - [ ] **Irrigation system** (Pipes, Taps, Reservoirs).
 - [ ] **Blueprints & Quality tiers**.
-
 
 
 
