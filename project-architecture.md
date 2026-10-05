@@ -179,7 +179,7 @@ All core game data should be ScriptableObjects stored in `Assets/Data/`:
 # Current Implementation Status
 
 > Это описание того, что **уже реализовано** в проекте.
-> Обновлено: [04.10.2026]
+> Обновлено: [05.10.2026]
 
 ## Реализовано
 
@@ -462,16 +462,23 @@ All core game data should be ScriptableObjects stored in `Assets/Data/`:
     4. `SetProgress(1f, "Готово")`.
     5. Скрывает экран.
 
-- **`SceneBootstrap`** (MonoBehaviour) — регистратор задач:
-  - Ждет `PlayerProgress` и `PlayerController`.
-  - Регистрирует задачи:
-    1. `TamingManager.LoadAllTamingCreaturesAsync()` — "Загрузка существ..."
-    2. `CorpseManager.LoadAllCorpsesAsync()` — "Загрузка трупов..."
-    3. `LootBagManager.LoadAllLootBagsAsync()` — "Загрузка сумок..."
-    4. `WorldManager.LoadWorldAsync(playerPos)` — "Загрузка мира..."
-  - `LoadingScreenManager.StartLoading()`.
+- **`SceneBootstrap`** (MonoBehaviour, живёт на `===CoreManagers===`):
+  - Подписан на `SceneManager.sceneLoaded`, реагирует на загрузку сцены `GameWorld`.
+  - **`_gameWorldSceneName`** — имя сцены, при загрузке которой запускается (`"GameWorld"` в инспекторе).
+  - **`_isRunning`** — защита от двойного запуска, если `sceneLoaded` сработает несколько раз.
+  - В `BootstrapRoutine`:
+    - Ждёт `PlayerProgress.Instance` и живого `PlayerController`.
+    - Регистрирует задачи в `LoadingScreenManager`:
+      1. `TamingManager.LoadAllTamingCreaturesAsync()` — "Загрузка прирученных..."
+      2. `CorpseManager.LoadAllCorpsesAsync()` — "Загрузка трупов..."
+      3. `LootBagManager.LoadAllLootBagsAsync()` — "Загрузка сумок..."
+      4. `WorldManager.LoadWorldAsync(playerPos)` — "Загрузка мира..."
+    - Вызывает `LoadingScreenManager.StartLoading()`.
+  - **⚠️ Раньше был `Start()` — он срабатывал только один раз за сессию**, потому что `SceneBootstrap` на `DontDestroyOnLoad`. При повторном заходе экран загрузки висел. Исправлено переходом на `sceneLoaded`.
 
-- **Порядок загрузки:** существа → трупы → сумки → мир → ожидание физики.
+- **`LoadingScreenManager.ForceReset()`** — сброс состояния (`_isLoading = false`, `_tasks.Clear()`, `StopCoroutine`, `Hide()`). Вызывается из `MainMenuManager.LoadGameScene` перед `Show("Загрузка игры...")`, чтобы повторный заход не оставлял висящий экран.
+
+- **Порядок загрузки:** прирученные → трупы → сумки → мир → ожидание физики.
 
 ### 8. Инвентарь и ChestUI
 
@@ -571,6 +578,11 @@ All core game data should be ScriptableObjects stored in `Assets/Data/`:
 - **CS0252** — в `OnDestroy` источников `ReferenceEquals(CurrentSource, this)`, не `==`.
 - **CS0108** — `IInventorySource` не дублирует `GetInventory`/`HasInventory` из `IInteractable`.
 - **`GameTime`** — единая система времени, используется в `CorpseManager`, `LootBagManager`, `TamingManager`.
+- **`SceneBootstrap`** — на `sceneLoaded`, а не на `Start`. Иначе повторный заход из MainMenu не запускает загрузку.
+- **`LoadingScreenManager.ForceReset()`** — обязательный вызов в `MainMenuManager.LoadGameScene`.
+- **`PlayerController._input.look`** — обнуляется после обработки в `CameraRotation`. Иначе Input System выдаёт то же значение каждый кадр → yaw/pitch накапливаются бесконечно.
+- **`PlayerController.Start`** — сброс `_input.look` и `mouseScrollDelta`. Input System при инициализации может выдать гигантскую дельту.
+- **`PlayerProgress.UnregisterPlayerController`** — вызывается из `PlayerController.OnDestroy`. Иначе ссылка на уничтоженный объект остаётся «мёртвой» и ломает `SceneBootstrap`.
 
 ### 12. Система камер и прицеливания (ARK-style)
 
@@ -865,6 +877,10 @@ Screen Space всплывающие числа урона над точкой у
 
 ### Ближайшее (Следующий шаг)
 
+- [ ] **КРИТИЧНО: Переезд сценовых менеджеров на сцену `GameWorld`** *(см. «Дальше»)*
+  - Разблокирует сценарий «Выход в MainMenu → возврат в игру».
+  - До этого не тестировать этот сценарий и не выходить в MainMenu в процессе разработки.
+
 - [ ] **AI прирученных существ** — Follow/Stay/Idle/Attack команды через `RadialMenu`.
 - [ ] **Радиальное меню для существ** — команды вместо `ТЕЛО`.
 - [ ] **Фикс багов** — список собирается перед началом работы.
@@ -900,7 +916,30 @@ Screen Space всплывающие числа урона над точкой у
 - [x] **Логика `IsVisibleByCamera`** — набросок, но не подключена.
 - [x] **`OnApplicationQuit/Pause/Focus` в `TamingManager`** — `SaveAll`.
 
+
 ### Дальше
+
+- [ ] **КРИТИЧНО: Переезд сценовых менеджеров на сцену `GameWorld`**
+  - **Проблема:** `CorpseManager`, `LootBagManager`, `TamingManager`, `WorldManager` — `DontDestroyOnLoad`, но хранят ссылки на GameObject'ы сцены `GameWorld`. При выходе в MainMenu сцена выгружается, объекты уничтожаются, а Dictionary-кэши (`_loadedCorpses`, `_loadedLootBags`, `_loadedCreatures`, `_instanceMap`) остаются с «мёртвыми» ключами. При заходе обратно — `ContainsKey` возвращает `true` → объекты не спавнятся.
+  - **Проявления:**
+    - Трупы, сумки, прирученные не восстанавливаются при возврате из MainMenu.
+    - `Corpse.OnDestroy` удаляет файл сохранения при выгрузке сцены (нужно убрать, но только вместе с переездом).
+    - `_playerController` в `PlayerProgress` указывает на уничтоженный объект.
+  - **Решение:**
+    - Перенести `CorpseManager`, `LootBagManager`, `TamingManager`, `WorldManager` с `===CoreManagers===` на `===GameManagers===` (сцена `GameWorld`).
+    - Убрать `DontDestroyOnLoad` — они будут пересоздаваться при каждой загрузке сцены.
+    - Убедиться, что `SceneBootstrap` инициализируется **после** `Awake` этих менеджеров.
+    - `ClearLoadedCache` станет не нужен — кэши сбрасываются вместе с объектами.
+  - **Связанные правки:**
+    - `Corpse.OnDestroy` — убрать `UnregisterCorpse` (файл не должен удаляться при выгрузке сцены).
+    - `BaseLivingEntity` — проверить, нет ли аналогичного удаления taming-файла из `OnDestroy`.
+    - `WorldManager._instanceMap` — то же самое.
+  - **Порядок работы (рекомендуемый):**
+    1. Сначала — только `CorpseManager` и `LootBagManager` (простые, без AI). Тест: MainMenu ↔ GameWorld.
+    2. Потом — `TamingManager` (уже с нокаутом/приручением).
+    3. В конце — `WorldManager` (чанки, постройки).
+  - **Риск:** переезд затрагивает инициализацию, порядок Awake, ссылки из `===CoreManagers===`. Делать аккуратно, отдельной сессией.
+
 - [ ] **Использование прирученных** (Riding, команды, инвентарь).
 - [ ] **Респавн по кроватям** (спальные мешки, точки возрождения).
 - [ ] **Экосистема** (хищники/жертвы, respawn по регионам).
