@@ -179,121 +179,109 @@ All core game data should be ScriptableObjects stored in `Assets/Data/`:
 # Current Implementation Status
 
 > Это описание того, что **уже реализовано** в проекте.
-> Обновлено: [05.10.2026]
+> Обновлено: [06.10.2026]
 
 ## Реализовано
 
 ### 1. Менеджеры и архитектура
 
-- **Префаб `===CoreManagers===`** — все глобальные менеджеры на одном объекте.
-- **`ManagersSpawner`** — создает `===CoreManagers===` в Bootstrap-сцене. Защита от дубликатов через `static bool _managersCreated`.
-- **`DontDestroyOnLoad`** — все менеджеры живут между сценами.
+- **`[GameAssets]`** — GameObject в **обеих** сценах (`MainMenu` и `GameWorld`), `DontDestroyOnLoad`. Единый реестр ассетов и создатель глобальных менеджеров.
+- **Разделение менеджеров:**
+  - **Глобальные** (`DontDestroyOnLoad`, живут всю сессию): `GameController`, `PlayerProgress`, `GameTimeUpdater`, `LoadingScreenManager`, `AudioManager`, `LanguageManager`. Создаются один раз из `[GameAssets]`.
+  - **Сценовые** (умирают со сценой): всё остальное — `CorpseManager`, `LootBagManager`, `TamingManager`, `WorldManager`, `HUDManager`, `UIManager`, `PauseManager`, `DeathScreenManager`, `ChestUIManager`, `PlayerSurvivalSystem` и др.
+- **`WorldBootstrap`** — сценовый, лежит на `===WorldManagers===` в `GameWorld`. Создаёт `CorpseManager`, `LootBagManager`, `TamingManager`, `WorldManager` через `AddComponent + Initialize()`. Ждёт `GameAssets.Instance != null` в корутине `Start` (порядок `Awake` в Unity не гарантирован между объектами).
 - **Сцены:**
-  - `MainMenu` — главное меню.
-  - `GameWorld` — игровой мир.
-  - Bootstrap-сцена (или `MainMenu` как первая) — создает менеджеров.
+  - `MainMenu` — главное меню. Свой `[GameAssets]`. Если игра стартует отсюда — этот экземпляр становится primary (`DontDestroyOnLoad`), а `[GameAssets]` из `GameWorld` при загрузке удалится.
+  - `GameWorld` — игровой мир. Свой `[GameAssets]`. Если игра стартует отсюда — он становится primary. Если пришли из `MainMenu` — удалится.
 
-### 2. Менеджеры в `===CoreManagers===`
+### 2. Глобальные менеджеры (DontDestroyOnLoad)
 
-| Менеджер                | Назначение           
-|-------------------------|---------------------------------------------------
-| `LoadingScreenManager`  | Управление загрузочным экраном 
-| `GameController`        | Сохранение игры, выход 
-| `PlayerSurvivalSystem`  | Здоровье, еда, вода, кислород, выносливость
-| `PlayerProgress`        | Уровень, опыт, энгрamm-очки, инвентарь, экипировка 
-| `WorldManager`          | Чанковая система сохранения построек 
-| `LanguageManager`       | Локализация 
-| `InventoryConfig`       | Настройки инвентаря 
-| `AudioManager`          | Громкость 
-| `CorpseManager`         | Сохранение/загрузка трупов 
-| `SceneBootstrap`        | Регистрация задач загрузки 
-| `LootBagManager`        | Сохранение/загрузка сумок 
-| `TamingManager`         | Сохранение/загрузка нокаутнутых и прирученных существ
-| `ChestUIManager`        | Единая точка входа для инвентарей. Владелец состояния «какой инвентарь открыт»
-| `GameTimeUpdater`       | Тик `GameTime`
+Создаются из `[GameAssets].Awake()` один раз за сессию. `GameController`, `PlayerProgress`, `GameTimeUpdater` — дочерние GameObject'ы `[GameAssets]`. `LoadingScreenManager`, `AudioManager`, `LanguageManager` — компоненты на самом `[GameAssets]`.
 
+| Менеджер | Назначение |
+|---|---|
+| `GameController` | `GameSettings`, `SessionMode.Initialize`. Вызывается через `Initialize(settings)`. |
+| `PlayerProgress` | Уровень, XP, энгрamm-очки, инвентарь, `_loadedSaveData`. `Initialize(itemDb, recipeDb)`. |
+| `GameTimeUpdater` | Тик `GameTime`. |
+| `LoadingScreenManager` | Экран загрузки. Ссылки на `LoadingScreenCanvas`, `ProgressBar`, `StatusText` — дочерний Canvas внутри `[GameAssets]`. |
+| `AudioManager` | Громкость, `PlayerPrefs`. |
+| `LanguageManager` | Локализация, `PlayerPrefs`. |
 
-### 2.1 Менеджеры на объекте `===GameManagers===` на сцене
-> Все эти менеджеры — **сценовые** (не `DontDestroyOnLoad`). Они пересоздаются при загрузке сцены `GameWorld`.
-> Глобальные менеджеры (сохранение, прогресс) — в префабе `===CoreManagers===` с `DontDestroyOnLoad`.
-| Менеджер                    | Назначение           
-|-----------------------------|-----------------------------------------------
-| `HUDManager`                | Отображение статов 
-| `CharacterPreviewManager`   | Превью персонажа при открытие его инвентаря 
-| `CombatAudioManager`        | Звуки ударов рязными инструментами 
-| `NotificationManager`       | Уведомления 
-| `TooltipManager`            | Подсказки при наведении 
-| `ContextMenuManager`        | Контекстное меню с кнопками для слотов инвентаря 
-| `PauseManager`              | Окно паузы с оверлеем и кнопками 
-| `DeathScreenManager`        | Окно экрана смерти с оверлеем и кнопками 
-| `DamageNumberPool`          | Пул всплывающих чисел урона
-| `EntityInfoPanelManager`    | Инфо-панель над существом под прицелом
+### 2.1 Сценовые менеджеры мира `===WorldManagers===` (GameWorld)
 
-### 2.2 Компоненты на объекте `===InventoryManager===` на сцене
-| Компонент                   | Назначение           
-|-----------------------------|-----------------------------------------------
-| `InventoryManager`          | Управление инвентарями 
+Создаются `WorldBootstrap` в корутине `Start` через `AddComponent + Initialize()`. Живут до выгрузки сцены.
 
-### 2.3 Компоненты на объекте `===PanelsController===` на сцене
-| Компонент                   | Назначение           
-|-----------------------------|-----------------------------------------------
-| `PanelsUIController`        | Управление кнопками и панелями инветаря, энграмм, крафтинга
+| Менеджер | Назначение |
+|---|---|
+| `CorpseManager` | Сохранение/загрузка трупов. `Initialize()` берёт `PlayerCorpsePrefab`, `CreatureDatabase`, `ItemDatabase` из `GameAssets.Instance`. |
+| `LootBagManager` | Сохранение/загрузка сумок. `Initialize()` берёт `LootBagPrefab`, `ItemDatabase` из `GameAssets.Instance`. |
+| `TamingManager` | Сохранение/загрузка нокаутнутых и прирученных. `Initialize()` берёт `CreatureDatabase`, `ItemDatabase` из `GameAssets.Instance`. |
+| `WorldManager` | Чанковая система построек. `Initialize(chunkSize, loadRadius, saveInterval)`. |
 
-### 2.4 Компоненты на объекте `___CreatureSpawner___` на сцене
-| Компонент                   | Назначение           
-|-----------------------------|-----------------------------------------------
-| `CreatureSpawner`           | Менеджер спавна существ
+### 2.2 Сценовые менеджеры UI `===GameManagers===` (GameWorld)
 
-### 2.5 Компоненты на объекте `---Player---` на сцене
+| Менеджер | Назначение |
+|---|---|
+| `HUDManager` | Отображение статов. |
+| `CharacterPreviewManager` | Превью персонажа в инвентаре. |
+| `CombatAudioManager` | Звуки ударов. |
+| `NotificationManager` | Уведомления. |
+| `TooltipManager` | Подсказки. |
+| `ContextMenuManager` | Контекстное меню слотов. |
+| `PauseManager` | Окно паузы. |
+| `DeathScreenManager` | Экран смерти. |
+| `UIManager` | HUD/хотбар/экраны. Подписан на `PlayerSurvivalSystem.OnPlayerDied/OnPlayerRespawned`. |
+| `DamageNumberPool` | Пул всплывающих чисел урона. |
+| `EntityInfoPanelManager` | Инфо-панель над существом под прицелом. |
+| `ArrowPool` | Пул стрел. |
+| `AimUI` | Прицел. |
 
-| Компонент                       | Назначение                                                        |
-|---------------------------------|-------------------------------------------------------------------|
-| `Character Controller`          | Физическое движение игрока (встроенный Unity)                     |
-| `Capsule Collider`              | Коллайдер для физики                                              |
-| `Basic Rigid Body Push (Script)`| Толкание Rigidbody-объектов (например, ящиков)                    |
-| `Player Input`                  | Новый Input System (Unity) — источник ввода                       |
-| `Player Input Handler (Script)` | Обработка ввода, события (Interact, Fire, Hotbar, ...)            |
-| `Camera Manager (Script)`       | Управление Cinemachine-камерой, режимы (first/third person)       |
-| `Player Equipment (Script)`     | Экипировка инструментов/оружия, `corpseDragAnchor`, `IsEquipped`  |
-| `Player Build Mode (Script)`    | Режим строительства, preview построек                             |
-| `Item Usage System (Script)`    | Использование предметов (еда, ресурсы, оружие)                    |
-| `Item Handler (Script)`         | Подбор предметов, `PickupItem()`, `DestroyItem()`                 |
-| `Player Interaction (Script)`   | Raycast/OverlapSphere-взаимодействие с IInteractable              |
-| `Player Controller (Script)`    | Главный контроллер: движение, камера, атака, ссылки на системы    |
+### 2.3 `===InventoryManager===` (GameWorld)
 
-**Дочерние объекты:**
-- `PlayerCameraRoot` — точка привязки Cinemachine-камеры
-  - `Character` — визуальная модель игрока (меш, Animator, Ragdoll, Corpse, RadialMenu)
-  - `Directional Light` — направленный свет (для модели?)
-- `UI` → `UICanvases`:
-  - `InventoryCanvas` — инвентарь игрока
-  - `InteractionCanvas` — подсказки взаимодействия
-  - `NotificationTopCanvas` — верхние уведомления
-  - `NotificationLeftCanvas` — левые уведомления
-  - `HUDCanvas` — HUD (статы)
-  - `ContextMenuCanvas` — контекстное меню слотов
-  - `PauseCanvas` — окно паузы
-  - `DeathScreenCanvas` — экран смерти
-  - `RadialMenuCanvas` — радиальное меню
-  - `DamageNumberCanvas` — числа урона (Sort Order 100)
-  - `DamageVignetteCanvas` — вспышка урона (Sort Order 50)
-  - `AimCanvas` — прицел
-- `_Env` — окружение (трава, деревья, камни)?
-- `Interactables` — интерактивные объекты в сцене?
+| Компонент | Назначение |
+|---|---|
+| `InventoryManager` | Управление инвентарями. |
+| `ChestUIManager` | Единая точка входа для инвентарей. Владелец состояния «какой инвентарь открыт». Сценовый. |
 
-**Важно:** на `Character` (дочернем объекте) висят:
-- `Animator`
-- `Corpse (Script)` — **отключен** (активируется при смерти)
-- `RadialMenu (Script)` — **отключен**
-- `RagdollSettings` — настройки ragdoll
-- `Rigidbody` — для ragdoll
+### 2.4 `===PanelsController===` (GameWorld)
 
-**При смерти игрока:**
-1. `PlayerController` и живые компоненты **отключаются**.
-2. Создается `corpseBodyPrefab` (отдельный префаб с `Corpse`).
-3. `PlayerController` **уничтожается** или **скрывается**.
+| Компонент | Назначение |
+|---|---|
+| `PanelsUIController` | Управление панелями инвентаря, энгрamm, крафтинга. |
 
+### 2.5 `---Player---` (GameWorld)
 
+| Компонент | Назначение |
+|---|---|
+| `Character Controller` | Движение. |
+| `Capsule Collider` | Коллайдер. |
+| `Basic Rigid Body Push (Script)` | Толкание Rigidbody. |
+| `Player Input` | Input System. |
+| `PlayerInputHandler (Script)` | Обработка ввода, события. |
+| `Camera Manager (Script)` | Cinemachine-камеры. |
+| `Player Equipment (Script)` | Экипировка. |
+| `Player Ranged Combat (Script)` | Стрельба. |
+| `Player Build Mode (Script)` | Строительство. |
+| `Item Usage System (Script)` | Использование предметов. |
+| `Item Handler (Script)` | Подбор/уничтожение предметов. |
+| `Player Interaction (Script)` | Raycast/OverlapSphere. |
+| `Player Aiming System (Script)` | Зум и прицел. |
+| `Player Controller (Script)` | Главный контроллер. |
+| `Player Survival System (Script)` | **Сценовый**, `Start()` берёт `PlayerProgress.GetLoadedSaveData()`. |
+| `Cinemachine Impulse Source` | Тряска. |
+| `Player Damage Feedback (Script)` | Фидбек урона. |
+| `Item Usage Router (Script)` | Роутинг использования. |
+
+### 2.6 Deprecated (removed)
+
+Удалены в ходе рефакторинга (ветка `refactoring-managers`):
+- `ManagersSpawner.cs` — заменён на `[GameAssets]` в сцене.
+- `SceneBootstrap.cs` — логика переехала в `WorldBootstrap`.
+- `InventoryConfig.cs` — `splitStackKey` переедет в будущий `SettingsController`.
+- Префаб `===CoreManagers===` — заменён на `[GameAssets]` в обеих сценах.
+- Свойство `IsQuitting` в `CorpseManager`, `LootBagManager` — не нужно (менеджеры сценовые).
+
+**Причина:** менеджеры, хранящие ссылки на сценовые GameObject (`CorpseManager`, `LootBagManager`, `TamingManager`, `WorldManager`, `HUDManager`, `UIManager`, `PauseManager`, `DeathScreenManager` и др.), были `DontDestroyOnLoad`. При выходе в MainMenu они держали мёртвые ссылки. Плюс `Corpse.OnDestroy` удалял файлы сохранений при выгрузке сцены.
 
 ### 3. ScriptableObject базы данных
 
@@ -357,14 +345,17 @@ All core game data should be ScriptableObjects stored in `Assets/Data/`:
   - `LootBagPrefab` — префаб сумки (создается при разборе)
   - Реализует `IInventorySource`
 
-- **`CorpseManager`** (MonoBehaviour) — сохранение/загрузка:
-  - Хранит `_loadedCorpses` — Dictionary<string, GameObject>
-  - `RegisterCorpse(corpseGO, ownerPlayerId, creatureId = null)` — регистрация
-  - `UnregisterCorpse(instanceId)` — удаление файла
-  - `LoadAllCorpsesAsync()` — загрузка через корутину
-  - `SpawnCorpseFromData(data)` — создание трупа из данных
-  - `IsQuitting` — защита от удаления файла при выходе
-  - Файлы: `persistentDataPath/Corpses/corpse_{guid}.save`
+- **`CorpseManager`** (MonoBehaviour) — **сценовый**, на `===WorldManagers===`:
+  - Создаётся `WorldBootstrap.CreateWorldManagers()`.
+  - `Initialize()` берёт `PlayerCorpsePrefab`, `CreatureDatabase`, `ItemDatabase` из `GameAssets.Instance`.
+  - Хранит `_loadedCorpses` — Dictionary<string, GameObject>.
+  - `RegisterCorpse(corpseGO, ownerPlayerId, creatureId = null)` — регистрация + запись файла.
+  - **`ForgetCorpse(instanceId)`** — чистит in-memory, файл НЕ трогает. Вызывается из `Corpse.OnDestroy`.
+  - **`UnregisterCorpse(instanceId)`** — удаляет и in-memory, и файл. Вызывается только при harvest/despawn.
+  - `LoadAllCorpsesAsync()` — загрузка.
+  - `SpawnCorpseFromData(data)` — создание трупа из данных.
+  - **`DontDestroyOnLoad` и `IsQuitting` — удалены.**
+  - Файлы: `persistentDataPath/Corpses/corpse_{guid}.save`.
 
 - **`CorpseSaveData`** (сериализуемый класс):
   - `instanceId`, `ownerPlayerId`, `corpseType`, `creatureId`
@@ -413,6 +404,12 @@ All core game data should be ScriptableObjects stored in `Assets/Data/`:
   4. `CorpseManager.UnregisterCorpse(InstanceId)` — удаляет файл.
   5. `Destroy(gameObject, 0.5f)`.
 
+- **Сценарий выгрузки сцены (выход в MainMenu):**
+  1. `Corpse.OnDestroy` вызывается при уничтожении объекта сцены.
+  2. **НЕ удаляет файл** — только `CorpseManager.ForgetCorpse(InstanceId)`.
+  3. Файлы сохранений живут между сессиями.
+  4. При следующем заходе `CorpseManager.LoadAllCorpsesAsync()` загружает их заново.
+
 ### 6. Система сумок (LootBag)
 
 - **`LootBag`** (MonoBehaviour) — компонент сумки:
@@ -422,19 +419,22 @@ All core game data should be ScriptableObjects stored in `Assets/Data/`:
   - `Initialize(inventory, disappearTime, source)` — без `ChestUI`
   - `SetPersistenceData(instanceId, ownerPlayerId)`
   - `SetRemainingTime(remainingTime)`
-  - `ForceDespawn()` — исчезновение
-  - `OnDestroy()` — уведомляет `LootBagManager` (если не выход), закрывает UI через `ChestUIManager`
+  - `ForceDespawn()` — исчезновение + `UnregisterLootBag` (удаляет файл)
+  - `OnDestroy()` — только `ForgetLootBag` (файл НЕ трогает), закрывает UI через `ChestUIManager`
   - Реализует `IInventorySource`
 
-- **`LootBagManager`** (MonoBehaviour) — сохранение/загрузка:
-  - Хранит `_loadedLootBags` — Dictionary<string, GameObject>
-  - `RegisterLootBag(lootBagGO, ownerPlayerId = "world")` — регистрация
-  - `UnregisterLootBag(instanceId)` — удаление файла
-  - `LoadAllLootBagsAsync()` — загрузка
-  - `SpawnLootBagFromData(data)` — создание сумки
-  - `CreateLootBagFromItems` — создание сумки из предметов при выбрасывании
-  - `IsQuitting` — защита при выходе
-  - Файлы: `persistentDataPath/LootBags/lootbag_{guid}.save`
+- **`LootBagManager`** (MonoBehaviour) — **сценовый**, на `===WorldManagers===`:
+  - Создаётся `WorldBootstrap.CreateWorldManagers()`.
+  - `Initialize()` берёт `LootBagPrefab`, `ItemDatabase` из `GameAssets.Instance`.
+  - Хранит `_loadedLootBags` — Dictionary<string, GameObject>.
+  - `RegisterLootBag(lootBagGO, ownerPlayerId = "world")` — регистрация + запись файла.
+  - **`ForgetLootBag(instanceId)`** — чистит in-memory, файл НЕ трогает. Вызывается из `LootBag.OnDestroy`.
+  - **`UnregisterLootBag(instanceId)`** — удаляет и in-memory, и файл. Вызывается только при despawn.
+  - `LoadAllLootBagsAsync()` — загрузка.
+  - `SpawnLootBagFromData(data)` — создание сумки.
+  - `CreateLootBagFromItems` — создание сумки из предметов при выбрасывании.
+  - **`DontDestroyOnLoad` и `IsQuitting` — удалены.**
+  - Файлы: `persistentDataPath/LootBags/lootbag_{guid}.save`.
 
 - **`LootBagSaveData`** (сериализуемый класс):
   - `instanceId`, `ownerPlayerId`
@@ -447,9 +447,31 @@ All core game data should be ScriptableObjects stored in `Assets/Data/`:
   - **Выброс вещей** — `InventoryManager.DropItemFromSlot` → `LootBagManager.CreateLootBagFromItems`.
   - **Разрушение сундука** — TODO.
 
-### 7. Загрузочный экран
+- **Сценарий выгрузки сцены:**
+  - `LootBag.OnDestroy` — только `ForgetLootBag`. Файл не трогается.
+  - При следующем заходе `LootBagManager.LoadAllLootBagsAsync()` загружает из файла.
 
-- **`LoadingScreenManager`** (MonoBehaviour) — синглтон:
+### 7. Загрузочный экран и WorldBootstrap
+
+- **`WorldBootstrap`** (MonoBehaviour, живёт на `===WorldManagers===` в GameWorld):
+  - **НЕ** `DontDestroyOnLoad` — умирает вместе со сценой.
+  - `_chunkSize`, `_loadRadiusInChunks`, `_saveInterval` — настройки `WorldManager`.
+  - **`Awake`** — только `Instance = this`. НЕ создаёт сценовые менеджеры здесь (порядок `Awake` в Unity не гарантирован между объектами).
+  - **`Start`** → `BootstrapRoutine`:
+    1. Ждёт `GameAssets.Instance != null` (с таймаутом 5 сек и логированием ошибки).
+    2. `CreateWorldManagers()` — `AddComponent` для `CorpseManager`, `LootBagManager`, `TamingManager`, `WorldManager`, вызов `Initialize()` у каждого.
+    3. Ждёт `PlayerProgress.Instance.playerController`.
+    4. Регистрирует задачи в `LoadingScreenManager`:
+       - `CorpseManager.LoadAllCorpsesAsync()`
+       - `LootBagManager.LoadAllLootBagsAsync()`
+       - `TamingManager.LoadAllTamingCreaturesAsync()`
+       - `WorldManager.LoadWorldAsync(playerPos)`
+    5. `LoadingScreenManager.StartLoading()`.
+  - **Удалён `SceneBootstrap.cs`** — вся логика переехала сюда.
+  - **Удалён `ManagersSpawner.cs`** — `[GameAssets]` сам себя создаёт в `Awake`.
+  - **Порядок загрузки:** трупы → сумки → прирученные → мир → ожидание физики.
+
+- **`LoadingScreenManager`** (MonoBehaviour, глобальный, на `[GameAssets]`):
   - `_loadingCanvas`, `_progressBar` (Image), `_statusText`
   - `_minShowTime`, `_physicsSettleTime`
   - `Show(status)`, `Hide()`
@@ -461,24 +483,7 @@ All core game data should be ScriptableObjects stored in `Assets/Data/`:
     3. `SetProgress(0.9f, "Ожидание физики...")` — ждет `_physicsSettleTime`.
     4. `SetProgress(1f, "Готово")`.
     5. Скрывает экран.
-
-- **`SceneBootstrap`** (MonoBehaviour, живёт на `===CoreManagers===`):
-  - Подписан на `SceneManager.sceneLoaded`, реагирует на загрузку сцены `GameWorld`.
-  - **`_gameWorldSceneName`** — имя сцены, при загрузке которой запускается (`"GameWorld"` в инспекторе).
-  - **`_isRunning`** — защита от двойного запуска, если `sceneLoaded` сработает несколько раз.
-  - В `BootstrapRoutine`:
-    - Ждёт `PlayerProgress.Instance` и живого `PlayerController`.
-    - Регистрирует задачи в `LoadingScreenManager`:
-      1. `TamingManager.LoadAllTamingCreaturesAsync()` — "Загрузка прирученных..."
-      2. `CorpseManager.LoadAllCorpsesAsync()` — "Загрузка трупов..."
-      3. `LootBagManager.LoadAllLootBagsAsync()` — "Загрузка сумок..."
-      4. `WorldManager.LoadWorldAsync(playerPos)` — "Загрузка мира..."
-    - Вызывает `LoadingScreenManager.StartLoading()`.
-  - **⚠️ Раньше был `Start()` — он срабатывал только один раз за сессию**, потому что `SceneBootstrap` на `DontDestroyOnLoad`. При повторном заходе экран загрузки висел. Исправлено переходом на `sceneLoaded`.
-
-- **`LoadingScreenManager.ForceReset()`** — сброс состояния (`_isLoading = false`, `_tasks.Clear()`, `StopCoroutine`, `Hide()`). Вызывается из `MainMenuManager.LoadGameScene` перед `Show("Загрузка игры...")`, чтобы повторный заход не оставлял висящий экран.
-
-- **Порядок загрузки:** прирученные → трупы → сумки → мир → ожидание физики.
+  - **`ForceReset()`** — сброс состояния (`_isLoading = false`, `_tasks.Clear()`, `StopCoroutine`, `Hide()`). Вызывается из `MainMenuManager.LoadGameScene` перед `Show("Загрузка игры...")`.
 
 ### 8. Инвентарь и ChestUI
 
@@ -501,12 +506,13 @@ All core game data should be ScriptableObjects stored in `Assets/Data/`:
   - **⚠️ Не вызывать `OpenWith`/`Close` напрямую — только через `ChestUIManager`.**
   - Статический `CurrentOpenChest` **убран**.
 
-- **`ChestUIManager`** (Singleton, `===CoreManagers===`) — единая точка входа:
+- **`ChestUIManager`** (Singleton, `===InventoryManager===` в GameWorld) — **сценовый**:
   - Владеет состоянием «какой инвентарь открыт» (`CurrentSource`).
-  - `Open(source)`, `Close()`, `Toggle(source)` — единственные легальные способы открыть/закрыть инвентарь.
-  - Сам дёргает `OnInventoryClosed` у предыдущего источника → сбрасывает его `_isOpen`.
+  - `Open(source)`, `Close()`, `Toggle(source)` — единственные легальные способы.
   - `ForceCloseIfSource(source)` — для `OnDestroy` источников.
-  - Устраняет баг «открывается не тот инвентарь».
+  - **Нет** `OnEnable/OnDisable` на `sceneLoaded` — не нужно, `ChestUIManager` не переживает сцену.
+  - `_chestUI` находится через `FindAnyObjectByType<ChestUI>()` в `Start`.
+  - **`DontDestroyOnLoad` убран** — сценовый.
 
 - **`IInventorySource`** (интерфейс, наследник `IInteractable`):
   - `OnInventoryOpened()` / `OnInventoryClosed()` — вызываются менеджером.
@@ -549,10 +555,11 @@ All core game data should be ScriptableObjects stored in `Assets/Data/`:
   - `hotbarInventoryData` (10 слотов)
   - `mainInventoryData` (100 слотов)
   - `engramData`
-  - `recipeDatabase`, `itemDatabase`
+  - `recipeDatabase`, `itemDatabase` — приходят через `Initialize(itemDb, recipeDb)`.
   - `beginnerItems`
   - `playerController`, `inventoryManager` — регистрируются в рантайме.
   - `OnPlayerLoaded` — событие после загрузки.
+  - `GetLoadedSaveData()` — возвращает последнее загруженное сохранение. Используется `PlayerSurvivalSystem.Start()`.
 
 - **`InventoryManager`** — логика:
   - `UseSelectedSlot()`, `DropItemFromSlot()`
@@ -565,24 +572,23 @@ All core game data should be ScriptableObjects stored in `Assets/Data/`:
 
 ### 11. Известные особенности
 
-- **Трупы не удаляются** при выходе из игры (`IsQuitting` в менеджерах).
-- **Трупы удаляются** при разборе (`OnHarvestComplete` → `UnregisterCorpse`).
-- **Animator** у трупов **отключается** (`animator.enabled = false`), **НЕ удаляется** — иначе ragdoll ломается.
-- **`Corpse` висит на корне префаба** существа (не на дочернем).
-- **`RagdollSettings`** заполнены костями (Torso, UpperLeg.L, UpperLeg.R, ...).
-- **`SceneBootstrap`** регистрирует задачи загрузки — **единственное место**.
-- **`LoadingScreenManager`** — singleton, живет в `===CoreManagers===`.
-- **`ChestUI.CreateChestSlots()`** — переиспользует слоты (оптимизация).
-- **`Corpse.OnHarvestComplete()`** — `UnregisterCorpse(InstanceId)` удаляет файл.
-- **`ChestUIManager`** — решена проблема рассинхрона инвентарей. Все Open/Close идут через менеджер.
-- **CS0252** — в `OnDestroy` источников `ReferenceEquals(CurrentSource, this)`, не `==`.
-- **CS0108** — `IInventorySource` не дублирует `GetInventory`/`HasInventory` из `IInteractable`.
+- **`Corpse.OnDestroy` и `LootBag.OnDestroy` НЕ удаляют файл сохранения.** Файл удаляется только через `CorpseManager.UnregisterCorpse` / `LootBagManager.UnregisterLootBag` (при harvest/despawn). Это позволяет выгружать сцену без потери данных.
+- **`CorpseManager.ForgetCorpse` / `LootBagManager.ForgetLootBag`** — чистят in-memory словари без удаления файла. Вызываются из `OnDestroy` трупа/сумки.
+- **`UnregisterCorpse` / `UnregisterLootBag`** — удаляют файл. Вызываются только при harvest/despawn.
+- **`WorldBootstrap`** — единственное место регистрации задач загрузки. `SceneBootstrap` удалён.
+- **`LoadingScreenManager` — глобальный**, живёт на `[GameAssets]` (не на `===CoreManagers===`).
+- **`CorpseManager`, `LootBagManager`, `TamingManager`, `WorldManager` — сценовые**, `DontDestroyOnLoad` убран.
+- **`PlayerSurvivalSystem` — сценовый**, на `---Player---`. В `Start()` берёт `PlayerProgress.GetLoadedSaveData()`.
+- **`[GameAssets]`** — в обеих сценах, с защитой от дубликата (`Destroy(gameObject)` если `Instance != null`).
+- **`GameAssets.Awake`** создаёт `GameController`, `PlayerProgress`, `GameTimeUpdater` как дочерние GameObject'ы. `LoadingScreenManager`, `AudioManager`, `LanguageManager` — компоненты на самом `[GameAssets]`.
+- **`DontDestroyOnLoad`** вызывается только на корне `[GameAssets]`. Дочерние переживают смену сцены через родителя.
+- **`[GameAssets]`** — флаг `_isPrimary` защищает от сброса `Instance` в `OnDestroy` при удалении дубликата.
+- **`TamingManager.IsQuitting`** — удалён, не нужен. `OnApplicationQuit/Pause/Focus` → `SaveAll()` оставлены.
 - **`GameTime`** — единая система времени, используется в `CorpseManager`, `LootBagManager`, `TamingManager`.
-- **`SceneBootstrap`** — на `sceneLoaded`, а не на `Start`. Иначе повторный заход из MainMenu не запускает загрузку.
 - **`LoadingScreenManager.ForceReset()`** — обязательный вызов в `MainMenuManager.LoadGameScene`.
 - **`PlayerController._input.look`** — обнуляется после обработки в `CameraRotation`. Иначе Input System выдаёт то же значение каждый кадр → yaw/pitch накапливаются бесконечно.
 - **`PlayerController.Start`** — сброс `_input.look` и `mouseScrollDelta`. Input System при инициализации может выдать гигантскую дельту.
-- **`PlayerProgress.UnregisterPlayerController`** — вызывается из `PlayerController.OnDestroy`. Иначе ссылка на уничтоженный объект остаётся «мёртвой» и ломает `SceneBootstrap`.
+- **`PlayerProgress.UnregisterPlayerController`** — вызывается из `PlayerController.OnDestroy`. Иначе ссылка на уничтоженный объект остаётся «мёртвой» и ломает `WorldBootstrap`.
 
 ### 12. Система камер и прицеливания (ARK-style)
 
@@ -810,18 +816,21 @@ Screen Space всплывающие числа урона над точкой у
   - При завершении приручения — `FinishTaming()`.
   - **Сохранение сразу после еды** — `TamingManager.UpdateSave`.
 
-#### 19.2 `TamingManager` (Singleton, `===CoreManagers===`)
+#### 19.2 `TamingManager`
 
-По аналогии с `CorpseManager` и `LootBagManager`:
-
-- Папка `persistentDataPath/Taming/`, файлы `taming_{guid}.save`.
-- `RegisterCreature(creatureGO, ownerPlayerId)` — регистрирует нокаутнутое/прирученное, возвращает GUID.
-- `UpdateSave(instanceId, ownerPlayerId)` — пересохраняет состояние.
-- `UnregisterCreature(instanceId)` — удаляет файл (при пробуждении дикого, смерти, отмене). Логирует удаление/отсутствие.
-- `LoadAllTamingCreaturesAsync()` — загрузка с проверкой времени через `GameTime`.
-- `SpawnFromData(data)` — создаёт существо из префаба, восстанавливает состояние. **`saveKey = $"TamingCorpse_{data.instanceId}"`** (единый префикс).
-- `SaveAll()` — сохраняет **все** загруженные существа. Вызывается в `OnApplicationQuit`, `OnApplicationPause(true)`, `OnApplicationFocus(false)`.
-- Периодическое сохранение — раз в 10 секунд из `Creature.Update` (при `knockedOut || tamed`).
+- **Сценовый**, на `===WorldManagers===` в GameWorld. Создаётся `WorldBootstrap.CreateWorldManagers()`.
+- `Initialize()` берёт `CreatureDatabase`, `ItemDatabase` из `GameAssets.Instance`.
+- **Убран `DontDestroyOnLoad`, убран `IsQuitting`.**
+- `OnApplicationQuit/Pause/Focus` → `SaveAll()` — оставлены.
+- По аналогии с `CorpseManager` и `LootBagManager`:
+  - Папка `persistentDataPath/Taming/`, файлы `taming_{guid}.save`.
+  - `RegisterCreature(creatureGO, ownerPlayerId)` — регистрирует нокаутнутое/прирученное, возвращает GUID.
+  - `UpdateSave(instanceId, ownerPlayerId)` — пересохраняет состояние.
+  - `UnregisterCreature(instanceId)` — удаляет файл (при пробуждении дикого, смерти, отмене). Логирует удаление/отсутствие.
+  - `LoadAllTamingCreaturesAsync()` — загрузка с проверкой времени через `GameTime`.
+  - `SpawnFromData(data)` — создаёт существо из префаба, восстанавливает состояние. **`saveKey = $"TamingCorpse_{data.instanceId}"`** (единый префикс).
+  - `SaveAll()` — сохраняет **все** загруженные существа. Вызывается в `OnApplicationQuit`, `OnApplicationPause(true)`, `OnApplicationFocus(false)`.
+  - Периодическое сохранение — раз в 10 секунд из `Creature.Update` (при `knockedOut || tamed`).
 
 #### 19.3 `TamingSaveData`
 
@@ -853,7 +862,7 @@ Screen Space всплывающие числа урона над точкой у
   - `Now` — `long`. SinglePlayer: накопленное игровое время. Multiplayer: Unix timestamp UTC.
   - `ElapsedSeconds(from, to)` — сколько секунд прошло.
   - `Initialize()`, `AddTime()`, `Save()`.
-- **`GameTimeUpdater.cs`** — компонент на `===CoreManagers===`:
+- **`GameTimeUpdater.cs`** — **глобальный**, создаётся из `[GameAssets].Awake()`:
   - Тикает `GameTime`, только если `Time.timeScale > 0` и `Application.isFocused`.
   - Сохраняет раз в 30 секунд, при `OnApplicationPause`, `OnApplicationFocus`, `OnApplicationQuit`.
 - Используется в `CorpseManager`, `LootBagManager`, `TamingManager` — `savedAtTime` вместо `creationTimeUtc`.
@@ -877,12 +886,9 @@ Screen Space всплывающие числа урона над точкой у
 
 ### Ближайшее (Следующий шаг)
 
-- [ ] **КРИТИЧНО: Переезд сценовых менеджеров на сцену `GameWorld`** *(см. «Дальше»)*
-  - Разблокирует сценарий «Выход в MainMenu → возврат в игру».
-  - До этого не тестировать этот сценарий и не выходить в MainMenu в процессе разработки.
-
+- [ ] **`SettingsController`** — единая система настроек (MainMenu + Pause). Префаб UI + скрипт, хранение в JSON. Сюда же переедет `splitStackKey` из удалённого `InventoryConfig`.
 - [ ] **AI прирученных существ** — Follow/Stay/Idle/Attack команды через `RadialMenu`.
-- [ ] **Радиальное меню для существ** — команды вместо `ТЕЛО`.
+- [ ] **Радиальное меню для существ** — команды вместо «ТЕЛО».
 - [ ] **Фикс багов** — список собирается перед началом работы.
 
 ### Сделано (архив)
@@ -915,30 +921,15 @@ Screen Space всплывающие числа урона над точкой у
 - [x] **Исправление `Self referencing loop`** — фикс сериализации `Quaternion`.
 - [x] **Логика `IsVisibleByCamera`** — набросок, но не подключена.
 - [x] **`OnApplicationQuit/Pause/Focus` в `TamingManager`** — `SaveAll`.
-
+- [x] **Переезд сценовых менеджеров на сцену GameWorld** — выполнено.
+  - `[GameAssets]` в обеих сценах — глобальные менеджеры.
+  - `WorldBootstrap` на `===WorldManagers===` — сценовые менеджеры.
+  - `Corpse.OnDestroy` / `LootBag.OnDestroy` не удаляют файлы.
+  - `PlayerSurvivalSystem`, `ChestUIManager` — сценовые.
+  - `SceneBootstrap`, `ManagersSpawner`, `InventoryConfig` — удалены.
+  - Префаб `===CoreManagers===` — удалён.
 
 ### Дальше
-
-- [ ] **КРИТИЧНО: Переезд сценовых менеджеров на сцену `GameWorld`**
-  - **Проблема:** `CorpseManager`, `LootBagManager`, `TamingManager`, `WorldManager` — `DontDestroyOnLoad`, но хранят ссылки на GameObject'ы сцены `GameWorld`. При выходе в MainMenu сцена выгружается, объекты уничтожаются, а Dictionary-кэши (`_loadedCorpses`, `_loadedLootBags`, `_loadedCreatures`, `_instanceMap`) остаются с «мёртвыми» ключами. При заходе обратно — `ContainsKey` возвращает `true` → объекты не спавнятся.
-  - **Проявления:**
-    - Трупы, сумки, прирученные не восстанавливаются при возврате из MainMenu.
-    - `Corpse.OnDestroy` удаляет файл сохранения при выгрузке сцены (нужно убрать, но только вместе с переездом).
-    - `_playerController` в `PlayerProgress` указывает на уничтоженный объект.
-  - **Решение:**
-    - Перенести `CorpseManager`, `LootBagManager`, `TamingManager`, `WorldManager` с `===CoreManagers===` на `===GameManagers===` (сцена `GameWorld`).
-    - Убрать `DontDestroyOnLoad` — они будут пересоздаваться при каждой загрузке сцены.
-    - Убедиться, что `SceneBootstrap` инициализируется **после** `Awake` этих менеджеров.
-    - `ClearLoadedCache` станет не нужен — кэши сбрасываются вместе с объектами.
-  - **Связанные правки:**
-    - `Corpse.OnDestroy` — убрать `UnregisterCorpse` (файл не должен удаляться при выгрузке сцены).
-    - `BaseLivingEntity` — проверить, нет ли аналогичного удаления taming-файла из `OnDestroy`.
-    - `WorldManager._instanceMap` — то же самое.
-  - **Порядок работы (рекомендуемый):**
-    1. Сначала — только `CorpseManager` и `LootBagManager` (простые, без AI). Тест: MainMenu ↔ GameWorld.
-    2. Потом — `TamingManager` (уже с нокаутом/приручением).
-    3. В конце — `WorldManager` (чанки, постройки).
-  - **Риск:** переезд затрагивает инициализацию, порядок Awake, ссылки из `===CoreManagers===`. Делать аккуратно, отдельной сессией.
 
 - [ ] **Использование прирученных** (Riding, команды, инвентарь).
 - [ ] **Респавн по кроватям** (спальные мешки, точки возрождения).
@@ -968,13 +959,188 @@ Screen Space всплывающие числа урона над точкой у
 ## Важные файлы для контекста
 
 При создании нового чата скинуть:
-Продолжаем ARK-клон. Мы закончили (ChestUIManager + фикс течи save-файлов).
+Продолжаем ARK-клон. Только что завершили рефакторинг менеджеров
+(ветка `refactoring-managers` слита в main). Всё работает:
+цикл MainMenu → GameWorld → MainMenu, сохранение/загрузка трупов,
+сумок, прирученных, построек.
+
+Глобальные менеджеры — в `[GameAssets]` (обе сцены, DontDestroyOnLoad).
+Сценовые — в `WorldBootstrap` на `===WorldManagers===` (GameWorld).
+`Corpse.OnDestroy`/`LootBag.OnDestroy` больше не удаляют файлы.
+
 Теперь делаем (): 
 Прикладываю project-architecture.md и файлы.
 
+## СЦЕНЫ
+
+## MainMenu
+
+MainMenu (Scene)
+│
+├── [GameAssets]                                       ← корневой, DontDestroyOnLoad
+│   ├── GameAssets (Script)
+│   │     ├── _gameSettings: GameSettings
+│   │     ├── _itemDatabase: ItemDatabase
+│   │     ├── _creatureDatabase: CreatureDatabase
+│   │     ├── _recipeDatabase: RecipeDatabase
+│   │     ├── _playerCorpsePrefab: GameObject
+│   │     └── _lootBagPrefab: GameObject
+│   │
+│   ├── LoadingScreenManager (Script)
+│   │     ├── _loadingCanvas: LoadingScreenCanvas
+│   │     ├── _progressBar: ProgressBar (Image)
+│   │     └── _statusText: StatusText (TMP)
+│   │
+│   ├── AudioManager (Script)
+│   │
+│   ├── LanguageManager (Script)
+│   │
+│   └── LoadingScreenCanvas (GameObject, child)
+│       └── Canvas (Screen Space - Overlay, sortingOrder = 9999)
+│           ├── Background (Image, чёрный, на весь экран)
+│           ├── ProgressBar (Image, fill = 0)
+│           └── StatusText (TextMeshProUGUI)
+│
+├── MainMenuManager (GameObject)
+│   └── MainMenuManager (Script)
+│         ├── MainMenuPanel: GameObject
+│         ├── SettingsPanel: GameObject
+│         ├── GameScene: "GameWorld"
+│         ├── timeScale: 1
+│         └── _settingsController: SettingsPanelController
+│
+├── EventSystem (GameObject)
+│   └── EventSystem (Script) + StandaloneInputModule
+│
+├── Camera (GameObject)
+│   └── Camera (Component)
+│
+└── Canvas_MainMenu (GameObject)
+    └── Canvas (Screen Space - Overlay)
+        ├── MainMenuPanel (GameObject)
+        │     ├── Кнопка "Играть"    → MainMenuManager.LoadGameScene()
+        │     ├── Кнопка "Настройки" → MainMenuManager.OpenSettings()
+        │     └── Кнопка "Выход"     → MainMenuManager.quitGame()
+        └── SettingsPanel (GameObject)
+              └── (UI настроек)
+
+## GameWorld
+
+GameWorld (Scene)
+│
+├── [GameAssets]                                       ← корневой, DontDestroyOnLoad
+│   ├── GameAssets (Script)                            ← при Awake видит Instance != null → удаляет себя
+│   ├── LoadingScreenManager (Script)                  ← удаляется вместе с GameObject
+│   ├── AudioManager (Script)                          ← удаляется
+│   ├── LanguageManager (Script)                       ← удаляется
+│   └── LoadingScreenCanvas (GameObject, child)        ← удаляется
+│   # Если игра стартует с GameWorld напрямую — этот [GameAssets] становится primary (DontDestroyOnLoad),
+│   # и удаляется только [GameAssets] из MainMenu (если он там есть при повторной загрузке).
+│
+├── ===WorldManagers=== (GameObject)                   ← сценовый, умирает со сценой
+│   └── WorldBootstrap (Script)
+│         ├── _chunkSize: 32
+│         ├── _loadRadiusInChunks: 2
+│         ├── _saveInterval: 5
+│         └── (в Start → корутина: ждёт GameAssets, создаёт CorpseManager/LootBagManager/TamingManager/WorldManager)
+│
+│   ── компоненты, добавляемые на ===WorldManagers=== через AddComponent: ──
+│       ├── CorpseManager
+│       ├── LootBagManager
+│       ├── TamingManager
+│       └── WorldManager
+│
+├── ===GameManagers=== (GameObject)                    ← сценовый
+│   ├── HUDManager (Script)
+│   ├── UIManager (Script)
+│   ├── PauseManager (Script)
+│   ├── DeathScreenManager (Script)
+│   ├── NotificationManager (Script)
+│   ├── TooltipManager (Script)
+│   ├── ContextMenuManager (Script)
+│   ├── CharacterPreviewManager (Script)
+│   ├── CombatAudioManager (Script)
+│   ├── ArrowPool (Script)
+│   ├── AimUI (Script)
+│   ├── EntityInfoPanelManager (Script)
+│   └── DamageNumberPool (Script)
+│
+├── ===InventoryManager=== (GameObject)                ← сценовый
+│   ├── InventoryManager (Script)
+│   └── ChestUIManager (Script)
+│
+├── ===PanelsController=== (GameObject)                ← сценовый
+│   └── PanelsUIController (Script)
+│
+├── ---Player--- (GameObject, Tag: Player, Layer: Player)
+│   ├── CharacterController
+│   ├── Capsule Collider
+│   ├── Basic Rigid Body Push (Script)
+│   ├── Player Input
+│   ├── PlayerInputHandler (Script)
+│   ├── CameraManager (Script)
+│   ├── PlayerEquipment (Script)
+│   ├── PlayerRangedCombat (Script)
+│   ├── PlayerBuildMode (Script)
+│   ├── ItemUsageSystem (Script)
+│   ├── ItemHandler (Script)
+│   ├── PlayerInteraction (Script)
+│   ├── PlayerAimingSystem (Script)
+│   ├── PlayerController (Script)
+│   ├── PlayerSurvivalSystem (Script)                  ← СЦЕНОВЫЙ
+│   ├── CinemachineImpulseSource
+│   ├── PlayerDamageFeedback (Script)
+│   ├── ItemUsageRouter (Script)
+│   │
+│   ├── VisualCharacter (child)
+│   │     └── (меш персонажа, Animator)
+│   ├── Head (child)
+│   ├── EyeCenterForCamera (child)
+│   └── CinemachineCameraTarget (child)
+│
+├── Cameras (GameObject)
+│   ├── Directional Light
+│   ├── MainCamera (Tag: MainCamera)
+│   ├── ThirdPersonPlayerFollowCamera
+│   ├── FirstPersonCamera
+│   ├── SelfieCamera
+│   ├── PostProcessingDefaultVolume
+│   ├── UnderWaterVolume
+│   ├── PlayerHurtVolume
+│   └── CharacterPreviewCamera
+│
+├── UICanvases (GameObject)
+│   ├── InventoryCanvas
+│   ├── InteractionCanvas
+│   ├── AimCanvas
+│   ├── NotificationTopCanvas
+│   ├── NotificationLeftCanvas
+│   ├── HUDCanvas
+│   ├── ContextMenuCanvas
+│   ├── EntityInfoCanvas
+│   ├── DamageNumberCanvas
+│   ├── DamageVignetteCanvas
+│   ├── RadialMenuCanvas
+│   ├── PauseCanvas
+│   └── DeathScreenCanvas
+│
+├── EventSystem (GameObject)
+│
+├── NavMeshBacker (GameObject)
+│
+├── _Env (GameObject)                                  ← окружение, ландшафт
+│
+├── Interactables (GameObject)                         ← ящики, костры и т.д.
+│
+├── NPC_1 (GameObject)
+├── Robot_George (GameObject)
+│
+└── __CreatureSpawner__ (GameObject)
 
 
-СТОЛПЫ АРК
+
+
+## СТОЛПЫ АРК
 +Собирательство/добыча
 +Крафт
 +Строительство 

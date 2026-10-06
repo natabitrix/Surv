@@ -800,27 +800,6 @@ namespace Assets.Scripts.Player
                 _cinemachineTargetPitch += _input.look.y * deltaTimeMultiplier;
             }
 
-            // if (_input.look.sqrMagnitude >= _threshold)
-            // {
-            //     // Защита от мусорного ввода Input System (гигантская дельта при инициализации)
-            //     const float MAX_LOOK_PER_FRAME = 200f;
-            //     Vector2 safeLook = _input.look;
-
-            //     if (safeLook.sqrMagnitude > MAX_LOOK_PER_FRAME * MAX_LOOK_PER_FRAME)
-            //     {
-            //         Debug.LogWarning($"[CameraRotation] Отброшен мусорный look: {safeLook}");
-            //         safeLook = Vector2.zero;
-            //         _input.look = Vector2.zero;   // сбрасываем, чтобы не повторялся
-            //     }
-
-            //     if (safeLook.sqrMagnitude >= _threshold)
-            //     {
-            //         float deltaTimeMultiplier = IsCurrentDeviceMouse ? 1.0f : Time.deltaTime;
-            //         _cinemachineTargetYaw += safeLook.x * deltaTimeMultiplier;
-            //         _cinemachineTargetPitch += safeLook.y * deltaTimeMultiplier;
-            //     }
-            // }
-
             _input.look = Vector2.zero;
 
             _cinemachineTargetYaw = PlayerUtils.ClampAngle(_cinemachineTargetYaw, float.MinValue, float.MaxValue);

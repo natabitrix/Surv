@@ -19,12 +19,13 @@ public class AudioManager : MonoBehaviour
             return;
         }
         _instance = this;
-        DontDestroyOnLoad(gameObject);
+        // DontDestroyOnLoad делает GameAssets (родитель).
+        // DontDestroyOnLoad(gameObject);
 
         LoadSavedVolume();
         ApplyVolumeToAllSources();
     }
-    
+
     private void OnEnable()
     {
         SceneManager.sceneLoaded += OnSceneLoaded;
@@ -39,7 +40,7 @@ public class AudioManager : MonoBehaviour
     {
         ApplyVolumeToAllSources();
     }
-    
+
     private void LoadSavedVolume()
     {
         if (PlayerPrefs.HasKey("MasterVolume"))
@@ -81,5 +82,10 @@ public class AudioManager : MonoBehaviour
         {
             source.volume = masterVolume;
         }
+    }
+
+    private void OnDestroy()
+    {
+        if (_instance == this) _instance = null;
     }
 }

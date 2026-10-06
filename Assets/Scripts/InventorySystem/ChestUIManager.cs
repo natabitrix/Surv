@@ -36,7 +36,7 @@ namespace Assets.Scripts.InventorySystem
                 return;
             }
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+            // DontDestroyOnLoad(gameObject);
         }
 
         private void Start()
@@ -142,21 +142,5 @@ namespace Assets.Scripts.InventorySystem
             if (Instance == this) Instance = null;
         }
 
-        private void OnEnable()
-        {
-            SceneManager.sceneLoaded += OnSceneLoaded;
-        }
-
-        private void OnDisable()
-        {
-            SceneManager.sceneLoaded -= OnSceneLoaded;
-        }
-
-        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-        {
-            _chestUI = FindAnyObjectByType<ChestUI>();
-            if (_chestUI == null)
-                Debug.LogWarning($"[ChestUIManager] ChestUI не найден в сцене {scene.name}");
-        }
     }
 }

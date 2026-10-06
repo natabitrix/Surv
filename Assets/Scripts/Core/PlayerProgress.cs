@@ -52,8 +52,11 @@ namespace Assets.Scripts.Core
         private Dictionary<string, int> hotbarSlotMap = new();
 
         // Ссылки на базы данных
-        public RecipeDatabase recipeDatabase;
-        public ItemDatabase itemDatabase;
+        // public RecipeDatabase recipeDatabase;
+        // public ItemDatabase itemDatabase;
+        // Приходят из PlayerProgress.Initialize() через GameAssets
+        public RecipeDatabase recipeDatabase { get; private set; }
+        public ItemDatabase itemDatabase { get; private set; }
 
         // Начальный набор выдаваемых предметов новому игроку
         public BeginnerItems[] beginnerItems;
@@ -103,23 +106,26 @@ namespace Assets.Scripts.Core
         private Quaternion _lastKnownPlayerRotation;
         private bool _hasLastKnownPosition = false;
 
-
-        void Awake()
+        /// <summary>
+        /// Вызывается из GameAssets.CreateGlobalManagers().
+        /// </summary>
+        public void Initialize(ItemDatabase itemDb, RecipeDatabase recipeDb)
         {
-            if (Instance != null)
+            if (Instance != null && Instance != this)
             {
                 Destroy(gameObject);
                 return;
             }
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+
+            itemDatabase = itemDb;
+            recipeDatabase = recipeDb;
 
             StatConfigManager.Initialize();
             InitializeLevelTable();
             InitializeStats();
-            LoadData(); // <-- Загружаем данные, но НЕ применяем
+            LoadData();
         }
-
 
         private IEnumerator Start()
         {
@@ -176,10 +182,7 @@ namespace Assets.Scripts.Core
                 {
                     PlayerSurvivalSystem.Instance.LoadFrom(saveData);
                 }
-                else
-                {
-                    Debug.LogError("[PlayerProgress] LoadData: PlayerSurvivalSystem.Instance null!");
-                }
+
 
             }
             else
@@ -244,6 +247,13 @@ namespace Assets.Scripts.Core
             _loadedSaveData = null;
             LoadData();
         }
+
+        /// <summary>
+        /// Возвращает последние загруженные данные сохранения.
+        /// Используется PlayerSurvivalSystem для восстановления статов после загрузки GameWorld.
+        /// </summary>
+        public PlayerSaveData GetLoadedSaveData() => _loadedSaveData;
+
 
         public void RegisterPlayerController(PlayerController controller)
         {
@@ -582,7 +592,7 @@ namespace Assets.Scripts.Core
             File.WriteAllText(path, json);
 
             // Debug.Log($"[PlayerProgress] Сохранено в {path}");
-            Debug.Log($"Сохранено из [{noteFrom}]");
+            // Debug.Log($"Сохранено из [{noteFrom}]");
 
         }
     }

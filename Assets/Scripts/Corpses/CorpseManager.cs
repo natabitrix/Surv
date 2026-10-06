@@ -25,48 +25,49 @@ namespace Assets.Scripts.Corpses
     {
         public static CorpseManager Instance { get; private set; }
 
-        [Header("Префаб тела игрока")]
-        public GameObject corpseBodyPrefab;
+        // Ссылки на ассеты (берутся из GameAssets в Initialize)
+        private GameObject _corpseBodyPrefab;
+        private CreatureDatabase _creatureDatabase;
+        private ItemDatabase _itemDatabase;
 
-        [Header("Базы данных")]
-        [Tooltip("База данных существ (для поиска префабов)")]
-        public CreatureDatabase creatureDatabase;
-
-        [Tooltip("База данных предметов (для восстановления лута)")]
-        public ItemDatabase itemDatabase;
-
-        [Header("Настройки игры")]
-        [Tooltip("Глобальные настройки (время жизни трупов и т.д.)")]
-        public GameSettings gameSettings;
-
-        public bool IsQuitting { get; private set; } = false;
+        public GameObject corpseBodyPrefab => _corpseBodyPrefab;
 
         private Dictionary<string, GameObject> _loadedCorpses = new();
         private string _saveDirectory;
 
-        private void Awake()
+        /// <summary>
+        /// Вызывается из WorldBootstrap.Awake().
+        /// </summary>
+        public void Initialize()
         {
-            if (Instance != null)
+            if (Instance != null && Instance != this)
             {
                 Destroy(gameObject);
                 return;
             }
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+
+            var assets = GameAssets.Instance;
+            if (assets == null)
+            {
+                Debug.LogError("[CorpseManager] GameAssets.Instance == null!");
+                return;
+            }
+
+            _corpseBodyPrefab = assets.PlayerCorpsePrefab;
+            _creatureDatabase = assets.CreatureDatabase;
+            _itemDatabase = assets.ItemDatabase;
 
             _saveDirectory = Path.Combine(Application.persistentDataPath, "Corpses");
             if (!Directory.Exists(_saveDirectory))
                 Directory.CreateDirectory(_saveDirectory);
-
-
         }
 
-        private IEnumerator Start()
+        private void OnDestroy()
         {
-            while (PlayerProgress.Instance == null) yield return null;
-            // PlayerProgress.Instance.OnPlayerLoaded += OnPlayerLoadedHandler;
-            while (PlayerProgress.Instance.playerController == null) yield return null;
+            if (Instance == this) Instance = null;
         }
+
 
         public IEnumerator LoadAllCorpsesAsync()
         {
@@ -89,14 +90,6 @@ namespace Assets.Scripts.Corpses
 
                     if (data == null) continue;
 
-                    // long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                    // long age = now - data.creationTimeUtc;
-                    // if (age >= data.despawnDuration)
-                    // {
-                    //     File.Delete(file);
-                    //     // Debug.Log($"[CorpseManager] Труп {data.instanceId} истек. Удален.");
-                    //     continue;
-                    // }
                     float elapsed = GameTime.ElapsedSeconds(data.savedAtTime, GameTime.Now);
                     if (elapsed >= data.despawnDuration)
                     {
@@ -121,16 +114,6 @@ namespace Assets.Scripts.Corpses
             // Debug.Log($"[CorpseManager] Загружено трупов: {loaded}");
         }
 
-        // private void OnDestroy()
-        // {
-        //     if (PlayerProgress.Instance != null)
-        //         PlayerProgress.Instance.OnPlayerLoaded -= OnPlayerLoadedHandler;
-        // }
-
-        // private void OnPlayerLoadedHandler()
-        // {
-        //     LoadAllCorpses();
-        // }
 
         // ==========================================
         // === РЕГИСТРАЦИЯ ===
@@ -216,19 +199,28 @@ namespace Assets.Scripts.Corpses
         }
 
         /// <summary>
-        /// Удаляет труп из менеджера и с диска.
+        /// Убирает труп из in-memory словаря, НЕ трогая файл.
+        /// Вызывается из Corpse.OnDestroy (выгрузка сцены, реальное удаление).
+        /// </summary>
+        public void ForgetCorpse(string instanceId)
+        {
+            if (string.IsNullOrEmpty(instanceId)) return;
+            _loadedCorpses.Remove(instanceId);
+        }
+
+        /// <summary>
+        /// Удаляет труп и с диска, и из памяти.
+        /// Вызывать только при harvest/despawn.
         /// </summary>
         public void UnregisterCorpse(string instanceId)
         {
             if (string.IsNullOrEmpty(instanceId)) return;
-
             _loadedCorpses.Remove(instanceId);
 
             string path = GetCorpsePath(instanceId);
             if (File.Exists(path))
             {
                 File.Delete(path);
-                // Debug.Log($"[CorpseManager] Труп удален с диска: {instanceId}");
             }
         }
 
@@ -242,9 +234,9 @@ namespace Assets.Scripts.Corpses
             float defaultLifetime = SessionMode.CorpseLifetime;
 
             // Если у существа есть override — используем его
-            if (!string.IsNullOrEmpty(creatureId) && creatureDatabase != null)
+            if (!string.IsNullOrEmpty(creatureId) && _creatureDatabase != null)
             {
-                var data = creatureDatabase.GetCreature(creatureId);
+                var data = _creatureDatabase.GetCreature(creatureId);
                 if (data != null && data.corpseLifetimeOverride > 0)
                 {
                     return data.corpseLifetimeOverride;
@@ -293,7 +285,7 @@ namespace Assets.Scripts.Corpses
             }
             else if (!string.IsNullOrEmpty(data.creatureId))
             {
-                prefab = creatureDatabase?.GetCreature(data.creatureId)?.prefab;
+                prefab = _creatureDatabase?.GetCreature(data.creatureId)?.prefab;
             }
 
             if (prefab == null) return;
@@ -347,7 +339,7 @@ namespace Assets.Scripts.Corpses
                 inventorySize
             );
             // Загружаем вещи из сохранения
-            corpse.LoadFromCorpseData(data.inventoryData, itemDatabase);
+            corpse.LoadFromCorpseData(data.inventoryData, _itemDatabase);
 
             // RadialMenu
             if (corpse.TryGetComponent<RadialMenu>(out var menu)) menu.enabled = true;
@@ -356,7 +348,7 @@ namespace Assets.Scripts.Corpses
             // float remainingTime = data.despawnDuration - (DateTimeOffset.UtcNow.ToUnixTimeSeconds() - data.creationTimeUtc);
             float elapsed = GameTime.ElapsedSeconds(data.savedAtTime, GameTime.Now);
             float remainingTime = data.despawnDuration - elapsed;
-            
+
             corpse.StartDespawnTimer(remainingTime);
 
             _loadedCorpses[data.instanceId] = corpseGO;
@@ -410,10 +402,5 @@ namespace Assets.Scripts.Corpses
             return result;
         }
 
-        private void OnApplicationQuit()
-        {
-            IsQuitting = true;
-            // Debug.Log("[CorpseManager] OnApplicationQuit — трупы НЕ будут удалены с диска");
-        }
     }
 }

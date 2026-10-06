@@ -15,11 +15,9 @@ GameObject:
   - component: {fileID: 5087374864759840938}
   - component: {fileID: 4004378238529973370}
   - component: {fileID: 4364371385934724142}
-  - component: {fileID: 5364997771890862532}
   - component: {fileID: 4028022022288909564}
   - component: {fileID: 3233292048576178556}
   - component: {fileID: 4767239474800819420}
-  - component: {fileID: 5028408784032169699}
   - component: {fileID: -4145463956794795677}
   - component: {fileID: 2280655131810271477}
   - component: {fileID: -7405114905586943660}
@@ -76,7 +74,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b2afeee12ab9dca448eadee660c147f9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.GameController
-  _gameSettings: {fileID: 11400000, guid: 92f8da4672bb630409835cc71a53b5b0, type: 2}
 --- !u!114 &9057286865047072866
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -122,8 +119,6 @@ MonoBehaviour:
     slots: []
   engramData:
     slots: []
-  recipeDatabase: {fileID: 11400000, guid: 08b9e5f407896124eafc5f3473a57a93, type: 2}
-  itemDatabase: {fileID: 11400000, guid: d19476d9c45a16640979d93431658db2, type: 2}
   beginnerItems:
   - item: {fileID: 11400000, guid: 48f4b2fa84e55054b9f62349ed39cae7, type: 2}
     amount: 100
@@ -163,19 +158,6 @@ MonoBehaviour:
     localeCode: en
   - displayName: "\u0420\u0443\u0441\u0441\u043A\u0438\u0439"
     localeCode: ru
---- !u!114 &5364997771890862532
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2098013993127847153}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 156ae709317f474439dddb6888e180b8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.InventorySystem.InventoryConfig
-  splitStackKey: 304
 --- !u!114 &4028022022288909564
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -201,10 +183,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f8b489087f1b7a24a86f241ac13f1ff7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Core.CorpseManager
-  corpseBodyPrefab: {fileID: 7881994360618582535, guid: 5b8c8f421cdca80479a335e16589a204, type: 3}
-  creatureDatabase: {fileID: 11400000, guid: 475c5b1ef39d77d43ab9f3523b647009, type: 2}
-  itemDatabase: {fileID: 11400000, guid: d19476d9c45a16640979d93431658db2, type: 2}
-  gameSettings: {fileID: 11400000, guid: 92f8da4672bb630409835cc71a53b5b0, type: 2}
 --- !u!114 &4767239474800819420
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -217,21 +195,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dc926ec1457749f488c41b3f58d5122d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Loot.LootBagManager
-  lootBagPrefab: {fileID: 4309089054926544229, guid: 27ea0d0c5535c3d47a83045f2d6eeb8a, type: 3}
-  itemDatabase: {fileID: 11400000, guid: d19476d9c45a16640979d93431658db2, type: 2}
-  gameSettings: {fileID: 11400000, guid: 92f8da4672bb630409835cc71a53b5b0, type: 2}
---- !u!114 &5028408784032169699
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2098013993127847153}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: caf19e42a74bffd4fbbd480c7949d73c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Core.SceneBootstrap
 --- !u!114 &-4145463956794795677
 MonoBehaviour:
   m_ObjectHideFlags: 0

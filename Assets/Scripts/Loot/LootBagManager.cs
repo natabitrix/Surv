@@ -23,42 +23,45 @@ namespace Assets.Scripts.Loot
     {
         public static LootBagManager Instance { get; private set; }
 
-        [Header("Префаб сумки")]
-        [Tooltip("Префаб сумки. Используется для создания всех сумок в игре.")]
-        public GameObject lootBagPrefab;
+        private GameObject _lootBagPrefab;
+        private ItemDatabase _itemDatabase;
+        private GameSettings _gameSettings;
 
-        [Header("Базы данных")]
-        [Tooltip("База данных предметов (для восстановления лута)")]
-        public ItemDatabase itemDatabase;
-
-        [Header("Настройки игры")]
-        [Tooltip("Глобальные настройки (время жизни сумок)")]
-        public GameSettings gameSettings;
-
-        public bool IsQuitting { get; private set; } = false;
+        public GameObject lootBagPrefab => _lootBagPrefab;
 
         private Dictionary<string, GameObject> _loadedLootBags = new();
         private string _saveDirectory;
 
-        private void Awake()
+        public void Initialize()
         {
-            if (Instance != null)
+            if (Instance != null && Instance != this)
             {
                 Destroy(gameObject);
                 return;
             }
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+
+            var assets = GameAssets.Instance;
+            if (assets == null)
+            {
+                Debug.LogError("[LootBagManager] GameAssets.Instance == null!");
+                return;
+            }
+
+            _lootBagPrefab = assets.LootBagPrefab;
+            _itemDatabase = assets.ItemDatabase;
+            _gameSettings = assets.GameSettings;
 
             _saveDirectory = Path.Combine(Application.persistentDataPath, "LootBags");
             if (!Directory.Exists(_saveDirectory))
                 Directory.CreateDirectory(_saveDirectory);
         }
 
-        private IEnumerator Start()
+        private void OnDestroy()
         {
-            while (PlayerProgress.Instance == null) yield return null;
+            if (Instance == this) Instance = null;
         }
+
 
         // ==========================================
         // === НОВЫЙ МЕТОД: СОЗДАНИЕ СУМКИ ИЗ ПРЕДМЕТОВ ===
@@ -84,18 +87,18 @@ namespace Assets.Scripts.Loot
                 Debug.LogError("[LootBagManager] lootBagPrefab не назначен! Сумка не создана.");
                 return null;
             }
-            
+
             // Создаем GameObject сумки
             GameObject bagGO = Instantiate(lootBagPrefab, position, Quaternion.identity);
             bagGO.name = $"LootBag_Dropped";
 
             // Создаем инвентарь для сумки
             var bagInventory = bagGO.GetComponent<ChestInventory>();
-            if (bagInventory == null) 
+            if (bagInventory == null)
             {
                 bagInventory = bagGO.AddComponent<ChestInventory>();
             }
-            
+
             // Генерируем уникальный ключ сохранения
             string saveKey = $"LootBag_{Guid.NewGuid().ToString().Substring(0, 8)}";
             bagInventory.Initialize(items.Count, saveKey);
@@ -119,15 +122,15 @@ namespace Assets.Scripts.Loot
             }
 
             float lifetime = SessionMode.LootBagLifetime;
-            
+
             // Initialize(инвентарь, время_жизни, источник)
             lootBag.Initialize(bagInventory, lifetime, lootBag);
 
             // Регистрируем в системе сохранения
             string instanceId = RegisterLootBag(bagGO, ownerPlayerId);
-            
+
             Debug.Log($"[LootBagManager] Сумка с {items.Count} типами предметов создана: {instanceId}");
-            
+
             return instanceId;
         }
 
@@ -151,7 +154,8 @@ namespace Assets.Scripts.Loot
             lootBag.InstanceId = instanceId;
             lootBag.OwnerPlayerId = ownerPlayerId;
 
-            float lifetime = gameSettings != null ? gameSettings.lootBagLifetime : 180f;
+            // float lifetime = gameSettings != null ? gameSettings.lootBagLifetime : 180f;
+            float lifetime = SessionMode.LootBagLifetime;
 
             var saveData = new LootBagSaveData
             {
@@ -191,17 +195,21 @@ namespace Assets.Scripts.Loot
         /// <summary>
         /// Удаляет сумку из менеджера и с диска.
         /// </summary>
+        public void ForgetLootBag(string instanceId)
+        {
+            if (string.IsNullOrEmpty(instanceId)) return;
+            _loadedLootBags.Remove(instanceId);
+        }
+
         public void UnregisterLootBag(string instanceId)
         {
             if (string.IsNullOrEmpty(instanceId)) return;
-
             _loadedLootBags.Remove(instanceId);
 
             string path = GetLootBagPath(instanceId);
             if (File.Exists(path))
             {
                 File.Delete(path);
-                // Debug.Log($"[LootBagManager] Сумка удалена с диска: {instanceId}");
             }
         }
 
@@ -308,9 +316,9 @@ namespace Assets.Scripts.Loot
             chestInv.Initialize(inventorySize, data.inventorySaveKey);
 
             // Загружаем данные инвентаря
-            if (data.inventoryData != null && itemDatabase != null)
+            if (data.inventoryData != null && _itemDatabase != null)
             {
-                chestInv.Data.FromSerializable(data.inventoryData, itemDatabase.ItemLookup);
+                chestInv.Data.FromSerializable(data.inventoryData, _itemDatabase.ItemLookup);
             }
 
             // Инициализируем сумку
@@ -324,7 +332,7 @@ namespace Assets.Scripts.Loot
             // float remainingTime = data.despawnDuration - (DateTimeOffset.UtcNow.ToUnixTimeSeconds() - data.creationTimeUtc);
             float elapsed = GameTime.ElapsedSeconds(data.savedAtTime, GameTime.Now);
             float remainingTime = data.despawnDuration - elapsed;
-            
+
             lootBag.SetRemainingTime(remainingTime);
 
             _loadedLootBags[data.instanceId] = lootBagGO;
@@ -332,9 +340,5 @@ namespace Assets.Scripts.Loot
             // Debug.Log($"[LootBagManager] Сумка восстановлена: {data.instanceId}");
         }
 
-        private void OnApplicationQuit()
-        {
-            IsQuitting = true;
-        }
     }
 }

@@ -25,7 +25,8 @@ public class LanguageManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+            // DontDestroyOnLoad делает GameAssets (родитель).
+            // DontDestroyOnLoad(gameObject);
             LoadAndApplySavedLanguage();
         }
         else
@@ -64,5 +65,10 @@ public class LanguageManager : MonoBehaviour
                 return lang.displayName;
         }
         return "Unknown";
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this) Instance = null;
     }
 }

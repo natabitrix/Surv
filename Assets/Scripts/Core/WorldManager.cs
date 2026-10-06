@@ -46,36 +46,32 @@ namespace Assets.Scripts.Core
         private float _lastSaveTime = 0f;
         private bool _isQuitting = false;
 
-        void Awake()
+
+        public void Initialize(int chunkSize, int loadRadiusInChunks, float saveInterval)
         {
-            if (Instance != null)
+            if (Instance != null && Instance != this)
             {
                 Destroy(gameObject);
                 return;
             }
             Instance = this;
-            DontDestroyOnLoad(gameObject);
 
+            var assets = GameAssets.Instance;
+            if (assets != null)
+                itemDatabase = assets.ItemDatabase;
+            else
+                Debug.LogError("[WorldManager] GameAssets.Instance == null!");
+
+            this.chunkSize = chunkSize;
+            this.loadRadiusInChunks = loadRadiusInChunks;
+            this.saveInterval = saveInterval;
         }
 
-        private IEnumerator Start()
+        private void OnDestroy()
         {
-            while (PlayerProgress.Instance == null) yield return null;
-            PlayerProgress.Instance.OnPlayerLoaded += OnPlayerLoadedHandler;
-
-            if (PlayerProgress.Instance.playerController != null)
-            {
-                OnPlayerLoadedHandler();
-            }
+            if (Instance == this) Instance = null;
         }
 
-        private IEnumerator LoadWorldAsyncTask()
-        {
-            _playerController = PlayerProgress.Instance.playerController;
-            if (_playerController == null) yield break;
-
-            yield return StartCoroutine(LoadWorldAsync(_playerController.transform.position));
-        }
 
         void Update()
         {
@@ -87,40 +83,9 @@ namespace Assets.Scripts.Core
             }
         }
 
-        void OnEnable()
-        {
-            if (PlayerProgress.Instance != null)
-                PlayerProgress.Instance.OnPlayerLoaded += OnPlayerLoadedHandler;
-        }
-
-        void OnDisable()
-        {
-            if (PlayerProgress.Instance != null)
-                PlayerProgress.Instance.OnPlayerLoaded -= OnPlayerLoadedHandler;
-        }
-
         void OnApplicationQuit()
         {
-            _isQuitting = true;
             SaveAllChunks(); // Сохраняем ВСЁ перед выходом
-        }
-
-        private void OnPlayerLoadedHandler()
-        {
-            _playerController = PlayerProgress.Instance.playerController;
-
-            if (_playerController == null)
-            {
-                Debug.LogError("[WorldManager] PlayerController не найден!");
-                return;
-            }
-
-        }
-
-        void OnDestroy()
-        {
-            if (PlayerProgress.Instance != null)
-                PlayerProgress.Instance.OnPlayerLoaded -= OnPlayerLoadedHandler;
         }
 
         // ===== РЕГИСТРАЦИЯ НОВОЙ ПОСТРОЙКИ =====

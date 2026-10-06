@@ -609,6 +609,19 @@ namespace Assets.Scripts.Corpses
             _despawnCoroutine = StartCoroutine(DespawnAfterTime(lifetime));
         }
 
+        /// <summary>
+        /// Удаляет труп НАВСЕГДА: с диска и из сцены.
+        /// Вызывать только при harvest/despawn.
+        /// </summary>
+        public void DestroyCorpsePermanently()
+        {
+            if (CorpseManager.Instance != null && !string.IsNullOrEmpty(InstanceId))
+            {
+                CorpseManager.Instance.UnregisterCorpse(InstanceId);
+            }
+            Destroy(gameObject);
+        }
+
         public void SaveHarvestData(CorpseSaveData data)
         {
             data.harvestDrops.Clear();
@@ -690,17 +703,17 @@ namespace Assets.Scripts.Corpses
         private void OnDestroy()
         {
             // Если этот труп был открыт — закрываем UI
-            if (ChestUIManager.Instance != null && ReferenceEquals(ChestUIManager.Instance.CurrentSource, this))
+            if (ChestUIManager.Instance != null
+                && ReferenceEquals(ChestUIManager.Instance.CurrentSource, this))
             {
                 ChestUIManager.Instance.Close();
             }
 
+            // Только чистим in-memory регистрацию, файл НЕ удаляем.
+            // Файл удаляется явно через UnregisterCorpse при harvest/despawn.
             if (CorpseManager.Instance != null && !string.IsNullOrEmpty(InstanceId))
             {
-                if (!CorpseManager.Instance.IsQuitting)
-                {
-                    CorpseManager.Instance.UnregisterCorpse(InstanceId);
-                }
+                CorpseManager.Instance.ForgetCorpse(InstanceId);
             }
         }
     }

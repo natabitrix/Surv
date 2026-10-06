@@ -84,18 +84,29 @@ namespace Assets.Scripts.Core
 
         private void Awake()
         {
-            if (Instance != null)
+            if (Instance != null && Instance != this)
             {
                 Destroy(gameObject);
                 return;
             }
             Instance = this;
-            DontDestroyOnLoad(gameObject);
-            ResetToDefaults();
+            // Сценовый менеджер — умирает вместе со сценой, DontDestroyOnLoad не нужен.
         }
 
         private void Start()
         {
+            // Восстанавливаем статы из сохранения (загружено PlayerProgress).
+            var loadedData = PlayerProgress.Instance?.GetLoadedSaveData();
+            if (loadedData != null)
+            {
+                LoadFrom(loadedData);
+            }
+            else
+            {
+                Debug.LogWarning("[PlayerSurvivalSystem] loadedData == null, используем дефолт.");
+                ResetToDefaults();
+            }
+
             StartCoroutine(UpdateSurvivalStats());
         }
 

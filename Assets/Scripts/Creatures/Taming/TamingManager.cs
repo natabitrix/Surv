@@ -23,19 +23,34 @@ namespace Assets.Scripts.Creatures.Taming
         private Dictionary<string, GameObject> _loadedCreatures = new();
         private string _saveDirectory;
 
-        private void Awake()
+        public void Initialize()
         {
-            if (Instance != null)
+            if (Instance != null && Instance != this)
             {
                 Destroy(gameObject);
                 return;
             }
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+
+            var assets = GameAssets.Instance;
+            if (assets != null)
+            {
+                creatureDatabase = assets.CreatureDatabase;
+                itemDatabase = assets.ItemDatabase;
+            }
+            else
+            {
+                Debug.LogError("[TamingManager] GameAssets.Instance == null!");
+            }
 
             _saveDirectory = Path.Combine(Application.persistentDataPath, "Taming");
             if (!Directory.Exists(_saveDirectory))
                 Directory.CreateDirectory(_saveDirectory);
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
         }
 
         // ==========================================
@@ -97,7 +112,7 @@ namespace Assets.Scripts.Creatures.Taming
             if (File.Exists(path))
             {
                 File.Delete(path);
-                Debug.Log($"[TamingManager] Удалён файл: {instanceId}");
+                // Debug.Log($"[TamingManager] Удалён файл: {instanceId}");
             }
             else
             {

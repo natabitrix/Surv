@@ -53,7 +53,8 @@ namespace Assets.Scripts.UI
         {
             if (Instance != null) { Destroy(gameObject); return; }
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+            // DontDestroyOnLoad делает GameAssets (родитель).
+            // DontDestroyOnLoad(gameObject);
 
             if (_loadingCanvas != null)
                 _loadingCanvas.SetActive(false);
@@ -98,7 +99,7 @@ namespace Assets.Scripts.UI
         public void StartLoading()
         {
             Debug.Log($"[LoadingScreenManager] StartLoading: _isLoading={_isLoading}, tasks={_tasks.Count}");
-            
+
             if (_isLoading)
             {
                 Debug.LogWarning("[LoadingScreenManager] Загрузка уже идет!");
@@ -198,6 +199,11 @@ namespace Assets.Scripts.UI
             _isLoading = false;
             IsLoading = false;
             Hide();
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
         }
     }
 }

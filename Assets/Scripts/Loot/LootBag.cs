@@ -43,7 +43,8 @@ namespace Assets.Scripts.Loot
         private void OnDestroy()
         {
             // Если сумка была открыта — закрываем UI
-            if (ChestUIManager.Instance != null && ReferenceEquals(ChestUIManager.Instance.CurrentSource, this))
+            if (ChestUIManager.Instance != null
+                && ReferenceEquals(ChestUIManager.Instance.CurrentSource, this))
             {
                 ChestUIManager.Instance.Close();
             }
@@ -53,12 +54,11 @@ namespace Assets.Scripts.Loot
                 _inventory.Data.OnInventoryChanged -= OnInventoryChanged;
             }
 
+            // Только чистим in-memory, файл НЕ трогаем.
+            // Файл удаляется явно через UnregisterLootBag в ForceDespawn.
             if (LootBagManager.Instance != null && !string.IsNullOrEmpty(InstanceId))
             {
-                if (!LootBagManager.Instance.IsQuitting)
-                {
-                    LootBagManager.Instance.UnregisterLootBag(InstanceId);
-                }
+                LootBagManager.Instance.ForgetLootBag(InstanceId);
             }
         }
 
@@ -66,7 +66,7 @@ namespace Assets.Scripts.Loot
         {
             if (IsInventoryEmpty())
             {
-                Debug.Log($"[LootBag] Инвентарь пуст! Исчезаем.");
+                // Debug.Log($"[LootBag] Инвентарь пуст! Исчезаем.");
                 ForceDespawn();
             }
         }
@@ -192,13 +192,20 @@ namespace Assets.Scripts.Loot
                 _inventory.Data.OnInventoryChanged -= OnInventoryChanged;
             }
 
-            // Закрываем UI, если сумка была открыта
-            if (ChestUIManager.Instance != null && ReferenceEquals(ChestUIManager.Instance.CurrentSource, this))
+            if (ChestUIManager.Instance != null
+                && ReferenceEquals(ChestUIManager.Instance.CurrentSource, this))
             {
                 ChestUIManager.Instance.Close();
             }
 
+            // Удаляем с диска — это окончательный despawn.
+            if (LootBagManager.Instance != null && !string.IsNullOrEmpty(InstanceId))
+            {
+                LootBagManager.Instance.UnregisterLootBag(InstanceId);
+            }
+
             Destroy(gameObject);
         }
+
     }
 }
