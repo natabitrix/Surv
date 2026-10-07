@@ -10,6 +10,7 @@ using Assets.Scripts.Core;
 using System.Collections;
 using Assets.Scripts.Items;
 using Assets.Scripts.Crafting;
+using Assets.Scripts.UI.Notifications;
 
 
 namespace Assets.Scripts.InventorySystem

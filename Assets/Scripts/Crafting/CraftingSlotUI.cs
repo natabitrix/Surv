@@ -10,6 +10,7 @@ using Assets.Scripts.UI.Tooltip;
 using Assets.Scripts.Core;
 using Assets.Scripts.Items;
 using Unity.VisualScripting;
+using Assets.Scripts.UI.Notifications;
 
 namespace Assets.Scripts.Crafting
 {

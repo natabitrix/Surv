@@ -5,6 +5,7 @@ using Assets.Scripts.Creatures.Taming;
 using Assets.Scripts.Items;
 using Assets.Scripts.Player;
 using Assets.Scripts.UI;
+using Assets.Scripts.UI.Notifications;
 using UnityEngine;
 
 namespace Assets.Scripts.InventorySystem

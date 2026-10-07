@@ -15,6 +15,7 @@ using Unity.VisualScripting;
 using Assets.Scripts.Creatures;
 using Assets.Scripts.Audio;
 using Assets.Scripts.Corpses;
+using Assets.Scripts.UI.Notifications;
 
 namespace Assets.Scripts.Player
 {

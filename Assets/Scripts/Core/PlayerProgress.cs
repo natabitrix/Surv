@@ -9,6 +9,7 @@ using Assets.Scripts.Player;
 using Assets.Scripts.Items;
 using System.Collections;
 using UnityEngine.SceneManagement;
+using Assets.Scripts.UI.Notifications;
 
 namespace Assets.Scripts.Core
 {
@@ -319,6 +320,7 @@ namespace Assets.Scripts.Core
             if (StatPointsAvailable > 0)
             {
                 NotificationManager.Instance.ShowTopNote(
+                    NotificationType.LevelUp,
                     "Доступно повышение уровня! Откройте свой инвентарь."
                 );
             }
@@ -403,6 +405,7 @@ namespace Assets.Scripts.Core
             Save("PlayerProgress.AllocateStatPoint");
 
             NotificationManager.Instance.ShowTopNote(
+                NotificationType.LevelUp,
                 $"Улучшен {stat}. Новый уровень: {_level}, Энграмм: {_engramPoints}",
                 true,
                 10f

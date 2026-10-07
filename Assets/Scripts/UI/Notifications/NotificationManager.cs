@@ -5,7 +5,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Assets.Scripts.UI
+namespace Assets.Scripts.UI.Notifications
 {
     public class NotificationManager : MonoBehaviour
     {
@@ -15,9 +15,11 @@ namespace Assets.Scripts.UI
         public GameObject notificationLeftPrefab;
 
         public GameObject noteTopUI;
-        public TMP_Text noteTopUIText;  
-        // public GameObject noteTopUIIconObj;
+        public TMP_Text noteTopUIText;
 
+        [Header("Audio")]
+        [Tooltip("Источник для UI-звуков уведомлений. Создаётся автоматически, если не назначен.")]
+        [SerializeField] private AudioSource _uiAudioSource;
 
         void Awake()
         {
@@ -27,7 +29,46 @@ namespace Assets.Scripts.UI
                 return;
             }
             Instance = this;
-            // DontDestroyOnLoad(gameObject);
+
+            EnsureAudioSource();
+        }
+
+        private void EnsureAudioSource()
+        {
+            if (_uiAudioSource != null) return;
+
+            _uiAudioSource = gameObject.GetComponent<AudioSource>();
+            if (_uiAudioSource == null)
+                _uiAudioSource = gameObject.AddComponent<AudioSource>();
+
+            _uiAudioSource.playOnAwake = false;
+            _uiAudioSource.spatialBlend = 0f; // 2D
+            _uiAudioSource.loop = false;
+        }
+
+        // ==========================================
+        // === SOUND ===
+        // ==========================================
+
+        private void PlayNotificationSound(NotificationType type)
+        {
+            if (type == NotificationType.None) return;
+
+            var config = GameAssets.Instance?.NotificationSoundConfig;
+            if (config == null) return;
+
+            if (!config.TryGet(type, out var clip, out var volume))
+            {
+#if UNITY_EDITOR
+                Debug.LogWarning($"[NotificationManager] Нет звука для {type} в NotificationSoundConfig.");
+#endif
+                return;
+            }
+
+            if (clip == null || _uiAudioSource == null) return;
+
+            float globalVolume = AudioManager.Instance?.masterVolume ?? 1f;
+            _uiAudioSource.PlayOneShot(clip, volume * globalVolume);
         }
 
         private void SetNoteText(string text, GameObject noteUI)
@@ -78,11 +119,24 @@ namespace Assets.Scripts.UI
 
 
         // метод для показа уведомлений вверху с кнопкой закрытия
-        public void ShowTopNote(string text, bool autoHide = true, float duration = 5f)
+        // public void ShowTopNote(string text, bool autoHide = true, float duration = 5f)
+        // {
+        //     noteTopUI.SetActive(true);
+
+        //     SetNoteText(text, noteTopUI);
+
+        //     // Автоскрытие через duration
+        //     if (autoHide)
+        //         StartCoroutine(HideAfterDelay(noteTopUI, duration));
+        // }
+
+        public void ShowTopNote(NotificationType type, string text, bool autoHide = true, float duration = 5f)
         {
             noteTopUI.SetActive(true);
 
             SetNoteText(text, noteTopUI);
+
+            PlayNotificationSound(type);
 
             // Автоскрытие через duration
             if (autoHide)

@@ -2,6 +2,7 @@
 using UnityEngine;
 using Assets.Scripts.UI;
 using Assets.Scripts.Core;
+using Assets.Scripts.UI.Notifications;
 
 namespace Assets.Scripts.Items
 {

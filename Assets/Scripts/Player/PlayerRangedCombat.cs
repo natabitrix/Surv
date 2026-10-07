@@ -4,6 +4,7 @@ using Assets.Scripts.Core;
 using Assets.Scripts.InventorySystem;
 using Assets.Scripts.Items;
 using Assets.Scripts.UI;
+using Assets.Scripts.UI.Notifications;
 using UnityEngine;
 
 namespace Assets.Scripts.Player

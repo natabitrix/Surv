@@ -8818,6 +8818,7 @@ MonoBehaviour:
   _recipeDatabase: {fileID: 11400000, guid: 08b9e5f407896124eafc5f3473a57a93, type: 2}
   _playerCorpsePrefab: {fileID: 7881994360618582535, guid: 5b8c8f421cdca80479a335e16589a204, type: 3}
   _lootBagPrefab: {fileID: 4309089054926544229, guid: 27ea0d0c5535c3d47a83045f2d6eeb8a, type: 3}
+  _notificationSoundConfig: {fileID: 11400000, guid: e5743533e1ad60f4da32f36a3e201872, type: 2}
 --- !u!114 &178178480
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -249286,6 +249287,7 @@ MonoBehaviour:
   notificationLeftPrefab: {fileID: 6258266068471614349, guid: 21d6971d0196de64d95cfb56c24b4857, type: 3}
   noteTopUI: {fileID: 1109540567}
   noteTopUIText: {fileID: 1768311950}
+  _uiAudioSource: {fileID: 0}
 --- !u!114 &8846076155618937098
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -2,6 +2,7 @@
 using Assets.Scripts.Crafting;
 using Assets.Scripts.Creatures;
 using Assets.Scripts.Items;
+using Assets.Scripts.UI.Notifications;
 using UnityEngine;
 
 namespace Assets.Scripts.Core
@@ -32,6 +33,9 @@ namespace Assets.Scripts.Core
         [SerializeField] private GameObject _playerCorpsePrefab;
         [SerializeField] private GameObject _lootBagPrefab;
 
+        [Header("Audio")]
+        [SerializeField] private NotificationSoundConfig _notificationSoundConfig;
+
         // === Публичный доступ ===
         public GameSettings GameSettings => _gameSettings;
         public ItemDatabase ItemDatabase => _itemDatabase;
@@ -39,6 +43,7 @@ namespace Assets.Scripts.Core
         public RecipeDatabase RecipeDatabase => _recipeDatabase;
         public GameObject PlayerCorpsePrefab => _playerCorpsePrefab;
         public GameObject LootBagPrefab => _lootBagPrefab;
+        public NotificationSoundConfig NotificationSoundConfig => _notificationSoundConfig;
 
         private bool _isPrimary = false;
 
@@ -62,12 +67,12 @@ namespace Assets.Scripts.Core
 
         private void ValidateReferences()
         {
-            if (_gameSettings == null)       Debug.LogError("[GameAssets] GameSettings не назначен!");
-            if (_itemDatabase == null)       Debug.LogError("[GameAssets] ItemDatabase не назначен!");
-            if (_creatureDatabase == null)   Debug.LogError("[GameAssets] CreatureDatabase не назначен!");
-            if (_recipeDatabase == null)     Debug.LogError("[GameAssets] RecipeDatabase не назначен!");
+            if (_gameSettings == null) Debug.LogError("[GameAssets] GameSettings не назначен!");
+            if (_itemDatabase == null) Debug.LogError("[GameAssets] ItemDatabase не назначен!");
+            if (_creatureDatabase == null) Debug.LogError("[GameAssets] CreatureDatabase не назначен!");
+            if (_recipeDatabase == null) Debug.LogError("[GameAssets] RecipeDatabase не назначен!");
             if (_playerCorpsePrefab == null) Debug.LogError("[GameAssets] PlayerCorpsePrefab не назначен!");
-            if (_lootBagPrefab == null)      Debug.LogError("[GameAssets] LootBagPrefab не назначен!");
+            if (_lootBagPrefab == null) Debug.LogError("[GameAssets] LootBagPrefab не назначен!");
         }
 
         private void CreateGlobalManagers()

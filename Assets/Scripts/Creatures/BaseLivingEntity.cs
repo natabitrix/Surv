@@ -10,6 +10,7 @@ using Assets.Scripts.UI;
 using System.Collections;
 using UnityEngine.AI;
 using Assets.Scripts.Creatures.Taming;
+using Assets.Scripts.UI.Notifications;
 
 namespace Assets.Scripts.Creatures
 {
@@ -550,6 +551,12 @@ namespace Assets.Scripts.Creatures
             }
 
             if (TryGetComponent<RadialMenu>(out var menu)) menu.enabled = true;
+
+            // === Уведомление ===
+            NotificationManager.Instance?.ShowTopNote(
+                NotificationType.TameComplete,
+                $"{GetDisplayName()} приручен!"
+            );
 
             Debug.Log($"[{gameObject.name}] Приручение завершено!");
         }

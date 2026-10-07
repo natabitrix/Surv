@@ -4,6 +4,7 @@ using System.Linq;
 using Assets.Scripts.Core;
 using Assets.Scripts.Items;
 using Assets.Scripts.UI;
+using Assets.Scripts.UI.Notifications;
 using Assets.Scripts.UI.Tooltip;
 using TMPro;
 using UnityEngine;

@@ -11,6 +11,7 @@ using Assets.Scripts.Items;
 using Assets.Scripts.Loot;
 using Assets.Scripts.Player;
 using Assets.Scripts.UI;
+using Assets.Scripts.UI.Notifications;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;

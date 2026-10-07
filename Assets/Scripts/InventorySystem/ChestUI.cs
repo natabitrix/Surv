@@ -6,6 +6,7 @@ using Assets.Scripts.Interactables;
 using Assets.Scripts.Items;
 using Assets.Scripts.Player;
 using Assets.Scripts.UI;
+using Assets.Scripts.UI.Notifications;
 using System.Collections.Generic;
 using UnityEngine;
 
