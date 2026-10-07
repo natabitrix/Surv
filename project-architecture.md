@@ -906,6 +906,15 @@ Screen Space всплывающие числа урона над точкой у
 - `PlayNotificationSound(NotificationType type)` — берёт клип из `GameAssets.Instance.NotificationSoundConfig`, играет через `PlayOneShot` с учётом `AudioManager.masterVolume`.
 - Если тип не найден или клип null — молчание + warning в редакторе (`#if UNITY_EDITOR`).
 
+#### 20.4 Интеграция
+PlayerProgress.ShowLevelUpNote() → ShowTopNote(NotificationType.LevelUp, "...").
+
+BaseLivingEntity.FinishTaming() → ShowTopNote(NotificationType.TameComplete, $"{GetDisplayName()} приручен!").
+
+#### 20.5 Что НЕ сделано (задел)
+Иконки в top-note — отложены.
+Цвета текста по типу — отложены.
+Отдельные конфиги для левого уведомления (Show) — не тронуты.
 
 ## TODO
 
