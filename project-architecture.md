@@ -882,6 +882,31 @@ Screen Space всплывающие числа урона над точкой у
 - **`TamingManager.SpawnFromData`** — `saveKey = $"TamingCorpse_{data.instanceId}"` (было `"Taming_..."`).
 - **`RadialMenu`** — на префабе `corpse`/`creature` назначены **вручную**. Логика выбора в `PanelsUIController.OpenRadialMenu` учитывает `Corpse.enabled` и `BaseLivingEntity.tamed/knockedOut`.
 
+### 20. Система уведомлений (top-note) со звуками
+
+Общая система всплывающих уведомлений с поддержкой звуков по типу события.
+
+#### 20.1 `NotificationType` (enum)
+
+`Assets/Scripts/UI/Notifications/NotificationType.cs`:
+- `None`, `LevelUp`, `TameComplete`.
+- Расширяемый: для новых событий достаточно добавить значение.
+
+#### 20.2 `NotificationSoundConfig` (ScriptableObject)
+
+`Assets/Scripts/UI/Notifications/NotificationSoundConfig.cs`:
+- `Entry[] entries` — массив `{ NotificationType type, AudioClip clip, float volume }`.
+- `TryGet(type, out clip, out volume)` — поиск звука по типу.
+- Ассет: `Assets/Data/Audio/NotificationSoundConfig.asset`.
+- Ссылка в `GameAssets.NotificationSoundConfig`.
+
+#### 20.3 `NotificationManager` — звук
+
+- `_uiAudioSource` (2D, `spatialBlend = 0`) — создаётся в `Awake`, если не назначен.
+- `PlayNotificationSound(NotificationType type)` — берёт клип из `GameAssets.Instance.NotificationSoundConfig`, играет через `PlayOneShot` с учётом `AudioManager.masterVolume`.
+- Если тип не найден или клип null — молчание + warning в редакторе (`#if UNITY_EDITOR`).
+
+
 ## TODO
 
 ### Ближайшее (Следующий шаг)
