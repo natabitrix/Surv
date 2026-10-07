@@ -1,3 +1,4 @@
+// Assets/Scripts/UI/Tooltip/TooltipManager.cs
 namespace Assets.Scripts.UI.Tooltip
 {
     using System.Collections;
@@ -38,6 +39,8 @@ namespace Assets.Scripts.UI.Tooltip
         [Header("Positioning")]
         [Tooltip("An offset to apply to the tooltip's position relative to the mouse cursor.")]
         [SerializeField] private Vector2 positionOffset = new(0, -20);
+        [Tooltip("Отступ от курсора, когда тултип перевёрнут вверх (для нижних слотов).")]
+        [SerializeField] private float flippedVerticalGap = 8f;
 
         // --- Private State ---
         private Tooltip tooltipInstance;
@@ -60,7 +63,6 @@ namespace Assets.Scripts.UI.Tooltip
             }
         }
 
-
         private void Start()
         {
             // Failsafe to ensure a Canvas exists.
@@ -81,14 +83,32 @@ namespace Assets.Scripts.UI.Tooltip
         #endregion
 
         #region Public API
-        public void ShowTooltip(string content, string title, Sprite icon,
-            List<(int amount, Item item)> rightPanelList, 
-            Color titleColor, Color iconColor, float delay)
+        /// <summary>
+        /// Показывает тултип с указанным содержимым.
+        /// </summary>
+        /// <param name="content">Основной текст тултипа.</param>
+        /// <param name="title">Заголовок (может быть пустым).</param>
+        /// <param name="icon">Иконка (может быть null).</param>
+        /// <param name="rightPanelList">Список предметов для правой панели (может быть null).</param>
+        /// <param name="rightPanelTitle">Заголовок правой панели.</param>
+        /// <param name="titleColor">Цвет заголовка.</param>
+        /// <param name="iconColor">Цвет иконки.</param>
+        /// <param name="delay">Задержка перед показом.</param>
+        public void ShowTooltip(
+            string content,
+            string title,
+            Sprite icon,
+            List<(int amount, Item item)> rightPanelList,
+            string rightPanelTitle,
+            Color titleColor,
+            Color iconColor,
+            float delay)
         {
             if (!tooltipInstance)
             {
                 return;
             }
+
             if (string.IsNullOrEmpty(content) && string.IsNullOrEmpty(title))
             {
                 return; // не показываем пустой тултип
@@ -96,7 +116,9 @@ namespace Assets.Scripts.UI.Tooltip
 
             // "Last Command Wins": Stop any previous coroutine.
             if (activeCoroutine != null) StopCoroutine(activeCoroutine);
-            activeCoroutine = StartCoroutine(ShowRoutine(content, title, icon, rightPanelList, titleColor, iconColor, delay));
+            activeCoroutine = StartCoroutine(ShowRoutine(
+                content, title, icon, rightPanelList, rightPanelTitle,
+                titleColor, iconColor, delay));
         }
 
         public void HideTooltip()
@@ -109,22 +131,43 @@ namespace Assets.Scripts.UI.Tooltip
         #endregion
 
         #region Coroutines & Logic
-        private IEnumerator ShowRoutine(string content, string title, Sprite icon, List<(int amount, Item item)> rightPanelList, Color titleColor, Color iconColor, float delay)
+        private IEnumerator ShowRoutine(
+            string content,
+            string title,
+            Sprite icon,
+            List<(int amount, Item item)> rightPanelList,
+            string rightPanelTitle,
+            Color titleColor,
+            Color iconColor,
+            float delay)
         {
-            // Set alpha to 0 before waiting to prevent a one-frame flicker of old content.
             canvasGroup.alpha = 0;
             yield return new WaitForSeconds(delay);
 
-            yield return ResizeTooltipRoutine(content, title, icon, rightPanelList, titleColor, iconColor);
+            yield return ResizeTooltipRoutine(
+                content, title, icon, rightPanelList, rightPanelTitle,
+                titleColor, iconColor);
 
             tooltipInstance.gameObject.SetActive(true);
             tooltipInstance.transform.SetAsLastSibling();
+
+            // Ждём, пока лэйаут пересчитается после активации
+            yield return new WaitForEndOfFrame();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(tooltipRect);
+
             PositionTooltip();
 
             activeCoroutine = StartCoroutine(FadeIn());
         }
 
-        private IEnumerator ResizeTooltipRoutine(string content, string title, Sprite icon, List<(int amount, Item item)> rightPanelList, Color titleColor, Color iconColor)
+        private IEnumerator ResizeTooltipRoutine(
+            string content,
+            string title,
+            Sprite icon,
+            List<(int amount, Item item)> rightPanelList,
+            string rightPanelTitle,
+            Color titleColor,
+            Color iconColor)
         {
             tooltipInstance.gameObject.SetActive(false);
 
@@ -137,8 +180,9 @@ namespace Assets.Scripts.UI.Tooltip
 
             tooltipInstance.SetText(wrappedContent, wrappedTitle, icon, titleColor, iconColor);
 
-            tooltipInstance.SetRightPanel(rightPanelList);
-            
+            // Передаем заголовок правой панели
+            tooltipInstance.SetRightPanel(rightPanelList, rightPanelTitle);
+
             // The robust "triple cycle" resize method.
             for (int i = 0; i < 3; i++)
             {
@@ -182,26 +226,43 @@ namespace Assets.Scripts.UI.Tooltip
             float outlineSize = 0;
             Outline outline = tooltipInstance.GetComponentInChildren<Outline>();
             if (outline != null)
-            {
                 outlineSize = outline.effectDistance.x;
-            }
 
-            // Vector3 mousePos = Input.mousePosition + (Vector3)positionOffset;
-
-            // Получаем позицию курсора из новой системы
-            Vector2 mousePos2D = Mouse.current?.position.ReadValue() ?? Vector2.zero;
-            // Преобразуем в Vector3 и добавляем смещение
-            Vector3 mousePos = (Vector3)mousePos2D + (Vector3)positionOffset;
+            Vector2 mousePos = Mouse.current?.position.ReadValue() ?? Vector2.zero;
 
             float scale = tooltipRect.lossyScale.x;
-
             float totalWidth = (tooltipRect.rect.width + outlineSize) * scale;
             float totalHeight = (tooltipRect.rect.height + outlineSize) * scale;
 
-            float x = Mathf.Clamp(mousePos.x, 0, Screen.width - totalWidth);
-            float y = Mathf.Clamp(mousePos.y, totalHeight, Screen.height);
+            // pivot = (0, 1) => tooltipRect.position — левый-верхний угол тултипа
 
-            tooltipRect.position = new Vector3(x, y, 0);
+            // Базовая позиция (курсор + offset)
+            float left = mousePos.x + positionOffset.x;
+            float top = mousePos.y + positionOffset.y;
+
+            // Проверяем, влезает ли тултип снизу
+            float bottom = top - totalHeight;
+            if (bottom < 0)
+            {
+                // Переворачиваем вверх.
+                // Нижняя грань тултипа = курсор + небольшой зазор (flippedVerticalGap)
+                bottom = mousePos.y + flippedVerticalGap;
+                top = bottom + totalHeight;
+            }
+
+            // Верхняя граница экрана
+            if (top > Screen.height)
+                top = Screen.height;
+
+            // Правая граница
+            float right = left + totalWidth;
+            if (right > Screen.width)
+                left = Screen.width - totalWidth;
+
+            // Левая граница
+            if (left < 0) left = 0;
+
+            tooltipRect.position = new Vector3(left, top, 0);
         }
 
         private float CalculateAvailableWidthForText(TMP_Text textElement)

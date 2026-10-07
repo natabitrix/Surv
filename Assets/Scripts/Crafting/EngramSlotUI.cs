@@ -96,7 +96,8 @@ namespace Assets.Scripts.Crafting
                 tooltipText,
                 tooltipName,
                 icon.sprite,
-                ingList
+                ingList,
+                "Требуется для крафта"
             );
 
         }

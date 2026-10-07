@@ -86,7 +86,8 @@ namespace Assets.Scripts.Crafting
                     _recipe.description,
                     _recipe.craftedItem.itemName,
                     icon.sprite,
-                    ingList
+                    ingList,
+                    "Требуется для крафта"
                 );
             }
         }

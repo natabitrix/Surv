@@ -1,3 +1,4 @@
+// Assets/Scripts/UI/Tooltip/Tooltip.cs
 namespace Assets.Scripts.UI.Tooltip
 {
     using UnityEngine;
@@ -6,9 +7,6 @@ namespace Assets.Scripts.UI.Tooltip
     using System.Collections.Generic;
     using Assets.Scripts.Items;
 
-    /// <summary>
-    /// A simple "view" component that displays tooltip data. It is controlled by the TooltipManager.
-    /// </summary>
     [RequireComponent(typeof(CanvasGroup))]
     public class Tooltip : MonoBehaviour
     {
@@ -24,16 +22,16 @@ namespace Assets.Scripts.UI.Tooltip
 
         [SerializeField] public GameObject bigPanel;
 
+        [Header("Right Panel")]
         [SerializeField] public GameObject rightPanel;
         [SerializeField] public GameObject rightPanelContent;
         [SerializeField] public GameObject rightPanelListPrefab;
+        [Tooltip("Text field for the right panel's title.")]
+        [SerializeField] public TextMeshProUGUI rightPanelTitleField; // <-- НОВОЕ ПОЛЕ
 
         [SerializeField] public GameObject smallPanel;
         [SerializeField] public TextMeshProUGUI smallPanelContentField;
 
-        /// <summary>
-        /// Populates the UI elements with the provided content and styles. This method is null-safe.
-        /// </summary>
         public void SetText(string content, string title = "", Sprite icon = null, Color? titleColor = null, Color? iconColor = null)
         {
             // small tooltip
@@ -42,7 +40,6 @@ namespace Assets.Scripts.UI.Tooltip
                 smallPanel.SetActive(true);
                 bigPanel.SetActive(false);
 
-                // Set Content (null-safe)
                 if (smallPanelContentField != null)
                 {
                     smallPanelContentField.text = content ?? string.Empty;
@@ -54,7 +51,6 @@ namespace Assets.Scripts.UI.Tooltip
                 bigPanel.SetActive(true);
                 smallPanel.SetActive(false);
 
-                // Set Content (null-safe)
                 if (contentField != null)
                 {
                     contentField.text = content ?? string.Empty;
@@ -72,7 +68,6 @@ namespace Assets.Scripts.UI.Tooltip
                     titleField.color = titleColor ?? Color.white;
                 }
             }
-
 
             // Set Icon (null-safe)
             bool hasIcon = (icon != null);
@@ -93,10 +88,21 @@ namespace Assets.Scripts.UI.Tooltip
             }
         }
 
-        public void SetRightPanel(List<(int amount, Item item)> rightPanelList)
+        // ОБНОВЛЕННЫЙ МЕТОД
+        public void SetRightPanel(List<(int amount, Item item)> rightPanelList, string rightPanelTitle = "")
         {
-            rightPanel.SetActive(false);
+            // Сначала скрываем панель, чтобы избежать мерцания
+            if (rightPanel != null)
+                rightPanel.SetActive(false);
 
+            // Проверяем, есть ли что показывать
+            if (rightPanelList == null || rightPanelList.Count == 0)
+            {
+                // Если список пуст, просто выходим, панель уже скрыта
+                return;
+            }
+
+            // Проверка на наличие всех необходимых ссылок
             if (rightPanel == null)
             {
                 Debug.LogError("rightPanel is not assigned in Tooltip!");
@@ -115,23 +121,34 @@ namespace Assets.Scripts.UI.Tooltip
                 return;
             }
 
-            if (rightPanelList != null)
+            // Устанавливаем заголовок правой панели
+            if (rightPanelTitleField != null)
             {
-                rightPanel.SetActive(true);
-
-                foreach (Transform child in rightPanelContent.transform)
+                bool hasTitle = !string.IsNullOrEmpty(rightPanelTitle);
+                rightPanelTitleField.gameObject.SetActive(hasTitle);
+                if (hasTitle)
                 {
-                    Destroy(child.gameObject);
-                }
-
-                foreach (var l in rightPanelList)
-                {
-                    string text = $"{l.amount}x {l.item.itemName}";
-                    GameObject listGO = Instantiate(rightPanelListPrefab, rightPanelContent.transform, false);
-                    SetListText(text, listGO);
-                    SetListIcon(l.item.icon, listGO);
+                    rightPanelTitleField.text = rightPanelTitle;
                 }
             }
+
+            // Очищаем старые элементы
+            foreach (Transform child in rightPanelContent.transform)
+            {
+                Destroy(child.gameObject);
+            }
+
+            // Создаем новые элементы
+            foreach (var l in rightPanelList)
+            {
+                string text = $"{l.amount}x {l.item.itemName}";
+                GameObject listGO = Instantiate(rightPanelListPrefab, rightPanelContent.transform, false);
+                SetListText(text, listGO);
+                SetListIcon(l.item.icon, listGO);
+            }
+
+            // Активируем панель
+            rightPanel.SetActive(true);
         }
 
         private void SetListIcon(Sprite icon, GameObject noteUI)
@@ -161,8 +178,5 @@ namespace Assets.Scripts.UI.Tooltip
             else
                 Debug.LogWarning("TextMeshProUGUI not found in notification Manager UI!");
         }
-
-
-
     }
 }

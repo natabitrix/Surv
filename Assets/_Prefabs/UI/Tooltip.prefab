@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 5589791114461709425}
   - component: {fileID: 3239740105501773845}
   m_Layer: 5
-  m_Name: Title
+  m_Name: RightPanelTitle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -216,6 +216,7 @@ MonoBehaviour:
   rightPanel: {fileID: 1870678447710838914}
   rightPanelContent: {fileID: 6027572802414426126}
   rightPanelListPrefab: {fileID: 6258266068471614349, guid: 16b7c7c177319834f876bdf8f2960c50, type: 3}
+  rightPanelTitleField: {fileID: 5589791114461709425}
   smallPanel: {fileID: 6469518477593894886}
   smallPanelContentField: {fileID: 2999079407203957904}
 --- !u!225 &939677263672315529
@@ -237,7 +238,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 768120986090525490}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 30649d3a9faa99c48a7b1166b86bf2a0, type: 3}
   m_Name: 
@@ -251,8 +252,8 @@ MonoBehaviour:
   m_Spacing: 0
   m_ChildForceExpandWidth: 1
   m_ChildForceExpandHeight: 1
-  m_ChildControlWidth: 0
-  m_ChildControlHeight: 0
+  m_ChildControlWidth: 1
+  m_ChildControlHeight: 1
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0

@@ -1,4 +1,5 @@
-﻿namespace Assets.Scripts.UI.Tooltip
+﻿// Assets/Scripts/UI/Tooltip/TooltipTrigger.cs
+namespace Assets.Scripts.UI.Tooltip
 {
     using System.Collections.Generic;
     using Assets.Scripts.Items;
@@ -63,9 +64,6 @@
             this.content = content;
             this.title = title;
             this.icon = icon;
-
-            // Если вы хотите сразу обновить отображение при наведении — это не обязательно,
-            // потому что при следующем OnPointerEnter будет использовано новое содержимое.
         }
 
         #region Public Static API
@@ -94,6 +92,8 @@
             if (existing != null)
             {
                 existing.SetContent(content, title, icon);
+                existing.RightPanelTitle = rightPanelTitle;
+                existing.RightPanelList = rightPanelList;
                 return existing;
             }
 
@@ -113,7 +113,16 @@
         {
             if (TooltipManager.Instance != null)
             {
-                TooltipManager.Instance.ShowTooltip(content, title, icon, rightPanelList, titleColor, iconColor, hoverDelay);
+                TooltipManager.Instance.ShowTooltip(
+                    content,
+                    title,
+                    icon,
+                    rightPanelList,
+                    rightPanelTitle,
+                    titleColor,
+                    iconColor,
+                    hoverDelay
+                );
             }
         }
 
