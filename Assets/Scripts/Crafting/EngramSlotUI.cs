@@ -1,6 +1,8 @@
 // Assets/Scripts/Crafting/EngramSlotUI.cs
+using System.Collections.Generic;
 using System.Linq;
 using Assets.Scripts.Core;
+using Assets.Scripts.Items;
 using Assets.Scripts.UI;
 using Assets.Scripts.UI.Tooltip;
 using TMPro;
@@ -14,6 +16,7 @@ namespace Assets.Scripts.Crafting
     {
         public Image icon;
         public TextMeshProUGUI nameText;
+        public TextMeshProUGUI pointsText;
         public GameObject lockedOverlay;
         public GameObject availableOverlay;
 
@@ -35,55 +38,66 @@ namespace Assets.Scripts.Crafting
             {
                 icon.enabled = false;
                 nameText.text = "";
+                pointsText.text = "";
                 lockedOverlay.SetActive(true);
                 availableOverlay.SetActive(true);
                 return;
             }
 
-            // icon.sprite = _data.recipe.icon;
             icon.sprite = _data.recipe.craftedItem.icon;
             icon.enabled = true;
-            // nameText.text = _data.recipe.recipeName;
             nameText.text = _data.recipe.craftedItem.itemName;
+            pointsText.text = _data.recipe.engramPointsCost.ToString();
 
             lockedOverlay.SetActive(!_data.isUnlocked);
             availableOverlay.SetActive(!_data.isAvailable);
 
 
-            string ingText = "Ингридиенты:\n";
-            foreach (var ing in _data.recipe.ingredients)
-            {
-                ingText += $"{ing.amount}x {ing.item.itemName}\n";
-            }
+            // string ingText = "Ингридиенты:\n";
+            // foreach (var ing in _data.recipe.ingredients)
+            // {
+            //     ingText += $"{ing.amount}x {ing.item.itemName}\n";
+            // }
 
             string tooltipName = _data.recipe.craftedItem.itemName;
             string tooltipText = "";
 
-            // Изучена
-            if (_data.isUnlocked)
-            {
-                tooltipText = $"{_data.recipe.description}\n\n{ingText}";
-            }
-            // Доступна для изучения
-            else if (_data.isAvailable)
-            {
-                tooltipText = $"{_data.recipe.description}\n\n{ingText}\n\nОчки энграмм: {_data.recipe.engramPointsCost}";
-            }
-            else
-            {
-                tooltipText = $"Требуется уровень: {_data.recipe.requiredLevel}";
-            }
+            // // Изучена
+            // if (_data.isUnlocked)
+            // {
+            //     tooltipText = $"{_data.recipe.description}";
+            // }
+            // // Доступна для изучения
+            // else if (_data.isAvailable)
+            // {
+            //     tooltipText = $"{_data.recipe.description}\n\nОчки энграмм: {_data.recipe.engramPointsCost}";
+            // }
+            // else
+            // {
+            //     tooltipText = $"Требуется уровень: {_data.recipe.requiredLevel}";
+            // }
 
+            tooltipText = $"{_data.recipe.description}\nОчки энграмм: {_data.recipe.engramPointsCost}\nТребуется уровень: {_data.recipe.requiredLevel}";
+
+            var ingList = new List<(int amount, Item item)>();
+
+            ingList.Clear();
+
+            foreach (var ing in _data.recipe.ingredients)
+            {
+                if (ing.item != null && ing.amount > 0)
+                {
+                    ingList.Add((ing.amount, ing.item));
+                }
+            }
 
             _tooltipTrigger = TooltipTrigger.AddTooltip(
                 gameObject,
                 tooltipText,
                 tooltipName,
-                icon.sprite
+                icon.sprite,
+                ingList
             );
-
-
-
 
         }
 
@@ -99,6 +113,7 @@ namespace Assets.Scripts.Crafting
                     TryUnlock();
                 }
             }
+
         }
 
         void TryUnlock()
@@ -150,5 +165,7 @@ namespace Assets.Scripts.Crafting
             // Обновляем визуал (убираем замок)
             RefreshVisual();
         }
+
+
     }
 }

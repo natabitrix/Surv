@@ -279,9 +279,9 @@ namespace Assets.Scripts.InventorySystem
 
             // === Создаём список для LootBagManager ===
             var itemsToDrop = new List<(Item item, int count, float durability)>
-    {
-        (itemToDrop, countToDrop, durabilityToDrop)
-    };
+            {
+                (itemToDrop, countToDrop, durabilityToDrop)
+            };
 
             // === Вычисляем позицию для сумки ===
             Vector3 dropPosition = Vector3.zero;
@@ -590,10 +590,16 @@ namespace Assets.Scripts.InventorySystem
         }
 
         // === Ремонт предмета ===
+
         public void TryRepairItem(int slotIndex, SlotOwner owner)
         {
             InventorySlot slot = GetSlotByIndex(slotIndex); // У тебя уже есть этот метод
             if (slot == null || slot.IsEmpty || slot.currentDurability < 0) return;
+            if (slot.currentDurability >= slot.item.maxDurability)
+            {
+                NotificationManager.Instance.Show("Предмет не требует ремонта.", null);
+                return;
+            }
 
             // 1. Находим рецепт (убедись, что recipeDatabase доступен в InventoryManager)
             Recipe recipe = PlayerProgress.Instance.recipeDatabase.GetRecipeForItem(slot.item);
@@ -605,30 +611,32 @@ namespace Assets.Scripts.InventorySystem
             }
 
             // 2. Проверяем ресурсы (умножаем стоимость крафта на 0.5f)
-            if (PlayerProgress.Instance.mainInventoryData.HasIngredientsForRepair(recipe, 0.5f))
+            var invData = PlayerProgress.Instance.mainInventoryData;
+            float repairMultiplier = invData.GetRepairMultiplier(slot.item.maxDurability, slot.currentDurability);
+
+            if (invData.HasIngredientsForRepair(recipe, repairMultiplier))
             {
                 // 3. Расходуем ресурсы
-                PlayerProgress.Instance.mainInventoryData.ConsumeRepairIngredients(recipe, 0.5f);
+                invData.ConsumeRepairIngredients(recipe, repairMultiplier);
 
                 // 4. Чиним
                 slot.currentDurability = slot.item.maxDurability;
 
                 NotificationManager.Instance.Show($"{slot.item.itemName} починен!", slot.item.icon);
 
-                // Собираем список удалённых ингредиентов
-                var removed = new List<string>();
+                var removed = new List<(int amount, Item item)>();
                 foreach (var ing in recipe.ingredients)
                 {
-                    if (ing.item != null && ing.amount > 0)
-                    {
-                        removed.Add($"{ing.amount}x {ing.item.itemName}");
-                    }
-                }
+                    if (ing.item == null || ing.amount <= 0) continue;
 
-                // Уведомления
-                foreach (var line in removed)
+                    int actual = invData.GetRepairAmount(ing.amount, repairMultiplier);
+                    if (actual <= 0) continue;
+
+                    removed.Add((actual, ing.item));
+                }
+                foreach (var ing in removed)
                 {
-                    NotificationManager.Instance?.Show($"Удалено: {line}", null);
+                    NotificationManager.Instance?.Show($"Удалено: {ing.amount}x {ing.item.itemName}", ing.item.icon);
                 }
 
                 // 5. Обновляем UI

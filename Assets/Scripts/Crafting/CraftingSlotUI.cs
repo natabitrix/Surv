@@ -9,6 +9,7 @@ using Assets.Scripts.UI;
 using Assets.Scripts.UI.Tooltip;
 using Assets.Scripts.Core;
 using Assets.Scripts.Items;
+using Unity.VisualScripting;
 
 namespace Assets.Scripts.Crafting
 {
@@ -68,11 +69,24 @@ namespace Assets.Scripts.Crafting
             // Tooltip: тоже проверяем
             if (gameObject != null)
             {
+                var ingList = new List<(int amount, Item item)>();
+
+                ingList.Clear(); 
+
+                foreach (var ing in _recipe.ingredients)
+                {
+                    if (ing.item != null && ing.amount > 0)
+                    {
+                        ingList.Add((ing.amount, ing.item));
+                    }
+                }
+
                 _tooltipTrigger = TooltipTrigger.AddTooltip(
                     gameObject,
                     _recipe.description,
                     _recipe.craftedItem.itemName,
-                    icon.sprite
+                    icon.sprite,
+                    ingList
                 );
             }
         }
@@ -83,6 +97,10 @@ namespace Assets.Scripts.Crafting
             if (eventData.button == PointerEventData.InputButton.Left && eventData.clickCount >= 2)
             {
                 TryCraft();
+            }
+            else if (eventData.button == PointerEventData.InputButton.Right)
+            {
+                ShowContextMenu(eventData.position);
             }
         }
 
@@ -156,27 +174,28 @@ namespace Assets.Scripts.Crafting
             // Добавляем результат крафта
             int added = progress.AddItemToPlayerInventory(_recipe.craftedItem, _recipe.craftedAmount);
 
-
-            // Собираем список удалённых ингредиентов
-            var removed = new List<string>();
-            foreach (var ing in _recipe.ingredients)
-            {
-                if (ing.item != null && ing.amount > 0)
-                {
-                    removed.Add($"{ing.amount}x {ing.item.itemName}");
-                }
-            }
-
-
             // Уведомления
             NotificationManager.Instance?.Show(
                 $"Добавлено: {_recipe.craftedItem.itemName} x{_recipe.craftedAmount}",
                 _recipe.craftedItem.icon
             );
 
-            foreach (var line in removed)
+            // Собираем список удалённых ингредиентов
+            // var removed = new List<string>();
+            var removed = new List<(int amount, Item item)>();
+            foreach (var ing in _recipe.ingredients)
             {
-                NotificationManager.Instance?.Show($"Удалено: {line}", null);
+                if (ing.item != null && ing.amount > 0)
+                {
+                    // removed.Add($"{ing.amount}x {ing.item.itemName}");
+                    removed.Add((ing.amount, ing.item));
+                }
+            }
+
+            foreach (var ing in removed)
+            {
+                // NotificationManager.Instance?.Show($"Удалено: {line}", null);
+                NotificationManager.Instance?.Show($"Удалено: {ing.amount}x {ing.item.itemName}", ing.item.icon);
             }
 
             // Опыт за крафт
@@ -184,7 +203,19 @@ namespace Assets.Scripts.Crafting
             progress.Save("CraftingSlotUI.TryCraft");
         }
 
-        // Важно: отписаться при уничтожении, чтобы избежать ошибок
+        void ShowContextMenu(Vector2 clickPosition)
+        {
+            ContextMenuManager.Show(
+                _recipe,
+                () =>
+                {
+                    TryCraft();
+                },
+                clickPosition
+            );
+
+        }
+
         void OnDestroy()
         {
             UnsubscribeFromEvents();

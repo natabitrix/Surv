@@ -9,6 +9,7 @@ using Assets.Scripts.UI.Tooltip;
 using Assets.Scripts.Core;
 using System.Collections;
 using Assets.Scripts.Items;
+using Assets.Scripts.Crafting;
 
 
 namespace Assets.Scripts.InventorySystem
@@ -188,11 +189,36 @@ namespace Assets.Scripts.InventorySystem
                     }
                 }
 
+                // список для ремонта
+                var ingList = new List<(int amount, Item item)>();
+                ingList.Clear();
+
+                if (slot.item.hasDurability)
+                {
+                    Recipe recipe = PlayerProgress.Instance.recipeDatabase.GetRecipeForItem(slot.item);
+                    var invData = PlayerProgress.Instance.mainInventoryData;
+                    float repairMultiplier = invData.GetRepairMultiplier(slot.item.maxDurability, slot.currentDurability);
+
+                    foreach (var ing in recipe.ingredients)
+                    {
+                        if (ing.item == null || ing.amount <= 0) continue;
+
+                        int actual = invData.GetRepairAmount(ing.amount, repairMultiplier);
+                        ingList.Add((actual, ing.item));
+                    }
+                }
+                else
+                {
+                    ingList = null;
+                }
+
                 _tooltipTrigger = TooltipTrigger.AddTooltip(
                     gameObject,
                     slot.item.description,
                     slot.item.itemName,
-                    icon.sprite
+                    icon.sprite,
+                    ingList,
+                    "Требуется для ремонта"
                 );
             }
             else

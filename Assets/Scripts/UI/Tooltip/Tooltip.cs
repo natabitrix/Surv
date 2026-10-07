@@ -3,6 +3,8 @@ namespace Assets.Scripts.UI.Tooltip
     using UnityEngine;
     using UnityEngine.UI;
     using TMPro;
+    using System.Collections.Generic;
+    using Assets.Scripts.Items;
 
     /// <summary>
     /// A simple "view" component that displays tooltip data. It is controlled by the TooltipManager.
@@ -20,11 +22,45 @@ namespace Assets.Scripts.UI.Tooltip
         [Tooltip("The Image component for the icon.")]
         [SerializeField] private Image iconField;
 
+        [SerializeField] public GameObject bigPanel;
+
+        [SerializeField] public GameObject rightPanel;
+        [SerializeField] public GameObject rightPanelContent;
+        [SerializeField] public GameObject rightPanelListPrefab;
+
+        [SerializeField] public GameObject smallPanel;
+        [SerializeField] public TextMeshProUGUI smallPanelContentField;
+
         /// <summary>
         /// Populates the UI elements with the provided content and styles. This method is null-safe.
         /// </summary>
         public void SetText(string content, string title = "", Sprite icon = null, Color? titleColor = null, Color? iconColor = null)
         {
+            // small tooltip
+            if (title == "" && icon == null)
+            {
+                smallPanel.SetActive(true);
+                bigPanel.SetActive(false);
+
+                // Set Content (null-safe)
+                if (smallPanelContentField != null)
+                {
+                    smallPanelContentField.text = content ?? string.Empty;
+                }
+            }
+            // big tooltip width title, text and icon
+            else
+            {
+                bigPanel.SetActive(true);
+                smallPanel.SetActive(false);
+
+                // Set Content (null-safe)
+                if (contentField != null)
+                {
+                    contentField.text = content ?? string.Empty;
+                }
+            }
+
             // Set Title (null-safe)
             bool hasTitle = !string.IsNullOrEmpty(title);
             if (titleField != null)
@@ -37,11 +73,6 @@ namespace Assets.Scripts.UI.Tooltip
                 }
             }
 
-            // Set Content (null-safe)
-            if (contentField != null)
-            {
-                contentField.text = content ?? string.Empty;
-            }
 
             // Set Icon (null-safe)
             bool hasIcon = (icon != null);
@@ -61,5 +92,77 @@ namespace Assets.Scripts.UI.Tooltip
                 header.SetActive(hasTitle || hasIcon);
             }
         }
+
+        public void SetRightPanel(List<(int amount, Item item)> rightPanelList)
+        {
+            rightPanel.SetActive(false);
+
+            if (rightPanel == null)
+            {
+                Debug.LogError("rightPanel is not assigned in Tooltip!");
+                return;
+            }
+
+            if (rightPanelContent == null)
+            {
+                Debug.LogError("rightPanelContent is not assigned in Tooltip!");
+                return;
+            }
+
+            if (rightPanelListPrefab == null)
+            {
+                Debug.LogError("rightPanelListPrefab is not assigned in Tooltip!");
+                return;
+            }
+
+            if (rightPanelList != null)
+            {
+                rightPanel.SetActive(true);
+
+                foreach (Transform child in rightPanelContent.transform)
+                {
+                    Destroy(child.gameObject);
+                }
+
+                foreach (var l in rightPanelList)
+                {
+                    string text = $"{l.amount}x {l.item.itemName}";
+                    GameObject listGO = Instantiate(rightPanelListPrefab, rightPanelContent.transform, false);
+                    SetListText(text, listGO);
+                    SetListIcon(l.item.icon, listGO);
+                }
+            }
+        }
+
+        private void SetListIcon(Sprite icon, GameObject noteUI)
+        {
+            var imageComponent = noteUI.GetComponentInChildren<Image>();
+
+            if (imageComponent != null)
+            {
+                if (icon != null)
+                {
+                    imageComponent.sprite = icon;
+                    imageComponent.enabled = true;
+                }
+                else
+                {
+                    imageComponent.enabled = false;
+                }
+            }
+        }
+
+        private void SetListText(string text, GameObject noteUI)
+        {
+            var textComponent = noteUI.GetComponentInChildren<TextMeshProUGUI>();
+
+            if (textComponent != null)
+                textComponent.text = text;
+            else
+                Debug.LogWarning("TextMeshProUGUI not found in notification Manager UI!");
+        }
+
+
+
     }
 }

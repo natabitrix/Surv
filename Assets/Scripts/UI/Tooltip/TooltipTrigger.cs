@@ -1,5 +1,7 @@
 ﻿namespace Assets.Scripts.UI.Tooltip
 {
+    using System.Collections.Generic;
+    using Assets.Scripts.Items;
     using UnityEngine;
     using UnityEngine.EventSystems;
 
@@ -14,9 +16,11 @@
         #region Fields
         [Header("Tooltip Content")]
         [SerializeField] private string title;
+        [SerializeField] private string rightPanelTitle;
         [TextArea(3, 10)]
         [SerializeField] private string content;
         [SerializeField] private Sprite icon;
+        private List<(int amount, Item item)> rightPanelList;
 
         [Header("Custom Styles")]
         [SerializeField] private Color titleColor = Color.white;
@@ -28,8 +32,12 @@
 
         #region Public Properties
         public string Title { get => title; set => title = value; }
+        public string RightPanelTitle { get => rightPanelTitle; set => rightPanelTitle = value; }
         public string Content { get => content; set => content = value; }
         public Sprite Icon { get => icon; set => icon = value; }
+
+        public List<(int amount, Item item)> RightPanelList { get => rightPanelList; set => rightPanelList = value; }
+
         public Color TitleColor { get => titleColor; set => titleColor = value; }
         public Color IconColor { get => iconColor; set => iconColor = value; }
         public float HoverDelay { get => hoverDelay; set => hoverDelay = value; }
@@ -67,9 +75,11 @@
         /// <returns>The created or existing TooltipTrigger component for further customization.</returns>
         public static TooltipTrigger AddTooltip(
             GameObject target,
-            string content,
+            string content = "",
             string title = "",
-            Sprite icon = null
+            Sprite icon = null,
+            List<(int amount, Item item)> rightPanelList = null,
+            string rightPanelTitle = ""
         )
         {
             if (target == null)
@@ -91,6 +101,8 @@
             trigger.Content = content;
             trigger.Title = title;
             trigger.Icon = icon;
+            trigger.RightPanelTitle = rightPanelTitle;
+            trigger.RightPanelList = rightPanelList;
 
             return trigger;
         }
@@ -101,7 +113,7 @@
         {
             if (TooltipManager.Instance != null)
             {
-                TooltipManager.Instance.ShowTooltip(content, title, icon, titleColor, iconColor, hoverDelay);
+                TooltipManager.Instance.ShowTooltip(content, title, icon, rightPanelList, titleColor, iconColor, hoverDelay);
             }
         }
 

@@ -211,12 +211,37 @@ namespace Assets.Scripts.InventorySystem
             return true;
         }
 
+        /// <summary>
+        /// Возвращает множитель стоимости ремонта (0..1) по доле утраченной прочности.
+        /// 0 — предмет целый (ремонт не нужен), 1 — прочность на нуле (ремонт = полная стоимость крафта).
+        /// Возвращает 0, если у предмета нет прочности (maxDurability &lt;= 0) или она не отслеживается (currentDurability &lt; 0).
+        /// </summary>
+        public float GetRepairMultiplier(float maxDurability, float currentDurability)
+        {
+            if (maxDurability <= 0f) return 0f;
+            if (currentDurability >= maxDurability - 0.001f) return 0f;
+
+            float missing = (maxDurability - currentDurability) / maxDurability;
+            return Mathf.Clamp01(missing);
+        }
+
+        // Единая формула: сколько единиц ресурса нужно на ремонт
+        public int GetRepairAmount(int baseAmount, float multiplier)
+        {
+            if (multiplier <= 0f) return 0;
+            return Mathf.Max(1, Mathf.CeilToInt(baseAmount * multiplier));
+        }
+
         // Проверка наличия ресурсов с учетом множителя
         public bool HasIngredientsForRepair(Recipe recipe, float multiplier)
         {
+            if (multiplier <= 0f) return true;   // ремонт не нужен — ресурсы не нужны
+
             foreach (var ing in recipe.ingredients)
             {
-                int required = Mathf.CeilToInt(ing.amount * multiplier);
+                if (ing.item == null || ing.amount <= 0) continue;
+
+                int required = GetRepairAmount(ing.amount, multiplier);
                 if (GetTotalCountOfItem(ing.item) < required) return false;
             }
             return true;
@@ -225,11 +250,18 @@ namespace Assets.Scripts.InventorySystem
         // Потребление ресурсов
         public void ConsumeRepairIngredients(Recipe recipe, float multiplier)
         {
+            if (multiplier <= 0f) return;
+
             foreach (var ing in recipe.ingredients)
             {
-                int toRemove = Mathf.CeilToInt(ing.amount * multiplier);
+                if (ing.item == null || ing.amount <= 0) continue;
+
+                int toRemove = GetRepairAmount(ing.amount, multiplier);
+                if (toRemove <= 0) continue;
+
                 RemoveItemAmount(ing.item, toRemove);
             }
+
             NotifyChanged();
         }
 

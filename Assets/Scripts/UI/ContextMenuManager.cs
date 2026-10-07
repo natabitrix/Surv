@@ -1,3 +1,4 @@
+using Assets.Scripts.Crafting;
 using Assets.Scripts.InventorySystem;
 using Assets.Scripts.Items;
 using UnityEngine;
@@ -24,9 +25,11 @@ namespace Assets.Scripts.UI
         public GameObject menuItemButtonPrefab; // Префаб кнопки из папки Prefabs
 
         private Item _currentItem;
+        private Recipe _currentRecipie;
         private System.Action _onUseCallback;
         private System.Action _onDropCallback;
         private System.Action _onRepairCallback;
+        private System.Action _onCraftCallback;
 
         void Awake()
         {
@@ -40,7 +43,14 @@ namespace Assets.Scripts.UI
             }
         }
 
-        public static void Show(Item item, System.Action onUse, System.Action onDrop, System.Action onRepair, Vector2 position)
+        // Предметы
+        public static void Show(
+            Item item,
+            System.Action onUse,
+            System.Action onDrop,
+            System.Action onRepair,
+            Vector2 position
+        )
         {
             if (Instance == null) return;
             Instance._currentItem = item;
@@ -50,6 +60,21 @@ namespace Assets.Scripts.UI
             Instance._menuPosition = position;
             Instance.BuildAndShow();
         }
+
+        // Кравфт
+        public static void Show(
+            Recipe recipe,
+            System.Action onCraft,
+            Vector2 position
+        )
+        {
+            if (Instance == null) return;
+            Instance._currentRecipie = recipe;
+            Instance._onCraftCallback = onCraft;
+            Instance._menuPosition = position;
+            Instance.BuildAndShow();
+        }
+
 
         private Vector2 _menuPosition = Vector2.zero;
 
@@ -72,9 +97,14 @@ namespace Assets.Scripts.UI
             {
                 AddButton("Использовать", OnUseClicked);
                 AddButton("Выбросить", OnDropClicked);
-                if (_currentItem.hasDurability)
-                    AddButton("Ремонтировать", OnRepairClicked);
+                if (_currentItem.hasDurability) AddButton("Ремонтировать", OnRepairClicked);
             }
+
+            if (_currentRecipie != null)
+            {
+                AddButton("Создать", OnCraftClicked);
+            }
+
             // Пересчитываем размер Panel по содержимому
             Canvas.ForceUpdateCanvases();
 
@@ -166,8 +196,15 @@ namespace Assets.Scripts.UI
 
         void OnRepairClicked()
         {
-            // Debug.Log("Repair clicked");
+            // Debug.Log("OnRepairClicked");
             _onRepairCallback?.Invoke();
+            Hide();
+        }
+
+        void OnCraftClicked()
+        {
+            // Debug.Log("OnCraftClicked");
+            _onCraftCallback?.Invoke();
             Hide();
         }
 

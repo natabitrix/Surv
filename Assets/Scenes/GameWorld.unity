@@ -249300,7 +249300,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.UI.Tooltip.TooltipManager
   tooltipPrefab: {fileID: 5611215217464359752, guid: ed362c02e37b06440b92409073b70875, type: 3}
   rootCanvas: {fileID: 111331452}
-  maxTooltipWidth: 350
+  maxTooltipWidth: 300
+  tooltipIconWidth: 46
   fadeDuration: 0.1
   positionOffset: {x: 0, y: -20}
 --- !u!114 &8846076155618937099

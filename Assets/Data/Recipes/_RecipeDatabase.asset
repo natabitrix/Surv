@@ -13,7 +13,6 @@ MonoBehaviour:
   m_Name: _RecipeDatabase
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Crafting.RecipeDatabase
   _allRecipes:
-  - {fileID: 11400000, guid: 0c70406cca4897a46bf0899026815ca1, type: 2}
   - {fileID: 11400000, guid: 59d0d4e869c54ec4f91615425e0da064, type: 2}
   - {fileID: 11400000, guid: c93f80eb00ac82d4987f70503b607e0b, type: 2}
   - {fileID: 11400000, guid: f382503840b246f4d8d848e739dfc2cf, type: 2}
@@ -27,3 +26,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 2d642f64b7112664d96f19eb545daf2d, type: 2}
   - {fileID: 11400000, guid: 37bfc012bc90a2745ae550474f4c658a, type: 2}
   - {fileID: 11400000, guid: e95da1f55a80e354090cd64caf03b749, type: 2}
+  - {fileID: 11400000, guid: 0c70406cca4897a46bf0899026815ca1, type: 2}
+  - {fileID: 11400000, guid: 2d5826ce7ae35ca46a441d17f862c7e2, type: 2}

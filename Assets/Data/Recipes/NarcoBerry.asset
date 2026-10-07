@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 079dfe81f97326341b2cbd15e8e6e4ed, type: 3}
+  m_Name: NarcoBerry
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Crafting.Recipe
+  recipeName: Narco Berry
+  description: 
+  craftedItem: {fileID: 11400000, guid: d2cdef1359bc9ef43b5e7fb1bbf5f327, type: 2}
+  craftedAmount: 1
+  requiredLevel: 1
+  engramPointsCost: 5
+  experienceReward: 5
+  ingredients:
+  - item: {fileID: 11400000, guid: 0bcb0453a194c7f4685e25e56c667d4c, type: 2}
+    amount: 10
+  - item: {fileID: 11400000, guid: 7572a88102426e7488ae3f506ea445e0, type: 2}
+    amount: 10
+  - item: {fileID: 11400000, guid: 14e07d6a5fa29dd469fc0ecd04bd0d01, type: 2}
+    amount: 10
+  - item: {fileID: 11400000, guid: 5b2aeb1461a89434dab6751adb6301c6, type: 2}
+    amount: 10
+  - item: {fileID: 11400000, guid: d074beec7ca2de648b8d9355bad2d8cd, type: 2}
+    amount: 10
+  - item: {fileID: 11400000, guid: 1ad4a3a8b65eb0d41bd64511934ea685, type: 2}
+    amount: 10
+  - item: {fileID: 11400000, guid: d0928dd4dbf983940a49f62daefab75f, type: 2}
+    amount: 10
+  - item: {fileID: 11400000, guid: 121f7fe9aa3b2d14db4640f7d2f493b6, type: 2}
+    amount: 10
+  - item: {fileID: 11400000, guid: 2b2505f351f6d3549a420e6267103a5e, type: 2}
+    amount: 10

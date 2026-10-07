@@ -6,6 +6,8 @@ namespace Assets.Scripts.UI.Tooltip
     using UnityEngine.UI;
     using TMPro;
     using UnityEngine.InputSystem;
+    using System.Collections.Generic;
+    using Assets.Scripts.Items;
 
     /// <summary>
     /// A singleton manager that controls the lifecycle of a single tooltip instance.
@@ -25,7 +27,9 @@ namespace Assets.Scripts.UI.Tooltip
 
         [Header("Layout Settings")]
         [Tooltip("The maximum width the tooltip can have before its text starts wrapping.")]
-        [SerializeField, Min(50f)] private float maxTooltipWidth = 350f;
+        [SerializeField, Min(50f)] private float maxTooltipWidth = 200f;
+        [Tooltip("The maximum width the tooltip icon can have before its text starts wrapping.")]
+        [SerializeField, Min(0f)] private float tooltipIconWidth = 46f;
 
         [Header("Animation Settings")]
         [Tooltip("The duration of the fade-in and fade-out animations in seconds.")]
@@ -77,7 +81,9 @@ namespace Assets.Scripts.UI.Tooltip
         #endregion
 
         #region Public API
-        public void ShowTooltip(string content, string title, Sprite icon, Color titleColor, Color iconColor, float delay)
+        public void ShowTooltip(string content, string title, Sprite icon,
+            List<(int amount, Item item)> rightPanelList, 
+            Color titleColor, Color iconColor, float delay)
         {
             if (!tooltipInstance)
             {
@@ -90,7 +96,7 @@ namespace Assets.Scripts.UI.Tooltip
 
             // "Last Command Wins": Stop any previous coroutine.
             if (activeCoroutine != null) StopCoroutine(activeCoroutine);
-            activeCoroutine = StartCoroutine(ShowRoutine(content, title, icon, titleColor, iconColor, delay));
+            activeCoroutine = StartCoroutine(ShowRoutine(content, title, icon, rightPanelList, titleColor, iconColor, delay));
         }
 
         public void HideTooltip()
@@ -103,13 +109,13 @@ namespace Assets.Scripts.UI.Tooltip
         #endregion
 
         #region Coroutines & Logic
-        private IEnumerator ShowRoutine(string content, string title, Sprite icon, Color titleColor, Color iconColor, float delay)
+        private IEnumerator ShowRoutine(string content, string title, Sprite icon, List<(int amount, Item item)> rightPanelList, Color titleColor, Color iconColor, float delay)
         {
             // Set alpha to 0 before waiting to prevent a one-frame flicker of old content.
             canvasGroup.alpha = 0;
             yield return new WaitForSeconds(delay);
 
-            yield return ResizeTooltipRoutine(content, title, icon, titleColor, iconColor);
+            yield return ResizeTooltipRoutine(content, title, icon, rightPanelList, titleColor, iconColor);
 
             tooltipInstance.gameObject.SetActive(true);
             tooltipInstance.transform.SetAsLastSibling();
@@ -118,7 +124,7 @@ namespace Assets.Scripts.UI.Tooltip
             activeCoroutine = StartCoroutine(FadeIn());
         }
 
-        private IEnumerator ResizeTooltipRoutine(string content, string title, Sprite icon, Color titleColor, Color iconColor)
+        private IEnumerator ResizeTooltipRoutine(string content, string title, Sprite icon, List<(int amount, Item item)> rightPanelList, Color titleColor, Color iconColor)
         {
             tooltipInstance.gameObject.SetActive(false);
 
@@ -127,9 +133,12 @@ namespace Assets.Scripts.UI.Tooltip
 
             string wrappedTitle = WrapText(title, tooltipInstance.titleField, availableTitleWidth);
             string wrappedContent = WrapText(content, tooltipInstance.contentField, availableContentWidth);
+            string wrappedSmallText = WrapText(content, tooltipInstance.smallPanelContentField, availableContentWidth);
 
             tooltipInstance.SetText(wrappedContent, wrappedTitle, icon, titleColor, iconColor);
 
+            tooltipInstance.SetRightPanel(rightPanelList);
+            
             // The robust "triple cycle" resize method.
             for (int i = 0; i < 3; i++)
             {
@@ -197,7 +206,7 @@ namespace Assets.Scripts.UI.Tooltip
 
         private float CalculateAvailableWidthForText(TMP_Text textElement)
         {
-            float availableWidth = maxTooltipWidth;
+            float availableWidth = maxTooltipWidth - tooltipIconWidth;
             if (textElement == null) return availableWidth;
 
             Transform current = textElement.transform;
