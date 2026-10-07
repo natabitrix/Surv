@@ -51,7 +51,7 @@ namespace Assets.Scripts.Core
 
         private IEnumerator BootstrapRoutine()
         {
-            Debug.Log("[WorldBootstrap] Старт загрузки GameWorld...");
+            // Debug.Log("[WorldBootstrap] Старт загрузки GameWorld...");
 
             // 1. Ждём GameAssets (DontDestroyOnLoad-объект, который мог быть создан
             //    как до, так и после Awake WorldBootstrap).
@@ -69,7 +69,7 @@ namespace Assets.Scripts.Core
                 yield return null;
             }
 
-            Debug.Log("[WorldBootstrap] GameAssets OK.");
+            // Debug.Log("[WorldBootstrap] GameAssets OK.");
 
             // 2. Создаём сценовые менеджеры — теперь GameAssets гарантированно есть.
             CreateWorldManagers();

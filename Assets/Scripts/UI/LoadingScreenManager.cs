@@ -98,7 +98,7 @@ namespace Assets.Scripts.UI
         /// </summary>
         public void StartLoading()
         {
-            Debug.Log($"[LoadingScreenManager] StartLoading: _isLoading={_isLoading}, tasks={_tasks.Count}");
+            // Debug.Log($"[LoadingScreenManager] StartLoading: _isLoading={_isLoading}, tasks={_tasks.Count}");
 
             if (_isLoading)
             {
