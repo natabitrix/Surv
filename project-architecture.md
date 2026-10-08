@@ -916,6 +916,84 @@ BaseLivingEntity.FinishTaming() → ShowTopNote(NotificationType.TameComplete, $
 Цвета текста по типу — отложены.
 Отдельные конфиги для левого уведомления (Show) — не тронуты.
 
+### 21. Радиальное меню (Radial Menu)
+
+Динамическое радиальное меню с поддержкой многоуровневых подменю, Action/Radio-кнопок
+и конфигурируемых наборов для разных типов сущностей.
+
+#### 21.1 Данные
+
+- **`RadialMenuEntryType`** (enum): `Action`, `Submenu`, `Radio`.
+- **`RadialMenuEntry`** (serializable):
+  - `label`, `icon`, `type`, `actionId`, `radioGroupId`, `radioValue`,
+    `useDynamicLabel`, `hideIfUnavailable`, `children` (`[SerializeReference]`).
+- **`RadialMenuConfig`** (SO): `titleOverride`, `rootEntries`.
+- **`RadialMenuGlobalConfig`** (SO): `tamedMenu`, `knockedOutMenu`, `corpseMenu`,
+  `structureMenu`, `chestMenu`. Один ассет на игру, ссылка в `GameAssets`.
+
+#### 21.2 UI
+
+- **`RadialMenuController`** (MonoBehaviour, на `===GameManagers===`):
+  - Стек уровней (`List<RadialMenuEntry[]>`), `MAX_DEPTH = 3`.
+  - `Open(ctx)`, `Close()`, `GoBack()`.
+  - Динамическое построение кнопок из `RadialMenuEntry[]`.
+  - Позиционирование по кругу (`_radius`, `_startAngleDeg`, `_maxButtonsPerRing`, `_ringStep`).
+  - `[Назад]` добавляется автоматически на уровнях > 0.
+  - Radio → `SetRadioValue` + автовозврат на уровень выше.
+  - Action → `ExecuteAction` + `Rebuild` (обновить labels).
+  - `useDynamicLabel` → `GetDynamicLabel(actionId)`.
+  - `hideIfUnavailable` → `IsActionAvailable(actionId)`.
+- **`RadialMenuButton`** (MonoBehaviour на префабе): `_label`, `_button`, `_icon`, `Setup(...)`.
+- **`RadialMenuCanvas/Panel`**: `RadialMenuButtons` (контейнер, без `GridLayoutGroup`), `CloseRadialMenuButton`, `TargetName`, `Bg`.
+
+#### 21.3 Контекст
+
+- **`IRadialMenuContext`**: `GetMenuTitle`, `GetMenuConfig`, `IsActionAvailable`,
+  `ExecuteAction`, `GetRadioValue`, `SetRadioValue`, `GetDynamicLabel`.
+- **`RadialMenu`** (MonoBehaviour на префабах):
+  - Реализует `IRadialMenuContext` + `IInteractable`.
+  - Для существ: `IInteractable.GetInteractType = None` (отвечает `BaseLivingEntity`).
+  - Для структур: `GetInteractType = RadialMenu` (показывает E, открывает меню).
+  - `GetMenuConfig()` — по состоянию: `knockedOut` → `tamed` → `corpse` → `chest` → `structure` (из `RadialMenuGlobalConfig`).
+  - `IsActionAvailable` — по флагам `CreatureData` (`canBePickedUp`, `canBeRidden`).
+
+#### 21.4 Действия (в `BaseLivingEntity`)
+
+- `ExecuteRadialAction(actionId)`: `toggle_follow`, `toggle_wander`, `toggle_mating`,
+  `open_inventory`, `pick_up` (TODO), `ride` (TODO), `rename` (TODO), `unclaim`.
+- `GetRadialRadioValue(groupId)` / `SetRadialRadioValue(groupId, value)`:
+  - `behavior` ↔ `TamedBehavior` (passive / flee / neutral / attack_owner_target / aggressive).
+  - `follow_distance` ↔ `FollowDistance` (lowest / low / medium / high / highest).
+- `GetRadialDynamicLabel(actionId)`: динамический текст для toggle-кнопок
+  (`Включить следование` / `Отключить следование`).
+- `Unclaim()` — снять приручение (стать диким), удалить сейв и инвентарь.
+
+#### 21.5 Команды прирученного
+
+- **`TamedBehavior`** (enum): `Passive`, `Flee`, `Neutral`, `AttackOwnerTarget`, `Aggressive`.
+- **`FollowDistance`** (enum): `Lowest`, `Low`, `Medium`, `High`, `Highest`.
+- **Поля в `BaseLivingEntity`**: `tamedFollowing`, `tamedWandering`, `tamedMating`,
+  `tamedBehavior`, `tamedFollowDistance`.
+- **Взаимоисключение**: `SetTamedFollowing(true)` → `tamedWandering = false`; и наоборот.
+- **Сохранение**: в `TamingSaveData` (`tamedFollowing`, `tamedWandering`, `tamedMating`,
+  `tamedBehavior`, `tamedFollowDistance`). Удалено старое поле `tamedState` (int).
+- **`FinishTaming`**: дефолтные команды — `Following = true`, `Behavior = AttackOwnerTarget`,
+  `FollowDistance = Medium`.
+
+#### 21.6 Флаги способностей (`CreatureData`)
+
+- `canBePickedUp` — кнопка «Подобрать».
+- `canBeRidden` — кнопка «Оседлать».
+- Кнопки скрыты через `hideIfUnavailable` + `IsActionAvailable`.
+
+#### 21.7 Известные особенности
+
+- `RadialMenuEntry.children` — `[SerializeReference]`, иначе Unity warning про serialization depth.
+- `GetInteractType()` в `BaseLivingEntity` для прирученных/нокаутнутых возвращает
+  `InteractType.RadialMenu` (hold E), а для инвентаря — `InteractType.OpenTargetInventory` (F).
+- `RadialMenu` (новый) — на том же GameObject, что `BaseLivingEntity`.
+- `RadialMenuCanvas` включается автоматически через `RadialMenuController._menuRoot.SetActive(true)` в `Open()`.
+
 ## TODO
 
 ### Ближайшее (Следующий шаг)
