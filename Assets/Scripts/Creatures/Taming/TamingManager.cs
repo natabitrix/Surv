@@ -217,6 +217,13 @@ namespace Assets.Scripts.Creatures.Taming
             livingEntity.SetFood(data.food);
             livingEntity.SetStamina(data.stamina);
 
+            // Команды прирученного
+            livingEntity.tamedFollowing = data.tamedFollowing;
+            livingEntity.tamedWandering = data.tamedWandering;
+            livingEntity.tamedMating = data.tamedMating;
+            livingEntity.tamedBehavior = data.tamedBehavior;
+            livingEntity.tamedFollowDistance = data.tamedFollowDistance;
+
             // Инвентарь
             if (data.inventoryData != null && itemDatabase != null)
             {
@@ -279,6 +286,13 @@ namespace Assets.Scripts.Creatures.Taming
                 ownerPlayerId = ownerPlayerId,
                 savedAtTime = GameTime.Now,
                 despawnDuration = 0f,   // прирученные не деспавнятся
+
+                // Команды прирученного
+                tamedFollowing = living.tamedFollowing,
+                tamedWandering = living.tamedWandering,
+                tamedMating = living.tamedMating,
+                tamedBehavior = living.tamedBehavior,
+                tamedFollowDistance = living.tamedFollowDistance,
             };
 
             var inv = living.GetInventory();

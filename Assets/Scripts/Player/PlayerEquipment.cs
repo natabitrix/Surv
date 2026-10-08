@@ -99,7 +99,7 @@ namespace Assets.Scripts.Player
 
         public void Unequip()
         {
-            Debug.Log($"[PlayerEquipment.Unequip] Вызван. Stack trace:\n{System.Environment.StackTrace}");
+            // Debug.Log($"[PlayerEquipment.Unequip] Вызван. Stack trace:\n{System.Environment.StackTrace}");
             if (_rangedCombat != null) _rangedCombat.SetArrowSpawnPoint(null);
             Equip(null, -1);
 

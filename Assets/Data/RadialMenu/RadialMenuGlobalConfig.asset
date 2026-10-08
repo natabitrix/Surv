@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9201c252a5d087d4690be0a605bf9c23, type: 3}
+  m_Name: RadialMenuGlobalConfig
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.UI.RadialMenuUI.RadialMenuGlobalConfig
+  tamedMenu: {fileID: 11400000, guid: 62ce52201db494f458138bcc78bcff0d, type: 2}
+  knockedOutMenu: {fileID: 11400000, guid: faa26baaaeac2364c9e089d33a7ef199, type: 2}
+  corpseMenu: {fileID: 11400000, guid: aa9f898a4642da748aa68b796d802135, type: 2}
+  structureMenu: {fileID: 11400000, guid: cbd3b435a9ede6d4dacf9b8f2859f735, type: 2}
+  chestMenu: {fileID: 0}

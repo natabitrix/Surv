@@ -4,6 +4,7 @@ using Assets.Scripts.Corpses;
 using Assets.Scripts.Audio;
 using Assets.Scripts.InventorySystem;
 using Assets.Scripts.Loot;
+using Assets.Scripts.UI.RadialMenuUI;
 
 namespace Assets.Scripts.Creatures
 {
@@ -41,7 +42,7 @@ namespace Assets.Scripts.Creatures
         [Header("Префаб")]
         [Tooltip("Единый префаб существа (используется и для живого, и для трупа)")]
         public GameObject prefab;
-        
+
         [Tooltip("Уровень существа. Для ARK-стиля — 1..150.")]
         public int level = 1;
 
@@ -127,5 +128,24 @@ namespace Assets.Scripts.Creatures
 
         [Tooltip("Сколько здоровья теряется в секунду, когда food == 0.")]
         public float starvationDamagePerSecond = 1f;
+
+        // === Tamed AI ===
+        [Header("Tamed AI (после приручения)")]
+        [Tooltip("Радиус, в котором существо ищет врагов (при агрессивном поведении).")]
+        public float tamedAggroRadius = 15f;
+
+        [Tooltip("Радиус блуждания (команда 'Блуждать').")]
+        public float tamedWanderRadius = 10f;
+
+        [Tooltip("Скорость бега при следовании за игроком (если игрок далеко).")]
+        public float tamedFollowChaseSpeed = 5f;
+
+        [Tooltip("Можно ли подобрать существо (для мелких).")]
+        public bool canBePickedUp = false;
+
+        [Tooltip("Можно ли оседлать существо.")]
+        public bool canBeRidden = false;
+
+
     }
 }

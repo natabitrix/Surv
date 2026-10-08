@@ -7,6 +7,7 @@ using Assets.Scripts.InventorySystem;
 using Assets.Scripts.Items;
 using Assets.Scripts.Player;
 using Assets.Scripts.UI;
+using Assets.Scripts.UI.RadialMenuUI;
 using Assets.Scripts.UI.Tooltip;
 using TMPro;
 using Unity.VisualScripting;
@@ -118,14 +119,14 @@ namespace Assets.Scripts.UI
             OtherInventoryMoveButton.AddComponent<ButtonScaleEffect>();
 
             // Radial Menu Buttons
-            RadialMenuPickupButton.onClick.AddListener(() => RadialMenuPickup());
-            RadialMenuPickupButton.AddComponent<ButtonScaleEffect>();
+            // RadialMenuPickupButton.onClick.AddListener(() => RadialMenuPickup());
+            // RadialMenuPickupButton.AddComponent<ButtonScaleEffect>();
 
-            RadialMenuDestroyButton.onClick.AddListener(() => RadialMenuDestroy());
-            RadialMenuDestroyButton.AddComponent<ButtonScaleEffect>();
+            // RadialMenuDestroyButton.onClick.AddListener(() => RadialMenuDestroy());
+            // RadialMenuDestroyButton.AddComponent<ButtonScaleEffect>();
 
-            RadialMenuDragCorpseButton.onClick.AddListener(() => RadialMenuDragCorpse());
-            RadialMenuDragCorpseButton.AddComponent<ButtonScaleEffect>();
+            // RadialMenuDragCorpseButton.onClick.AddListener(() => RadialMenuDragCorpse());
+            // RadialMenuDragCorpseButton.AddComponent<ButtonScaleEffect>();
         }
 
         private void Awake()
@@ -213,6 +214,84 @@ namespace Assets.Scripts.UI
             _input.OnInteractStopPressed += _itemUsageRouter.OnUseItemFinished;
         }
 
+        // public void OpenRadialMenu(GameObject targetGO)
+        // {
+        //     if (_isRadialMenuOpened) return;
+
+        //     if (targetGO == null)
+        //     {
+        //         Debug.LogError("[PanelsUIController] Target GameObject не найден!");
+        //         return;
+        //     }
+
+        //     Item targetItem = null;
+        //     Creature targetCreature = null;
+        //     Corpse targetCorpse = null;
+
+        //     if (targetGO.TryGetComponent(out RadialMenu menu))
+        //     {
+
+        //         // 1. Item — из поля
+        //         if (menu.item != null) targetItem = menu.item;
+
+        //         // 2. Если есть живое существо — приоритет ему
+        //         var living = targetGO.GetComponent<BaseLivingEntity>();
+        //         if (living != null)
+        //         {
+        //             // Нокаутнутое или прирученное — существо
+        //             if (living is Creature c)
+        //                 targetCreature = c;
+        //         }
+
+        //         // 3. Если это труп (Corpse.enabled) — приоритет трупу
+        //         var corpseComp = targetGO.GetComponent<Corpse>();
+        //         if (corpseComp != null && corpseComp.enabled)
+        //         {
+        //             // Труп. Но если есть также Creature и оно tamed/knockedOut — приоритет существу.
+        //             if (living == null || (!living.tamed && !living.knockedOut))
+        //             {
+        //                 targetCorpse = corpseComp;
+        //                 targetCreature = null;
+        //             }
+        //         }
+
+        //         // 4. Fallback — из полей RadialMenu
+        //         if (targetCreature == null && targetCorpse == null)
+        //         {
+        //             if (menu.creature != null) targetCreature = menu.creature;
+        //             else if (menu.corpse != null) targetCorpse = menu.corpse;
+        //         }
+
+        //     }
+
+        //     if (targetItem == null && targetCreature == null && targetCorpse == null)
+        //     {
+        //         Debug.LogError("[PanelsUIController] item, creature и corpse не найдены!");
+        //         return;
+        //     }
+
+        //     RadialMenuCurrentTarget = targetItem;
+        //     RadialMenuCurrentTargetGO = targetGO;
+
+        //     if (RadialMenuTargetName != null)
+        //     {
+        //         if (targetItem != null)
+        //             RadialMenuTargetName.text = $"{targetItem.itemName}";
+
+        //         else if (targetCreature != null)
+        //             RadialMenuTargetName.text = $"СУЩЕСТВО {targetCreature.gameObject.name}";
+
+        //         else if (targetCorpse != null)
+        //             RadialMenuTargetName.text = $"ТЕЛО {targetCorpse.gameObject.name}";
+        //     }
+
+
+        //     RadialMenuPanel.SetActive(true);
+        //     _isRadialMenuOpened = true;
+        //     PanelMode(true);
+        // }
+
+
         public void OpenRadialMenu(GameObject targetGO)
         {
             if (_isRadialMenuOpened) return;
@@ -223,101 +302,74 @@ namespace Assets.Scripts.UI
                 return;
             }
 
-            Item targetItem = null;
-            Creature targetCreature = null;
-            Corpse targetCorpse = null;
-
-            if (targetGO.TryGetComponent(out RadialMenu menu))
+            var ctx = targetGO.GetComponent<Assets.Scripts.UI.RadialMenuUI.IRadialMenuContext>();
+            if (ctx == null)
             {
-                // if (menu.item != null) targetItem = menu.item;
-                // else if (menu.creature != null) targetCreature = menu.creature;
-                // else if (menu.corpse != null) targetCorpse = menu.corpse;
-
-                // 1. Item — из поля
-                if (menu.item != null) targetItem = menu.item;
-
-                // 2. Если есть живое существо — приоритет ему
-                var living = targetGO.GetComponent<BaseLivingEntity>();
-                if (living != null)
-                {
-                    // Нокаутнутое или прирученное — существо
-                    if (living is Creature c)
-                        targetCreature = c;
-                }
-
-                // 3. Если это труп (Corpse.enabled) — приоритет трупу
-                var corpseComp = targetGO.GetComponent<Corpse>();
-                if (corpseComp != null && corpseComp.enabled)
-                {
-                    // Труп. Но если есть также Creature и оно tamed/knockedOut — приоритет существу.
-                    if (living == null || (!living.tamed && !living.knockedOut))
-                    {
-                        targetCorpse = corpseComp;
-                        targetCreature = null;
-                    }
-                }
-
-                // 4. Fallback — из полей RadialMenu
-                if (targetCreature == null && targetCorpse == null)
-                {
-                    if (menu.creature != null) targetCreature = menu.creature;
-                    else if (menu.corpse != null) targetCorpse = menu.corpse;
-                }
-
-
-
-            }
-
-            if (targetItem == null && targetCreature == null && targetCorpse == null)
-            {
-                Debug.LogError("[PanelsUIController] item, creature и corpse не найдены!");
+                Debug.LogError($"[PanelsUIController] На {targetGO.name} нет IRadialMenuContext!");
                 return;
             }
 
-            RadialMenuCurrentTarget = targetItem;
-            RadialMenuCurrentTargetGO = targetGO;
-
-            if (RadialMenuTargetName != null)
+            var config = ctx.GetMenuConfig();
+            if (config == null)
             {
-                if (targetItem != null)
-                    RadialMenuTargetName.text = $"{targetItem.itemName}";
-
-                else if (targetCreature != null)
-                    RadialMenuTargetName.text = $"СУЩЕСТВО {targetCreature.gameObject.name}";
-
-                else if (targetCorpse != null)
-                    RadialMenuTargetName.text = $"ТЕЛО {targetCorpse.gameObject.name}";
+                Debug.LogWarning($"[PanelsUIController] Пустой RadialMenuConfig для {ctx.GetMenuTitle()}");
+                return;
             }
 
+            RadialMenuCurrentTargetGO = targetGO;
 
-            RadialMenuPanel.SetActive(true);
+            // Открываем через RadialMenuController
+            var controller = Assets.Scripts.UI.RadialMenuUI.RadialMenuController.Instance;
+            if (controller == null)
+            {
+                Debug.LogError("[PanelsUIController] RadialMenuController.Instance == null!");
+                return;
+            }
+
+            controller.Open(ctx);
+
             _isRadialMenuOpened = true;
             PanelMode(true);
         }
 
+
+        // public void CloseRadialMenu()
+        // {
+        //     // ✅ ПРОВЕРКА: Не закрывать если уже закрыто
+        //     if (!_isRadialMenuOpened)
+        //     {
+        //         return;
+        //     }
+
+        //     RadialMenuCurrentTarget = null;
+        //     RadialMenuCurrentTargetGO = null;
+
+        //     if (RadialMenuTargetName != null)
+        //         RadialMenuTargetName.text = " ";
+
+        //     RadialMenuPanel.SetActive(false);
+        //     _isRadialMenuOpened = false;
+        //     PanelMode(false);
+
+        //     if (_tooltipManager != null)
+        //         _tooltipManager.HideTooltip();
+        // }
+
         public void CloseRadialMenu()
         {
-            // ✅ ПРОВЕРКА: Не закрывать если уже закрыто
-            if (!_isRadialMenuOpened)
-            {
-                return;
-            }
+            if (!_isRadialMenuOpened) return;
 
             RadialMenuCurrentTarget = null;
             RadialMenuCurrentTargetGO = null;
 
-            if (RadialMenuTargetName != null)
-                RadialMenuTargetName.text = " ";
+            RadialMenuController.Instance?.Close();
 
-            RadialMenuPanel.SetActive(false);
             _isRadialMenuOpened = false;
             PanelMode(false);
 
-            if (_tooltipManager != null)
-                _tooltipManager.HideTooltip();
-
-
+            if (_tooltipManager != null) _tooltipManager.HideTooltip();
         }
+
 
         // Закрытие панелей инвентаря
         public void CloseInventoryPanel()

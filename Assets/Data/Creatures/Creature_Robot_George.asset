@@ -71,3 +71,11 @@ MonoBehaviour:
   foodDrainRateTamed: 0.1
   foodEatThresholdPercent: 0.9
   starvationDamagePerSecond: 1
+  tamedAggroRadius: 15
+  tamedWanderRadius: 10
+  tamedFollowChaseSpeed: 5
+  canBePickedUp: 0
+  canBeRidden: 1
+  tamedMenuConfig: {fileID: 11400000, guid: 62ce52201db494f458138bcc78bcff0d, type: 2}
+  knockedOutMenuConfig: {fileID: 11400000, guid: faa26baaaeac2364c9e089d33a7ef199, type: 2}
+  corpseMenuConfig: {fileID: 11400000, guid: aa9f898a4642da748aa68b796d802135, type: 2}

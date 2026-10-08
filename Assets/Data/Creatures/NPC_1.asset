@@ -17,7 +17,6 @@ MonoBehaviour:
   icon: {fileID: 0}
   description: 
   prefab: {fileID: 9136099890693409341, guid: 92a6431579052564487ec73b861e8184, type: 3}
-  corpsePrefab: {fileID: 7881994360618582535, guid: 5b8c8f421cdca80479a335e16589a204, type: 3}
   level: 1
   maxHealth: 1000
   maxStamina: 50
@@ -70,3 +69,9 @@ MonoBehaviour:
   foodDrainRateTamed: 0.1
   foodEatThresholdPercent: 0.9
   starvationDamagePerSecond: 1
+  tamedAggroRadius: 15
+  tamedWanderRadius: 10
+  tamedFollowChaseSpeed: 5
+  radialMenuConfig: {fileID: 11400000, guid: 62ce52201db494f458138bcc78bcff0d, type: 2}
+  canBePickedUp: 0
+  canBeRidden: 0

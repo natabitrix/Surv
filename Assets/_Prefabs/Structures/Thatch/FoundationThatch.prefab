@@ -903,10 +903,10 @@ PrefabInstance:
     - target: {fileID: -7511558181221131132, guid: 555c11267c5cc4d48aa352cce845023a, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 93766229a14c21b4e8cfe3863d19ff6d, type: 2}
+      objectReference: {fileID: 2100000, guid: 0438df62f44e8034abc869d09635f202, type: 2}
     - target: {fileID: 919132149155446097, guid: 555c11267c5cc4d48aa352cce845023a, type: 3}
       propertyPath: m_Name
-      value: FoundationWood
+      value: FoundationThatch
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 555c11267c5cc4d48aa352cce845023a, type: 3}
       propertyPath: m_Layer
@@ -949,7 +949,7 @@ PrefabInstance:
       addedObject: {fileID: 3471272973389730041}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 555c11267c5cc4d48aa352cce845023a, type: 3}
       insertIndex: -1
-      addedObject: {fileID: -6633922332667878367}
+      addedObject: {fileID: -7474320202662955501}
   m_SourcePrefab: {fileID: 100100000, guid: 555c11267c5cc4d48aa352cce845023a, type: 3}
 --- !u!1 &6162902790616000211 stripped
 GameObject:
@@ -977,7 +977,7 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1.95, y: 0.7, z: 1.95}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &-6633922332667878367
+--- !u!114 &-7474320202662955501
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -986,12 +986,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 6162902790616000211}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e4fd1ea77d25d2645838ef83642d540d, type: 3}
+  m_Script: {fileID: 11500000, guid: d1665aaf0d53d5045b5ed1d107c342fc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Interactables.RadialMenu
-  item: {fileID: 11400000, guid: 7fba259edd806e145b7fda6019d0ad58, type: 2}
+  item: {fileID: 0}
   corpse: {fileID: 0}
   creature: {fileID: 0}
+  corpseMenuConfig: {fileID: 0}
+  structureMenuConfig: {fileID: 11400000, guid: cbd3b435a9ede6d4dacf9b8f2859f735, type: 2}
 --- !u!4 &6831071967758417001 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 555c11267c5cc4d48aa352cce845023a, type: 3}

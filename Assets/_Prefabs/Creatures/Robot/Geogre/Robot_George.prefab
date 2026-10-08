@@ -3211,10 +3211,10 @@ GameObject:
   - component: {fileID: 8949549061159675170}
   - component: {fileID: 3656229583173167061}
   - component: {fileID: 6296707825184828124}
-  - component: {fileID: 592354814697281613}
   - component: {fileID: -7122809779282849588}
   - component: {fileID: -6779586722763855289}
   - component: {fileID: -1522704912489940676}
+  - component: {fileID: -8081587956032000943}
   m_Layer: 12
   m_Name: Robot_George
   m_TagString: Untagged
@@ -3258,7 +3258,6 @@ MonoBehaviour:
   _interactionCollider: {fileID: 1855417968429868836}
   _interactionAnchor: {fileID: 7933063364431489933}
   _inventory: {fileID: 0}
-  _chestUI: {fileID: 0}
   allowHarvest: 1
   allowFists: 1
   allowAxe: 1
@@ -3331,9 +3330,13 @@ MonoBehaviour:
   knockedOut: 0
   tamablePassive: 0
   tamingProgress: 0
+  tamedFollowing: 0
+  tamedWandering: 0
+  tamedMating: 0
+  tamedBehavior: 2
+  tamedFollowDistance: 2
   _interactionCollider: {fileID: 1855417968429868836}
   _inventory: {fileID: 0}
-  _chestUI: {fileID: 0}
   _debugDamage: 0
   torpor: 0
   maxTorpor: 100
@@ -3389,21 +3392,6 @@ MonoBehaviour:
   intensityParameter: _DamageIntensity
   damageIntensity: 1.5
   checkInterval: 0.1
---- !u!114 &592354814697281613
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9136099890693409341}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e4fd1ea77d25d2645838ef83642d540d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Interactables.RadialMenu
-  item: {fileID: 0}
-  corpse: {fileID: 0}
-  creature: {fileID: 0}
 --- !u!114 &-7122809779282849588
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3482,3 +3470,20 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &-8081587956032000943
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9136099890693409341}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1665aaf0d53d5045b5ed1d107c342fc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Interactables.RadialMenu
+  item: {fileID: 0}
+  corpse: {fileID: 0}
+  creature: {fileID: 0}
+  corpseMenuConfig: {fileID: 0}
+  structureMenuConfig: {fileID: 0}

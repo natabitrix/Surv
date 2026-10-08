@@ -81,10 +81,15 @@ namespace Assets.Scripts.UI
         void BuildAndShow()
         {
             // Активируем Canvas, если он неактивен
-            if (!contextMenuCanvas.gameObject.activeSelf)
+            // if (!contextMenuCanvas.gameObject.activeSelf)
+            // {
+            //     contextMenuCanvas.gameObject.SetActive(true);
+            // }
+            if (!Panel.gameObject.activeSelf)
             {
-                contextMenuCanvas.gameObject.SetActive(true);
+                Panel.gameObject.SetActive(true);
             }
+
 
             // Очистка
             for (int i = contentPanel.childCount - 1; i >= 0; i--)
@@ -149,7 +154,6 @@ namespace Assets.Scripts.UI
                 // localPoint += new Vector2(10, -Panel.sizeDelta.y - 10);
                 localPoint += new Vector2(100, 0);
 
-
                 // Получаем размеры Canvas и Panel
                 RectTransform canvasRect = contextMenuCanvas.transform as RectTransform;
                 float canvasWidth = canvasRect.rect.width;
@@ -170,14 +174,8 @@ namespace Assets.Scripts.UI
                     localPoint.y = -canvasHeight / 2 + panelHeight / 2 + 10;
                 }
 
-
-
-
                 Panel.anchoredPosition = localPoint;
             }
-
-
-
         }
 
         void OnUseClicked()

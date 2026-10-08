@@ -3192,7 +3192,6 @@ GameObject:
   - component: {fileID: 8949549061159675170}
   - component: {fileID: 3656229583173167061}
   - component: {fileID: 6296707825184828124}
-  - component: {fileID: 592354814697281613}
   - component: {fileID: -9213933361547040661}
   - component: {fileID: -405875431102587216}
   - component: {fileID: -6198864207004265351}
@@ -3239,7 +3238,6 @@ MonoBehaviour:
   _interactionCollider: {fileID: 3651913619175911357}
   _interactionAnchor: {fileID: 8117981828928339113}
   _inventory: {fileID: 0}
-  _chestUI: {fileID: 0}
   allowHarvest: 1
   allowFists: 1
   allowAxe: 1
@@ -3302,9 +3300,13 @@ MonoBehaviour:
   knockedOut: 0
   tamablePassive: 0
   tamingProgress: 0
+  tamedFollowing: 0
+  tamedWandering: 0
+  tamedMating: 0
+  tamedBehavior: 2
+  tamedFollowDistance: 2
   _interactionCollider: {fileID: 3651913619175911357}
   _inventory: {fileID: 0}
-  _chestUI: {fileID: 0}
   _debugDamage: 0
   torpor: 0
   maxTorpor: 100
@@ -3360,21 +3362,6 @@ MonoBehaviour:
   intensityParameter: _DamageIntensity
   damageIntensity: 1.5
   checkInterval: 0.1
---- !u!114 &592354814697281613
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9136099890693409341}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e4fd1ea77d25d2645838ef83642d540d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Interactables.RadialMenu
-  item: {fileID: 0}
-  corpse: {fileID: 0}
-  creature: {fileID: 0}
 --- !u!114 &-9213933361547040661
 MonoBehaviour:
   m_ObjectHideFlags: 0

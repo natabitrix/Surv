@@ -1,0 +1,214 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2cfda0461cb845b478df0caa5a607629, type: 3}
+  m_Name: Tamed_RadialMenuConfig
+  m_EditorClassIdentifier: 
+  titleOverride: 
+  rootEntries:
+  - label: "\u041F\u043E\u0434\u043E\u0431\u0440\u0430\u0442\u044C"
+    icon: {fileID: 0}
+    type: 0
+    actionId: pick_up
+    radioGroupId: 
+    radioValue: 
+    useDynamicLabel: 0
+    hideIfUnavailable: 1
+    children: []
+  - label: "\u041E\u0441\u0435\u0434\u043B\u0430\u0442\u044C"
+    icon: {fileID: 0}
+    type: 0
+    actionId: ride
+    radioGroupId: 
+    radioValue: 
+    useDynamicLabel: 0
+    hideIfUnavailable: 1
+    children: []
+  - label: "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0438\u043D\u0432\u0435\u043D\u0442\u0430\u0440\u044C"
+    icon: {fileID: 0}
+    type: 0
+    actionId: open_inventory
+    radioGroupId: 
+    radioValue: 
+    useDynamicLabel: 0
+    hideIfUnavailable: 0
+    children: []
+  - label: "\u041F\u043E\u0432\u0435\u0434\u0435\u043D\u0438\u0435"
+    icon: {fileID: 0}
+    type: 1
+    actionId: 
+    radioGroupId: 
+    radioValue: 
+    useDynamicLabel: 0
+    hideIfUnavailable: 0
+    children:
+    - label: "\u0421\u043B\u0435\u0434\u043E\u0432\u0430\u043D\u0438\u0435"
+      icon: {fileID: 0}
+      type: 0
+      actionId: 
+      radioGroupId: 
+      radioValue: 
+      useDynamicLabel: 0
+      hideIfUnavailable: 0
+      children: []
+    - label: "\u0411\u043B\u0443\u0436\u0434\u0430\u043D\u0438\u0435"
+      icon: {fileID: 0}
+      type: 0
+      actionId: 
+      radioGroupId: 
+      radioValue: 
+      useDynamicLabel: 0
+      hideIfUnavailable: 0
+      children: []
+    - label: "\u0421\u043F\u0430\u0440\u0438\u0432\u0430\u043D\u0438\u0435"
+      icon: {fileID: 0}
+      type: 0
+      actionId: 
+      radioGroupId: 
+      radioValue: 
+      useDynamicLabel: 0
+      hideIfUnavailable: 0
+      children: []
+    - label: "\u041E\u0442\u043D\u043E\u0448\u0435\u043D\u0438\u0435 \u043A \u0432\u0440\u0430\u0433\u0443"
+      icon: {fileID: 0}
+      type: 1
+      actionId: 
+      radioGroupId: 
+      radioValue: 
+      useDynamicLabel: 0
+      hideIfUnavailable: 0
+      children:
+      - label: "\u041F\u0443\u0433\u043B\u0438\u0432\u043E\u0435"
+        icon: {fileID: 0}
+        type: 0
+        actionId: 
+        radioGroupId: 
+        radioValue: 
+        useDynamicLabel: 0
+        hideIfUnavailable: 0
+        children: []
+      - label: "\u041D\u0435\u0439\u0442\u0440\u0430\u043B\u044C\u043D\u043E\u0435"
+        icon: {fileID: 0}
+        type: 0
+        actionId: 
+        radioGroupId: 
+        radioValue: 
+        useDynamicLabel: 0
+        hideIfUnavailable: 0
+        children: []
+      - label: "\u0417\u0430\u0449\u0438\u0442\u0430"
+        icon: {fileID: 0}
+        type: 0
+        actionId: 
+        radioGroupId: 
+        radioValue: 
+        useDynamicLabel: 0
+        hideIfUnavailable: 0
+        children: []
+      - label: "\u041F\u0430\u0441\u0441\u0438\u0432\u043D\u043E\u0435"
+        icon: {fileID: 0}
+        type: 0
+        actionId: 
+        radioGroupId: 
+        radioValue: 
+        useDynamicLabel: 0
+        hideIfUnavailable: 0
+        children: []
+      - label: "\u0410\u0433\u0440\u0435\u0441\u0441\u0438\u0432\u043D\u043E\u0435"
+        icon: {fileID: 0}
+        type: 0
+        actionId: 
+        radioGroupId: 
+        radioValue: 
+        useDynamicLabel: 0
+        hideIfUnavailable: 0
+        children: []
+    - label: "\u0414\u0438\u0441\u0442\u0430\u043D\u0446\u0438\u044F \u0441\u043B\u0435\u0434\u043E\u0432\u0430\u043D\u0438\u044F"
+      icon: {fileID: 0}
+      type: 1
+      actionId: 
+      radioGroupId: 
+      radioValue: 
+      useDynamicLabel: 0
+      hideIfUnavailable: 0
+      children:
+      - label: "\u041D\u0430\u0438\u043C\u0435\u043D\u044C\u0448\u0430\u044F"
+        icon: {fileID: 0}
+        type: 0
+        actionId: 
+        radioGroupId: 
+        radioValue: 
+        useDynamicLabel: 0
+        hideIfUnavailable: 0
+        children: []
+      - label: "\u041A\u043E\u0440\u043E\u0442\u043A\u0430\u044F"
+        icon: {fileID: 0}
+        type: 0
+        actionId: 
+        radioGroupId: 
+        radioValue: 
+        useDynamicLabel: 0
+        hideIfUnavailable: 0
+        children: []
+      - label: "\u0421\u0440\u0435\u0434\u043D\u044F\u044F"
+        icon: {fileID: 0}
+        type: 0
+        actionId: 
+        radioGroupId: 
+        radioValue: 
+        useDynamicLabel: 0
+        hideIfUnavailable: 0
+        children: []
+      - label: "\u0414\u043B\u0438\u043D\u043D\u0430\u044F"
+        icon: {fileID: 0}
+        type: 0
+        actionId: 
+        radioGroupId: 
+        radioValue: 
+        useDynamicLabel: 0
+        hideIfUnavailable: 0
+        children: []
+      - label: "\u041D\u0430\u0438\u0431\u043E\u043B\u044C\u0448\u0430\u044F"
+        icon: {fileID: 0}
+        type: 0
+        actionId: 
+        radioGroupId: 
+        radioValue: 
+        useDynamicLabel: 0
+        hideIfUnavailable: 0
+        children: []
+  - label: "\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u044F"
+    icon: {fileID: 0}
+    type: 1
+    actionId: 
+    radioGroupId: 
+    radioValue: 
+    useDynamicLabel: 0
+    hideIfUnavailable: 0
+    children:
+    - label: "\u0418\u0437\u043C\u0435\u043D\u0438\u0442\u044C \u0438\u043C\u044F"
+      icon: {fileID: 0}
+      type: 0
+      actionId: 
+      radioGroupId: 
+      radioValue: 
+      useDynamicLabel: 0
+      hideIfUnavailable: 0
+      children: []
+    - label: "\u0421\u043D\u044F\u0442\u044C \u043A\u043B\u0435\u0439\u043C\u043E"
+      icon: {fileID: 0}
+      type: 0
+      actionId: 
+      radioGroupId: 
+      radioValue: 
+      useDynamicLabel: 0
+      hideIfUnavailable: 0
+      children: []

@@ -31,6 +31,24 @@ namespace Assets.Scripts.Creatures
         public bool tamablePassive = false;
         public float tamingProgress = 0f;
 
+        // === Команды прирученного ===
+        [Header("Tamed Commands")]
+        [Tooltip("Существо следует за игроком.")]
+        public bool tamedFollowing = false;
+
+        [Tooltip("Существо бродит в радиусе.")]
+        public bool tamedWandering = false;
+
+        [Tooltip("Существо может спариваться.")]
+        public bool tamedMating = false;
+
+        [Tooltip("Отношение к врагам.")]
+        public TamedBehavior tamedBehavior = TamedBehavior.Neutral;
+
+        [Tooltip("Дистанция следования за игроком.")]
+        public FollowDistance tamedFollowDistance = FollowDistance.Medium;
+
+
         public string TamingInstanceId { get; set; } = "";
 
         [Header("Interaction")]
@@ -123,6 +141,7 @@ namespace Assets.Scripts.Creatures
         // ==========================================
         public InteractType GetInteractType() => tamed || (tamableKO && knockedOut) ? InteractType.OpenTargetInventory : InteractType.None;
         public InteractType GetInteractType2() => tamable && tamablePassive ? InteractType.Interact : InteractType.None;
+
 
         public void Interact(InteractContext context)
         {
@@ -540,6 +559,13 @@ namespace Assets.Scripts.Creatures
             tamed = true;
             tamingProgress = 100f;
 
+            // Дефолтные команды
+            tamedFollowing = true;
+            tamedWandering = false;
+            tamedMating = false;
+            tamedBehavior = TamedBehavior.AttackOwnerTarget;
+            tamedFollowDistance = FollowDistance.Medium;
+
             ExitKnockoutState();
             SetCreatureLayer();
 
@@ -581,17 +607,47 @@ namespace Assets.Scripts.Creatures
             return food <= 0f;
         }
 
-        protected bool _isDead = false;
-        public bool IsDead() => _isDead;
-        public float GetHealth() => health;
-        public float GetMaxHealth() => maxHealth;
-        public float GetStamina() => stamina;
-        public float GetMaxStamina() => maxStamina;
-        public bool IsAlive() => !_isDead && health > 0;
+        // ==========================================
+        // === КОМАНДЫ ПРИРУЧЕННОГО ===
+        // ==========================================
 
-        public void SetHealth(float value) => health = Mathf.Clamp(value, 0f, maxHealth);
-        public void SetFood(float value) => food = Mathf.Clamp(value, 0f, maxFood);
-        public void SetStamina(float value) => stamina = Mathf.Clamp(value, 0f, maxStamina);
+        /// <summary>Включить/выключить следование. Выключает блуждание (взаимоисключающе).</summary>
+        public void SetTamedFollowing(bool value)
+        {
+            if (!tamed) return;
+            tamedFollowing = value;
+            if (value) tamedWandering = false;
+        }
+
+        /// <summary>Включить/выключить блуждание. Выключает следование (взаимоисключающе).</summary>
+        public void SetTamedWandering(bool value)
+        {
+            if (!tamed) return;
+            tamedWandering = value;
+            if (value) tamedFollowing = false;
+        }
+
+        /// <summary>Включить/выключить спаривание.</summary>
+        public void SetTamedMating(bool value)
+        {
+            if (!tamed) return;
+            tamedMating = value;
+        }
+
+        /// <summary>Установить отношение к врагам.</summary>
+        public void SetTamedBehavior(TamedBehavior value)
+        {
+            if (!tamed) return;
+            tamedBehavior = value;
+        }
+
+        /// <summary>Установить дистанцию следования.</summary>
+        public void SetFollowDistance(FollowDistance value)
+        {
+            if (!tamed) return;
+            tamedFollowDistance = value;
+        }
+
 
         protected void SetCreatureLayer()
         {
@@ -608,5 +664,220 @@ namespace Assets.Scripts.Creatures
                 ChestUIManager.Instance.Close();
             }
         }
+
+
+        // ==========================================
+        // === RADIAL MENU ACTIONS ===
+        // ==========================================
+
+        /// <summary>Выполнить действие из радиального меню.</summary>
+        public void ExecuteRadialAction(string actionId)
+        {
+            switch (actionId)
+            {
+                case "toggle_follow":
+                    SetTamedFollowing(!tamedFollowing);
+                    Debug.Log($"[{gameObject.name}] Follow = {tamedFollowing}");
+                    break;
+
+                case "toggle_wander":
+                    SetTamedWandering(!tamedWandering);
+                    Debug.Log($"[{gameObject.name}] Wander = {tamedWandering}");
+                    break;
+
+                case "toggle_mating":
+                    SetTamedMating(!tamedMating);
+                    Debug.Log($"[{gameObject.name}] Mating = {tamedMating}");
+                    break;
+
+                case "open_inventory":
+                    OpenInventory();
+                    break;
+
+                case "pick_up":
+                    // TODO
+                    Debug.Log($"[{gameObject.name}] Pick up (TODO)");
+                    break;
+
+                case "ride":
+                    // TODO
+                    Debug.Log($"[{gameObject.name}] Ride (TODO)");
+                    break;
+
+                case "rename":
+                    // TODO
+                    Debug.Log($"[{gameObject.name}] Rename (TODO)");
+                    break;
+
+                case "unclaim":
+                    Unclaim();
+                    break;
+
+                default:
+                    Debug.LogWarning($"[{gameObject.name}] Неизвестное действие: {actionId}");
+                    break;
+            }
+
+            // Сохраняем изменения (для прирученных)
+            if (tamed && !string.IsNullOrEmpty(TamingInstanceId) && TamingManager.Instance != null)
+            {
+                TamingManager.Instance.UpdateSave(TamingInstanceId, "player_001");
+            }
+        }
+
+        /// <summary>Текущее значение Radio-группы.</summary>
+        public string GetRadialRadioValue(string radioGroupId)
+        {
+            switch (radioGroupId)
+            {
+                case "behavior":
+                    return TamedBehaviorToId(tamedBehavior);
+                case "follow_distance":
+                    return FollowDistanceToId(tamedFollowDistance);
+                default:
+                    return null;
+            }
+        }
+
+        /// <summary>Установить значение Radio-группы.</summary>
+        public void SetRadialRadioValue(string radioGroupId, string radioValue)
+        {
+            switch (radioGroupId)
+            {
+                case "behavior":
+                    tamedBehavior = IdToTamedBehavior(radioValue);
+                    Debug.Log($"[{gameObject.name}] Behavior = {tamedBehavior}");
+                    break;
+                case "follow_distance":
+                    tamedFollowDistance = IdToFollowDistance(radioValue);
+                    Debug.Log($"[{gameObject.name}] FollowDistance = {tamedFollowDistance}");
+                    break;
+            }
+
+            if (tamed && !string.IsNullOrEmpty(TamingInstanceId) && TamingManager.Instance != null)
+            {
+                TamingManager.Instance.UpdateSave(TamingInstanceId, "player_001");
+            }
+        }
+
+        /// <summary>Динамический текст Action-кнопки.</summary>
+        public string GetRadialDynamicLabel(string actionId)
+        {
+            switch (actionId)
+            {
+                case "toggle_follow":
+                    return tamedFollowing ? "Отключить следование" : "Включить следование";
+                case "toggle_wander":
+                    return tamedWandering ? "Отключить блуждание" : "Включить блуждание";
+                case "toggle_mating":
+                    return tamedMating ? "Отключить спаривание" : "Включить спаривание";
+                default:
+                    return null;
+            }
+        }
+
+        // === Хелперы для enum ↔ string ===
+
+        private static string TamedBehaviorToId(TamedBehavior value)
+        {
+            switch (value)
+            {
+                case TamedBehavior.Passive: return "passive";
+                case TamedBehavior.Flee: return "flee";
+                case TamedBehavior.Neutral: return "neutral";
+                case TamedBehavior.AttackOwnerTarget: return "attack_owner_target";
+                case TamedBehavior.Aggressive: return "aggressive";
+                default: return "neutral";
+            }
+        }
+
+        private static TamedBehavior IdToTamedBehavior(string id)
+        {
+            switch (id)
+            {
+                case "passive": return TamedBehavior.Passive;
+                case "flee": return TamedBehavior.Flee;
+                case "neutral": return TamedBehavior.Neutral;
+                case "attack_owner_target": return TamedBehavior.AttackOwnerTarget;
+                case "aggressive": return TamedBehavior.Aggressive;
+                default: return TamedBehavior.Neutral;
+            }
+        }
+
+        private static string FollowDistanceToId(FollowDistance value)
+        {
+            switch (value)
+            {
+                case FollowDistance.Lowest: return "lowest";
+                case FollowDistance.Low: return "low";
+                case FollowDistance.Medium: return "medium";
+                case FollowDistance.High: return "high";
+                case FollowDistance.Highest: return "highest";
+                default: return "medium";
+            }
+        }
+
+        private static FollowDistance IdToFollowDistance(string id)
+        {
+            switch (id)
+            {
+                case "lowest": return FollowDistance.Lowest;
+                case "low": return FollowDistance.Low;
+                case "medium": return FollowDistance.Medium;
+                case "high": return FollowDistance.High;
+                case "highest": return FollowDistance.Highest;
+                default: return FollowDistance.Medium;
+            }
+        }
+
+        /// <summary>Снять приручение — существо становится диким.</summary>
+        public void Unclaim()
+        {
+            if (!tamed) return;
+
+            tamed = false;
+            tamedFollowing = false;
+            tamedWandering = false;
+            tamedMating = false;
+            tamedBehavior = TamedBehavior.Neutral;
+            tamedFollowDistance = FollowDistance.Medium;
+            tamingProgress = 0f;
+
+            // Удаляем сейв прирученного
+            if (!string.IsNullOrEmpty(TamingInstanceId) && TamingManager.Instance != null)
+            {
+                TamingManager.Instance.UnregisterCreature(TamingInstanceId);
+                TamingInstanceId = "";
+            }
+
+            // Удаляем инвентарь приручения
+            if (GetInventory() != null)
+            {
+                Destroy(GetInventory());
+                SetInventory(null);
+            }
+
+            SetCreatureLayer();  // возвращаем слой Creature (он и так Creature, но на всякий)
+
+            Debug.Log($"[{gameObject.name}] Unclaimed — стал диким.");
+        }
+
+
+        protected bool _isDead = false;
+        public bool IsDead() => _isDead;
+        public float GetHealth() => health;
+        public float GetMaxHealth() => maxHealth;
+        public float GetStamina() => stamina;
+        public float GetMaxStamina() => maxStamina;
+        public bool IsAlive() => !_isDead && health > 0;
+
+        public void SetHealth(float value) => health = Mathf.Clamp(value, 0f, maxHealth);
+        public void SetFood(float value) => food = Mathf.Clamp(value, 0f, maxFood);
+        public void SetStamina(float value) => stamina = Mathf.Clamp(value, 0f, maxStamina);
+
+
+
+
+
     }
 }

@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2cfda0461cb845b478df0caa5a607629, type: 3}
+  m_Name: Knockedout_RadialMenuConfig
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.UI.RadialMenuUI.RadialMenuConfig
+  titleOverride: 
+  rootEntries:
+  - label: "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0438\u043D\u0432\u0435\u043D\u0442\u0430\u0440\u044C"
+    icon: {fileID: 0}
+    type: 0
+    actionId: open_inventory
+    radioGroupId: 
+    radioValue: 
+    useDynamicLabel: 0
+    hideIfUnavailable: 0
+    children: []

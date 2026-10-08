@@ -3,6 +3,7 @@ using Assets.Scripts.Crafting;
 using Assets.Scripts.Creatures;
 using Assets.Scripts.Items;
 using Assets.Scripts.UI.Notifications;
+using Assets.Scripts.UI.RadialMenuUI;
 using UnityEngine;
 
 namespace Assets.Scripts.Core
@@ -35,6 +36,9 @@ namespace Assets.Scripts.Core
 
         [Header("Audio")]
         [SerializeField] private NotificationSoundConfig _notificationSoundConfig;
+        
+        [Header("Radial Menu")]
+        [SerializeField] private RadialMenuGlobalConfig _radialMenuGlobalConfig;
 
         // === Публичный доступ ===
         public GameSettings GameSettings => _gameSettings;
@@ -44,6 +48,8 @@ namespace Assets.Scripts.Core
         public GameObject PlayerCorpsePrefab => _playerCorpsePrefab;
         public GameObject LootBagPrefab => _lootBagPrefab;
         public NotificationSoundConfig NotificationSoundConfig => _notificationSoundConfig;
+public RadialMenuGlobalConfig RadialMenuGlobalConfig => _radialMenuGlobalConfig;
+
 
         private bool _isPrimary = false;
 
@@ -73,6 +79,7 @@ namespace Assets.Scripts.Core
             if (_recipeDatabase == null) Debug.LogError("[GameAssets] RecipeDatabase не назначен!");
             if (_playerCorpsePrefab == null) Debug.LogError("[GameAssets] PlayerCorpsePrefab не назначен!");
             if (_lootBagPrefab == null) Debug.LogError("[GameAssets] LootBagPrefab не назначен!");
+            if (_radialMenuGlobalConfig == null) Debug.LogError("[GameAssets] RadialMenuGlobalConfig не назначен!");
         }
 
         private void CreateGlobalManagers()

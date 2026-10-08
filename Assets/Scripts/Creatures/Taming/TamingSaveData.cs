@@ -32,7 +32,13 @@ namespace Assets.Scripts.Creatures.Taming
         // Владелец (для прирученных)
         public string ownerPlayerId = "world";
         public string customName = "";
-        public int tamedState = 0;               // enum: 0 = Idle, 1 = Follow, 2 = Stay, 3 = Attack
+
+        // === Команды прирученного ===
+        public bool tamedFollowing;
+        public bool tamedWandering;
+        public bool tamedMating;
+        public TamedBehavior tamedBehavior = TamedBehavior.Neutral;
+        public FollowDistance tamedFollowDistance = FollowDistance.Medium;
 
         // Время
         public long savedAtTime;

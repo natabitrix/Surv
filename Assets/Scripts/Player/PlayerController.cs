@@ -253,14 +253,11 @@ namespace Assets.Scripts.Player
                 _input.ResetCrawl();
             }
 
-            // Attack();
-
             // Убирает инструмент из рук
             if (_input.hideTool && equipment.IsEquipped)
             {
-                Debug.Log($"[PlayerController] hideTool СРАБОТАЛ! Снимаем {equipment.GetCurrentItem()?.itemName}. timeScale={Time.timeScale}");
+                // Debug.Log($"[PlayerController] hideTool СРАБОТАЛ! Снимаем {equipment.GetCurrentItem()?.itemName}. timeScale={Time.timeScale}");
                 equipment.Unequip();
-                // _selectedSlotIndex = null;
                 _input.ResetHideTool();
             }
 
