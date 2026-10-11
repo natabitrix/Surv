@@ -118,15 +118,6 @@ namespace Assets.Scripts.UI
             TooltipTrigger.AddTooltip(OtherInventoryMoveButton.gameObject, "Забрать всё");
             OtherInventoryMoveButton.AddComponent<ButtonScaleEffect>();
 
-            // Radial Menu Buttons
-            // RadialMenuPickupButton.onClick.AddListener(() => RadialMenuPickup());
-            // RadialMenuPickupButton.AddComponent<ButtonScaleEffect>();
-
-            // RadialMenuDestroyButton.onClick.AddListener(() => RadialMenuDestroy());
-            // RadialMenuDestroyButton.AddComponent<ButtonScaleEffect>();
-
-            // RadialMenuDragCorpseButton.onClick.AddListener(() => RadialMenuDragCorpse());
-            // RadialMenuDragCorpseButton.AddComponent<ButtonScaleEffect>();
         }
 
         private void Awake()
@@ -208,89 +199,12 @@ namespace Assets.Scripts.UI
             OtherInventoryDropButton.interactable = !isChest;
 
             if (_previewManager != null) _previewManager.ClosePreview();
+
             PanelMode(true);
 
             _input.OnInteractTriggered += _inventoryManager.UseSelectedSlot;
             _input.OnInteractStopPressed += _itemUsageRouter.OnUseItemFinished;
         }
-
-        // public void OpenRadialMenu(GameObject targetGO)
-        // {
-        //     if (_isRadialMenuOpened) return;
-
-        //     if (targetGO == null)
-        //     {
-        //         Debug.LogError("[PanelsUIController] Target GameObject не найден!");
-        //         return;
-        //     }
-
-        //     Item targetItem = null;
-        //     Creature targetCreature = null;
-        //     Corpse targetCorpse = null;
-
-        //     if (targetGO.TryGetComponent(out RadialMenu menu))
-        //     {
-
-        //         // 1. Item — из поля
-        //         if (menu.item != null) targetItem = menu.item;
-
-        //         // 2. Если есть живое существо — приоритет ему
-        //         var living = targetGO.GetComponent<BaseLivingEntity>();
-        //         if (living != null)
-        //         {
-        //             // Нокаутнутое или прирученное — существо
-        //             if (living is Creature c)
-        //                 targetCreature = c;
-        //         }
-
-        //         // 3. Если это труп (Corpse.enabled) — приоритет трупу
-        //         var corpseComp = targetGO.GetComponent<Corpse>();
-        //         if (corpseComp != null && corpseComp.enabled)
-        //         {
-        //             // Труп. Но если есть также Creature и оно tamed/knockedOut — приоритет существу.
-        //             if (living == null || (!living.tamed && !living.knockedOut))
-        //             {
-        //                 targetCorpse = corpseComp;
-        //                 targetCreature = null;
-        //             }
-        //         }
-
-        //         // 4. Fallback — из полей RadialMenu
-        //         if (targetCreature == null && targetCorpse == null)
-        //         {
-        //             if (menu.creature != null) targetCreature = menu.creature;
-        //             else if (menu.corpse != null) targetCorpse = menu.corpse;
-        //         }
-
-        //     }
-
-        //     if (targetItem == null && targetCreature == null && targetCorpse == null)
-        //     {
-        //         Debug.LogError("[PanelsUIController] item, creature и corpse не найдены!");
-        //         return;
-        //     }
-
-        //     RadialMenuCurrentTarget = targetItem;
-        //     RadialMenuCurrentTargetGO = targetGO;
-
-        //     if (RadialMenuTargetName != null)
-        //     {
-        //         if (targetItem != null)
-        //             RadialMenuTargetName.text = $"{targetItem.itemName}";
-
-        //         else if (targetCreature != null)
-        //             RadialMenuTargetName.text = $"СУЩЕСТВО {targetCreature.gameObject.name}";
-
-        //         else if (targetCorpse != null)
-        //             RadialMenuTargetName.text = $"ТЕЛО {targetCorpse.gameObject.name}";
-        //     }
-
-
-        //     RadialMenuPanel.SetActive(true);
-        //     _isRadialMenuOpened = true;
-        //     PanelMode(true);
-        // }
-
 
         public void OpenRadialMenu(GameObject targetGO)
         {
@@ -302,7 +216,7 @@ namespace Assets.Scripts.UI
                 return;
             }
 
-            var ctx = targetGO.GetComponent<Assets.Scripts.UI.RadialMenuUI.IRadialMenuContext>();
+            var ctx = targetGO.GetComponent<IRadialMenuContext>();
             if (ctx == null)
             {
                 Debug.LogError($"[PanelsUIController] На {targetGO.name} нет IRadialMenuContext!");
@@ -319,7 +233,7 @@ namespace Assets.Scripts.UI
             RadialMenuCurrentTargetGO = targetGO;
 
             // Открываем через RadialMenuController
-            var controller = Assets.Scripts.UI.RadialMenuUI.RadialMenuController.Instance;
+            var controller = RadialMenuController.Instance;
             if (controller == null)
             {
                 Debug.LogError("[PanelsUIController] RadialMenuController.Instance == null!");
@@ -332,30 +246,7 @@ namespace Assets.Scripts.UI
             PanelMode(true);
         }
 
-
-        // public void CloseRadialMenu()
-        // {
-        //     // ✅ ПРОВЕРКА: Не закрывать если уже закрыто
-        //     if (!_isRadialMenuOpened)
-        //     {
-        //         return;
-        //     }
-
-        //     RadialMenuCurrentTarget = null;
-        //     RadialMenuCurrentTargetGO = null;
-
-        //     if (RadialMenuTargetName != null)
-        //         RadialMenuTargetName.text = " ";
-
-        //     RadialMenuPanel.SetActive(false);
-        //     _isRadialMenuOpened = false;
-        //     PanelMode(false);
-
-        //     if (_tooltipManager != null)
-        //         _tooltipManager.HideTooltip();
-        // }
-
-        public void CloseRadialMenu()
+        public void CloseRadialMenu(bool setPanelMode = false)
         {
             if (!_isRadialMenuOpened) return;
 
@@ -365,9 +256,11 @@ namespace Assets.Scripts.UI
             RadialMenuController.Instance?.Close();
 
             _isRadialMenuOpened = false;
-            PanelMode(false);
+            PanelMode(setPanelMode);
 
             if (_tooltipManager != null) _tooltipManager.HideTooltip();
+            // Сбрасываем зажатие E, если меню закрылось
+            _input?.ForceResetInteract();
         }
 
 
@@ -485,39 +378,6 @@ namespace Assets.Scripts.UI
 
 
         // === Подписки на события ===
-
-        private void RadialMenuPickup()
-        {
-            if (_playerController.TryGetComponent(out ItemHandler itemHandler))
-            {
-                if (RadialMenuCurrentTarget != null)
-                {
-                    itemHandler.PickupItem(RadialMenuCurrentTarget);
-                    itemHandler.DestroyItem(RadialMenuCurrentTargetGO);
-                }
-            }
-            CloseRadialMenu();
-        }
-        private void RadialMenuDestroy()
-        {
-            if (_playerController.TryGetComponent(out ItemHandler itemHandler))
-            {
-                if (RadialMenuCurrentTarget != null)
-                {
-                    itemHandler.DestroyItem(RadialMenuCurrentTargetGO);
-                }
-            }
-            CloseRadialMenu();
-        }
-        private void RadialMenuDragCorpse()
-        {
-
-            // _playerInteraction = context.PlayerInteraction;
-            // if (IsDragging) StopDragging();
-            // else StartDragging();
-
-            CloseRadialMenu();
-        }
 
         private void RefreshPreview()
         {

@@ -6,10 +6,11 @@ using Assets.Scripts.Interactables;
 using Assets.Scripts.InventorySystem;
 using Assets.Scripts.Items;
 using Assets.Scripts.Player;
+using Assets.Scripts.Structures;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace Assets.Scripts.Building
+namespace Assets.Scripts.Player
 {
 
     public class PlayerBuildMode : MonoBehaviour

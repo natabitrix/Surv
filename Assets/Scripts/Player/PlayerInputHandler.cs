@@ -399,5 +399,23 @@ namespace Assets.Scripts.Player
 
         public bool GetTurnLeft() => turnLeft;
         public bool GetTurnRight() => turnRight;
+
+
+        /// <summary>
+        /// Принудительно сбросить состояние «E зажата».
+        /// Вызывать при клике по Action-кнопке радиального меню, чтобы
+        /// «унаследованное» удержание не провалилось в UI.
+        /// </summary>
+        public void ForceResetInteract()
+        {
+            // Останавливаем корутину повторов (RepeatInteract)
+            StopRepeatInteract();
+
+            // Дёргаем событие, как будто игрок отпустил E
+            OnInteractStopPressed?.Invoke();
+
+        }
+
+
     }
 }

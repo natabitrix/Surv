@@ -692,6 +692,7 @@ namespace Assets.Scripts.Creatures
 
                 case "open_inventory":
                     OpenInventory();
+                    Debug.Log($"[{gameObject.name}] OpenInventory");
                     break;
 
                 case "pick_up":

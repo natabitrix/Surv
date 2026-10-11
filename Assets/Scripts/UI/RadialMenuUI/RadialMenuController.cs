@@ -1,7 +1,10 @@
 // Assets/Scripts/UI/RadialMenu/RadialMenuController.cs
 using System.Collections.Generic;
+using Assets.Scripts.Player;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 namespace Assets.Scripts.UI.RadialMenuUI
 {
@@ -29,7 +32,7 @@ namespace Assets.Scripts.UI.RadialMenuUI
 
         [Header("Layout")]
         [Tooltip("Радиус, на котором располагаются кнопки.")]
-        [SerializeField] private float _radius = 220f;
+        [SerializeField] private float _radius = 160f;
 
         [Tooltip("Начальный угол (градусы). 0 = верх.")]
         [SerializeField] private float _startAngleDeg = 0f;
@@ -85,11 +88,15 @@ namespace Assets.Scripts.UI.RadialMenuUI
                 return;
             }
 
+            // if (EventSystem.current != null)
+            //     EventSystem.current.SetSelectedGameObject(null);
+
             _stack.Clear();
             _stack.Add(config.rootEntries);
 
             UpdateTitle(config);
             Rebuild();
+
         }
 
         /// <summary>
@@ -140,7 +147,7 @@ namespace Assets.Scripts.UI.RadialMenuUI
             {
                 var backEntry = new RadialMenuEntry
                 {
-                    label = "Назад",
+                    label = "← Назад",
                     type = RadialMenuEntryType.Action,
                     actionId = "__back__",
                 };
@@ -176,6 +183,10 @@ namespace Assets.Scripts.UI.RadialMenuUI
                 // Позиция
                 PositionButton(btn, i, count);
             }
+
+            // Принудительно обновить канвас, чтобы EventSystem сразу увидел новые кнопки
+            // Canvas.ForceUpdateCanvases();
+            // LayoutRebuilder.ForceRebuildLayoutImmediate(_buttonsContainer as RectTransform);
         }
 
         private void PositionButton(RadialMenuButton btn, int index, int total)
@@ -264,10 +275,35 @@ namespace Assets.Scripts.UI.RadialMenuUI
                     }
                     else
                     {
+
                         _context.ExecuteAction(entry.actionId);
 
                         // Обновить labels (могли измениться после toggle)
                         Rebuild();
+
+                        // Закрываем меню после выбора
+                        // Close();
+
+                        // После отпускания E -> 
+                        // HandleInteractEnded -> 
+                        // HandleMenuClosed -> 
+                        // CloseRadialMenu (PanelMode(false)) -> RadialMenuController.Instance?.Close
+                        // Если выбрали Открыть инвентарь
+                        // PanelMode должен быть true
+                        // 
+                        // var player = PlayerController.Instance;
+                        // if (player == null) return;
+
+                        // var playerInteraction = player.GetComponent<PlayerInteraction>();
+                        // if (playerInteraction == null) return;
+
+                        var panelsUIController = PanelsUIController.Instance;
+                        if (panelsUIController == null) return;
+
+                        bool setPanelMode = (entry.actionId == "open_inventory") ? true : false;
+                        panelsUIController.CloseRadialMenu(setPanelMode);
+
+
                     }
                     break;
             }

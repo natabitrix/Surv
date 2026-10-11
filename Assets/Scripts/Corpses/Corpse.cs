@@ -106,8 +106,7 @@ namespace Assets.Scripts.Corpses
         {
             _creationTime = Time.time;
 
-            if (_despawnCoroutine != null)
-                StopCoroutine(_despawnCoroutine);
+            if (_despawnCoroutine != null) StopCoroutine(_despawnCoroutine);
             _despawnCoroutine = StartCoroutine(DespawnAfterTime());
         }
 
@@ -168,7 +167,7 @@ namespace Assets.Scripts.Corpses
         {
             if (!enabled || (_isDepleted && context.IsAttack)) return;
 
-            if (IsDragging) StopDragging(context.PlayerInteraction);
+            if (IsDragging) StopDragging();
 
             if (context.IsAttack)
             {
@@ -182,7 +181,7 @@ namespace Assets.Scripts.Corpses
                 }
                 else
                 {
-                    StartDragging(context.PlayerInteraction);
+                    StartDragging();
                 }
             }
         }
@@ -396,7 +395,7 @@ namespace Assets.Scripts.Corpses
 
             if (allDepleted || _harvestHits >= maxHarvestHits)
             {
-                OnHarvestComplete(hitPos);
+                OnHarvestComplete();
             }
         }
 
@@ -438,7 +437,7 @@ namespace Assets.Scripts.Corpses
             }
         }
 
-        private void OnHarvestComplete(Vector3 hitPos)
+        private void OnHarvestComplete()
         {
             if (_isDepleted) return;
             _isDepleted = true;
@@ -548,9 +547,18 @@ namespace Assets.Scripts.Corpses
             _dragRigidbody.linearVelocity = (_dragGrabPoint.position - _dragRigidbody.position) * _dragBodyVelocity;
         }
 
-        public void StartDragging(PlayerInteraction player)
+        public void StartDragging()
         {
+            Debug.Log("StartDragging");
             if (IsDragging || _dragRigidbody == null) return;
+
+            var player = PlayerController.Instance;
+            if (player == null) return;
+
+            var playerInteraction = player.GetComponent<PlayerInteraction>();
+            if (playerInteraction == null) return;
+
+            var playerEquipment = player.GetComponent<PlayerEquipment>();
 
             _ragdollController?.ResetVelocities();
 
@@ -558,32 +566,39 @@ namespace Assets.Scripts.Corpses
             _dragRigidbody.WakeUp();
 
             IsDragging = true;
-            player.RegisterDraggingCorpse(this);
+            playerInteraction.RegisterDraggingCorpse(this);
             ActivateRagdoll();
 
             _ragdollController?.ResetVelocities();
 
-            var equip = player.GetComponent<PlayerEquipment>();
-            Transform grabPoint = equip ? equip.corpseDragAnchor : player.transform;
+
+            Transform grabPoint = playerEquipment ? playerEquipment.corpseDragAnchor : player.transform;
             if (grabPoint == null) grabPoint = player.transform;
 
             _dragGrabPoint = grabPoint;
 
-            Rigidbody playerRb = grabPoint.GetComponent<Rigidbody>();
-            if (playerRb == null)
-            {
-                playerRb = player.GetComponent<Rigidbody>();
-            }
+            // Rigidbody playerRb = grabPoint.GetComponent<Rigidbody>();
+            // if (playerRb == null)
+            // {
+            //     playerRb = player.GetComponent<Rigidbody>();
+            // }
 
             if (_interactionCollider != null) _interactionCollider.enabled = false;
         }
 
-        public void StopDragging(PlayerInteraction player)
+        public void StopDragging()
         {
+            Debug.Log("StopDragging");
             if (!IsDragging) return;
             IsDragging = false;
 
-            player.UnregisterDraggingCorpse(this);
+            var player = PlayerController.Instance;
+            if (player == null) return;
+
+            var playerInteraction = player.GetComponent<PlayerInteraction>();
+            if (playerInteraction == null) return;
+
+            playerInteraction.UnregisterDraggingCorpse(this);
 
             _ragdollController?.ResetVelocities();
             _ragdollController?.WakeAllRigidbodies();
@@ -593,7 +608,8 @@ namespace Assets.Scripts.Corpses
             StartCoroutine(StopMovingRagdoll());
         }
 
-        public void InterruptByAttack(PlayerInteraction player) => StopDragging(player);
+
+        public void InterruptByAttack() => StopDragging();
 
         // ==========================================
         // === ДАННЫЕ / ПЕРСИСТЕНТНОСТЬ ===
@@ -698,6 +714,33 @@ namespace Assets.Scripts.Corpses
 
                 Destroy(gameObject);
             }
+        }
+
+        // ==========================================
+        // === RADIAL MENU ACTIONS ===
+        // ==========================================
+
+        /// <summary>Выполнить действие из радиального меню.</summary>
+        public void ExecuteRadialAction(string actionId)
+        {
+            var player = PlayerController.Instance;
+            if (player == null) return;
+
+            switch (actionId)
+            {
+                case "drag_corpse":
+                    StartDragging();
+                    break;
+
+                case "open_inventory":
+                    OpenInventory();
+                    break;
+
+                default:
+                    Debug.LogWarning($"[{gameObject.name}] Неизвестное действие: {actionId}");
+                    break;
+            }
+
         }
 
         private void OnDestroy()

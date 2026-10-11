@@ -16,4 +16,4 @@ MonoBehaviour:
   knockedOutMenu: {fileID: 11400000, guid: faa26baaaeac2364c9e089d33a7ef199, type: 2}
   corpseMenu: {fileID: 11400000, guid: aa9f898a4642da748aa68b796d802135, type: 2}
   structureMenu: {fileID: 11400000, guid: cbd3b435a9ede6d4dacf9b8f2859f735, type: 2}
-  chestMenu: {fileID: 0}
+  chestMenu: {fileID: 11400000, guid: b416a3a6545ea044a8a21bf291617b5c, type: 2}

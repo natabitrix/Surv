@@ -1,7 +1,6 @@
 // Assets/Scripts/InventorySystem/InventoryManager.cs
 using System.Collections;
 using System.Collections.Generic;
-using Assets.Scripts.Building;
 using Assets.Scripts.Core;
 using Assets.Scripts.Crafting;
 using Assets.Scripts.Creatures;
@@ -394,7 +393,7 @@ namespace Assets.Scripts.InventorySystem
         /// Выбрасывает все предметы из указанного InventoryData в сумку перед игроком.
         /// Общая логика для «выбросить всё» из инвентаря игрока и из чужого инвентаря.
         /// </summary>
-        private void DropAllItemsToBag(
+        public void DropAllItemsToBag(
             InventoryData sourceData,
             string ownerPlayerId,
             bool unequipIfFromMainInventory)

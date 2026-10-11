@@ -83,6 +83,12 @@ namespace Assets.Scripts.InventorySystem
             CurrentSource = source;
             source.OnInventoryOpened();
 
+            // === НОВОЕ: открыть панель инвентаря в UI ===
+            if (PanelsUIController.Instance != null)
+            {
+                PanelsUIController.Instance.OpenOtherInventory();
+            }
+            
         }
 
         /// <summary>

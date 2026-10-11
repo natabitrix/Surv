@@ -5,12 +5,9 @@ using System.IO;
 using System.Linq;
 using UnityEngine;
 using Newtonsoft.Json;
-using Assets.Scripts.Building;
 using Assets.Scripts.Player;
-using Assets.Scripts.InventorySystem;
 using System.Collections;
 using Assets.Scripts.Items;
-using Assets.Scripts.UI;
 
 namespace Assets.Scripts.Core
 {

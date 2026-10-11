@@ -16,6 +16,7 @@ using Assets.Scripts.Creatures;
 using Assets.Scripts.Audio;
 using Assets.Scripts.Corpses;
 using Assets.Scripts.UI.Notifications;
+using Assets.Scripts.Structures;
 
 namespace Assets.Scripts.Player
 {
@@ -138,6 +139,7 @@ namespace Assets.Scripts.Player
             }
         }
 
+        // Зажимаем E
         private void HandleInteractStarted()
         {
             _isInteractHeld = true;
@@ -145,26 +147,28 @@ namespace Assets.Scripts.Player
             _radialMenuOpenedThisHold = false;
         }
 
+        // Держим E
         private void HandleInteractHeld()
         {
         }
 
+        // Отпускаем E
         private void HandleInteractEnded()
         {
             _isInteractHeld = false;
 
-            if (_currentlyDraggingCorpse != null)
-            {
-                _currentlyDraggingCorpse.StopDragging(this);
-
-                HandleMenuClosed();
-                _interactionHoldTimer = 0f;
-                _radialMenuOpenedThisHold = false;
-                return;
-            }
-
             if (!_radialMenuOpenedThisHold)
             {
+                if (_currentlyDraggingCorpse != null)
+                {
+                    _currentlyDraggingCorpse.StopDragging();
+
+                    HandleMenuClosed();
+                    _interactionHoldTimer = 0f;
+                    _radialMenuOpenedThisHold = false;
+                    return;
+                }
+
                 foreach (var target in _allTargets)
                 {
                     InteractType type = target.GetInteractType();
@@ -263,7 +267,7 @@ namespace Assets.Scripts.Player
                 //     target = _allTargets[0];
             }
 
-            
+
 
             if (target == null)
             {
@@ -686,7 +690,7 @@ namespace Assets.Scripts.Player
 
             if (_currentlyDraggingCorpse != null)
             {
-                _currentlyDraggingCorpse.InterruptByAttack(this);
+                _currentlyDraggingCorpse.InterruptByAttack();
                 CombatAudioManager.Instance?.PlayMissSound(AttackAnimationType.Fists, transform.position);
             }
 
@@ -718,7 +722,7 @@ namespace Assets.Scripts.Player
 
             foreach (var target in _allTargets)
             {
-                if (target.GetInteractType() == InteractType.Harvest || target is Corpse)
+                if (target.GetInteractType() == InteractType.Harvest || target is Corpse || target is Structure)
                 {
                     var context = new InteractContext
                     {
@@ -726,6 +730,7 @@ namespace Assets.Scripts.Player
                         IsAttack = true,
                         PlayerInteraction = this
                     };
+
                     target.Interact(context);
 
                     if (target.ShouldDetachAfterInteract())
@@ -733,6 +738,17 @@ namespace Assets.Scripts.Player
 
                     return;
                 }
+
+                // if (target is Structure)
+                // {
+                //     float damage = _playerController.GetAttackDamage();
+                //     Structure targetStructure = target.GetComponent<Structure>();
+                //     targetStructure.TakeDamage(damage, this);
+                //     if (target.ShouldDetachAfterInteract())
+                //         ClearTriggerTarget();
+                //     return;
+                // }
+
             }
         }
 

@@ -36,7 +36,7 @@ namespace Assets.Scripts.Core
 
         [Header("Audio")]
         [SerializeField] private NotificationSoundConfig _notificationSoundConfig;
-        
+
         [Header("Radial Menu")]
         [SerializeField] private RadialMenuGlobalConfig _radialMenuGlobalConfig;
 
@@ -48,7 +48,7 @@ namespace Assets.Scripts.Core
         public GameObject PlayerCorpsePrefab => _playerCorpsePrefab;
         public GameObject LootBagPrefab => _lootBagPrefab;
         public NotificationSoundConfig NotificationSoundConfig => _notificationSoundConfig;
-public RadialMenuGlobalConfig RadialMenuGlobalConfig => _radialMenuGlobalConfig;
+        public RadialMenuGlobalConfig RadialMenuGlobalConfig => _radialMenuGlobalConfig;
 
 
         private bool _isPrimary = false;

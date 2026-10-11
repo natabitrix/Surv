@@ -11,7 +11,6 @@ using Assets.Scripts.InventorySystem;
 using Assets.Scripts.UI.Tooltip;
 using Assets.Scripts.Utils;
 using Assets.Scripts.Core;
-using Assets.Scripts.Building;
 using Assets.Scripts.UI;
 
 namespace Assets.Scripts.Player

@@ -82,5 +82,9 @@ namespace Assets.Scripts.Interactables
                 ChestUIManager.Instance.Close();
             }
         }
+
+
+
+
     }
 }

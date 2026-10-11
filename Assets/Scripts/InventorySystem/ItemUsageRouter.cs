@@ -1,4 +1,3 @@
-using Assets.Scripts.Building;
 using Assets.Scripts.Core;
 using Assets.Scripts.Creatures;
 using Assets.Scripts.Creatures.Taming;

@@ -1,7 +1,7 @@
-// Assets/Scripts/Building/SnapPoint.cs
+// Assets/Scripts/Structures/SnapPoint.cs
 using UnityEngine;
 
-namespace Assets.Scripts.Building
+namespace Assets.Scripts.Structures
 {
     /// <summary>
     /// Точка крепления для размещения структур. Размещается как дочерний объект на префабах.

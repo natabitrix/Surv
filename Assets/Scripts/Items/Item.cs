@@ -24,7 +24,6 @@ namespace Assets.Scripts.Items
         public float damage;
         public float torporDamage = 0f;
 
-        // В Item.cs
         [Header("Durability")]
         public bool hasDurability;
         public float maxDurability;
@@ -35,6 +34,7 @@ namespace Assets.Scripts.Items
 
         [Header("Item Type")]
         public ItemType itemType; // Опционально: перечисление для типа (оружие, еда и т.д.)
+        
         [Header("Animation & Sound")]
         [Tooltip("Используется также в PlayerInteraction.OnAttackInteractFinished для определения издаваемого инструментом звука")]
         public AttackAnimationType attackAnimation = AttackAnimationType.Fists;

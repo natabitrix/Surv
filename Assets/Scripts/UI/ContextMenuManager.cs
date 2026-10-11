@@ -81,14 +81,14 @@ namespace Assets.Scripts.UI
         void BuildAndShow()
         {
             // Активируем Canvas, если он неактивен
-            // if (!contextMenuCanvas.gameObject.activeSelf)
-            // {
-            //     contextMenuCanvas.gameObject.SetActive(true);
-            // }
-            if (!Panel.gameObject.activeSelf)
+            if (!contextMenuCanvas.gameObject.activeSelf)
             {
-                Panel.gameObject.SetActive(true);
+                contextMenuCanvas.gameObject.SetActive(true);
             }
+            // if (!Panel.gameObject.activeSelf)
+            // {
+            //     Panel.gameObject.SetActive(true);
+            // }
 
 
             // Очистка

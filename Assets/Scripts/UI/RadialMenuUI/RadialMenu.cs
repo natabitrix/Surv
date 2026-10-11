@@ -4,6 +4,7 @@ using Assets.Scripts.Corpses;
 using Assets.Scripts.Creatures;
 using Assets.Scripts.InventorySystem;
 using Assets.Scripts.Items;
+using Assets.Scripts.Structures;
 using Assets.Scripts.UI.RadialMenuUI;
 using UnityEngine;
 
@@ -23,10 +24,13 @@ namespace Assets.Scripts.Interactables
         public Item item;
         public Corpse corpse;
         public Creature creature;
+        public Structure structure;
+        public ChestController chest;
+        public bool IsStructure = false;
 
-        [Header("Structure")]
-        [Tooltip("Заголовок меню для структур (если не существ/трупов).")]
-        public string structureTitleOverride;
+        // [Header("Structure")]
+        // [Tooltip("Заголовок меню для структур (если не существ/трупов).")]
+        // public string structureTitleOverride;
 
         private BaseLivingEntity _living;
         private bool _hasLiving;
@@ -38,6 +42,8 @@ namespace Assets.Scripts.Interactables
 
             if (creature == null) creature = GetComponent<Creature>();
             if (corpse == null) corpse = GetComponent<Corpse>();
+            if (structure == null) structure = GetComponent<Structure>();
+            if (chest == null) chest = GetComponent<ChestController>();
         }
 
         // ==========================================
@@ -49,7 +55,7 @@ namespace Assets.Scripts.Interactables
             if (_living != null) return _living.GetDisplayName();
             if (corpse != null && corpse.enabled) return corpse.gameObject.name;
             if (item != null) return item.itemName;
-            if (!string.IsNullOrEmpty(structureTitleOverride)) return structureTitleOverride;
+            // if (!string.IsNullOrEmpty(structureTitleOverride)) return structureTitleOverride;
             return gameObject.name;
         }
 
@@ -73,10 +79,12 @@ namespace Assets.Scripts.Interactables
             if (corpse != null && corpse.enabled) return global.corpseMenu;
 
             // === Сундук ===
-            if (GetComponent<ChestController>() != null) return global.chestMenu;
+            if (chest != null) return global.chestMenu;
 
             // === Структура ===
-            return global.structureMenu;
+            if (structure != null) return global.structureMenu;
+
+            return null;
         }
 
         public bool IsActionAvailable(string actionId)
@@ -88,7 +96,7 @@ namespace Assets.Scripts.Interactables
                 case "ride":
                     return creature != null && creature.Data != null && creature.Data.canBeRidden;
                 case "open_inventory":
-                    return _living != null && _living.HasInventory();
+                    return (_living != null && _living.HasInventory()) || (structure != null && structure.HasInventory());
                 case "unclaim":
                     return _living != null && _living.tamed;
                 default:
@@ -104,8 +112,29 @@ namespace Assets.Scripts.Interactables
                 return;
             }
 
+            if (corpse != null && corpse.enabled)
+            {
+                corpse.ExecuteRadialAction(actionId);
+                return;
+            }
+
+            if (structure != null)
+            {
+                structure.ExecuteRadialAction(actionId);
+                return;
+            }
+
+            if (chest != null)
+            {
+                structure.ExecuteRadialAction(actionId);
+                return;
+            }
+
+            
+
             Debug.Log($"[RadialMenu] Action: {actionId} (нет BaseLivingEntity — структура/предмет)");
         }
+
 
         public string GetRadioValue(string radioGroupId)
         {
@@ -130,9 +159,7 @@ namespace Assets.Scripts.Interactables
 
         public InteractType GetInteractType() => InteractType.RadialMenu;
         public InteractType GetInteractType2() => InteractType.None;
-
         public void Interact(InteractContext context) { }
-
         public ChestInventory GetInventory() => null;
         public bool HasInventory() => false;
         public bool ShouldDetachAfterInteract() => false;

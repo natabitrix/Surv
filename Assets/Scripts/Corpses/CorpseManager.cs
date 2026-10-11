@@ -9,7 +9,6 @@ using Assets.Scripts.Items;
 using Assets.Scripts.InventorySystem;
 using Assets.Scripts.Core;
 using Assets.Scripts.Interactables;
-using Assets.Scripts.Building;
 using UnityEngine.InputSystem;
 using UnityEngine.AI;
 using System.Collections;

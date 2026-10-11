@@ -994,6 +994,88 @@ BaseLivingEntity.FinishTaming() → ShowTopNote(NotificationType.TameComplete, $
 - `RadialMenu` (новый) — на том же GameObject, что `BaseLivingEntity`.
 - `RadialMenuCanvas` включается автоматически через `RadialMenuController._menuRoot.SetActive(true)` в `Open()`.
 
+### 22. Действия радиального меню для структур, трупов и сундуков
+
+Радиальное меню работает не только для существ, но и для структур/трупов/сундуков.
+Каждый тип имеет свой набор действий через `ExecuteRadialAction`.
+
+#### 22.1 `Structure.ExecuteRadialAction`
+
+Файл: `Assets/Scripts/Structures/Structure.cs`.
+
+Действия:
+- `pick_up` — `ItemHandler.PickupItem(item)` + `DestroyItem(gameObject)`.
+- `destroy` — `ItemHandler.DestroyItem(gameObject)`.
+- `open_inventory` — `OpenInventory()` (если есть инвентарь).
+- `rename` — TODO.
+
+#### 22.2 `Corpse.ExecuteRadialAction`
+
+Файл: `Assets/Scripts/Corpses/Corpse.cs`.
+
+Действия:
+- `drag_corpse` — `StartDragging()` / `StopDragging()`.
+- `open_inventory` — `OpenInventory()`.
+
+#### 22.3 `RadialMenu.ExecuteAction` — делегирование
+
+Файл: `Assets/Scripts/Interactables/RadialMenu.cs`.
+public void ExecuteAction(string actionId)
+{
+    if (_living != null) { _living.ExecuteRadialAction(actionId); return; }
+    if (corpse != null && corpse.enabled) { corpse.ExecuteRadialAction(actionId); return; }
+    if (structure != null) { structure.ExecuteRadialAction(actionId); return; }
+    if (chest != null) { chest.Open(); return; }   // fallback для сундуков
+    Debug.Log($"[RadialMenu] Action: {actionId} (нет обработчика)");
+}
+
+#### 22.4 Конфиги
+tamedMenu — меню прирученного (общее для всех видов).
+
+knockedOutMenu — меню нокаутнутого.
+
+corpseMenu — меню трупа (drag_corpse, open_inventory).
+
+structureMenu — меню структур (pick_up, destroy, repair).
+
+chestMenu — меню сундуков (open_inventory, destroy, repair).
+
+Все — в GameAssets.RadialMenuGlobalConfig.
+
+#### 22.5 Открытие инвентаря через радиальное меню
+ChestUIManager.Open теперь вызывает PanelsUIController.OpenOtherInventory() после успешного OpenWith. Это устраняет дублирование вызовов и делает открытие инвентаря единообразным — и через F (TargetInventory), и через Action open_inventory.
+
+#### 22.6 Сброс «зажатой E» при закрытии меню
+Проблема: игрок зажимает E → открывается меню → клик по Action (Открыть инвентарь) → меню закрывается, инвентарь открывается, но E всё ещё физически зажата. OnInteractTriggered (RepeatInteract) продолжает дёргаться → UseSelectedSlot используется при наведении на слот.
+
+Решение:
+
+PlayerInputHandler.ForceResetInteract() — принудительно сбрасывает _isInteractHeld, останавливает RepeatInteract, дёргает OnInteractStopPressed.
+
+Флаг _interactWasForceReset — чтобы последующий реальный OnInteractCanceled (от физического отпускания E) не дёргал OnInteractStopPressed повторно.
+
+PanelsUIController.CloseRadialMenu — вызывает _input.ForceResetInteract().
+
+Все подписчики (_inventoryManager, _itemUsageRouter) корректно отписываются.
+
+#### 22.7 Сортировка канвасов
+RadialMenuCanvas.sortingOrder = 1, HUDCanvas = 0.
+
+Иначе HUD перехватывает raycast (hover/клики не работают).
+
+GridLayoutGroup на RadialMenuButtons убран — позиционирование по кругу через RadialMenuController.PositionButton.
+
+#### 22.8 Известные особенности
+RadialMenu.GetInteractType() возвращает InteractType.RadialMenu — для структур.
+
+Для существ отвечает BaseLivingEntity.GetInteractType().
+
+Panel.Image.RaycastTarget — если true, перехватывает клики. Лучше выключить (декоративный фон).
+
+AimCanvas / HUDCanvas — RaycastTarget только на кнопках.
+
+
+
 ## TODO
 
 ### Ближайшее (Следующий шаг)

@@ -31,10 +31,5 @@ namespace Assets.Scripts.Items
                 return _itemLookup;
             }
         }
-
-        // private void Awake()
-        // {
-        //     DontDestroyOnLoad(gameObject);
-        // }
     }
 }
