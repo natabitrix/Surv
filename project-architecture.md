@@ -1124,6 +1124,25 @@ AimCanvas / HUDCanvas — RaycastTarget только на кнопках.
 - **`_wildTargetTransform`** — кэш для `SetDestination`. Сбрасывается в `ResetAttackState`.
 - **Animation Event** `DealDamageToPlayer` — имя не менялось, для совместимости.
 
+### 24. Поведения прирученных: Flee / Neutral / AttackOwnerTarget
+
+Полная реализация всех `TamedBehavior` с ограничениями радиусов.
+
+#### 24.1 Память об атакующем (`BaseLivingEntity`)
+
+- **`_lastAttacker`** (`BaseLivingEntity`) + `LastAttackedTime`.
+- **`LastAttacker`** (свойство) — возвращает `null`, если прошло > `ATTACKER_MEMORY_DURATION` (15 сек).
+- **`NotifyAttackedBy(attacker)`** — вызывается атакующим **перед** `TakeDamage`.
+- **`ClearLastAttacker()`** — принудительный сброс.
+
+#### 24.2 `CreatureData` — новые параметры
+
+```cs
+public float tamedFleeDistance = 20f;            // Flee: макс. дистанция убегания
+public float tamedFleeMaxThreatDistance = 30f;   // Flee: обидчик дальше — Flee кончается
+public float tamedNeutralChaseRadius = 20f;      // Neutral: радиус chase
+public float tamedAttackOwnerRadius = 30f;       // AttackOwnerTarget: радиус от игрока
+
 ## TODO
 
 ### Ближайшее (Следующий шаг)

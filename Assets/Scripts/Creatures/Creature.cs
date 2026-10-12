@@ -419,6 +419,7 @@ namespace Assets.Scripts.Creatures
             {
                 if (_currentAttackTarget.IsAlive())
                 {
+                    _currentAttackTarget.NotifyAttackedBy(this);
                     _currentAttackTarget.TakeDamage(AttackDamage, 0f);
                 }
                 return;
@@ -490,7 +491,25 @@ namespace Assets.Scripts.Creatures
             if (_agent == null) return;
             if (!_agent.enabled || !_agent.isOnNavMesh) return;
 
-            // === 1. Aggro — искать врага в радиусе ===
+            // === 1. Flee ===
+            if (tamedBehavior == TamedBehavior.Flee)
+            {
+                if (HandleFlee()) return;
+            }
+
+            // === 2. Neutral ===
+            if (tamedBehavior == TamedBehavior.Neutral)
+            {
+                if (HandleNeutral()) return;
+            }
+
+            // === 3. AttackOwnerTarget ===
+            if (tamedBehavior == TamedBehavior.AttackOwnerTarget)
+            {
+                if (HandleAttackOwnerTarget()) return;
+            }
+
+            // === 4. Aggressive ===
             if (tamedBehavior == TamedBehavior.Aggressive)
             {
                 UpdateCurrentEnemy();
@@ -508,21 +527,21 @@ namespace Assets.Scripts.Creatures
                 _isAttackingPlayer = false;
             }
 
-            // === 2. Follow ===
+            // === 5. Follow ===
             if (tamedFollowing && _playerTransform != null)
             {
                 FollowOwner();
                 return;
             }
 
-            // === 3. Wander ===
+            // === 6. Wander ===
             if (tamedWandering)
             {
                 WanderTamed();
                 return;
             }
 
-            // === 4. Idle ===
+            // === 7. Idle ===
             IdleTamed();
         }
 
@@ -660,7 +679,7 @@ namespace Assets.Scripts.Creatures
             _wildTargetTransform = bestTransform;
         }
 
-        
+
 
         private void ChaseAndAttack(Transform target)
         {
@@ -780,13 +799,135 @@ namespace Assets.Scripts.Creatures
             _agent.velocity = Vector3.zero;
         }
 
-
         void OnDestinationReached()
         {
             if (_agent.remainingDistance < _agent.stoppingDistance)
             {
                 isWandering = false;
             }
+        }
+
+        // ==========================================
+        // === ПОВЕДЕНИЯ: FLEE / NEUTRAL / ATTACK_OWNER ===
+        // ==========================================
+
+        /// <summary>Flee: бежать от обидчика, пока он не выйдет из радиуса.</summary>
+        private bool HandleFlee()
+        {
+            var threat = LastAttacker;
+            if (threat == null || !threat.IsAlive())
+            {
+                ClearLastAttacker();
+                return false;
+            }
+
+            float threatDist = Vector3.Distance(transform.position, threat.transform.position);
+            float maxThreatDist = Data != null ? Data.tamedFleeMaxThreatDistance : 30f;
+
+            if (threatDist > maxThreatDist)
+            {
+                ClearLastAttacker();
+                return false;
+            }
+
+            FleeFrom(threat.transform);
+            return true;
+        }
+
+        /// <summary>Neutral: атаковать обидчика, пока он в радиусе.</summary>
+        private bool HandleNeutral()
+        {
+            var threat = LastAttacker;
+            if (threat == null || !threat.IsAlive())
+            {
+                ClearLastAttacker();
+                return false;
+            }
+
+            float threatDist = Vector3.Distance(transform.position, threat.transform.position);
+            float chaseRadius = Data != null ? Data.tamedNeutralChaseRadius : 20f;
+
+            if (threatDist > chaseRadius)
+            {
+                ClearLastAttacker();
+                return false;
+            }
+
+            ChaseAndAttack(threat.transform);
+            return true;
+        }
+
+        /// <summary>AttackOwnerTarget: защищать игрока — атаковать врага рядом с ним.</summary>
+        private bool HandleAttackOwnerTarget()
+        {
+            if (_playerTransform == null) return false;
+
+            float playerDist = Vector3.Distance(transform.position, _playerTransform.position);
+            float ownerRadius = Data != null ? Data.tamedAttackOwnerRadius : 30f;
+
+            if (playerDist > ownerRadius) return false;
+
+            var enemy = FindEnemyNearPlayer();
+            if (enemy != null)
+            {
+                ChaseAndAttack(enemy.transform);
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>Бежать в противоположную сторону от угрозы.</summary>
+        private void FleeFrom(Transform threat)
+        {
+            if (threat == null) return;
+
+            Vector3 awayDir = (transform.position - threat.position).normalized;
+            Vector3 targetPos = transform.position + awayDir * 5f;
+
+            if (NavMesh.SamplePosition(targetPos, out NavMeshHit hit, 5f, NavMesh.AllAreas))
+            {
+                _agent.isStopped = false;
+                _agent.speed = ChaseSpeed;
+                _agent.SetDestination(hit.position);
+            }
+        }
+
+        /// <summary>Найти дикого врага рядом с игроком (в радиусе tamedAggroRadius от игрока).</summary>
+        private BaseLivingEntity FindEnemyNearPlayer()
+        {
+            if (_playerTransform == null) return null;
+            if (Data == null) return null;
+
+            int creatureLayer = LayerMask.NameToLayer("Creature");
+            if (creatureLayer == -1) return null;
+
+            Collider[] hits = Physics.OverlapSphere(
+                _playerTransform.position,
+                Data.tamedAggroRadius,
+                1 << creatureLayer,
+                QueryTriggerInteraction.Ignore);
+
+            BaseLivingEntity nearest = null;
+            float minDist = float.MaxValue;
+
+            foreach (var hit in hits)
+            {
+                if (hit.gameObject == gameObject) continue;
+
+                var living = hit.GetComponent<BaseLivingEntity>();
+                if (living == null) continue;
+                if (living.tamed || living.knockedOut || living.IsDead() || !living.IsAlive()) continue;
+
+                float d = Vector3.Distance(transform.position, hit.transform.position);
+                if (d < minDist)
+                {
+                    minDist = d;
+                    nearest = living;
+                }
+            }
+
+            return nearest;
         }
 
         protected override float GetMaxHealthFromConfiguration()

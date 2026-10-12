@@ -86,6 +86,38 @@ namespace Assets.Scripts.Creatures
         public float torpor = 0f;
         public float maxTorpor = 100f;
 
+        [Header("Combat Memory")]
+        private BaseLivingEntity _lastAttacker;
+        public float LastAttackedTime { get; private set; } = -999f;
+        private const float ATTACKER_MEMORY_DURATION = 15f;
+
+        /// <summary>Последний, кто атаковал (с таймаутом памяти).</summary>
+        public BaseLivingEntity LastAttacker
+        {
+            get
+            {
+                if (_lastAttacker == null) return null;
+                if (Time.time - LastAttackedTime > ATTACKER_MEMORY_DURATION) return null;
+                return _lastAttacker;
+            }
+            private set { _lastAttacker = value; }
+        }
+
+        /// <summary>Сообщить, что это существо атаковано кем-то.</summary>
+        public void NotifyAttackedBy(BaseLivingEntity attacker)
+        {
+            if (attacker == null || attacker == this) return;
+            LastAttacker = attacker;
+            LastAttackedTime = Time.time;
+        }
+
+        /// <summary>Сбросить память об атакующем.</summary>
+        public void ClearLastAttacker()
+        {
+            _lastAttacker = null;
+            LastAttackedTime = -999f;
+        }
+
         [Header("Food")]
         public float food = 100f;
         public float maxFood = 100f;

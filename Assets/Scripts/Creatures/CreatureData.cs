@@ -146,6 +146,18 @@ namespace Assets.Scripts.Creatures
         [Tooltip("Можно ли оседлать существо.")]
         public bool canBeRidden = false;
 
+        [Header("Tamed AI (расширенные)")]
+        [Tooltip("Flee: максимальная дистанция убегания.")]
+        public float tamedFleeDistance = 20f;
 
+        [Tooltip("Flee: если обидчик дальше этого расстояния — Flee заканчивается.")]
+        public float tamedFleeMaxThreatDistance = 30f;
+
+        [Tooltip("Neutral: максимальный радиус преследования обидчика.")]
+        public float tamedNeutralChaseRadius = 20f;
+
+        [Tooltip("AttackOwnerTarget: радиус от игрока, где работает поведение.")]
+        public float tamedAttackOwnerRadius = 30f;
+        
     }
 }
