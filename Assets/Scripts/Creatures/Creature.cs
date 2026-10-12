@@ -8,6 +8,7 @@ using Assets.Scripts.Utils;
 using Assets.Scripts.InventorySystem;
 using Assets.Scripts.UI;
 using Assets.Scripts.Creatures.Taming;
+using Assets.Scripts.Player;
 
 namespace Assets.Scripts.Creatures
 {
@@ -60,6 +61,23 @@ namespace Assets.Scripts.Creatures
 
         private float _tamingSaveTimer = 0f;
         private const float TamingSaveInterval = 10f;
+
+        // === AI прирученного ===
+        private const float FOLLOW_DIST_LOWEST = 1.5f;
+        private const float FOLLOW_DIST_LOW = 2.5f;
+        private const float FOLLOW_DIST_MEDIUM = 3.5f;
+        private const float FOLLOW_DIST_HIGH = 5f;
+        private const float FOLLOW_DIST_HIGHEST = 7f;
+        private const float FOLLOW_CHASE_EXTRA = 2f;   // гистерезис между stop и chase
+
+        private Transform _currentEnemy;
+        private float _nextEnemySearchTime = 0f;
+        private const float ENEMY_SEARCH_INTERVAL = 0.5f;  // искать врага раз в 0.5 сек
+
+        // === Текущая цель атаки ===
+        private BaseLivingEntity _currentAttackTarget;   // если цель — существо
+        private bool _isAttackingPlayer = false;         // если цель — игрок
+        private Transform _wildTargetTransform;  // кэш цели для chase
 
         public bool DieManually = false;
 
@@ -206,20 +224,55 @@ namespace Assets.Scripts.Creatures
             if (tamed)
             {
                 // Сбрасываем анимацию — существо стоит
-                if (animator != null)
-                {
-                    animator.SetFloat(animIDSpeed, 0f);
-                    animator.SetBool(animIDIsMoving, false);
-                }
+                // if (animator != null)
+                // {
+                //     animator.SetFloat(animIDSpeed, 0f);
+                //     animator.SetBool(animIDIsMoving, false);
+                // }
                 // TODO: AI прирученного (Follow/Stay/Idle) — отдельная система,
                 // сейчас просто Wander или Idle. Можно оставить как есть для теста.
+                HandleTamedState();
+                UpdateAnimation();
                 return;
             }
 
 
             // === Обычный AI ===
+            // if (_agent == null) return;
+
+            // if (_playerTransform == null)
+            // {
+            //     SetState(CreatureState.Wander);
+            //     HandleWandering();
+            //     return;
+            // }
+
+            // float distanceToPlayer = Vector3.Distance(transform.position, _playerTransform.position);
+
+            // if (isAttacking)
+            // {
+            //     // Во время атаки не меняем состояние
+            // }
+            // else if (distanceToPlayer <= AttackRange && Time.time >= lastAttackTime + AttackCooldown)
+            // {
+            //     SetState(CreatureState.Attack);
+            //     PerformAttack();
+            // }
+            // else if (distanceToPlayer <= AggressionRadius)
+            // {
+            //     SetState(CreatureState.Chase);
+            //     HandleChasing();
+            // }
+            // else
+            // {
+            //     SetState(CreatureState.Wander);
+            //     HandleWandering();
+            // }
+
+            // === Обычный AI ===
             if (_agent == null) return;
 
+            // Игрока нет вообще — нет смысла искать
             if (_playerTransform == null)
             {
                 SetState(CreatureState.Wander);
@@ -227,29 +280,39 @@ namespace Assets.Scripts.Creatures
                 return;
             }
 
-            float distanceToPlayer = Vector3.Distance(transform.position, _playerTransform.position);
-
-            if (isAttacking)
-            {
-                // Во время атаки не меняем состояние
-            }
-            else if (distanceToPlayer <= AttackRange && Time.time >= lastAttackTime + AttackCooldown)
-            {
-                SetState(CreatureState.Attack);
-                PerformAttack();
-            }
-            else if (distanceToPlayer <= AggressionRadius)
-            {
-                SetState(CreatureState.Chase);
-                HandleChasing();
-            }
+            // Если атака идёт — ждём
+            if (isAttacking) { /* ждём */ }
             else
             {
-                SetState(CreatureState.Wander);
-                HandleWandering();
+                // Ищем цель (игрок + прирученные)
+                FindWildTarget();
+
+                if (_wildTargetTransform != null)
+                {
+                    float dist = Vector3.Distance(transform.position, _wildTargetTransform.position);
+
+                    if (dist <= AttackRange && Time.time >= lastAttackTime + AttackCooldown)
+                    {
+                        SetState(CreatureState.Attack);
+                        PerformAttack();
+                    }
+                    else
+                    {
+                        SetState(CreatureState.Chase);
+                        _agent.isStopped = false;
+                        _agent.speed = ChaseSpeed;
+                        _agent.SetDestination(_wildTargetTransform.position);
+                    }
+                }
+                else
+                {
+                    SetState(CreatureState.Wander);
+                    HandleWandering();
+                }
             }
 
             UpdateAnimation();
+            // UpdateCurrentEnemy();
 
             if (DieManually)
             {
@@ -289,11 +352,11 @@ namespace Assets.Scripts.Creatures
             }
         }
 
-        private void HandleChasing()
-        {
-            if (!_agent.isOnNavMesh) return;
-            _agent.SetDestination(_playerTransform.position);
-        }
+        // private void HandleChasing()
+        // {
+        //     if (!_agent.isOnNavMesh) return;
+        //     _agent.SetDestination(_playerTransform.position);
+        // }
 
         private void HandleWandering()
         {
@@ -338,20 +401,46 @@ namespace Assets.Scripts.Creatures
             }
             else
             {
-                Invoke(nameof(DealDamageToPlayer), 0.5f);
+                Invoke(nameof(DealDamageToTarget), 0.5f);
             }
 
             Invoke(nameof(ResetAttackState), AttackCooldown);
         }
 
-        private void DealDamageToPlayer()
+        /// <summary>
+        /// Вызывается из Animation Event (или через Invoke, если нет аниматора).
+        /// Универсально: бьёт игрока или существо — в зависимости от текущей цели.
+        /// Имя оставлено для совместимости с Animation Event.
+        /// </summary>
+        public void DealDamageToTarget()
         {
+            // Если цель — существо
+            if (!_isAttackingPlayer && _currentAttackTarget != null)
+            {
+                if (_currentAttackTarget.IsAlive())
+                {
+                    _currentAttackTarget.TakeDamage(AttackDamage, 0f);
+                }
+                return;
+            }
+
+            // Иначе — игрок
             PlayerSurvivalSystem.Instance?.TakeDamage(AttackDamage);
         }
 
         private void ResetAttackState()
         {
             isAttacking = false;
+
+            // Прирученный — возвращаемся к обычной логике (там своя логика в HandleTamedState)
+            if (tamed)
+            {
+                _currentAttackTarget = null;
+                _isAttackingPlayer = false;
+                return;
+            }
+
+            // Дикий — к chase/wander на игрока
             if (_playerTransform != null &&
                 Vector3.Distance(transform.position, _playerTransform.position) <= AggressionRadius)
             {
@@ -365,12 +454,12 @@ namespace Assets.Scripts.Creatures
 
         private void UpdateAnimation()
         {
-            if (animator != null && !isAttacking)
-            {
-                float currentSpeed = _agent.velocity.magnitude;
-                animator.SetFloat(animIDSpeed, currentSpeed);
-                animator.SetBool(animIDIsMoving, currentSpeed > 0.1f);
-            }
+            if (animator == null || isAttacking) return;
+            if (_agent == null) return;
+
+            float currentSpeed = _agent.velocity.magnitude;
+            animator.SetFloat(animIDSpeed, currentSpeed);
+            animator.SetBool(animIDIsMoving, currentSpeed > 0.1f);
         }
 
         private void StartWandering()
@@ -390,6 +479,307 @@ namespace Assets.Scripts.Creatures
             float delay = Random.Range(MinWanderDelay, MaxWanderDelay);
             nextWanderTime = Time.time + delay;
         }
+
+
+        // ==========================================
+        // === AI ПРИРУЧЕННОГО ===
+        // ==========================================
+
+        private void HandleTamedState()
+        {
+            if (_agent == null) return;
+            if (!_agent.enabled || !_agent.isOnNavMesh) return;
+
+            // === 1. Aggro — искать врага в радиусе ===
+            if (tamedBehavior == TamedBehavior.Aggressive)
+            {
+                UpdateCurrentEnemy();
+
+                if (_currentEnemy != null)
+                {
+                    ChaseAndAttack(_currentEnemy);
+                    return;
+                }
+            }
+            else
+            {
+                _currentEnemy = null;
+                _currentAttackTarget = null;
+                _isAttackingPlayer = false;
+            }
+
+            // === 2. Follow ===
+            if (tamedFollowing && _playerTransform != null)
+            {
+                FollowOwner();
+                return;
+            }
+
+            // === 3. Wander ===
+            if (tamedWandering)
+            {
+                WanderTamed();
+                return;
+            }
+
+            // === 4. Idle ===
+            IdleTamed();
+        }
+
+        private void UpdateCurrentEnemy()
+        {
+            // Если цель жива и в радиусе — оставляем
+            if (_currentEnemy != null)
+            {
+                var enemyLiving = _currentEnemy.GetComponent<BaseLivingEntity>();
+                if (enemyLiving == null || !enemyLiving.IsAlive() || enemyLiving.tamed)
+                {
+                    _currentEnemy = null;
+                    _currentAttackTarget = null;
+                }
+                else
+                {
+                    float d = Vector3.Distance(transform.position, _currentEnemy.position);
+                    if (d > Data.tamedAggroRadius * 1.5f)
+                    {
+                        _currentEnemy = null;
+                        _currentAttackTarget = null;
+                    }
+                }
+            }
+
+            // Если цели нет — искать
+            if (_currentEnemy == null && Time.time >= _nextEnemySearchTime)
+            {
+                _nextEnemySearchTime = Time.time + ENEMY_SEARCH_INTERVAL;
+                _currentEnemy = FindNearestEnemy();
+            }
+        }
+
+        private Transform FindNearestEnemy()
+        {
+            if (Data == null) return null;
+
+            int creatureLayer = LayerMask.NameToLayer("Creature");
+            if (creatureLayer == -1) return null;
+
+            Collider[] hits = Physics.OverlapSphere(
+                transform.position,
+                Data.tamedAggroRadius,
+                1 << creatureLayer,
+                QueryTriggerInteraction.Ignore);
+
+            Transform nearest = null;
+            float minDist = float.MaxValue;
+
+            foreach (var hit in hits)
+            {
+                if (hit.gameObject == gameObject) continue;
+
+                var living = hit.GetComponent<BaseLivingEntity>();
+                if (living == null) continue;
+                if (living.tamed || living.knockedOut || living.IsDead()) continue;
+                if (!living.IsAlive()) continue;
+
+                // Не игрок
+                // if (living is PlayerController) continue;
+                // Если это существо, у которого есть Data — проверим, что это не наш хозяин
+                // (игрок тут не BaseLivingEntity, так что проверка выше)
+
+                float d = Vector3.Distance(transform.position, hit.transform.position);
+                if (d < minDist)
+                {
+                    minDist = d;
+                    nearest = hit.transform;
+                }
+            }
+
+            return nearest;
+        }
+
+
+        /// <summary>
+        /// Найти ближайшую цель для дикого существа: игрок + прирученные существа.
+        /// Возвращает:
+        /// - _currentAttackTarget != null → цель — существо.
+        /// - _isAttackingPlayer == true → цель — игрок.
+        /// - оба false / null → цели нет.
+        /// </summary>
+        private void FindWildTarget()
+        {
+            float bestDist = float.MaxValue;
+            BaseLivingEntity bestCreature = null;
+            bool bestIsPlayer = false;
+            Transform bestTransform = null;
+
+            // === 1. Игрок ===
+            if (_playerTransform != null)
+            {
+                float d = Vector3.Distance(transform.position, _playerTransform.position);
+                if (d <= AggressionRadius)
+                {
+                    bestDist = d;
+                    bestIsPlayer = true;
+                    bestTransform = _playerTransform;
+                }
+            }
+
+            // === 2. Прирученные существа ===
+            int creatureLayer = LayerMask.NameToLayer("Creature");
+            if (creatureLayer != -1)
+            {
+                Collider[] hits = Physics.OverlapSphere(
+                    transform.position,
+                    AggressionRadius,
+                    1 << creatureLayer,
+                    QueryTriggerInteraction.Ignore);
+
+                foreach (var hit in hits)
+                {
+                    if (hit.gameObject == gameObject) continue;
+
+                    var living = hit.GetComponent<BaseLivingEntity>();
+                    if (living == null) continue;
+                    if (!living.tamed) continue;
+                    if (living.knockedOut || living.IsDead() || !living.IsAlive()) continue;
+
+                    float d = Vector3.Distance(transform.position, hit.transform.position);
+                    if (d < bestDist)
+                    {
+                        bestDist = d;
+                        bestCreature = living;
+                        bestIsPlayer = false;
+                        bestTransform = hit.transform;
+                    }
+                }
+            }
+
+            // === 3. Установить результат ===
+            _currentAttackTarget = bestCreature;
+            _isAttackingPlayer = bestIsPlayer;
+            _wildTargetTransform = bestTransform;
+        }
+
+        
+
+        private void ChaseAndAttack(Transform target)
+        {
+            if (target == null) return;
+
+            // === Установить текущую цель ===
+            var targetLiving = target.GetComponent<BaseLivingEntity>();
+            if (targetLiving != null)
+            {
+                _currentAttackTarget = targetLiving;
+                _isAttackingPlayer = false;
+            }
+            else
+            {
+                // Не существо (например, игрок) — бьём игрока
+                _currentAttackTarget = null;
+                _isAttackingPlayer = true;
+            }
+
+            float dist = Vector3.Distance(transform.position, target.position);
+
+            if (dist <= AttackRange)
+            {
+                _agent.isStopped = true;
+
+                if (Time.time >= lastAttackTime + AttackCooldown)
+                {
+                    PerformAttack();
+                }
+            }
+            else
+            {
+                _agent.isStopped = false;
+                _agent.speed = ChaseSpeed;
+                _agent.SetDestination(target.position);
+            }
+        }
+
+        private void FollowOwner()
+        {
+            float stopDist = GetFollowStopDistance();
+            float chaseDist = stopDist + FOLLOW_CHASE_EXTRA;
+
+            float dist = Vector3.Distance(transform.position, _playerTransform.position);
+
+            if (dist > chaseDist)
+            {
+                // Догонять
+                _agent.isStopped = false;
+                _agent.speed = Data != null ? Data.tamedFollowChaseSpeed : ChaseSpeed;
+                _agent.SetDestination(_playerTransform.position);
+            }
+            else if (dist <= stopDist)
+            {
+                // Остановиться
+                _agent.isStopped = true;
+            }
+            // Между stopDist и chaseDist — не трогаем (гистерезис)
+        }
+
+        private float GetFollowStopDistance()
+        {
+            switch (tamedFollowDistance)
+            {
+                case FollowDistance.Lowest: return FOLLOW_DIST_LOWEST;
+                case FollowDistance.Low: return FOLLOW_DIST_LOW;
+                case FollowDistance.Medium: return FOLLOW_DIST_MEDIUM;
+                case FollowDistance.High: return FOLLOW_DIST_HIGH;
+                case FollowDistance.Highest: return FOLLOW_DIST_HIGHEST;
+                default: return FOLLOW_DIST_MEDIUM;
+            }
+        }
+
+        private void WanderTamed()
+        {
+            _agent.isStopped = false;
+            _agent.speed = WalkSpeed;
+
+            if (!isWandering || Time.time >= nextWanderTime)
+            {
+                StartTamedWandering();
+            }
+        }
+
+        private void StartTamedWandering()
+        {
+            if (!_agent.isOnNavMesh) return;
+
+            isWandering = true;
+
+            float radius = Data != null ? Data.tamedWanderRadius : 10f;
+            Vector3 randomDirection = Random.insideUnitSphere * radius;
+            randomDirection += transform.position;
+
+            if (NavMesh.SamplePosition(randomDirection, out NavMeshHit hit, radius, NavMesh.AllAreas))
+            {
+                _agent.SetDestination(hit.position);
+            }
+
+            float delay = Random.Range(MinWanderDelay, MaxWanderDelay);
+            nextWanderTime = Time.time + delay;
+        }
+
+        /// <summary>
+        /// Сбросить состояние блуждания — чтобы AI заново запустил Wander.
+        /// Вызывается при переключении в режим Wander.
+        /// </summary>
+        public void ResetWanderState()
+        {
+            isWandering = false;
+            nextWanderTime = 0f;
+        }
+
+        private void IdleTamed()
+        {
+            _agent.isStopped = true;
+            _agent.velocity = Vector3.zero;
+        }
+
 
         void OnDestinationReached()
         {

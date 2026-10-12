@@ -1074,7 +1074,55 @@ Panel.Image.RaycastTarget — если true, перехватывает клик
 
 AimCanvas / HUDCanvas — RaycastTarget только на кнопках.
 
+### 23. Боевая система существ
 
+Существа наносят урон друг другу и игроку. Работает в обе стороны:
+дикий бьёт игрока и его прирученных; прирученный (в Aggressive) бьёт диких.
+
+#### 23.1 Урон существо→существо
+
+- **`BaseLivingEntity.TakeDamage(float damage, float torporAmount = 0f)`** — overload
+  без `PlayerInteraction`. Используется, когда атакующий — существо.
+- Внутри — `TakeDamage(damage, torpor, null, null, null)`, `playerInteraction` может быть `null`.
+- Popup урона — в `transform.position + up`, если `playerInteraction == null`.
+
+#### 23.2 Текущая цель атаки (`Creature`)
+
+- **`_currentAttackTarget`** (`BaseLivingEntity`) — цель-существо.
+- **`_isAttackingPlayer`** (bool) — цель — игрок.
+- **`_wildTargetTransform`** (`Transform`) — кэш трансформа для chase (дикий AI).
+
+#### 23.3 Универсальный `DealDamageToPlayer`
+
+Имя оставлено для совместимости с Animation Event. Логика:
+- Если `!_isAttackingPlayer && _currentAttackTarget != null` → бьёт существо.
+- Иначе → `PlayerSurvivalSystem.TakeDamage(AttackDamage)`.
+
+#### 23.4 Прирученный бьёт диких (Итерация 1)
+
+- В `ChaseAndAttack(target)` — устанавливается `_currentAttackTarget` или `_isAttackingPlayer`.
+- `PerformAttack` → Animation Event → `DealDamageToPlayer` → бьёт цель.
+- `ResetAttackState` для прирученного — сбрасывает `_currentAttackTarget`, `_isAttackingPlayer`.
+
+#### 23.5 Дикий бьёт игрока и прирученных (Итерация 2)
+
+- **`FindWildTarget()`** — `OverlapSphere` по слою `Creature`:
+  - Игрок (`_playerTransform`) — если в радиусе `AggressionRadius`.
+  - Прирученные (`living.tamed && IsAlive() && !knockedOut`).
+  - **Ближайшая** цель побеждает.
+- `Creature.Update` (дикий) → `FindWildTarget` → Chase / Attack к `_wildTargetTransform`.
+- `HandleChasing` больше не используется в диком AI.
+
+#### 23.6 Известные особенности
+
+- **Дикие не бьют диких** — фильтр `!living.tamed` в `FindWildTarget`.
+  Пищевая цепочка (хищник vs травоядное) — отдельная задача.
+- **Прирученный не реагирует на удары** (`Neutral` / `Flee` / `AttackOwnerTarget` — заглушки).
+  Нужна система «кто ударил» (кто последний нанёс урон).
+- **`FindWildTarget` вызывается каждый кадр** в `Update` — `OverlapSphere`.
+  Оптимизация (раз в 0.2 сек) — задача на будущее.
+- **`_wildTargetTransform`** — кэш для `SetDestination`. Сбрасывается в `ResetAttackState`.
+- **Animation Event** `DealDamageToPlayer` — имя не менялось, для совместимости.
 
 ## TODO
 

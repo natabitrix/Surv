@@ -15,6 +15,7 @@ namespace Assets.Scripts.UI
         [Header("Text")]
         [SerializeField] private TextMeshProUGUI _nameText;
         [SerializeField] private TextMeshProUGUI _statusText;
+        [SerializeField] private TextMeshProUGUI _behaviorText;
 
         [Header("Health Bar")]
         [SerializeField] private GameObject _healthBarRoot;
@@ -88,6 +89,12 @@ namespace Assets.Scripts.UI
             if (_statusText != null)
             {
                 _statusText.text = _target.GetStatusText();
+            }
+
+            // === Поведение ===
+            if (_behaviorText != null)
+            {
+                _behaviorText.text = $"Поведение: {_target.GetBehaviorText()}";
             }
 
             // === Health ===

@@ -104,6 +104,33 @@ namespace Assets.Scripts.Interactables
             }
         }
 
+
+        public string GetMenuButtonLabelByActionId(string actionId)
+        {
+            RadialMenuConfig config = GetMenuConfig();
+            if (config == null || config.rootEntries == null || config.rootEntries.Length == 0)
+            {
+                return "";
+            }
+
+            foreach (var entry in config.rootEntries)
+            {
+                if (entry.actionId == actionId) return entry.label;
+
+                foreach (var child in entry.children)
+                {
+                    if (child.actionId == actionId) return child.label;
+
+                    foreach (var childchild in child.children)
+                    {
+                        if (childchild.actionId == actionId) return childchild.label;
+                    }
+                }
+            }
+
+            return "";
+        }
+
         public void ExecuteAction(string actionId)
         {
             if (_living != null)
@@ -130,7 +157,7 @@ namespace Assets.Scripts.Interactables
                 return;
             }
 
-            
+
 
             Debug.Log($"[RadialMenu] Action: {actionId} (нет BaseLivingEntity — структура/предмет)");
         }

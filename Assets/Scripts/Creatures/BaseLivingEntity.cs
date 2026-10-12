@@ -11,6 +11,7 @@ using System.Collections;
 using UnityEngine.AI;
 using Assets.Scripts.Creatures.Taming;
 using Assets.Scripts.UI.Notifications;
+using Assets.Scripts.UI.RadialMenuUI;
 
 namespace Assets.Scripts.Creatures
 {
@@ -67,6 +68,8 @@ namespace Assets.Scripts.Creatures
 
             return "Wild";
         }
+
+        public virtual string GetBehaviorText() => TamedBehaviorToText();
 
         public virtual float GetDamageMultiplier(Collider hitCollider) => 1f;
 
@@ -219,6 +222,12 @@ namespace Assets.Scripts.Creatures
         public virtual void TakeDamage(float damage, float torporAmount, PlayerInteraction playerInteraction)
             => TakeDamage(damage, torporAmount, playerInteraction, null, null);
 
+        /// <summary>
+        /// Урон без PlayerInteraction (например, от существа существу).
+        /// </summary>
+        public virtual void TakeDamage(float damage, float torporAmount = 0f)
+            => TakeDamage(damage, torporAmount, null, null, null);
+
         public virtual void TakeDamage(float damage, float torporAmount, PlayerInteraction playerInteraction, Collider hitCollider = null, Vector3? hitPoint = null)
         {
             Collider col = hitCollider ?? playerInteraction?.GetTargetHitCollider();
@@ -279,6 +288,7 @@ namespace Assets.Scripts.Creatures
                 Die();
             }
         }
+
 
         void PlayDamageEffect(Vector3 targetHitPosition)
         {
@@ -569,7 +579,9 @@ namespace Assets.Scripts.Creatures
             ExitKnockoutState();
             SetCreatureLayer();
 
-            if (this is Creature c) c.SetTarget(null);
+            // Прирученное существо следует за игроком, а не за "целью".
+            // _playerTransform в Creature должен указывать на игрока.
+            // if (this is Creature c) c.SetTarget(null);
 
             if (!string.IsNullOrEmpty(TamingInstanceId) && TamingManager.Instance != null)
             {
@@ -599,6 +611,7 @@ namespace Assets.Scripts.Creatures
         public void AddFood(float amount)
         {
             food = Mathf.Min(maxFood, food + amount);
+            Heal(amount);
         }
 
         public bool ConsumeFood(float amount)
@@ -624,7 +637,11 @@ namespace Assets.Scripts.Creatures
         {
             if (!tamed) return;
             tamedWandering = value;
-            if (value) tamedFollowing = false;
+            if (value)
+            {
+                tamedFollowing = false;
+                if (this is Creature c) c.ResetWanderState();
+            }
         }
 
         /// <summary>Включить/выключить спаривание.</summary>
@@ -694,6 +711,33 @@ namespace Assets.Scripts.Creatures
                     OpenInventory();
                     Debug.Log($"[{gameObject.name}] OpenInventory");
                     break;
+
+
+                case "flee":
+                    SetTamedBehavior(TamedBehavior.Flee);
+                    Debug.Log($"[{gameObject.name}] TamedBehavior = Flee");
+                    break;
+
+                case "passive":
+                    SetTamedBehavior(TamedBehavior.Passive);
+                    Debug.Log($"[{gameObject.name}] TamedBehavior = Passive");
+                    break;
+
+                case "neutral":
+                    SetTamedBehavior(TamedBehavior.Neutral);
+                    Debug.Log($"[{gameObject.name}] TamedBehavior = Aggressive");
+                    break;
+
+                case "attack_owner_target":
+                    SetTamedBehavior(TamedBehavior.AttackOwnerTarget);
+                    Debug.Log($"[{gameObject.name}] TamedBehavior = AttackOwnerTarget");
+                    break;
+
+                case "aggressive":
+                    SetTamedBehavior(TamedBehavior.Aggressive);
+                    Debug.Log($"[{gameObject.name}] TamedBehavior = Aggressive");
+                    break;
+
 
                 case "pick_up":
                     // TODO
@@ -803,6 +847,18 @@ namespace Assets.Scripts.Creatures
                 case "aggressive": return TamedBehavior.Aggressive;
                 default: return TamedBehavior.Neutral;
             }
+        }
+
+        public string TamedBehaviorToText()
+        {
+            var tamedBehaviorId = TamedBehaviorToId(tamedBehavior);
+            if (TryGetComponent<RadialMenu>(out var menu))
+            {
+                var tamedBehaviorText = menu.GetMenuButtonLabelByActionId(tamedBehaviorId);
+                if (tamedBehaviorText != "") return tamedBehaviorText;
+            }
+
+            return tamedBehaviorId;
         }
 
         private static string FollowDistanceToId(FollowDistance value)

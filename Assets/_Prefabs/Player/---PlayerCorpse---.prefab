@@ -2764,8 +2764,8 @@ GameObject:
   - component: {fileID: 6843933443345197380}
   - component: {fileID: 4448035314227675115}
   - component: {fileID: 8025109148827972457}
-  - component: {fileID: 3350142690217425088}
   - component: {fileID: 3321671290676940435}
+  - component: {fileID: 630576923232797033}
   m_Layer: 17
   m_Name: ---PlayerCorpse---
   m_TagString: Untagged
@@ -2857,7 +2857,6 @@ MonoBehaviour:
   _interactionCollider: {fileID: 5906720190356917627}
   _interactionAnchor: {fileID: 1502837383900671138}
   _inventory: {fileID: 0}
-  _chestUI: {fileID: 0}
   allowHarvest: 1
   allowFists: 1
   allowAxe: 1
@@ -2878,21 +2877,6 @@ MonoBehaviour:
   maxHarvestHits: 3
   _corpseDisappearTime: 5000
   _lootBagPrefab: {fileID: 4309089054926544229, guid: 27ea0d0c5535c3d47a83045f2d6eeb8a, type: 3}
---- !u!114 &3350142690217425088
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7881994360618582535}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e4fd1ea77d25d2645838ef83642d540d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Interactables.RadialMenu
-  item: {fileID: 0}
-  corpse: {fileID: 8025109148827972457}
-  creature: {fileID: 0}
 --- !u!114 &3321671290676940435
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2921,6 +2905,24 @@ MonoBehaviour:
     linearDamp: 1
     angularDamp: 3
     velocityInherit: 0.1
+--- !u!114 &630576923232797033
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7881994360618582535}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1665aaf0d53d5045b5ed1d107c342fc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Interactables.RadialMenu
+  item: {fileID: 0}
+  corpse: {fileID: 0}
+  creature: {fileID: 0}
+  structure: {fileID: 0}
+  chest: {fileID: 0}
+  IsStructure: 0
 --- !u!1 &8012638579492073318
 GameObject:
   m_ObjectHideFlags: 0

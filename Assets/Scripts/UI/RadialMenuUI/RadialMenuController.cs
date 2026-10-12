@@ -290,12 +290,6 @@ namespace Assets.Scripts.UI.RadialMenuUI
                         // CloseRadialMenu (PanelMode(false)) -> RadialMenuController.Instance?.Close
                         // Если выбрали Открыть инвентарь
                         // PanelMode должен быть true
-                        // 
-                        // var player = PlayerController.Instance;
-                        // if (player == null) return;
-
-                        // var playerInteraction = player.GetComponent<PlayerInteraction>();
-                        // if (playerInteraction == null) return;
 
                         var panelsUIController = PanelsUIController.Instance;
                         if (panelsUIController == null) return;
