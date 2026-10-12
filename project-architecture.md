@@ -1137,23 +1137,65 @@ AimCanvas / HUDCanvas — RaycastTarget только на кнопках.
 
 #### 24.2 `CreatureData` — новые параметры
 
-```cs
 public float tamedFleeDistance = 20f;            // Flee: макс. дистанция убегания
 public float tamedFleeMaxThreatDistance = 30f;   // Flee: обидчик дальше — Flee кончается
 public float tamedNeutralChaseRadius = 20f;      // Neutral: радиус chase
 public float tamedAttackOwnerRadius = 30f;       // AttackOwnerTarget: радиус от игрока
+
+
+#### 24.3 Поведения (Creature.HandleTamedState)
+Приоритет:
+
+Flee — если атакован, бежать от обидчика (пока он в tamedFleeMaxThreatDistance).
+
+Neutral — если атакован, атаковать обидчика (пока он в tamedNeutralChaseRadius).
+
+AttackOwnerTarget — если игрок в tamedAttackOwnerRadius, искать врага рядом с игроком (FindEnemyNearPlayer) и атаковать.
+
+Aggressive — искать врага в tamedAggroRadius (существующая логика).
+
+Follow — если tamedFollowing.
+
+Wander — если tamedWandering.
+
+Idle — иначе.
+
+#### 24.4 Creature.DealDamageToPlayer
+Перед TakeDamage вызывается target.NotifyAttackedBy(this). Так цель запоминает атакующего.
+
+#### 24.5 FleeFrom(threat)
+Вычисляет awayDir = (position - threat.position).normalized, targetPos = position + awayDir * 5f.
+NavMesh.SamplePosition → SetDestination.
+Каждый кадр пересчитывается — если обидчик догоняет, направление меняется.
+
+#### 24.6 FindEnemyNearPlayer
+OverlapSphere вокруг игрока (_playerTransform.position) в радиусе tamedAggroRadius.
+Фильтр: !tamed, IsAlive(), не сам.
+Возвращает ближайшего к прирученному.
+
+#### 24.7 Что НЕ сделано (заглушки)
+«Кто ударил игрока» — система есть только для BaseLivingEntity, не для игрока.
+AttackOwnerTarget использует «враг рядом с игроком» — не «конкретный обидчик».
+
+Рефакторинг Creature.cs — файл раздут (~700 строк).
+AI / боевка / приручение / анимация смешаны.
+Планируется вынести в CreatureCombat или State Machine.
+
 
 ## TODO
 
 ### Ближайшее (Следующий шаг)
 
 - [ ] **`SettingsController`** — единая система настроек (MainMenu + Pause). Префаб UI + скрипт, хранение в JSON. Сюда же переедет `splitStackKey` из удалённого `InventoryConfig`.
-- [ ] **AI прирученных существ** — Follow/Stay/Idle/Attack команды через `RadialMenu`.
-- [ ] **Радиальное меню для существ** — команды вместо «ТЕЛО».
 - [ ] **Фикс багов** — список собирается перед началом работы.
+**Отложено:**
+- «Кто ударил игрока» (для `AttackOwnerTarget`).
+- Рефакторинг `Creature.cs`.
+- Пищевая цепочка (дикие бьют диких).
 
 ### Сделано (архив)
-
+- [x] **AI прирученных существ** — Follow/Stay/Idle/Attack команды через `RadialMenu`.
+- [x] **Радиальное меню для существ** — команды вместо «ТЕЛО».
 - [x] **ChestUIManager** — единая точка входа для инвентарей, устранён рассинхрон `_currentChest`/`_isOpen`.
 - [x] **IInventorySource** — интерфейс источников инвентаря (Corpse, BaseLivingEntity, ChestController, LootBag).
 - [x] **Сброс слотов в `ChestUI.Close`** — принудительный `SetSlot(null)`.
