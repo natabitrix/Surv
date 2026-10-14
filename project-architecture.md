@@ -1181,6 +1181,79 @@ AttackOwnerTarget использует «враг рядом с игроком»
 AI / боевка / приручение / анимация смешаны.
 Планируется вынести в CreatureCombat или State Machine.
 
+### 25. Рефакторинг Creature: компонентная архитектура
+
+Цель: `Creature` = hub, компоненты = модули. `BaseLivingEntity` — данные + интерфейсы.
+
+#### 25.1 Архитектура
+GameObject "Dodo"
+├── Creature : BaseLivingEntity (hub)
+├── CreatureCombat (боевка, Этап 1)
+├── CreatureDeath (смерть, Этап 2)
+├── CreatureKnockout (нокаут, Этап 3)
+├── CreatureTaming (приручение + еда, Этап 4)
+├── CreatureCommands (радиальное меню, Этап 5)
+├── CreatureAudio (звуки, Этап 6)
+├── CreatureWildAI (дикий AI, Этап 7)
+└── CreatureTamedAI (прирученный AI, Этап 8)
+
+
+#### 25.2 Этап 1: `CreatureCombat`
+
+**Файл:** `Assets/Scripts/Creatures/Components/CreatureCombat.cs`.
+
+**Содержит:**
+- Урон: `TakeDamage` (3 overload), `ReduceHealth`, `PlayDamageEffect`.
+- Память об атакующем: `LastAttacker`, `NotifyAttackedBy`, `ClearLastAttacker`.
+- Атака: `PerformAttack`, `DealDamageToTarget`, `ResetAttackState`, `ChaseAndAttack`.
+- Поиск целей: `FindWildTarget`, `FindNearestEnemy`, `FindEnemyNearPlayer`, `UpdateCurrentEnemy`.
+- Бегство: `FleeFrom`.
+- Свойства: `CurrentAttackTarget`, `IsAttackingPlayer`, `WildTargetTransform`, `CurrentEnemy`, `LastAttackTime`, `IsAttacking`.
+
+**Ссылки:** `_creature` (получается в `Awake` через `GetComponent<Creature>()`).
+
+**Не содержит:** `Update` — оркестрация через `Creature.Update`.
+
+#### 25.3 `BaseLivingEntity` — изменения
+
+- `TakeDamage` (4 overload) — **виртуальные заглушки** `{ }` (для полиморфизма).
+- `LastAttacker`, `NotifyAttackedBy`, `ClearLastAttacker` — **удалены** (перенесены в `CreatureCombat`).
+- Добавлены методы для `CreatureCombat`: `ReduceHealth`, `AddTorporDirect`, `IsHealthBelowZero`, `SetDead`.
+- `LastAttacker` — теперь через `_creature.Combat.LastAttacker`.
+
+#### 25.4 `Creature` — hub
+
+**Ссылки на компоненты:**
+- `_combat` (`CreatureCombat`).
+
+**Публичные геттеры для компонентов:**
+- `Agent` (`NavMeshAgent`), `PlayerTransform`, `Combat`, `Animator`, `AnimIDAttack`, `AnimIDTakeDamage`.
+- `RequestDeath()` → `Die()`.
+
+**Override `TakeDamage`:**
+
+public override void TakeDamage(float damage, float torporAmount = 0f)
+    => _combat.TakeDamage(damage, torporAmount);
+// ... и остальные overload'ы
+
+#### 25.5 PlayerInteraction — изменения
+_hitCreature — тип Creature (было BaseLivingEntity).
+
+GetComponent<Creature>() вместо GetComponent<BaseLivingEntity>().
+
+Почему: Creature — единственный наследник BaseLivingEntity. Если появится NPC без Creature — вернём BaseLivingEntity + abstract TakeDamage.
+
+#### 25.6 Известные особенности
+CreatureCombat содержит _lastAttacker (дублирование с BaseLivingEntity — на Этапе 1 убрали из базы, но NotifyAttackedBy пишет в CreatureCombat).
+
+Поля движения (isWandering, nextWanderTime, currentState) — в Creature, до Этапов 7-8.
+
+ResetAttackState для дикого — временно упрощён (без WildAI.SetState, будет на Этапе 7).
+
+Animation Event DealDamageToTarget — в CreatureCombat.
+
+
+
 
 ## TODO
 

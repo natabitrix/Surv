@@ -79,44 +79,12 @@ namespace Assets.Scripts.Creatures
         [SerializeField] private ChestInventory _inventory;
         private bool _isOpen = false;
 
-        [Header("Debug")]
-        [SerializeField] private bool _debugDamage = false;
+        // [Header("Debug")]
+        // [SerializeField] private bool _debugDamage = false;
 
         [Header("Taming Stats")]
         public float torpor = 0f;
         public float maxTorpor = 100f;
-
-        [Header("Combat Memory")]
-        private BaseLivingEntity _lastAttacker;
-        public float LastAttackedTime { get; private set; } = -999f;
-        private const float ATTACKER_MEMORY_DURATION = 15f;
-
-        /// <summary>Последний, кто атаковал (с таймаутом памяти).</summary>
-        public BaseLivingEntity LastAttacker
-        {
-            get
-            {
-                if (_lastAttacker == null) return null;
-                if (Time.time - LastAttackedTime > ATTACKER_MEMORY_DURATION) return null;
-                return _lastAttacker;
-            }
-            private set { _lastAttacker = value; }
-        }
-
-        /// <summary>Сообщить, что это существо атаковано кем-то.</summary>
-        public void NotifyAttackedBy(BaseLivingEntity attacker)
-        {
-            if (attacker == null || attacker == this) return;
-            LastAttacker = attacker;
-            LastAttackedTime = Time.time;
-        }
-
-        /// <summary>Сбросить память об атакующем.</summary>
-        public void ClearLastAttacker()
-        {
-            _lastAttacker = null;
-            LastAttackedTime = -999f;
-        }
 
         [Header("Food")]
         public float food = 100f;
@@ -176,7 +144,6 @@ namespace Assets.Scripts.Creatures
         // ==========================================
         public InteractType GetInteractType() => tamed || (tamableKO && knockedOut) ? InteractType.OpenTargetInventory : InteractType.None;
         public InteractType GetInteractType2() => tamable && tamablePassive ? InteractType.Interact : InteractType.None;
-
 
         public void Interact(InteractContext context)
         {
@@ -243,96 +210,6 @@ namespace Assets.Scripts.Creatures
         protected abstract float GetMaxHealthFromConfiguration();
         protected abstract float GetMaxStaminaFromConfiguration();
         protected abstract float GetMaxFoodFromConfiguration();
-
-        // ==========================================
-        // === УРОН ===
-        // ==========================================
-
-        public virtual void TakeDamage(float damage, PlayerInteraction playerInteraction)
-            => TakeDamage(damage, 0f, playerInteraction, null, null);
-
-        public virtual void TakeDamage(float damage, float torporAmount, PlayerInteraction playerInteraction)
-            => TakeDamage(damage, torporAmount, playerInteraction, null, null);
-
-        /// <summary>
-        /// Урон без PlayerInteraction (например, от существа существу).
-        /// </summary>
-        public virtual void TakeDamage(float damage, float torporAmount = 0f)
-            => TakeDamage(damage, torporAmount, null, null, null);
-
-        public virtual void TakeDamage(float damage, float torporAmount, PlayerInteraction playerInteraction, Collider hitCollider = null, Vector3? hitPoint = null)
-        {
-            Collider col = hitCollider ?? playerInteraction?.GetTargetHitCollider();
-
-            float multiplier = GetDamageMultiplier(col);
-            float finalDamage = damage * multiplier;
-
-            health -= finalDamage;
-
-            Vector3 popupPos;
-            if (hitPoint.HasValue)
-                popupPos = hitPoint.Value;
-            else if (playerInteraction != null)
-                popupPos = playerInteraction.GetTargetHitPosition();
-            else
-                popupPos = transform.position + Vector3.up;
-
-            if (finalDamage > 0f)
-            {
-                DamageNumberPool.Instance?.ShowDamage(finalDamage, popupPos);
-            }
-
-            if (torporAmount > 0f && !_isDead)
-            {
-                torpor = Mathf.Min(maxTorpor, torpor + torporAmount);
-
-                if (!knockedOut && torpor >= maxTorpor)
-                {
-                    KnockOut();
-                }
-            }
-
-            if (animator != null && finalDamage > 0)
-            {
-                animator.SetTrigger(animIDTakeDamage);
-            }
-
-            if (damageEffect != null && finalDamage > 0)
-            {
-                PlayDamageEffect(popupPos);
-            }
-
-            if (_debugDamage)
-            {
-                string zoneInfo = "default x1";
-                if (col == null)
-                    zoneInfo = "col=NULL";
-                else if (col.TryGetComponent<CreatureHitZone>(out var zone))
-                    zoneInfo = $"{zone.label} x{zone.damageMultiplier}";
-                else
-                    zoneInfo = $"col={col.name} (no zone)";
-
-                Debug.Log($"[{gameObject.name}] Zone: {zoneInfo};  Damage: {finalDamage:F1} (base {damage:F1});  Collider passed={(hitCollider != null ? hitCollider.name : "null")}");
-            }
-
-            if (health <= 0)
-            {
-                Die();
-            }
-        }
-
-
-        void PlayDamageEffect(Vector3 targetHitPosition)
-        {
-            if (damageEffect != null)
-            {
-                var effectInstance = Instantiate(damageEffect, targetHitPosition, transform.rotation);
-                effectInstance.Play();
-
-                var main = effectInstance.main;
-                Destroy(effectInstance.gameObject, main.duration + 1.5f);
-            }
-        }
 
         protected virtual void Die()
         {
@@ -964,9 +841,23 @@ namespace Assets.Scripts.Creatures
         public void SetFood(float value) => food = Mathf.Clamp(value, 0f, maxFood);
         public void SetStamina(float value) => stamina = Mathf.Clamp(value, 0f, maxStamina);
 
+        /// <summary>Прямое уменьшение здоровья (без анимации/попапа). Используется CreatureCombat.</summary>
+        public void ReduceHealth(float amount) => health -= amount;
+
+        /// <summary>Прямое добавление торпора (без нокаута). Используется CreatureCombat.</summary>
+        public void AddTorporDirect(float amount) => torpor = Mathf.Min(maxTorpor, torpor + amount);
+
+        /// <summary>Здоровье ниже нуля?</summary>
+        public bool IsHealthBelowZero() => health <= 0;
+
+        /// <summary>Установить dead-флаг (используется CreatureDeath).</summary>
+        public void SetDead() { _isDead = true; knockedOut = false; health = 0; }
 
 
-
-
+        // BaseLivingEntity
+        // public virtual void TakeDamage(float damage, float torporAmount = 0f) { }
+        // public virtual void TakeDamage(float damage, PlayerInteraction pi) { }
+        // public virtual void TakeDamage(float damage, float torporAmount, PlayerInteraction pi) { }
+        // public virtual void TakeDamage(float damage, float torporAmount, PlayerInteraction pi, Collider hit, Vector3? point) { }
     }
 }

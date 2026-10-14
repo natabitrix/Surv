@@ -200,13 +200,13 @@ namespace Assets.Scripts.Combat
             _isFlying = false;
 
             // Урон живому существу — передаём коллайдер и точку для зон урона
-            var livingEntity = other.GetComponentInParent<BaseLivingEntity>();
-            if (livingEntity != null && livingEntity.IsAlive())
+            var creature = other.GetComponentInParent<Creature>();
+            if (creature != null && creature.IsAlive())
             {
-                livingEntity.TakeDamage(_damage, _torpor, null, other, point);
+                creature.TakeDamage(_damage, _torpor, null, other, point);
 
                 if (_debugHits)
-                    Debug.Log($"[Arrow.OnHit] Урон {_damage}, Torpor {_torpor} → {livingEntity.name}, collider={other.name}");
+                    Debug.Log($"[Arrow.OnHit] Урон {_damage}, Torpor {_torpor} → {creature.name}, collider={other.name}");
             }
 
             // Останавливаем физику

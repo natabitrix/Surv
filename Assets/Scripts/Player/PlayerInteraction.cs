@@ -79,7 +79,7 @@ namespace Assets.Scripts.Player
         private int _animIDOpenInventory;
         private bool _hasAnimator;
         private IInteractable _pendingInteractionTarget;
-        private BaseLivingEntity _hitCreature;
+        private Creature _hitCreature;
         private Corpse _currentlyDraggingCorpse;
         private PauseManager _pauseManager;
 
@@ -433,7 +433,7 @@ namespace Assets.Scripts.Player
                     break;
                 }
 
-                if (current.TryGetComponent<BaseLivingEntity>(out var living) && living.IsAlive())
+                if (current.TryGetComponent<Creature>(out var living) && living.IsAlive())
                 {
                     candidateRoot = current.gameObject;
                     break;
@@ -442,7 +442,7 @@ namespace Assets.Scripts.Player
                 var interactable = current.GetComponent<IInteractable>();
                 if (interactable != null
                     && !(interactable is Corpse)
-                    && !(interactable is BaseLivingEntity))
+                    && !(interactable is Creature))
                 {
                     candidateRoot = current.gameObject;
                     break;
@@ -554,7 +554,7 @@ namespace Assets.Scripts.Player
                 if (interactable is MonoBehaviour mb && !mb.enabled)
                     continue;
 
-                if (hasCorpse && interactable is BaseLivingEntity) continue;
+                if (hasCorpse && interactable is Creature) continue;
                 if (!_allTargets.Contains(interactable)) _allTargets.Add(interactable);
             }
 
@@ -564,7 +564,7 @@ namespace Assets.Scripts.Player
                 foreach (var child in childInteractables)
                 {
                     var childCorpse = child as Corpse;
-                    var childBLE = child as BaseLivingEntity;
+                    var childBLE = child as Creature;
 
                     if (childCorpse != null || childBLE == null)
                     {
@@ -583,8 +583,8 @@ namespace Assets.Scripts.Player
             {
                 if (!hasCorpse)
                 {
-                    _hitCreature = hitObject.GetComponent<BaseLivingEntity>() ??
-                                  hitObject.GetComponentInChildren<BaseLivingEntity>();
+                    _hitCreature = hitObject.GetComponent<Creature>() ??
+                                  hitObject.GetComponentInChildren<Creature>();
 
                     if (_hitCreature == null)
                     {
@@ -592,7 +592,7 @@ namespace Assets.Scripts.Player
                         int depth = 0;
                         while (parent != null && depth < 5)
                         {
-                            _hitCreature = parent.GetComponent<BaseLivingEntity>();
+                            _hitCreature = parent.GetComponent<Creature>();
                             if (_hitCreature != null) break;
                             parent = parent.parent;
                             depth++;
@@ -606,8 +606,8 @@ namespace Assets.Scripts.Player
         {
             if (_hitCreature != null) return;
 
-            var creature = collider.GetComponent<BaseLivingEntity>() ??
-                          collider.GetComponentInChildren<BaseLivingEntity>();
+            var creature = collider.GetComponent<Creature>() ??
+                          collider.GetComponentInChildren<Creature>();
 
             if (creature != null)
                 _hitCreature = creature;

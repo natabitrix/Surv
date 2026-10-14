@@ -16,12 +16,12 @@ namespace Assets.Scripts.Creatures
         public string label = "Zone";
 
         [Tooltip("Ссылка на существо. Заполняется автоматически из родителя на Awake.")]
-        public BaseLivingEntity owner;
+        public Creature owner;
 
         private void Awake()
         {
             if (owner == null)
-                owner = GetComponentInParent<BaseLivingEntity>();
+                owner = GetComponentInParent<Creature>();
         }
 
 

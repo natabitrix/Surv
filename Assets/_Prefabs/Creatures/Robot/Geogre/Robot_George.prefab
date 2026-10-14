@@ -3215,6 +3215,7 @@ GameObject:
   - component: {fileID: -6779586722763855289}
   - component: {fileID: -1522704912489940676}
   - component: {fileID: -8081587956032000943}
+  - component: {fileID: 8498293653355096884}
   m_Layer: 12
   m_Name: Robot_George
   m_TagString: Untagged
@@ -3337,7 +3338,6 @@ MonoBehaviour:
   tamedFollowDistance: 2
   _interactionCollider: {fileID: 1855417968429868836}
   _inventory: {fileID: 0}
-  _debugDamage: 0
   torpor: 0
   maxTorpor: 100
   food: 100
@@ -3485,5 +3485,18 @@ MonoBehaviour:
   item: {fileID: 0}
   corpse: {fileID: 0}
   creature: {fileID: 0}
-  corpseMenuConfig: {fileID: 0}
-  structureMenuConfig: {fileID: 0}
+  structure: {fileID: 0}
+  chest: {fileID: 0}
+  IsStructure: 0
+--- !u!114 &8498293653355096884
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9136099890693409341}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 10e3eb6d088283f4b942f5d8f4bcc837, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Creatures.Components.CreatureCombat
