@@ -1306,6 +1306,34 @@ Animation Event DealDamageToTarget — в CreatureCombat.
 - Геттеры: `AnimIDIsMoving`, `AnimIDSpeed`, `AnimIDDeath`.
 
 
+#### 25.13 Этап 4: CreatureTaming ✅
+
+**Файл:** `Assets/Scripts/Creatures/Components/CreatureTaming.cs`.
+
+**Содержит:**
+- `Tick()` — food tick (drain для knockedOut/tamed) + `ShouldEat` + `TryEatFood` + периодическое сохранение (раз в 10 сек).
+- `AddTamingProgress`, `FinishTaming`, `Unclaim`.
+- `AddTorpor`, `AddFood`, `ConsumeFood`.
+- `TickFood`, `ShouldEat`, `TryEatFood`.
+
+**Ссылки:** `_creature`, `TamingManager`, `NotificationManager`.
+
+#### 25.14 `BaseLivingEntity` — изменения (Этап 4)
+
+- `AddTamingProgress`, `AddTorpor`, `AddFood`, `ConsumeFood`, `Unclaim` — **виртуальные заглушки**.
+- `FinishTaming` — **удалён**.
+- `SetCreatureLayer` — **public** (доступ из `CreatureTaming`).
+
+#### 25.15 `Creature` — изменения (Этап 4)
+
+- `_taming` (`CreatureTaming`) — ссылка.
+- `Taming => _taming` — геттер.
+- `Health` — public property (get/set).
+- Override `AddTamingProgress`, `AddTorpor`, `AddFood`, `ConsumeFood`, `Unclaim`.
+- `Update`: `_taming.Tick()` вместо food-блока.
+- Удалены: `TickFood`, `ShouldEat`, `TryEatFood`, `_tamingSaveTimer`, `TamingSaveInterval`.
+
+
 ## TODO
 
 ### Ближайшее (Следующий шаг)

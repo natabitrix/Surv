@@ -30,6 +30,7 @@ namespace Assets.Scripts.Creatures
         private CreatureCombat _combat;
         private CreatureDeath _death;
         private CreatureKnockout _knockout;
+        private CreatureTaming _taming;
 
         // === Статы (берутся из _data через свойства) ===
         public int Level => _data?.level ?? 1;
@@ -42,7 +43,6 @@ namespace Assets.Scripts.Creatures
         public float AttackRange => _data?.attackRange ?? 2f;
         public float AttackDamage => _data?.attackDamage ?? 10f;
         public float AttackCooldown => _data?.attackCooldown ?? 2f;
-        public CreatureBehaviorType BehaviorType => _data?.behaviorType ?? CreatureBehaviorType.Aggressive;
 
         [Header("Audio (заполняется из базы)")]
         [HideInInspector] public AudioClip FootstepAudioClip;
@@ -57,19 +57,6 @@ namespace Assets.Scripts.Creatures
         private NavMeshAgent _agent;
         private Transform _playerTransform;
 
-        // === Для CreatureCombat ===
-        public NavMeshAgent Agent => _agent;
-        public Transform PlayerTransform => _playerTransform;
-        public CreatureCombat Combat => _combat;
-        public Animator Animator => animator;
-        public int AnimIDAttack => animIDAttack;
-        public int AnimIDTakeDamage => animIDTakeDamage;
-        public int AnimIDIsMoving => animIDIsMoving;
-        public int AnimIDSpeed => animIDSpeed;
-        public int AnimIDDeath => animIDDeath;
-
-        // === Death ===
-        public CreatureDeath Death => _death;
         public void RequestDeath() => Die();
         public void Die()
         {
@@ -81,18 +68,11 @@ namespace Assets.Scripts.Creatures
 
         }
 
-        // === Knockout ===
-        public CreatureKnockout Knockout => _knockout;
-
-
         private enum CreatureState { Wander, Chase, Attack }
         private CreatureState currentState = CreatureState.Wander;
 
         private float nextWanderTime = 0f;
         private bool isWandering = false;
-
-        private float _tamingSaveTimer = 0f;
-        private const float TamingSaveInterval = 10f;
 
         // === AI прирученного ===
         private const float FOLLOW_DIST_LOWEST = 1.5f;
@@ -103,6 +83,27 @@ namespace Assets.Scripts.Creatures
         private const float FOLLOW_CHASE_EXTRA = 2f;   // гистерезис между stop и chase
 
         public bool DieManually = false;
+
+        // === Геттеры ===
+        public CreatureCombat Combat => _combat;
+        public CreatureDeath Death => _death;
+        public CreatureKnockout Knockout => _knockout;
+        public CreatureTaming Taming => _taming;
+
+        public NavMeshAgent Agent => _agent;
+        public Transform PlayerTransform => _playerTransform;
+
+        public CreatureBehaviorType BehaviorType => _data?.behaviorType ?? CreatureBehaviorType.Aggressive;
+
+        public Animator Animator => animator;
+        public int AnimIDAttack => animIDAttack;
+        public int AnimIDTakeDamage => animIDTakeDamage;
+        public int AnimIDIsMoving => animIDIsMoving;
+        public int AnimIDSpeed => animIDSpeed;
+        public int AnimIDDeath => animIDDeath;
+
+        public float Health { get => health; set => health = value; }
+
 
         protected override void Awake()
         {
@@ -137,6 +138,9 @@ namespace Assets.Scripts.Creatures
 
             _knockout = GetComponent<CreatureKnockout>();
             if (_knockout == null) Debug.LogError($"[Creature] Нет CreatureKnockout на {gameObject.name}!");
+
+            _taming = GetComponent<CreatureTaming>();
+            if (_taming == null) Debug.LogError($"[Creature] Нет CreatureTaming на {gameObject.name}!");
 
             // === Применяем поведение ===
             tamable = _data.tamable;
@@ -234,7 +238,6 @@ namespace Assets.Scripts.Creatures
             _combat.TakeDamage(damage, torporAmount, pi, hit, point);
         }
 
-
         // ==========================================
         // === НОКАУТ (override из BaseLivingEntity) ===
         // ==========================================
@@ -254,6 +257,17 @@ namespace Assets.Scripts.Creatures
             if (_knockout != null) _knockout.RecoverFromKnockout();
         }
 
+        // ==========================================
+        // === ПРИРУЧЕНИЕ (override из BaseLivingEntity) ===
+        // ==========================================
+
+        public override bool AddTamingProgress(float amount) => _taming != null && _taming.AddTamingProgress(amount);
+        public override void AddTorpor(float amount) => _taming?.AddTorpor(amount);
+        public override void AddFood(float amount) => _taming?.AddFood(amount);
+        public override bool ConsumeFood(float amount) => _taming != null && _taming.ConsumeFood(amount);
+        public override void Unclaim() => _taming?.Unclaim();
+
+
         void Update()
         {
             if (!IsAlive()) return;
@@ -265,24 +279,8 @@ namespace Assets.Scripts.Creatures
                 torpor = Mathf.Max(0f, torpor - Data.torporRecoveryRate * Time.deltaTime);
             }
 
-            // Food — падает у нокаутнутых и прирученных
-            if (knockedOut || tamed)
-            {
-                float drain = knockedOut ? Data.foodDrainRateKnockedOut : Data.foodDrainRateTamed;
-                TickFood(drain);
-                if (ShouldEat()) TryEatFood();
-            }
-
-            // Периодическое сохранение нокаутнутого/прирученного
-            if ((knockedOut || tamed) && !string.IsNullOrEmpty(TamingInstanceId))
-            {
-                _tamingSaveTimer += Time.deltaTime;
-                if (_tamingSaveTimer >= TamingSaveInterval)
-                {
-                    _tamingSaveTimer = 0f;
-                    TamingManager.Instance?.UpdateSave(TamingInstanceId, "player_001");
-                }
-            }
+            // Food + Taming save — через CreatureTaming
+            _taming.Tick();
 
             // === Нокаут: проверяем выход ===
             // Вход происходит в TakeDamage(), здесь только выход.
@@ -684,77 +682,6 @@ namespace Assets.Scripts.Creatures
         protected override float GetMaxFoodFromConfiguration()
         {
             return _data?.maxFood ?? 100f;
-        }
-
-        private void TickFood(float drainRate)
-        {
-            food = Mathf.Max(0f, food - drainRate * Time.deltaTime);
-
-            // Голодная смерть (по аналогии с игроком)
-            if (food <= 0f && Data.starvationDamagePerSecond > 0f)
-            {
-                // Наносим урон через TakeDamage, чтобы работали попапы/смерть
-                // Но осторожно: TakeDamage шлёт popup и анимацию. Лучше — прямой health -=.
-                health = Mathf.Max(0f, health - Data.starvationDamagePerSecond * Time.deltaTime);
-                if (health <= 0f) Die();
-            }
-        }
-
-        private bool ShouldEat()
-        {
-            if (Data.maxFood <= 0f) return false;
-            return food <= Data.maxFood * Data.foodEatThresholdPercent;
-        }
-
-        /// <summary>
-        /// Пытается найти и съесть подходящую еду в инвентаре.
-        /// </summary>
-        private bool TryEatFood()
-        {
-            if (GetInventory()?.Data == null || Data.tamingFoodPreferences == null
-                || Data.tamingFoodPreferences.Length == 0)
-                return false;
-
-            var inventoryData = GetInventory().Data;
-
-            foreach (var pref in Data.tamingFoodPreferences)
-            {
-                if (pref.food == null) continue;
-
-                var slot = inventoryData.slots.Find(s => !s.IsEmpty && s.item == pref.food);
-                if (slot != null)
-                {
-                    var eaten = slot.item;
-                    inventoryData.RemoveItemFromSlot(inventoryData.slots.IndexOf(slot), 1);
-
-                    float recovery = eaten.foodRecoveryAmount > 0f ? eaten.foodRecoveryAmount : 10f;
-                    AddFood(recovery);
-
-                    // Прогресс приручения — только если ещё не приручен
-                    if (!tamed)
-                    {
-                        bool finished = AddTamingProgress(pref.progressAmount);
-
-                        if (finished)
-                        {
-                            Debug.Log($"[{gameObject.name}] Съел {eaten.itemName}, food: {food:F1}, progress: 100,0% (ПРИРУЧЕН)");
-                        }
-                        else
-                        {
-                            Debug.Log($"[{gameObject.name}] Съел {eaten.itemName}, food: {food:F1}, progress: {tamingProgress:F1}%");
-                        }
-                    }
-
-                    // === СРАЗУ СОХРАНЯЕМ ===
-                    if (!string.IsNullOrEmpty(TamingInstanceId))
-                    {
-                        TamingManager.Instance?.UpdateSave(TamingInstanceId, "player_001");
-                    }
-
-                    return true;
-                }
-            }
-            return false;
         }
 
         // === Звуки через Animation Events ===

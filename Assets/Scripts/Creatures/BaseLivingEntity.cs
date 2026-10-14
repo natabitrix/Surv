@@ -213,85 +213,15 @@ namespace Assets.Scripts.Creatures
             health = Mathf.Clamp(health + amount, 0, maxHealth);
         }
 
-        protected void SetLayerRecursively(GameObject obj, int layer)
-        {
-            obj.layer = layer;
-            foreach (Transform child in obj.transform)
-                SetLayerRecursively(child.gameObject, layer);
-        }
-
         // ==========================================
-        // === ПРИРУЧЕНИЕ ===
+        // === ПРИРУЧЕНИЕ (виртуальные обёртки) ===
         // ==========================================
 
-        public bool AddTamingProgress(float amount)
-        {
-            if (tamed) return true;
-
-            tamingProgress = Mathf.Min(100f, tamingProgress + amount);
-            if (tamingProgress >= 100f)
-            {
-                FinishTaming();
-                return true;
-            }
-            return false;
-        }
-
-        protected virtual void FinishTaming()
-        {
-            tamed = true;
-            tamingProgress = 100f;
-
-            // Дефолтные команды
-            tamedFollowing = true;
-            tamedWandering = false;
-            tamedMating = false;
-            tamedBehavior = TamedBehavior.AttackOwnerTarget;
-            tamedFollowDistance = FollowDistance.Medium;
-
-            RecoverFromKnockout();
-            SetCreatureLayer();
-
-            // Прирученное существо следует за игроком, а не за "целью".
-            // _playerTransform в Creature должен указывать на игрока.
-            // if (this is Creature c) c.SetTarget(null);
-
-            if (!string.IsNullOrEmpty(TamingInstanceId) && TamingManager.Instance != null)
-            {
-                TamingManager.Instance.UpdateSave(TamingInstanceId, "player_001");
-            }
-
-            if (TryGetComponent<RadialMenu>(out var menu)) menu.enabled = true;
-
-            // === Уведомление ===
-            NotificationManager.Instance?.ShowTopNote(
-                NotificationType.TameComplete,
-                $"{GetDisplayName()} приручен!"
-            );
-
-            Debug.Log($"[{gameObject.name}] Приручение завершено!");
-        }
-
-        public void AddTorpor(float amount)
-        {
-            torpor = Mathf.Min(maxTorpor, torpor + amount);
-            if (!knockedOut && torpor >= maxTorpor)
-            {
-                KnockOut();
-            }
-        }
-
-        public void AddFood(float amount)
-        {
-            food = Mathf.Min(maxFood, food + amount);
-            Heal(amount);
-        }
-
-        public bool ConsumeFood(float amount)
-        {
-            food = Mathf.Max(0f, food - amount);
-            return food <= 0f;
-        }
+        public virtual bool AddTamingProgress(float amount) => false;
+        public virtual void AddTorpor(float amount) { }
+        public virtual void AddFood(float amount) { }
+        public virtual bool ConsumeFood(float amount) => false;
+        public virtual void Unclaim() { }
 
         public virtual void TamedFromLoad()
         {
@@ -352,6 +282,13 @@ namespace Assets.Scripts.Creatures
             int creatureLayer = LayerMask.NameToLayer("Creature");
             if (creatureLayer != -1) SetLayerRecursively(gameObject, creatureLayer);
             else Debug.LogWarning("[BaseLivingEntity] Слой 'Creature' не найден!");
+        }
+
+        protected void SetLayerRecursively(GameObject obj, int layer)
+        {
+            obj.layer = layer;
+            foreach (Transform child in obj.transform)
+                SetLayerRecursively(child.gameObject, layer);
         }
 
         protected virtual void OnDestroy()
@@ -567,39 +504,6 @@ namespace Assets.Scripts.Creatures
                 default: return FollowDistance.Medium;
             }
         }
-
-        /// <summary>Снять приручение — существо становится диким.</summary>
-        public void Unclaim()
-        {
-            if (!tamed) return;
-
-            tamed = false;
-            tamedFollowing = false;
-            tamedWandering = false;
-            tamedMating = false;
-            tamedBehavior = TamedBehavior.Neutral;
-            tamedFollowDistance = FollowDistance.Medium;
-            tamingProgress = 0f;
-
-            // Удаляем сейв прирученного
-            if (!string.IsNullOrEmpty(TamingInstanceId) && TamingManager.Instance != null)
-            {
-                TamingManager.Instance.UnregisterCreature(TamingInstanceId);
-                TamingInstanceId = "";
-            }
-
-            // Удаляем инвентарь приручения
-            if (GetInventory() != null)
-            {
-                Destroy(GetInventory());
-                SetInventory(null);
-            }
-
-            SetCreatureLayer();  // возвращаем слой Creature (он и так Creature, но на всякий)
-
-            Debug.Log($"[{gameObject.name}] Unclaimed — стал диким.");
-        }
-
 
         protected bool _isDead = false;
         public bool IsDead() => _isDead;
