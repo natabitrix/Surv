@@ -1278,7 +1278,32 @@ Animation Event DealDamageToTarget — в CreatureCombat.
 - `DieManually` (в `Update`) → `Die()`.
 - `TickFood` (голодная смерть) → `Die()`.
 
+#### 25.10 Этап 3: CreatureKnockout ✅
 
+**Файл:** `Assets/Scripts/Creatures/Components/CreatureKnockout.cs`.
+
+**Содержит:**
+- `KnockOut()` — установка `knockedOut = true`, `SetBodyRagdoll(false)`, отключение `Corpse`, включение `RadialMenu`, создание `ChestInventory` (если нет), регистрация в `TamingManager`.
+- `KnockOutFromLoad()` — установка `knockedOut = true`, ragdoll, `SetCreatureLayer`, включение `RadialMenu` (без регистрации).
+- `RecoverFromKnockout()` — проверка `!IsDead && knockedOut` → `ExitKnockoutState()`.
+- `ExitKnockoutState()` — `knockedOut = false`, `torpor = 0`, `TamingManager.UnregisterCreature` (если не tamed), `DeactivateRagdoll`, `Warp` на NavMesh (если off-mesh), включение `Animator`, `RecoverFromKnockout` через `creature.enabled = true`, отключение `Corpse` и `RadialMenu`, `CloseInventory`, удаление `ChestInventory` (если не tamed).
+- `SetBodyRagdoll(bool destroyAgent)` — ragdoll + `Agent.enabled = false`.
+
+**Ссылки:** `_creature` (в `Awake`).
+
+#### 25.11 `BaseLivingEntity` — изменения (Этап 3)
+
+- `KnockOut`, `KnockOutFromLoad`, `RecoverFromKnockout` — **виртуальные заглушки**.
+- `ExitKnockoutState`, `SetBodyRagdoll` — **удалены**.
+- `FinishTaming` → вызывает `RecoverFromKnockout()` (вместо `ExitKnockoutState()`).
+- `AddTorpor` → вызывает `KnockOut()` (виртуальный → `Creature` → `_knockout`).
+
+#### 25.12 `Creature` — изменения (Этап 3)
+
+- `_knockout` (`CreatureKnockout`) — ссылка.
+- `Knockout => _knockout` — геттер.
+- `override KnockOut`, `KnockOutFromLoad`, `RecoverFromKnockout` → делегируют в `_knockout`.
+- Геттеры: `AnimIDIsMoving`, `AnimIDSpeed`, `AnimIDDeath`.
 
 
 ## TODO

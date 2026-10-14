@@ -200,141 +200,13 @@ namespace Assets.Scripts.Creatures
         protected abstract float GetMaxStaminaFromConfiguration();
         protected abstract float GetMaxFoodFromConfiguration();
 
-        private void SetBodyRagdoll(bool destroyAgent = false)
-        {
-            if (animator != null)
-            {
-                animator.WriteDefaultValues();
-                animator.enabled = false;
-            }
+        // ==========================================
+        // === НОКАУТ (виртуальные обёртки) ===
+        // ==========================================
 
-            if (ragdollController != null)
-            {
-                ragdollController.ActivateRagdoll();
-                StartCoroutine(ragdollController.StopMovingRagdoll());
-            }
-
-            var agent = GetComponent<NavMeshAgent>();
-            if (agent != null)
-            {
-                if (agent.enabled && agent.isOnNavMesh) agent.isStopped = true;
-                agent.enabled = false;
-                if (destroyAgent) Destroy(agent);
-            }
-        }
-
-        public virtual void KnockOut()
-        {
-            if (_isDead || knockedOut) return;
-
-            if (TamingManager.Instance == null)
-            {
-                Debug.LogError("[KnockOut] TamingManager.Instance == null!");
-                return;
-            }
-
-            knockedOut = true;
-
-            SetBodyRagdoll(false);
-
-            if (TryGetComponent<Corpse>(out var corpse))
-                corpse.enabled = false;
-
-            if (TryGetComponent<RadialMenu>(out var menu)) menu.enabled = true;
-
-            if (_inventory == null)
-            {
-                var chestInv = gameObject.AddComponent<ChestInventory>();
-                string key = $"TamingCorpse_{System.Guid.NewGuid().ToString().Substring(0, 8)}";
-                chestInv.Initialize(100, key);
-                _inventory = chestInv;
-            }
-
-            if (string.IsNullOrEmpty(TamingInstanceId))
-            {
-                TamingInstanceId = TamingManager.Instance.RegisterCreature(gameObject, "player_001");
-            }
-
-        }
-
-        public virtual void KnockOutFromLoad()
-        {
-            knockedOut = true;
-            SetBodyRagdoll(false);
-            SetCreatureLayer();
-            if (TryGetComponent<RadialMenu>(out var menu)) menu.enabled = true;
-        }
-
-        public virtual void TamedFromLoad()
-        {
-            tamed = true;
-            knockedOut = false;
-            SetCreatureLayer();
-            if (TryGetComponent<RadialMenu>(out var menu)) menu.enabled = true;
-        }
-
-        public virtual void RecoverFromKnockout()
-        {
-            if (_isDead) return;
-            if (!knockedOut) return;
-            ExitKnockoutState();
-        }
-
-        protected virtual void ExitKnockoutState()
-        {
-            knockedOut = false;
-            torpor = 0f;
-            Debug.Log($"[{gameObject.name}] ВЫШЕЛ ИЗ НОКАУТА");
-
-            if (!tamed && !string.IsNullOrEmpty(TamingInstanceId) && TamingManager.Instance != null)
-            {
-                TamingManager.Instance.UnregisterCreature(TamingInstanceId);
-                TamingInstanceId = "";
-            }
-
-            if (ragdollController != null)
-                ragdollController.DeactivateRagdoll();
-
-            if (TryGetComponent<NavMeshAgent>(out var agent))
-            {
-                if (!agent.isOnNavMesh)
-                {
-                    if (NavMesh.SamplePosition(transform.position, out var hit, 5f, NavMesh.AllAreas))
-                        agent.Warp(hit.position);
-                    else
-                        Debug.LogWarning($"[{gameObject.name}] Не удалось вернуть на NavMesh после нокаута!");
-                }
-
-                agent.enabled = true;
-                if (agent.isOnNavMesh) agent.isStopped = false;
-            }
-
-            if (animator != null)
-            {
-                animator.Rebind();
-                animator.Update(0f);
-                animator.enabled = true;
-                animator.SetFloat(animIDSpeed, 0f);
-                animator.SetBool(animIDIsMoving, false);
-            }
-
-            if (TryGetComponent<Creature>(out var creature))
-                creature.enabled = true;
-
-            if (TryGetComponent<Corpse>(out var corpse))
-                corpse.enabled = false;
-
-            if (TryGetComponent<RadialMenu>(out var menu))
-                menu.enabled = false;
-
-            CloseInventory();
-
-            if (!tamed && _inventory != null)
-            {
-                Destroy(_inventory);
-                _inventory = null;
-            }
-        }
+        public virtual void KnockOut() { }
+        public virtual void KnockOutFromLoad() { }
+        public virtual void RecoverFromKnockout() { }
 
         public virtual void Heal(float amount)
         {
@@ -377,7 +249,7 @@ namespace Assets.Scripts.Creatures
             tamedBehavior = TamedBehavior.AttackOwnerTarget;
             tamedFollowDistance = FollowDistance.Medium;
 
-            ExitKnockoutState();
+            RecoverFromKnockout();
             SetCreatureLayer();
 
             // Прирученное существо следует за игроком, а не за "целью".
@@ -419,6 +291,14 @@ namespace Assets.Scripts.Creatures
         {
             food = Mathf.Max(0f, food - amount);
             return food <= 0f;
+        }
+
+        public virtual void TamedFromLoad()
+        {
+            tamed = true;
+            knockedOut = false;
+            SetCreatureLayer();
+            if (TryGetComponent<RadialMenu>(out var menu)) menu.enabled = true;
         }
 
         // ==========================================
@@ -467,7 +347,7 @@ namespace Assets.Scripts.Creatures
         }
 
 
-        protected void SetCreatureLayer()
+        public void SetCreatureLayer()
         {
             int creatureLayer = LayerMask.NameToLayer("Creature");
             if (creatureLayer != -1) SetLayerRecursively(gameObject, creatureLayer);

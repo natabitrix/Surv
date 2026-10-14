@@ -65,7 +65,7 @@ MonoBehaviour:
     progressAmount: 100
   narcoticItem: {fileID: 11400000, guid: d2cdef1359bc9ef43b5e7fb1bbf5f327, type: 2}
   narcoticTorporAmount: 40
-  torporRecoveryRate: 0.5
+  torporRecoveryRate: 5
   maxFood: 100
   foodDrainRateKnockedOut: 0.5
   foodDrainRateTamed: 0.1
@@ -76,6 +76,7 @@ MonoBehaviour:
   tamedFollowChaseSpeed: 5
   canBePickedUp: 0
   canBeRidden: 1
-  tamedMenuConfig: {fileID: 11400000, guid: 62ce52201db494f458138bcc78bcff0d, type: 2}
-  knockedOutMenuConfig: {fileID: 11400000, guid: faa26baaaeac2364c9e089d33a7ef199, type: 2}
-  corpseMenuConfig: {fileID: 11400000, guid: aa9f898a4642da748aa68b796d802135, type: 2}
+  tamedFleeDistance: 20
+  tamedFleeMaxThreatDistance: 30
+  tamedNeutralChaseRadius: 20
+  tamedAttackOwnerRadius: 30

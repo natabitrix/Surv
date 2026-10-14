@@ -29,6 +29,7 @@ namespace Assets.Scripts.Creatures
         [Header("Components")]
         private CreatureCombat _combat;
         private CreatureDeath _death;
+        private CreatureKnockout _knockout;
 
         // === Статы (берутся из _data через свойства) ===
         public int Level => _data?.level ?? 1;
@@ -63,6 +64,9 @@ namespace Assets.Scripts.Creatures
         public Animator Animator => animator;
         public int AnimIDAttack => animIDAttack;
         public int AnimIDTakeDamage => animIDTakeDamage;
+        public int AnimIDIsMoving => animIDIsMoving;
+        public int AnimIDSpeed => animIDSpeed;
+        public int AnimIDDeath => animIDDeath;
 
         // === Death ===
         public CreatureDeath Death => _death;
@@ -76,6 +80,10 @@ namespace Assets.Scripts.Creatures
             }
 
         }
+
+        // === Knockout ===
+        public CreatureKnockout Knockout => _knockout;
+
 
         private enum CreatureState { Wander, Chase, Attack }
         private CreatureState currentState = CreatureState.Wander;
@@ -126,6 +134,9 @@ namespace Assets.Scripts.Creatures
 
             _death = GetComponent<CreatureDeath>();
             if (_death == null) Debug.LogError($"[Creature] Нет CreatureDeath на {gameObject.name}!");
+
+            _knockout = GetComponent<CreatureKnockout>();
+            if (_knockout == null) Debug.LogError($"[Creature] Нет CreatureKnockout на {gameObject.name}!");
 
             // === Применяем поведение ===
             tamable = _data.tamable;
@@ -223,6 +234,25 @@ namespace Assets.Scripts.Creatures
             _combat.TakeDamage(damage, torporAmount, pi, hit, point);
         }
 
+
+        // ==========================================
+        // === НОКАУТ (override из BaseLivingEntity) ===
+        // ==========================================
+
+        public override void KnockOut()
+        {
+            if (_knockout != null) _knockout.KnockOut();
+        }
+
+        public override void KnockOutFromLoad()
+        {
+            if (_knockout != null) _knockout.KnockOutFromLoad();
+        }
+
+        public override void RecoverFromKnockout()
+        {
+            if (_knockout != null) _knockout.RecoverFromKnockout();
+        }
 
         void Update()
         {
