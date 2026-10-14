@@ -1252,6 +1252,32 @@ ResetAttackState для дикого — временно упрощён (без
 
 Animation Event DealDamageToTarget — в CreatureCombat.
 
+#### 25.7 Этап 2: CreatureDeath ✅
+
+**Файл:** `Assets/Scripts/Creatures/Components/CreatureDeath.cs`.
+
+**Содержит:**
+- `Die()` — смерть, вызов `SetDead()`, закрытие инвентаря, `TamingManager.UnregisterCreature`, уничтожение `ChestInventory`, `CreateCorpse()`, `SetBodyRagdoll()`, `OnDeath?.Invoke()`.
+- `CreateCorpse()` — `Corpse.enabled = true`, копирование лута из `CreatureData`, `InitializeCorpse`, `CreateCorpseInventory`, `PopulateInventoryFromLootTable`, `CorpseManager.RegisterCorpse`, слой `Corpse`.
+- `SetBodyRagdoll(bool destroyAgent)` — `Animator.WriteDefaultValues + enabled = false`, `RagdollController.ActivateRagdoll + StopMovingRagdoll`, `NavMeshAgent.enabled = false`.
+
+**Ссылки:** `_creature` (в `Awake`).
+
+#### 25.8 `BaseLivingEntity` — изменения (Этап 2)
+
+- `Die`, `CreateCorpse` — **удалены**.
+- `SetBodyRagdoll` — **оставлен** (нужен `KnockOut` до Этапа 3).
+- `OnDeath`, `SetDead`, `_isDead`, `IsDead`, `IsAlive` — **остаются**.
+
+#### 25.9 `Creature` — изменения (Этап 2)
+
+- `_death` (`CreatureDeath`) — ссылка в `Awake`.
+- `Death => _death` — геттер.
+- `Die()` — обёртка, вызывает `_death.Die()`.
+- `RequestDeath()` — вызывает `Die()`.
+- `DieManually` (в `Update`) → `Die()`.
+- `TickFood` (голодная смерть) → `Die()`.
+
 
 
 

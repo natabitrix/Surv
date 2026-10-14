@@ -88,13 +88,14 @@ namespace Assets.Scripts.UI
             // === Статус ===
             if (_statusText != null)
             {
-                _statusText.text = _target.GetStatusText();
+                _statusText.text = GetStatusText(_target);
+                _statusText.color = GetStatusTextColor(_target);
             }
 
             // === Поведение ===
             if (_behaviorText != null)
             {
-                _behaviorText.text = $"Поведение: {_target.GetBehaviorText()}";
+                _behaviorText.text = (_target.tamed) ? $"Поведение: {_target.GetBehaviorText()}" : "";
             }
 
             // === Health ===
@@ -135,6 +136,24 @@ namespace Assets.Scripts.UI
                 if (_tamingFill != null) _tamingFill.fillAmount = progressNorm;
                 if (_tamingText != null) _tamingText.text = $"Taming: {Mathf.RoundToInt(progress)}%";
             } 
+        }
+
+        public string GetStatusText(BaseLivingEntity entity)
+        {
+            
+            if (entity.tamed) return "Tamed";
+            if (entity.tamableKO && entity.tamablePassive) return "Wild · Tamable (KO / Passive)";
+            if (entity.tamableKO) return "Wild · Tamable (KO)";
+            if (entity.tamablePassive) return "Wild · Tamable (Passive)";
+
+            return "Wild · Not Tamable";
+        }
+
+        public Color GetStatusTextColor(BaseLivingEntity entity)
+        {
+            if (entity.tamed) return Color.green;
+            if (entity.tamableKO || entity.tamablePassive) return Color.yellow;
+            return Color.red;
         }
 
         private string GetCreatureId(BaseLivingEntity entity)

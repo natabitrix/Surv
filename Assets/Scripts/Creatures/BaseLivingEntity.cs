@@ -58,17 +58,6 @@ namespace Assets.Scripts.Creatures
 
         public virtual string GetDisplayName() => gameObject.name;
 
-        public virtual string GetStatusText()
-        {
-            if (tamed) return "Tamed";
-
-            if (tamableKO && tamablePassive) return "Wild · Tamable (KO / Passive)";
-            if (tamableKO) return "Wild · Tamable (KO)";
-            if (tamablePassive) return "Wild · Tamable (Passive)";
-
-            return "Wild";
-        }
-
         public virtual string GetBehaviorText() => TamedBehaviorToText();
 
         public virtual float GetDamageMultiplier(Collider hitCollider) => 1f;
@@ -211,38 +200,6 @@ namespace Assets.Scripts.Creatures
         protected abstract float GetMaxStaminaFromConfiguration();
         protected abstract float GetMaxFoodFromConfiguration();
 
-        protected virtual void Die()
-        {
-            if (_isDead) return;
-            _isDead = true;
-
-            knockedOut = false;
-            health = 0;
-
-            // Закрываем инвентарь, если был открыт
-            if (ChestUIManager.Instance != null && ReferenceEquals(ChestUIManager.Instance.CurrentSource, this))
-            {
-                ChestUIManager.Instance.Close();
-            }
-
-            if (!string.IsNullOrEmpty(TamingInstanceId) && TamingManager.Instance != null)
-            {
-                TamingManager.Instance.UnregisterCreature(TamingInstanceId);
-                TamingInstanceId = "";
-            }
-
-            if (_inventory != null)
-            {
-                Destroy(_inventory);
-                _inventory = null;
-            }
-
-            CancelInvoke();
-            CreateCorpse();
-            SetBodyRagdoll();
-            OnDeath?.Invoke(this);
-        }
-
         private void SetBodyRagdoll(bool destroyAgent = false)
         {
             if (animator != null)
@@ -258,76 +215,11 @@ namespace Assets.Scripts.Creatures
             }
 
             var agent = GetComponent<NavMeshAgent>();
-
             if (agent != null)
             {
                 if (agent.enabled && agent.isOnNavMesh) agent.isStopped = true;
                 agent.enabled = false;
-                if (destroyAgent)
-                {
-                    Destroy(agent);
-                }
-            }
-        }
-
-        private void CreateCorpse()
-        {
-            var creature = GetComponent<Creature>();
-            if (creature == null)
-            {
-                Debug.LogError("[CreateCorpse] Не найден Creature!");
-                return;
-            }
-
-            if (creature.Data == null)
-            {
-                Debug.LogError("[CreateCorpse] Не найден creature.Data!");
-                return;
-            }
-
-            int corpseLayer = LayerMask.NameToLayer("Corpse");
-            if (corpseLayer != -1) SetLayerRecursively(gameObject, corpseLayer);
-
-            var corpse = GetComponent<Corpse>();
-            if (corpse == null) return;
-
-            corpse.enabled = true;
-            string creatureId = null;
-
-            if (creature != null && creature.Data != null)
-            {
-                var data = creature.Data;
-                creatureId = creature.creatureId;
-                corpse.InstanceId = creatureId;
-
-                corpse.harvestDrops = data.harvestDrops;
-                corpse.inventoryLootTable = data.inventoryLootTable;
-                corpse.maxHarvestHits = data.maxHarvestHits;
-                corpse.allowFists = data.allowFists;
-                corpse.allowAxe = data.allowAxe;
-                corpse.allowPickaxe = data.allowPickaxe;
-                corpse.allowSword = data.allowSword;
-                corpse.allowSickle = data.allowSickle;
-            }
-
-            corpse.InitializeCorpse();
-
-            corpse.CreateCorpseInventory(
-                "CreatureCorpse",
-                100
-            );
-
-            corpse.PopulateInventoryFromLootTable();
-
-            if (corpse.TryGetComponent<RadialMenu>(out var menu)) menu.enabled = true;
-
-            if (CorpseManager.Instance != null)
-            {
-                CorpseManager.Instance.RegisterCorpse(
-                    gameObject,
-                    "world",
-                    creatureId
-                );
+                if (destroyAgent) Destroy(agent);
             }
         }
 
@@ -843,9 +735,6 @@ namespace Assets.Scripts.Creatures
 
         /// <summary>Прямое уменьшение здоровья (без анимации/попапа). Используется CreatureCombat.</summary>
         public void ReduceHealth(float amount) => health -= amount;
-
-        /// <summary>Прямое добавление торпора (без нокаута). Используется CreatureCombat.</summary>
-        public void AddTorporDirect(float amount) => torpor = Mathf.Min(maxTorpor, torpor + amount);
 
         /// <summary>Здоровье ниже нуля?</summary>
         public bool IsHealthBelowZero() => health <= 0;

@@ -106,7 +106,7 @@ namespace Assets.Scripts.Creatures.Components
 
             if (torporAmount > 0f && !_creature.IsDead())
             {
-                _creature.AddTorporDirect(torporAmount);
+                _creature.AddTorpor(torporAmount);
             }
 
             if (_creature.Animator != null && finalDamage > 0)

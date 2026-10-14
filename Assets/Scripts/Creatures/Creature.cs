@@ -28,6 +28,7 @@ namespace Assets.Scripts.Creatures
 
         [Header("Components")]
         private CreatureCombat _combat;
+        private CreatureDeath _death;
 
         // === Статы (берутся из _data через свойства) ===
         public int Level => _data?.level ?? 1;
@@ -63,7 +64,18 @@ namespace Assets.Scripts.Creatures
         public int AnimIDAttack => animIDAttack;
         public int AnimIDTakeDamage => animIDTakeDamage;
 
+        // === Death ===
+        public CreatureDeath Death => _death;
         public void RequestDeath() => Die();
+        public void Die()
+        {
+            if (_death != null)
+            {
+                PlaySound(DeathAudioClip, DeathAudioVolume);
+                _death.Die();
+            }
+
+        }
 
         private enum CreatureState { Wander, Chase, Attack }
         private CreatureState currentState = CreatureState.Wander;
@@ -111,6 +123,9 @@ namespace Assets.Scripts.Creatures
 
             _combat = GetComponent<CreatureCombat>();
             if (_combat == null) Debug.LogError($"[Creature] Нет CreatureCombat на {gameObject.name}!");
+
+            _death = GetComponent<CreatureDeath>();
+            if (_death == null) Debug.LogError($"[Creature] Нет CreatureDeath на {gameObject.name}!");
 
             // === Применяем поведение ===
             tamable = _data.tamable;
