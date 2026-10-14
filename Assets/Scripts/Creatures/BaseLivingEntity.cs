@@ -58,8 +58,6 @@ namespace Assets.Scripts.Creatures
 
         public virtual string GetDisplayName() => gameObject.name;
 
-        public virtual string GetBehaviorText() => TamedBehaviorToText();
-
         public virtual float GetDamageMultiplier(Collider hitCollider) => 1f;
 
         // ==========================================
@@ -232,49 +230,20 @@ namespace Assets.Scripts.Creatures
         }
 
         // ==========================================
-        // === КОМАНДЫ ПРИРУЧЕННОГО ===
+        // === КОМАНДЫ И РАДИАЛЬНОЕ МЕНЮ (виртуальные обёртки) ===
         // ==========================================
 
-        /// <summary>Включить/выключить следование. Выключает блуждание (взаимоисключающе).</summary>
-        public void SetTamedFollowing(bool value)
-        {
-            if (!tamed) return;
-            tamedFollowing = value;
-            if (value) tamedWandering = false;
-        }
+        public virtual void SetTamedFollowing(bool value) { }
+        public virtual void SetTamedWandering(bool value) { }
+        public virtual void SetTamedMating(bool value) { }
+        public virtual void SetTamedBehavior(TamedBehavior value) { }
+        public virtual void SetFollowDistance(FollowDistance value) { }
 
-        /// <summary>Включить/выключить блуждание. Выключает следование (взаимоисключающе).</summary>
-        public void SetTamedWandering(bool value)
-        {
-            if (!tamed) return;
-            tamedWandering = value;
-            if (value)
-            {
-                tamedFollowing = false;
-                if (this is Creature c) c.ResetWanderState();
-            }
-        }
-
-        /// <summary>Включить/выключить спаривание.</summary>
-        public void SetTamedMating(bool value)
-        {
-            if (!tamed) return;
-            tamedMating = value;
-        }
-
-        /// <summary>Установить отношение к врагам.</summary>
-        public void SetTamedBehavior(TamedBehavior value)
-        {
-            if (!tamed) return;
-            tamedBehavior = value;
-        }
-
-        /// <summary>Установить дистанцию следования.</summary>
-        public void SetFollowDistance(FollowDistance value)
-        {
-            if (!tamed) return;
-            tamedFollowDistance = value;
-        }
+        public virtual void ExecuteRadialAction(string actionId) { }
+        public virtual string GetRadialRadioValue(string radioGroupId) => null;
+        public virtual void SetRadialRadioValue(string radioGroupId, string radioValue) { }
+        public virtual string GetRadialDynamicLabel(string actionId) => null;
+        public virtual string GetBehaviorText() => "Wild";
 
 
         public void SetCreatureLayer()
@@ -305,205 +274,32 @@ namespace Assets.Scripts.Creatures
         // === RADIAL MENU ACTIONS ===
         // ==========================================
 
-        /// <summary>Выполнить действие из радиального меню.</summary>
-        public void ExecuteRadialAction(string actionId)
-        {
-            switch (actionId)
-            {
-                case "toggle_follow":
-                    SetTamedFollowing(!tamedFollowing);
-                    Debug.Log($"[{gameObject.name}] Follow = {tamedFollowing}");
-                    break;
-
-                case "toggle_wander":
-                    SetTamedWandering(!tamedWandering);
-                    Debug.Log($"[{gameObject.name}] Wander = {tamedWandering}");
-                    break;
-
-                case "toggle_mating":
-                    SetTamedMating(!tamedMating);
-                    Debug.Log($"[{gameObject.name}] Mating = {tamedMating}");
-                    break;
-
-                case "open_inventory":
-                    OpenInventory();
-                    Debug.Log($"[{gameObject.name}] OpenInventory");
-                    break;
-
-
-                case "flee":
-                    SetTamedBehavior(TamedBehavior.Flee);
-                    Debug.Log($"[{gameObject.name}] TamedBehavior = Flee");
-                    break;
-
-                case "passive":
-                    SetTamedBehavior(TamedBehavior.Passive);
-                    Debug.Log($"[{gameObject.name}] TamedBehavior = Passive");
-                    break;
-
-                case "neutral":
-                    SetTamedBehavior(TamedBehavior.Neutral);
-                    Debug.Log($"[{gameObject.name}] TamedBehavior = Aggressive");
-                    break;
-
-                case "attack_owner_target":
-                    SetTamedBehavior(TamedBehavior.AttackOwnerTarget);
-                    Debug.Log($"[{gameObject.name}] TamedBehavior = AttackOwnerTarget");
-                    break;
-
-                case "aggressive":
-                    SetTamedBehavior(TamedBehavior.Aggressive);
-                    Debug.Log($"[{gameObject.name}] TamedBehavior = Aggressive");
-                    break;
-
-
-                case "pick_up":
-                    // TODO
-                    Debug.Log($"[{gameObject.name}] Pick up (TODO)");
-                    break;
-
-                case "ride":
-                    // TODO
-                    Debug.Log($"[{gameObject.name}] Ride (TODO)");
-                    break;
-
-                case "rename":
-                    // TODO
-                    Debug.Log($"[{gameObject.name}] Rename (TODO)");
-                    break;
-
-                case "unclaim":
-                    Unclaim();
-                    break;
-
-                default:
-                    Debug.LogWarning($"[{gameObject.name}] Неизвестное действие: {actionId}");
-                    break;
-            }
-
-            // Сохраняем изменения (для прирученных)
-            if (tamed && !string.IsNullOrEmpty(TamingInstanceId) && TamingManager.Instance != null)
-            {
-                TamingManager.Instance.UpdateSave(TamingInstanceId, "player_001");
-            }
-        }
-
-        /// <summary>Текущее значение Radio-группы.</summary>
-        public string GetRadialRadioValue(string radioGroupId)
-        {
-            switch (radioGroupId)
-            {
-                case "behavior":
-                    return TamedBehaviorToId(tamedBehavior);
-                case "follow_distance":
-                    return FollowDistanceToId(tamedFollowDistance);
-                default:
-                    return null;
-            }
-        }
-
-        /// <summary>Установить значение Radio-группы.</summary>
-        public void SetRadialRadioValue(string radioGroupId, string radioValue)
-        {
-            switch (radioGroupId)
-            {
-                case "behavior":
-                    tamedBehavior = IdToTamedBehavior(radioValue);
-                    Debug.Log($"[{gameObject.name}] Behavior = {tamedBehavior}");
-                    break;
-                case "follow_distance":
-                    tamedFollowDistance = IdToFollowDistance(radioValue);
-                    Debug.Log($"[{gameObject.name}] FollowDistance = {tamedFollowDistance}");
-                    break;
-            }
-
-            if (tamed && !string.IsNullOrEmpty(TamingInstanceId) && TamingManager.Instance != null)
-            {
-                TamingManager.Instance.UpdateSave(TamingInstanceId, "player_001");
-            }
-        }
-
-        /// <summary>Динамический текст Action-кнопки.</summary>
-        public string GetRadialDynamicLabel(string actionId)
-        {
-            switch (actionId)
-            {
-                case "toggle_follow":
-                    return tamedFollowing ? "Отключить следование" : "Включить следование";
-                case "toggle_wander":
-                    return tamedWandering ? "Отключить блуждание" : "Включить блуждание";
-                case "toggle_mating":
-                    return tamedMating ? "Отключить спаривание" : "Включить спаривание";
-                default:
-                    return null;
-            }
-        }
-
         // === Хелперы для enum ↔ string ===
 
-        private static string TamedBehaviorToId(TamedBehavior value)
-        {
-            switch (value)
-            {
-                case TamedBehavior.Passive: return "passive";
-                case TamedBehavior.Flee: return "flee";
-                case TamedBehavior.Neutral: return "neutral";
-                case TamedBehavior.AttackOwnerTarget: return "attack_owner_target";
-                case TamedBehavior.Aggressive: return "aggressive";
-                default: return "neutral";
-            }
-        }
+        // private static string TamedBehaviorToId(TamedBehavior value)
+        // {
+        //     switch (value)
+        //     {
+        //         case TamedBehavior.Passive: return "passive";
+        //         case TamedBehavior.Flee: return "flee";
+        //         case TamedBehavior.Neutral: return "neutral";
+        //         case TamedBehavior.AttackOwnerTarget: return "attack_owner_target";
+        //         case TamedBehavior.Aggressive: return "aggressive";
+        //         default: return "neutral";
+        //     }
+        // }
 
-        private static TamedBehavior IdToTamedBehavior(string id)
-        {
-            switch (id)
-            {
-                case "passive": return TamedBehavior.Passive;
-                case "flee": return TamedBehavior.Flee;
-                case "neutral": return TamedBehavior.Neutral;
-                case "attack_owner_target": return TamedBehavior.AttackOwnerTarget;
-                case "aggressive": return TamedBehavior.Aggressive;
-                default: return TamedBehavior.Neutral;
-            }
-        }
+        // public string TamedBehaviorToText()
+        // {
+        //     var tamedBehaviorId = TamedBehaviorToId(tamedBehavior);
+        //     if (TryGetComponent<RadialMenu>(out var menu))
+        //     {
+        //         var tamedBehaviorText = menu.GetMenuButtonLabelByActionId(tamedBehaviorId);
+        //         if (tamedBehaviorText != "") return tamedBehaviorText;
+        //     }
 
-        public string TamedBehaviorToText()
-        {
-            var tamedBehaviorId = TamedBehaviorToId(tamedBehavior);
-            if (TryGetComponent<RadialMenu>(out var menu))
-            {
-                var tamedBehaviorText = menu.GetMenuButtonLabelByActionId(tamedBehaviorId);
-                if (tamedBehaviorText != "") return tamedBehaviorText;
-            }
-
-            return tamedBehaviorId;
-        }
-
-        private static string FollowDistanceToId(FollowDistance value)
-        {
-            switch (value)
-            {
-                case FollowDistance.Lowest: return "lowest";
-                case FollowDistance.Low: return "low";
-                case FollowDistance.Medium: return "medium";
-                case FollowDistance.High: return "high";
-                case FollowDistance.Highest: return "highest";
-                default: return "medium";
-            }
-        }
-
-        private static FollowDistance IdToFollowDistance(string id)
-        {
-            switch (id)
-            {
-                case "lowest": return FollowDistance.Lowest;
-                case "low": return FollowDistance.Low;
-                case "medium": return FollowDistance.Medium;
-                case "high": return FollowDistance.High;
-                case "highest": return FollowDistance.Highest;
-                default: return FollowDistance.Medium;
-            }
-        }
+        //     return tamedBehaviorId;
+        // }
 
         protected bool _isDead = false;
         public bool IsDead() => _isDead;

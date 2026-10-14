@@ -182,7 +182,11 @@ namespace Assets.Scripts.Creatures.Components
             {
                 if (_currentAttackTarget.IsAlive())
                 {
-                    NotifyAttackedBy(_creature);
+                    // Уведомляем ЦЕЛЬ о том, что её атаковал наш _creature.
+                    // _currentAttackTarget.Combat — CreatureCombat цели.
+                    if (_currentAttackTarget.Combat != null)
+                        _currentAttackTarget.Combat.NotifyAttackedBy(_creature);
+
                     _currentAttackTarget.TakeDamage(_creature.AttackDamage, 0f);
                 }
                 return;

@@ -31,6 +31,7 @@ namespace Assets.Scripts.Creatures
         private CreatureDeath _death;
         private CreatureKnockout _knockout;
         private CreatureTaming _taming;
+        private CreatureCommands _commands;
 
         // === Статы (берутся из _data через свойства) ===
         public int Level => _data?.level ?? 1;
@@ -89,6 +90,7 @@ namespace Assets.Scripts.Creatures
         public CreatureDeath Death => _death;
         public CreatureKnockout Knockout => _knockout;
         public CreatureTaming Taming => _taming;
+        public CreatureCommands Commands => _commands;
 
         public NavMeshAgent Agent => _agent;
         public Transform PlayerTransform => _playerTransform;
@@ -141,6 +143,9 @@ namespace Assets.Scripts.Creatures
 
             _taming = GetComponent<CreatureTaming>();
             if (_taming == null) Debug.LogError($"[Creature] Нет CreatureTaming на {gameObject.name}!");
+
+            _commands = GetComponent<CreatureCommands>();
+            if (_commands == null) Debug.LogError($"[Creature] Нет CreatureCommands на {gameObject.name}!");
 
             // === Применяем поведение ===
             tamable = _data.tamable;
@@ -267,6 +272,21 @@ namespace Assets.Scripts.Creatures
         public override bool ConsumeFood(float amount) => _taming != null && _taming.ConsumeFood(amount);
         public override void Unclaim() => _taming?.Unclaim();
 
+        // ==========================================
+        // === КОМАНДЫ (override из BaseLivingEntity) ===
+        // ==========================================
+
+        public override void SetTamedFollowing(bool value) => _commands?.SetTamedFollowing(value);
+        public override void SetTamedWandering(bool value) => _commands?.SetTamedWandering(value);
+        public override void SetTamedMating(bool value) => _commands?.SetTamedMating(value);
+        public override void SetTamedBehavior(TamedBehavior value) => _commands?.SetTamedBehavior(value);
+        public override void SetFollowDistance(FollowDistance value) => _commands?.SetFollowDistance(value);
+
+        public override void ExecuteRadialAction(string actionId) => _commands?.ExecuteRadialAction(actionId);
+        public override string GetRadialRadioValue(string radioGroupId) => _commands?.GetRadialRadioValue(radioGroupId);
+        public override void SetRadialRadioValue(string radioGroupId, string radioValue) => _commands?.SetRadialRadioValue(radioGroupId, radioValue);
+        public override string GetRadialDynamicLabel(string actionId) => _commands?.GetRadialDynamicLabel(actionId);
+        public override string GetBehaviorText() => _commands != null ? _commands.TamedBehaviorToText() : "Wild";
 
         void Update()
         {
@@ -607,6 +627,9 @@ namespace Assets.Scripts.Creatures
         private bool HandleFlee()
         {
             var threat = _combat.LastAttacker;
+
+            Debug.Log($"[Flee] {gameObject.name}: LastAttacker={(threat != null ? threat.name : "null")}, tamed={tamed}, knockedOut={knockedOut}");
+
             if (threat == null || !threat.IsAlive())
             {
                 _combat.ClearLastAttacker();
@@ -615,6 +638,8 @@ namespace Assets.Scripts.Creatures
 
             float threatDist = Vector3.Distance(transform.position, threat.transform.position);
             float maxThreatDist = Data != null ? Data.tamedFleeMaxThreatDistance : 30f;
+
+            Debug.Log($"[Flee] {gameObject.name}: threatDist={threatDist:F1}, maxThreatDist={maxThreatDist}");
 
             if (threatDist > maxThreatDist)
             {

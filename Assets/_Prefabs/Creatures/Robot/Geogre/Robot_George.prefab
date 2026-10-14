@@ -3219,6 +3219,7 @@ GameObject:
   - component: {fileID: 6711613913044273161}
   - component: {fileID: -2530897832073902}
   - component: {fileID: 2995812050181277201}
+  - component: {fileID: -5132513905830468390}
   m_Layer: 12
   m_Name: Robot_George
   m_TagString: Untagged
@@ -3539,3 +3540,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dfd6e0f1936afb7449e24492cfcc232c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Creatures.Components.CreatureTaming
+--- !u!114 &-5132513905830468390
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9136099890693409341}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8269ffb412b805949b50a7e427aa135a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Creatures.Components.CreatureCommands

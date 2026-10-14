@@ -1333,6 +1333,39 @@ Animation Event DealDamageToTarget — в CreatureCombat.
 - `Update`: `_taming.Tick()` вместо food-блока.
 - Удалены: `TickFood`, `ShouldEat`, `TryEatFood`, `_tamingSaveTimer`, `TamingSaveInterval`.
 
+#### 25.16 Этап 5: CreatureCommands ✅
+
+**Файл:** `Assets/Scripts/Creatures/Components/CreatureCommands.cs`.
+
+**Содержит:**
+- Команды: `SetTamedFollowing`, `SetTamedWandering`, `SetTamedMating`, `SetTamedBehavior`, `SetFollowDistance`.
+- Радиальное меню: `ExecuteRadialAction`, `GetRadialRadioValue`, `SetRadialRadioValue`, `GetRadialDynamicLabel`.
+- Хелперы: `TamedBehaviorToId`, `IdToTamedBehavior`, `FollowDistanceToId`, `IdToFollowDistance`, `TamedBehaviorToText`.
+
+**Ссылки:** `_creature`, `TamingManager`.
+
+#### 25.17 `BaseLivingEntity` — изменения (Этап 5)
+
+- `SetTamed*`, `SetFollowDistance`, `ExecuteRadialAction`, `GetRadialRadioValue`,
+  `SetRadialRadioValue`, `GetRadialDynamicLabel`, `GetBehaviorText` — **виртуальные заглушки**.
+- Хелперы enum↔string — **удалены** (перенесены в `CreatureCommands`).
+- Поля `tamedFollowing`, `tamedWandering`, `tamedMating`, `tamedBehavior`, `tamedFollowDistance` — **остаются** (данные).
+
+#### 25.18 `Creature` — изменения (Этап 5)
+
+- `_commands` (`CreatureCommands`) — ссылка.
+- `Commands => _commands` — геттер.
+- Override `SetTamed*`, `SetFollowDistance`, `ExecuteRadialAction`, `GetRadialRadioValue`,
+  `SetRadialRadioValue`, `GetRadialDynamicLabel`, `GetBehaviorText`.
+
+#### 25.19 Fix: `NotifyAttackedBy` на цели
+
+**Баг:** `CreatureCombat.DealDamageToTarget` вызывал `NotifyAttackedBy(_creature)` **на себе** (атакующем), а не на **цели**. В результате `LastAttacker` записывался в атакующего, а не в жертву.
+
+**Решение:**
+```cs
+_currentAttackTarget.Combat.NotifyAttackedBy(_creature);
+
 
 ## TODO
 
