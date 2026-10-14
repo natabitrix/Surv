@@ -1366,6 +1366,27 @@ Animation Event DealDamageToTarget — в CreatureCombat.
 ```cs
 _currentAttackTarget.Combat.NotifyAttackedBy(_creature);
 
+#### 25.20 Этап 6: CreatureAudio ✅
+
+**Файл:** `Assets/Scripts/Creatures/Components/CreatureAudio.cs`.
+
+**Содержит:**
+- `Initialize(CreatureData)` — кэш клипов из `Data`.
+- `SoundOnFootstep/SoundOnAttack/SoundOnTakeDamage/SoundOnDeath(AnimationEvent)` — Animation Events.
+- `PlayDeathSound()` — для `Creature.Die`.
+- `PlaySound(AudioClip, float)` — воспроизведение 3D-звука с учётом `AudioManager.masterVolume`.
+
+**Ссылки:** `_creature`, `AudioManager`.
+
+#### 25.21 `Creature` — изменения (Этап 6)
+
+- `_audio` (`CreatureAudio`) — ссылка.
+- `Audio => _audio` — геттер.
+- В `Awake`: `_audio = GetComponent<CreatureAudio>()`, `_audio.Initialize(_data)`.
+- Удалены поля `*AudioClip`, `*AudioVolume`.
+- Удалены методы `SoundOn*`, `PlaySound`.
+- В `Die`: `PlaySound(DeathAudioClip, ...)` → `_audio.PlayDeathSound()`.
+
 
 ## TODO
 

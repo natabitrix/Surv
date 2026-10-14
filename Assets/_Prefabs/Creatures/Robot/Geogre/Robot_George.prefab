@@ -3220,6 +3220,7 @@ GameObject:
   - component: {fileID: -2530897832073902}
   - component: {fileID: 2995812050181277201}
   - component: {fileID: -5132513905830468390}
+  - component: {fileID: -6482921488299583985}
   m_Layer: 12
   m_Name: Robot_George
   m_TagString: Untagged
@@ -3348,14 +3349,6 @@ MonoBehaviour:
   maxFood: 100
   creatureDatabase: {fileID: 11400000, guid: 475c5b1ef39d77d43ab9f3523b647009, type: 2}
   creatureId: Robot_George
-  FootstepAudioClip: {fileID: 8300000, guid: 4aba2b70bf550d74d9905d0982f22892, type: 3}
-  FootstepAudioVolume: 0.3
-  AttackAudioClip: {fileID: 8300000, guid: 1d76b790e8eee784db9cf8ae161300af, type: 3}
-  AttackAudioVolume: 0.5
-  TakeDamageAudioClip: {fileID: 8300000, guid: adf943f47e596ca47a596281f1229da0, type: 3}
-  TakeDamageAudioVolume: 0.5
-  DeathAudioClip: {fileID: 8300000, guid: 179635a251657814dabefb0f9316634e, type: 3}
-  DeathAudioVolume: 0.5
   DieManually: 0
 --- !u!195 &3656229583173167061
 NavMeshAgent:
@@ -3552,3 +3545,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8269ffb412b805949b50a7e427aa135a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Creatures.Components.CreatureCommands
+--- !u!114 &-6482921488299583985
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9136099890693409341}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 246f97f1eadc9d7448f641bed1346dd9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Creatures.Components.CreatureAudio

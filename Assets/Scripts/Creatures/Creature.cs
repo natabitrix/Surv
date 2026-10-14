@@ -32,6 +32,7 @@ namespace Assets.Scripts.Creatures
         private CreatureKnockout _knockout;
         private CreatureTaming _taming;
         private CreatureCommands _commands;
+        private CreatureAudio _audio;
 
         // === Статы (берутся из _data через свойства) ===
         public int Level => _data?.level ?? 1;
@@ -45,16 +46,6 @@ namespace Assets.Scripts.Creatures
         public float AttackDamage => _data?.attackDamage ?? 10f;
         public float AttackCooldown => _data?.attackCooldown ?? 2f;
 
-        [Header("Audio (заполняется из базы)")]
-        [HideInInspector] public AudioClip FootstepAudioClip;
-        [HideInInspector, Range(0, 1)] public float FootstepAudioVolume = 0.5f;
-        [HideInInspector] public AudioClip AttackAudioClip;
-        [HideInInspector, Range(0, 1)] public float AttackAudioVolume = 0.5f;
-        [HideInInspector] public AudioClip TakeDamageAudioClip;
-        [HideInInspector, Range(0, 1)] public float TakeDamageAudioVolume = 0.5f;
-        [HideInInspector] public AudioClip DeathAudioClip;
-        [HideInInspector, Range(0, 1)] public float DeathAudioVolume = 0.5f;
-
         private NavMeshAgent _agent;
         private Transform _playerTransform;
 
@@ -63,10 +54,9 @@ namespace Assets.Scripts.Creatures
         {
             if (_death != null)
             {
-                PlaySound(DeathAudioClip, DeathAudioVolume);
+                _audio?.PlayDeathSound();
                 _death.Die();
             }
-
         }
 
         private enum CreatureState { Wander, Chase, Attack }
@@ -91,6 +81,7 @@ namespace Assets.Scripts.Creatures
         public CreatureKnockout Knockout => _knockout;
         public CreatureTaming Taming => _taming;
         public CreatureCommands Commands => _commands;
+        public CreatureAudio Audio => _audio;
 
         public NavMeshAgent Agent => _agent;
         public Transform PlayerTransform => _playerTransform;
@@ -147,20 +138,16 @@ namespace Assets.Scripts.Creatures
             _commands = GetComponent<CreatureCommands>();
             if (_commands == null) Debug.LogError($"[Creature] Нет CreatureCommands на {gameObject.name}!");
 
+            _audio = GetComponent<CreatureAudio>();
+            if (_audio == null) Debug.LogError($"[Creature] Нет CreatureAudio на {gameObject.name}!");
+
             // === Применяем поведение ===
             tamable = _data.tamable;
             tamableKO = _data.tamableKO;
             tamablePassive = _data.tamablePassive;
 
-            // === Применяем звуки ===
-            FootstepAudioClip = _data.footstepClip;
-            FootstepAudioVolume = _data.footstepVolume;
-            AttackAudioClip = _data.attackClip;
-            AttackAudioVolume = _data.attackVolume;
-            TakeDamageAudioClip = _data.takeDamageClip;
-            TakeDamageAudioVolume = _data.takeDamageVolume;
-            DeathAudioClip = _data.deathClip;
-            DeathAudioVolume = _data.deathVolume;
+            // === Инициализация звуков ===
+            _audio.Initialize(_data);
 
             // === Применяем эффекты ===
             damageEffect = _data.damageEffect;
@@ -628,8 +615,6 @@ namespace Assets.Scripts.Creatures
         {
             var threat = _combat.LastAttacker;
 
-            Debug.Log($"[Flee] {gameObject.name}: LastAttacker={(threat != null ? threat.name : "null")}, tamed={tamed}, knockedOut={knockedOut}");
-
             if (threat == null || !threat.IsAlive())
             {
                 _combat.ClearLastAttacker();
@@ -638,8 +623,6 @@ namespace Assets.Scripts.Creatures
 
             float threatDist = Vector3.Distance(transform.position, threat.transform.position);
             float maxThreatDist = Data != null ? Data.tamedFleeMaxThreatDistance : 30f;
-
-            Debug.Log($"[Flee] {gameObject.name}: threatDist={threatDist:F1}, maxThreatDist={maxThreatDist}");
 
             if (threatDist > maxThreatDist)
             {
@@ -710,38 +693,6 @@ namespace Assets.Scripts.Creatures
         }
 
         // === Звуки через Animation Events ===
-
-        private void SoundOnFootstep(AnimationEvent animationEvent)
-        {
-            if (animationEvent.animatorClipInfo.weight > 0.5f)
-            {
-                PlaySound(FootstepAudioClip, FootstepAudioVolume);
-            }
-        }
-
-        private void SoundOnAttack(AnimationEvent animationEvent)
-        {
-            if (animationEvent.animatorClipInfo.weight > 0.5f)
-            {
-                PlaySound(AttackAudioClip, AttackAudioVolume);
-            }
-        }
-
-        private void SoundOnTakeDamage(AnimationEvent animationEvent)
-        {
-            if (animationEvent.animatorClipInfo.weight > 0.2f)
-            {
-                PlaySound(TakeDamageAudioClip, TakeDamageAudioVolume);
-            }
-        }
-
-        private void SoundOnDeath(AnimationEvent animationEvent)
-        {
-            if (animationEvent.animatorClipInfo.weight > 0.2f)
-            {
-                PlaySound(DeathAudioClip, DeathAudioVolume);
-            }
-        }
 
         private void PlaySound(AudioClip audioClip, float audioClipVolume)
         {
