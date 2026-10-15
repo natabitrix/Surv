@@ -26,7 +26,7 @@ namespace Assets.Scripts.Corpses
         [SerializeField] private Transform _centerBone;
         private SpringJoint _springJointToGrabPoint;
 
-        private Creature creature;
+        private Creature _creature;
 
         [Header("Interaction")]
         [SerializeField] private Collider _interactionCollider;
@@ -61,6 +61,7 @@ namespace Assets.Scripts.Corpses
         public Shatterer shatterer;
         public HitDecaler hitDecaler;
         public Animator animator;
+
         [SerializeField] private ImpactType _impactType = ImpactType.Metal;
         public ImpactType GetImpactType() => _impactType;
 
@@ -86,14 +87,21 @@ namespace Assets.Scripts.Corpses
 
         public RagdollController RagdollController => _ragdollController;
 
+        public string GetDisplayName()
+        {
+            string corpseCreatureName = (_creature != null) ? _creature.GetDisplayName() : _corpseName;
+
+            return $"Труп {corpseCreatureName}";
+        }
+
         private void Awake()
         {
             if (_ragdollController == null)
                 _ragdollController = GetComponent<RagdollController>();
 
-            creature = GetComponent<Creature>();
+            _creature = GetComponent<Creature>();
 
-            if (creature != null && creature.IsAlive())
+            if (_creature != null && _creature.IsAlive())
             {
                 enabled = false;
             }
@@ -549,7 +557,6 @@ namespace Assets.Scripts.Corpses
 
         public void StartDragging()
         {
-            Debug.Log("StartDragging");
             if (IsDragging || _dragRigidbody == null) return;
 
             var player = PlayerController.Instance;
@@ -588,7 +595,6 @@ namespace Assets.Scripts.Corpses
 
         public void StopDragging()
         {
-            Debug.Log("StopDragging");
             if (!IsDragging) return;
             IsDragging = false;
 

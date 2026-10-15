@@ -270,37 +270,6 @@ namespace Assets.Scripts.Creatures
         }
 
 
-        // ==========================================
-        // === RADIAL MENU ACTIONS ===
-        // ==========================================
-
-        // === Хелперы для enum ↔ string ===
-
-        // private static string TamedBehaviorToId(TamedBehavior value)
-        // {
-        //     switch (value)
-        //     {
-        //         case TamedBehavior.Passive: return "passive";
-        //         case TamedBehavior.Flee: return "flee";
-        //         case TamedBehavior.Neutral: return "neutral";
-        //         case TamedBehavior.AttackOwnerTarget: return "attack_owner_target";
-        //         case TamedBehavior.Aggressive: return "aggressive";
-        //         default: return "neutral";
-        //     }
-        // }
-
-        // public string TamedBehaviorToText()
-        // {
-        //     var tamedBehaviorId = TamedBehaviorToId(tamedBehavior);
-        //     if (TryGetComponent<RadialMenu>(out var menu))
-        //     {
-        //         var tamedBehaviorText = menu.GetMenuButtonLabelByActionId(tamedBehaviorId);
-        //         if (tamedBehaviorText != "") return tamedBehaviorText;
-        //     }
-
-        //     return tamedBehaviorId;
-        // }
-
         protected bool _isDead = false;
         public bool IsDead() => _isDead;
         public float GetHealth() => health;
@@ -322,11 +291,5 @@ namespace Assets.Scripts.Creatures
         /// <summary>Установить dead-флаг (используется CreatureDeath).</summary>
         public void SetDead() { _isDead = true; knockedOut = false; health = 0; }
 
-
-        // BaseLivingEntity
-        // public virtual void TakeDamage(float damage, float torporAmount = 0f) { }
-        // public virtual void TakeDamage(float damage, PlayerInteraction pi) { }
-        // public virtual void TakeDamage(float damage, float torporAmount, PlayerInteraction pi) { }
-        // public virtual void TakeDamage(float damage, float torporAmount, PlayerInteraction pi, Collider hit, Vector3? point) { }
     }
 }

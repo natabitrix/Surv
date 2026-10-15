@@ -26,19 +26,16 @@ namespace Assets.Scripts.Interactables
         public Creature creature;
         public Structure structure;
         public ChestController chest;
-        public bool IsStructure = false;
 
         // [Header("Structure")]
         // [Tooltip("Заголовок меню для структур (если не существ/трупов).")]
         // public string structureTitleOverride;
 
         private BaseLivingEntity _living;
-        private bool _hasLiving;
 
         private void Awake()
         {
             _living = GetComponent<BaseLivingEntity>();
-            _hasLiving = _living != null;
 
             if (creature == null) creature = GetComponent<Creature>();
             if (corpse == null) corpse = GetComponent<Corpse>();
@@ -52,10 +49,11 @@ namespace Assets.Scripts.Interactables
 
         public string GetMenuTitle()
         {
-            if (_living != null) return _living.GetDisplayName();
-            if (corpse != null && corpse.enabled) return corpse.gameObject.name;
+            if (creature != null) return creature.GetDisplayName();
+            // if (corpse != null && corpse.enabled) return corpse.gameObject.name;
+            if (corpse != null && corpse.enabled) return corpse.GetDisplayName();
+            if (structure != null && structure.enabled) return structure.GetDisplayName();
             if (item != null) return item.itemName;
-            // if (!string.IsNullOrEmpty(structureTitleOverride)) return structureTitleOverride;
             return gameObject.name;
         }
 
@@ -69,10 +67,10 @@ namespace Assets.Scripts.Interactables
             }
 
             // === Существо ===
-            if (_living != null)
+            if (creature != null)
             {
-                if (_living.knockedOut) return global.knockedOutMenu;
-                if (_living.tamed) return global.tamedMenu;
+                if (creature.knockedOut) return global.knockedOutMenu;
+                if (creature.tamed) return global.tamedMenu;
             }
 
             // === Труп ===
@@ -96,9 +94,9 @@ namespace Assets.Scripts.Interactables
                 case "ride":
                     return creature != null && creature.Data != null && creature.Data.canBeRidden;
                 case "open_inventory":
-                    return (_living != null && _living.HasInventory()) || (structure != null && structure.HasInventory());
+                    return (corpse != null && corpse.HasInventory()) || (creature != null && creature.HasInventory()) || (structure != null && structure.HasInventory());
                 case "unclaim":
-                    return _living != null && _living.tamed;
+                    return creature != null && creature.tamed;
                 default:
                     return true;
             }
@@ -133,9 +131,9 @@ namespace Assets.Scripts.Interactables
 
         public void ExecuteAction(string actionId)
         {
-            if (_living != null)
+            if (creature != null && creature.enabled)
             {
-                _living.ExecuteRadialAction(actionId);
+                creature.ExecuteRadialAction(actionId);
                 return;
             }
 
@@ -145,7 +143,7 @@ namespace Assets.Scripts.Interactables
                 return;
             }
 
-            if (structure != null)
+            if (structure != null && structure.enabled)
             {
                 structure.ExecuteRadialAction(actionId);
                 return;

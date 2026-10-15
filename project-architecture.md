@@ -1363,7 +1363,6 @@ Animation Event DealDamageToTarget — в CreatureCombat.
 **Баг:** `CreatureCombat.DealDamageToTarget` вызывал `NotifyAttackedBy(_creature)` **на себе** (атакующем), а не на **цели**. В результате `LastAttacker` записывался в атакующего, а не в жертву.
 
 **Решение:**
-```cs
 _currentAttackTarget.Combat.NotifyAttackedBy(_creature);
 
 #### 25.20 Этап 6: CreatureAudio ✅
@@ -1386,6 +1385,28 @@ _currentAttackTarget.Combat.NotifyAttackedBy(_creature);
 - Удалены поля `*AudioClip`, `*AudioVolume`.
 - Удалены методы `SoundOn*`, `PlaySound`.
 - В `Die`: `PlaySound(DeathAudioClip, ...)` → `_audio.PlayDeathSound()`.
+
+#### 25.22 Этап 7: CreatureWildAI ✅
+
+**Файл:** `Assets/Scripts/Creatures/Components/CreatureWildAI.cs`.
+
+**Содержит:**
+- `Tick()` - Вызывается из Creature.Update, когда существо дикое.
+- `SetState()`.
+- `HandleWandering()`.
+- `StartWandering()`.
+
+**Ссылки:** `_creature`.
+
+#### 25.23 `Creature` — изменения (Этап 7)
+
+- `_сreatureWildAI` (`CreatureWildAI`) — ссылка.
+- `Audio => _wildAI` — геттер.
+- В `Awake`: `_wildAI = GetComponent<CreatureWildAI>()`.
+- Удалены CreatureState, currentState, SetState, HandleWandering, StartWandering, OnDestinationReached.
+- В `Update`: _wildAI.Tick(); вместо дикого AI блока.
+- Раскомментировано _creature.WildAI.SetState(...) в ResetAttackState.
+
 
 
 ## TODO

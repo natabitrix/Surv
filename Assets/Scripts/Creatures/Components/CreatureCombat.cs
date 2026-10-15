@@ -207,15 +207,15 @@ namespace Assets.Scripts.Creatures.Components
             }
 
             // Дикий — к chase/wander на игрока
-            // if (_creature.PlayerTransform != null &&
-            //     Vector3.Distance(transform.position, _creature.PlayerTransform.position) <= _creature.AggressionRadius)
-            // {
-            //     _creature.WildAI.SetState(CreatureWildAI.State.Chase);
-            // }
-            // else
-            // {
-            //     _creature.WildAI.SetState(CreatureWildAI.State.Wander);
-            // }
+            if (_creature.PlayerTransform != null &&
+                Vector3.Distance(transform.position, _creature.PlayerTransform.position) <= _creature.AggressionRadius)
+            {
+                _creature.WildAI.SetState(CreatureWildAI.State.Chase);
+            }
+            else
+            {
+                _creature.WildAI.SetState(CreatureWildAI.State.Wander);
+            }
         }
 
         public void ChaseAndAttack(Transform target)
