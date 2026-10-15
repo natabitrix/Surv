@@ -1409,6 +1409,35 @@ _currentAttackTarget.Combat.NotifyAttackedBy(_creature);
 
 
 
+
+
+
+#### 25.24 Этап 8: CreatureTimedAI ✅
+
+**Файл:** `Assets/Scripts/Creatures/Components/CreatureTimedAI.cs`.
+
+**Содержит:**
+- `Tick()` — вызывается из `Creature.Update`, когда существо приручено.
+- `HandleTamedState()` — распределение по `tamedBehavior`.
+- `FollowOwner`, `WanderTamed`, `StartTamedWandering`, `IdleTamed`, `ResetWanderState`.
+- `HandleFlee`, `HandleNeutral`, `HandleAttackOwnerTarget`.
+- Свой `LateUpdate` (сброс `_isWandering`).
+- Поля: `_isWandering`, `_nextWanderTime`.
+
+**Ссылки:** `_creature`, `CreatureCombat`, `CreatureData`.
+
+#### 25.25 `Creature` — изменения (Этап 8)
+
+- `_timedAI` (`CreatureTimedAI`) — ссылка.
+- `TimedAI => _timedAI` — геттер.
+- В `Awake`: `_timedAI = GetComponent<CreatureTimedAI>()`.
+- В `Update`: `_timedAI.Tick()` вместо `HandleTamedState()`.
+- Удалены: `HandleTamedState`, `FollowOwner`, `GetFollowStopDistance`, `WanderTamed`,
+  `StartTamedWandering`, `IdleTamed`, `ResetWanderState`, `HandleFlee`, `HandleNeutral`,
+  `HandleAttackOwnerTarget`, `FOLLOW_DIST_*`, `FOLLOW_CHASE_EXTRA`.
+- `CreatureCommands.SetTamedWandering` → `_creature.TimedAI.ResetWanderState()`.
+
+
 ## TODO
 
 ### Ближайшее (Следующий шаг)

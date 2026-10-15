@@ -36,7 +36,7 @@ namespace Assets.Scripts.Creatures.Components
             if (value)
             {
                 _creature.tamedFollowing = false;
-                _creature.ResetWanderState();
+                _creature.TamedAI.ResetWanderState();
             }
         }
 

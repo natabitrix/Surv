@@ -34,6 +34,7 @@ namespace Assets.Scripts.Creatures
         private CreatureCommands _commands;
         private CreatureAudio _audio;
         private CreatureWildAI _wildAI;
+        private CreatureTamedAI _tamedAI;
 
         // === Статы (берутся из _data через свойства) ===
         public int Level => _data?.level ?? 1;
@@ -60,17 +61,6 @@ namespace Assets.Scripts.Creatures
             }
         }
 
-        // === AI прирученного ===
-        private const float FOLLOW_DIST_LOWEST = 1.5f;
-        private const float FOLLOW_DIST_LOW = 2.5f;
-        private const float FOLLOW_DIST_MEDIUM = 3.5f;
-        private const float FOLLOW_DIST_HIGH = 5f;
-        private const float FOLLOW_DIST_HIGHEST = 7f;
-        private const float FOLLOW_CHASE_EXTRA = 2f;   // гистерезис между stop и chase
-
-        private float nextWanderTime = 0f;
-        private bool isWandering = false;
-
         public bool DieManually = false;
 
         // === Геттеры ===
@@ -81,6 +71,7 @@ namespace Assets.Scripts.Creatures
         public CreatureCommands Commands => _commands;
         public CreatureAudio Audio => _audio;
         public CreatureWildAI WildAI => _wildAI;
+        public CreatureTamedAI TamedAI => _tamedAI;
 
         public NavMeshAgent Agent => _agent;
         public Transform PlayerTransform => _playerTransform;
@@ -142,6 +133,10 @@ namespace Assets.Scripts.Creatures
 
             _wildAI = GetComponent<CreatureWildAI>();
             if (_wildAI == null) Debug.LogError($"[Creature] Нет CreatureWildAI на {gameObject.name}!");
+
+            _tamedAI = GetComponent<CreatureTamedAI>();
+            if (_tamedAI == null) Debug.LogError($"[Creature] Нет CreatureTamedAI на {gameObject.name}!");
+
 
             // === Применяем поведение ===
             tamable = _data.tamable;
@@ -208,30 +203,18 @@ namespace Assets.Scripts.Creatures
             // === Прирученное существо ===
             if (tamed)
             {
-                HandleTamedState();
+                if (_tamedAI != null) _tamedAI.Tick();
+                // HandleTamedState();
                 UpdateAnimation();
                 return;
             }
 
             // === Дикий AI — через CreatureWildAI ===
-            _wildAI.Tick();
-
+            if (_wildAI != null) _wildAI.Tick();
             UpdateAnimation();
 
-            if (DieManually)
-            {
-                Die();
-            }
+            if (DieManually) Die();
         }
-
-        void LateUpdate()
-        {
-            if (isWandering && _agent != null && _agent.isOnNavMesh && _agent.remainingDistance < _agent.stoppingDistance)
-            {
-                isWandering = false;
-            }
-        }
-
 
         public void SetTarget(Transform target)
         {
@@ -335,230 +318,15 @@ namespace Assets.Scripts.Creatures
         public override string GetBehaviorText() => _commands != null ? _commands.TamedBehaviorToText() : "Wild";
 
 
-
         private void UpdateAnimation()
         {
-            if (animator == null || _combat.IsAttacking) return;
+            if (animator == null) return;
+            if (_combat != null && _combat.IsAttacking) return;
             if (_agent == null) return;
 
             float currentSpeed = _agent.velocity.magnitude;
             animator.SetFloat(animIDSpeed, currentSpeed);
             animator.SetBool(animIDIsMoving, currentSpeed > 0.1f);
-        }
-
-
-        // ==========================================
-        // === AI ПРИРУЧЕННОГО ===
-        // ==========================================
-
-        private void HandleTamedState()
-        {
-            if (_agent == null) return;
-            if (!_agent.enabled || !_agent.isOnNavMesh) return;
-
-            // === 1. Flee ===
-            if (tamedBehavior == TamedBehavior.Flee)
-            {
-                if (HandleFlee()) return;
-            }
-
-            // === 2. Neutral ===
-            if (tamedBehavior == TamedBehavior.Neutral)
-            {
-                if (HandleNeutral()) return;
-            }
-
-            // === 3. AttackOwnerTarget ===
-            if (tamedBehavior == TamedBehavior.AttackOwnerTarget)
-            {
-                if (HandleAttackOwnerTarget()) return;
-            }
-
-            // === 4. Aggressive ===
-            if (tamedBehavior == TamedBehavior.Aggressive)
-            {
-                _combat.UpdateCurrentEnemy();
-
-                if (_combat.CurrentEnemy != null)
-                {
-                    _combat.ChaseAndAttack(_combat.CurrentEnemy.transform);
-                    return;
-                }
-            }
-            else
-            {
-                _combat.ClearTargets();
-            }
-
-            // === 5. Follow ===
-            if (tamedFollowing && _playerTransform != null)
-            {
-                FollowOwner();
-                return;
-            }
-
-            // === 6. Wander ===
-            if (tamedWandering)
-            {
-                WanderTamed();
-                return;
-            }
-
-            // === 7. Idle ===
-            IdleTamed();
-        }
-
-        private void FollowOwner()
-        {
-            float stopDist = GetFollowStopDistance();
-            float chaseDist = stopDist + FOLLOW_CHASE_EXTRA;
-
-            float dist = Vector3.Distance(transform.position, _playerTransform.position);
-
-            if (dist > chaseDist)
-            {
-                // Догонять
-                _agent.isStopped = false;
-                _agent.speed = Data != null ? Data.tamedFollowChaseSpeed : ChaseSpeed;
-                _agent.SetDestination(_playerTransform.position);
-            }
-            else if (dist <= stopDist)
-            {
-                // Остановиться
-                _agent.isStopped = true;
-            }
-            // Между stopDist и chaseDist — не трогаем (гистерезис)
-        }
-
-        private float GetFollowStopDistance()
-        {
-            switch (tamedFollowDistance)
-            {
-                case FollowDistance.Lowest: return FOLLOW_DIST_LOWEST;
-                case FollowDistance.Low: return FOLLOW_DIST_LOW;
-                case FollowDistance.Medium: return FOLLOW_DIST_MEDIUM;
-                case FollowDistance.High: return FOLLOW_DIST_HIGH;
-                case FollowDistance.Highest: return FOLLOW_DIST_HIGHEST;
-                default: return FOLLOW_DIST_MEDIUM;
-            }
-        }
-
-        private void WanderTamed()
-        {
-            _agent.isStopped = false;
-            _agent.speed = WalkSpeed;
-
-            if (!isWandering || Time.time >= nextWanderTime)
-            {
-                StartTamedWandering();
-            }
-        }
-
-        private void StartTamedWandering()
-        {
-            if (!_agent.isOnNavMesh) return;
-
-            isWandering = true;
-
-            float radius = Data != null ? Data.tamedWanderRadius : 10f;
-            Vector3 randomDirection = Random.insideUnitSphere * radius;
-            randomDirection += transform.position;
-
-            if (NavMesh.SamplePosition(randomDirection, out NavMeshHit hit, radius, NavMesh.AllAreas))
-            {
-                _agent.SetDestination(hit.position);
-            }
-
-            float delay = Random.Range(MinWanderDelay, MaxWanderDelay);
-            nextWanderTime = Time.time + delay;
-        }
-
-        /// <summary>
-        /// Сбросить состояние блуждания — чтобы AI заново запустил Wander.
-        /// Вызывается при переключении в режим Wander.
-        /// </summary>
-        public void ResetWanderState()
-        {
-            isWandering = false;
-            nextWanderTime = 0f;
-        }
-
-        private void IdleTamed()
-        {
-            _agent.isStopped = true;
-            _agent.velocity = Vector3.zero;
-        }
-
-
-        // ==========================================
-        // === ПОВЕДЕНИЯ: FLEE / NEUTRAL / ATTACK_OWNER ===
-        // ==========================================
-
-        /// <summary>Flee: бежать от обидчика, пока он не выйдет из радиуса.</summary>
-        private bool HandleFlee()
-        {
-            var threat = _combat.LastAttacker;
-
-            if (threat == null || !threat.IsAlive())
-            {
-                _combat.ClearLastAttacker();
-                return false;
-            }
-
-            float threatDist = Vector3.Distance(transform.position, threat.transform.position);
-            float maxThreatDist = Data != null ? Data.tamedFleeMaxThreatDistance : 30f;
-
-            if (threatDist > maxThreatDist)
-            {
-                _combat.ClearLastAttacker();
-                return false;
-            }
-
-            _combat.FleeFrom(threat.transform);
-            return true;
-        }
-
-        /// <summary>Neutral: атаковать обидчика, пока он в радиусе.</summary>
-        private bool HandleNeutral()
-        {
-            var threat = _combat.LastAttacker;
-            if (threat == null || !threat.IsAlive())
-            {
-                _combat.ClearLastAttacker();
-                return false;
-            }
-
-            float threatDist = Vector3.Distance(transform.position, threat.transform.position);
-            float chaseRadius = Data != null ? Data.tamedNeutralChaseRadius : 20f;
-
-            if (threatDist > chaseRadius)
-            {
-                _combat.ClearLastAttacker();
-                return false;
-            }
-
-            _combat.ChaseAndAttack(threat.transform);
-            return true;
-        }
-
-        /// <summary>AttackOwnerTarget: защищать игрока — атаковать врага рядом с ним.</summary>
-        private bool HandleAttackOwnerTarget()
-        {
-            if (_playerTransform == null) return false;
-
-            float playerDist = Vector3.Distance(transform.position, _playerTransform.position);
-            float ownerRadius = Data != null ? Data.tamedAttackOwnerRadius : 30f;
-
-            if (playerDist > ownerRadius) return false;
-
-            var enemy = _combat.FindEnemyNearPlayer();
-            if (enemy != null)
-            {
-                _combat.ChaseAndAttack(enemy.transform);
-                return true;
-            }
-
-            return false;
         }
 
         protected override float GetMaxHealthFromConfiguration()
@@ -576,32 +344,7 @@ namespace Assets.Scripts.Creatures
             return _data?.maxFood ?? 100f;
         }
 
-        // === Звуки через Animation Events ===
 
-        private void PlaySound(AudioClip audioClip, float audioClipVolume)
-        {
-            if (audioClip != null)
-            {
-                float globalVolume = 1f;
-                if (AudioManager.Instance != null)
-                {
-                    globalVolume = AudioManager.Instance.masterVolume;
-                }
-
-                float finalVolume = globalVolume * audioClipVolume;
-
-                GameObject soundObj = new GameObject($"{audioClip.name}");
-                soundObj.transform.position = transform.position;
-
-                AudioSource source = soundObj.AddComponent<AudioSource>();
-                source.clip = audioClip;
-                source.volume = finalVolume;
-                source.spatialBlend = 1f;
-                source.Play();
-
-                Destroy(soundObj, audioClip.length + 0.1f);
-            }
-        }
     }
 
 }

@@ -49,7 +49,6 @@ namespace Assets.Scripts.Creatures
         [Tooltip("Дистанция следования за игроком.")]
         public FollowDistance tamedFollowDistance = FollowDistance.Medium;
 
-
         public string TamingInstanceId { get; set; } = "";
 
         [Header("Interaction")]
