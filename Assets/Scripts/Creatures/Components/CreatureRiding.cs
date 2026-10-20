@@ -105,8 +105,10 @@ namespace Assets.Scripts.Creatures.Components
 
         public void TickRidden(Vector2 move, Vector2 look, bool sprint, bool jump)
         {
-            if (_creature == null || _creature.Agent == null) return;
-            if (!_creature.Agent.enabled || !_creature.Agent.isOnNavMesh) return;
+            if (_creature == null) { Debug.Log("_creature == null"); return; }
+            if (_creature.Agent == null) { Debug.Log("_creature.Agent == null"); return; }
+            if (!_creature.Agent.enabled) { Debug.Log("!_creature.Agent.enabled"); return; }
+            if (!_creature.Agent.isOnNavMesh) { Debug.Log("!_creature.Agent.isOnNavMesh"); return; }
 
 
             // === Селфи: не вращаем существо ===

@@ -17,6 +17,7 @@ using Assets.Scripts.Audio;
 using Assets.Scripts.Corpses;
 using Assets.Scripts.UI.Notifications;
 using Assets.Scripts.Structures;
+using Assets.Scripts.Creatures.Components;
 
 namespace Assets.Scripts.Player
 {
@@ -72,6 +73,8 @@ namespace Assets.Scripts.Player
         private bool _isInteractHeld = false;
         private float _interactionHoldTimer = 0f;
         private bool _radialMenuOpenedThisHold = false;
+        // private float _ignoreStopUntilTime = 0f;
+        private bool _isMenuInteraction = false;
 
         private Animator _playerAnimator;
         private Transform _playerHead;
@@ -119,6 +122,7 @@ namespace Assets.Scripts.Player
 
         private void Update()
         {
+            _isMenuInteraction = _panelsController != null && _panelsController.IsRadialMenuOpened();
             PerformInteractionRaycast();
             UpdateInteractionUI();
             HandleHoldLogic();
@@ -136,6 +140,25 @@ namespace Assets.Scripts.Player
                     OpenRadialMenuIfAvailable();
                     _radialMenuOpenedThisHold = true;
                 }
+            }
+        }
+
+
+        private void HandleMenuOpened(GameObject targetGO)
+        {
+            if (_panelsController != null)
+            {
+                _panelsController.OpenRadialMenu(targetGO);
+            }
+        }
+
+        private void HandleMenuClosed()
+        {
+            if (_panelsController != null)
+            {
+                _panelsController.CloseRadialMenu();
+                // Игнорируем вызов OnInteractStopPressed в течение 0.1 секунды после закрытия меню
+                // _ignoreStopUntilTime = Time.time + 0.1f;
             }
         }
 
@@ -157,6 +180,9 @@ namespace Assets.Scripts.Player
         {
             _isInteractHeld = false;
 
+            // Если это был принудительный сброс (клик по меню) — игнорируем
+            if (_input.IsForceReset) return;
+
             // 1. Тащим труп — отпускаем (без цели)
             if (_currentlyDraggingCorpse != null)
             {
@@ -168,7 +194,7 @@ namespace Assets.Scripts.Player
             }
 
             // 2. Верхом — спешиваемся (без цели)
-            if (_playerController != null && _playerController.IsMounted)
+            if (_playerController != null && _playerController.IsMounted) // && !isInventoryOpened
             {
                 var mount = _playerController.RidingController?.CurrentMount;
                 if (mount != null) mount.ForceDismount();
@@ -184,14 +210,17 @@ namespace Assets.Scripts.Player
                 // Сначала проверяем, не ездовое ли существо под прицелом
                 foreach (var target in _allTargets)
                 {
-                    if (target is Creature creature
-                        && creature.Data != null
-                        && creature.Data.canBeRidden
-                        && creature.tamed
-                        && creature.Riding != null
-                        && !creature.Riding.IsRidden)
+                    if (target is CreatureInteractable interactable
+                        && interactable.Creature != null
+                        && interactable.Creature.Data != null
+                        && interactable.Creature.Data.canBeRidden
+                        && interactable.Creature.tamed
+                        && interactable.Creature.Riding != null
+                        && !interactable.Creature.Riding.IsRidden
+                        //&& !isInventoryOpened
+                        )
                     {
-                        creature.Riding.Mount(_playerController);
+                        interactable.Creature.Riding.Mount(_playerController);
                         HandleMenuClosed();
                         _interactionHoldTimer = 0f;
                         _radialMenuOpenedThisHold = false;
@@ -336,6 +365,9 @@ namespace Assets.Scripts.Player
 
         private void OpenRadialMenuIfAvailable()
         {
+            if (_panelsController != null && _panelsController.IsPanelOpened())
+                return;
+
             foreach (var target in _allTargets)
             {
                 if (target.GetInteractType() == InteractType.RadialMenu)
@@ -641,22 +673,6 @@ namespace Assets.Scripts.Player
                 _hitCreature = creature;
         }
 
-        private void HandleMenuOpened(GameObject targetGO)
-        {
-            if (_panelsController != null)
-            {
-                _panelsController.OpenRadialMenu(targetGO);
-            }
-        }
-
-        private void HandleMenuClosed()
-        {
-            if (_panelsController != null)
-            {
-                _panelsController.CloseRadialMenu();
-            }
-        }
-
         public void OnAttackInteractFinished()
         {
             Item equipped = GetEquippedTool();
@@ -932,7 +948,7 @@ namespace Assets.Scripts.Player
             return type switch
             {
                 InteractType.None => "",
-                InteractType.OpenTargetInventory => "[F] Открыть" + targetName,
+                InteractType.OpenTargetInventory => "[F] Открыть инвентарь" + targetName,
                 InteractType.Interact => "[E] Использовать" + targetName,
                 InteractType.Pickup => "[E] Подобрать" + targetName,
                 InteractType.Gather => "[E] Собрать" + targetName,

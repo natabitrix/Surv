@@ -13,7 +13,7 @@ using Assets.Scripts.Player;
 
 namespace Assets.Scripts.Creatures
 {
-    public class Creature : BaseLivingEntity
+    public class Creature : MonoBehaviour
     {
         [Header("Database")]
         [Tooltip("Ссылка на базу данных существ")]
@@ -21,6 +21,115 @@ namespace Assets.Scripts.Creatures
 
         [Tooltip("ID существа (например, 'Raptor', 'Dodo')")]
         public string creatureId;
+
+        // --- Перенесено из BaseLivingEntity ---
+        [Header("Taming Stats")]
+        public float torpor = 0f;
+        public float maxTorpor = 100f;
+
+        [Header("Food")]
+        public float food = 100f;
+        public float maxFood = 100f;
+
+        public bool tamed = false;
+        public bool tamable = false;
+        public bool tamableKO = false;
+        public bool knockedOut = false;
+        public bool tamablePassive = false;
+        public float tamingProgress = 0f;
+        public string TamingInstanceId { get; set; } = "";
+
+        // Команды прирученного
+        public bool tamedFollowing = false;
+        public bool tamedWandering = false;
+        public bool tamedMating = false;
+        public TamedBehavior tamedBehavior = TamedBehavior.Neutral;
+        public FollowDistance tamedFollowDistance = FollowDistance.Medium;
+
+        protected float health;
+        protected float maxHealth;
+        protected float stamina;
+        protected float maxStamina;
+
+        protected bool _isDead = false;
+
+        // Ссылки на системы (если они нужны в Creature)
+        protected PlayerController playerController;
+        protected PlayerProgress playerProgress;
+        protected PlayerSurvivalSystem survivalSystem;
+
+        // Аниматор (если он был в базе)
+        protected Animator animator;
+        protected int animIDIsMoving;
+        protected int animIDSpeed;
+        protected int animIDAttack;
+        protected int animIDTakeDamage;
+        protected int animIDDeath;
+
+        [Header("ParticleSystem for Damage Effect")]
+        public ParticleSystem damageEffect;
+
+        // Событие
+        public System.Action<Creature> OnDeath; // Раньше было Action<BaseLivingEntity>, меняем на Creature
+
+        // --- Методы из BaseLivingEntity ---
+
+        public bool IsDead() => _isDead;
+        public float GetHealth() => health;
+        public float GetMaxHealth() => maxHealth;
+        public float GetStamina() => stamina;
+        public float GetMaxStamina() => maxStamina;
+        public float GetFood() => food;
+        public float GetMaxFood() => maxFood;
+        public bool IsAlive() => !_isDead && health > 0;
+
+        public void SetHealth(float value) => health = Mathf.Clamp(value, 0f, maxHealth);
+        public void SetFood(float value) => food = Mathf.Clamp(value, 0f, maxFood);
+        public void SetStamina(float value) => stamina = Mathf.Clamp(value, 0f, maxStamina);
+        public void ReduceHealth(float amount) => health -= amount;
+        public bool IsHealthBelowZero() => health <= 0;
+
+        public void SetDead() { _isDead = true; knockedOut = false; health = 0; }
+
+        public void Heal(float amount)
+        {
+            health = Mathf.Clamp(health + amount, 0, maxHealth);
+        }
+
+        public void SetCreatureLayer() // Был в BaseLivingEntity
+        {
+            int creatureLayer = LayerMask.NameToLayer("Creature");
+            if (creatureLayer != -1) SetLayerRecursively(gameObject, creatureLayer);
+            else Debug.LogWarning("[Creature] Слой 'Creature' не найден!");
+        }
+
+        protected void SetLayerRecursively(GameObject obj, int layer)
+        {
+            obj.layer = layer;
+            foreach (Transform child in obj.transform)
+                SetLayerRecursively(child.gameObject, layer);
+        }
+
+        // Статы
+        // protected virtual void InitializeStats()
+        // {
+        //     maxHealth = GetMaxHealthFromConfiguration();
+        //     health = maxHealth;
+
+        //     maxStamina = GetMaxStaminaFromConfiguration();
+        //     stamina = maxStamina;
+
+        //     maxFood = GetMaxFoodFromConfiguration();
+        //     food = maxFood;
+        // }
+
+        public void TamedFromLoad()
+        {
+            tamed = true;
+            knockedOut = false;
+            SetCreatureLayer();
+            if (TryGetComponent<RadialMenu>(out var menu)) menu.enabled = true;
+        }
 
         // Кэшированная ссылка на данные
         private CreatureData _data;
@@ -36,6 +145,7 @@ namespace Assets.Scripts.Creatures
         private CreatureWildAI _wildAI;
         private CreatureTamedAI _tamedAI;
         private CreatureRiding _riding;
+        private CreatureInteractable _interactable;
 
         // === Статы (берутся из _data через свойства) ===
         public int Level => _data?.level ?? 1;
@@ -78,6 +188,7 @@ namespace Assets.Scripts.Creatures
         public CreatureWildAI WildAI => _wildAI;
         public CreatureTamedAI TamedAI => _tamedAI;
         public CreatureRiding Riding => _riding;
+        public CreatureInteractable Interactable => _interactable;
 
         public NavMeshAgent Agent => _agent;
         public Transform PlayerTransform => _playerTransform;
@@ -94,10 +205,28 @@ namespace Assets.Scripts.Creatures
         public float Health { get => health; set => health = value; }
 
 
-        protected override void Awake()
+        private void Awake()
         {
 
-            base.Awake();
+            // base.Awake();
+
+            playerProgress = PlayerProgress.Instance;
+            survivalSystem = PlayerSurvivalSystem.Instance;
+
+            if (playerProgress != null && playerProgress.playerController != null)
+                playerController = playerProgress.playerController;
+
+            animator = GetComponent<Animator>();
+            if (animator != null)
+            {
+                animIDIsMoving = Animator.StringToHash("IsMoving");
+                animIDSpeed = Animator.StringToHash("Speed");
+                animIDAttack = Animator.StringToHash("Attack");
+                animIDTakeDamage = Animator.StringToHash("TakeDamage");
+                animIDDeath = Animator.StringToHash("Death");
+            }
+
+
 
             // === Загружаем данные из базы ===
             if (creatureDatabase == null)
@@ -145,6 +274,9 @@ namespace Assets.Scripts.Creatures
 
             _riding = GetComponent<CreatureRiding>();
             if (_riding == null) Debug.LogError($"[Creature] Нет CreatureRiding на {gameObject.name}!");
+
+            _interactable = GetComponent<CreatureInteractable>();
+            if (_interactable == null) Debug.LogError($"[Creature] Нет CreatureInteractable на {gameObject.name}!");
 
             // === Применяем поведение ===
             tamable = _data.tamable;
@@ -211,7 +343,6 @@ namespace Assets.Scripts.Creatures
             // === Прирученное существо ===
             if (tamed)
             {
-
                 // === Верхом — AI не работает ===
                 if (_riding != null && _riding.IsRidden)
                 {
@@ -219,7 +350,7 @@ namespace Assets.Scripts.Creatures
                         _riding.TickRidden(playerController.MoveInput, playerController.LookInput, playerController.SprintInput, false);
                     UpdateAnimation();
                     return;
-                    
+
                 }
 
                 if (_tamedAI != null) _tamedAI.Tick();
@@ -239,14 +370,14 @@ namespace Assets.Scripts.Creatures
             _playerTransform = target;
         }
 
-        public override string GetDisplayName()
+        public string GetDisplayName()
         {
             if (Data != null && !string.IsNullOrEmpty(Data.displayName))
                 return Data.displayName;
             return !string.IsNullOrEmpty(creatureId) ? creatureId : gameObject.name;
         }
 
-        public override float GetDamageMultiplier(Collider hitCollider)
+        public float GetDamageMultiplier(Collider hitCollider)
         {
             if (hitCollider == null) return 1f;
 
@@ -261,15 +392,6 @@ namespace Assets.Scripts.Creatures
         {
             return !SessionMode.IsMultiplayer && LoadingScreenManager.Instance.IsLoading;
         }
-
-        // ==========================================
-        // === ИНТЕРФЕЙС IInteractable ===
-        // ==========================================
-        public override InteractType GetInteractType() => tamed || (tamableKO && knockedOut) ? InteractType.OpenTargetInventory : InteractType.None;
-        public override InteractType GetInteractType2() =>
-            (tamable && tamablePassive) || (tamed && Data != null && Data.canBeRidden)
-            ? InteractType.Interact
-            : InteractType.None;
 
         // ==========================================
         // === УРОН ===
@@ -300,49 +422,49 @@ namespace Assets.Scripts.Creatures
         }
 
         // ==========================================
-        // === НОКАУТ (override из BaseLivingEntity) ===
+        // === НОКАУТ ===
         // ==========================================
 
-        public override void KnockOut()
+        public void KnockOut()
         {
             if (_knockout != null) _knockout.KnockOut();
         }
 
-        public override void KnockOutFromLoad()
+        public void KnockOutFromLoad()
         {
             if (_knockout != null) _knockout.KnockOutFromLoad();
         }
 
-        public override void RecoverFromKnockout()
+        public void RecoverFromKnockout()
         {
             if (_knockout != null) _knockout.RecoverFromKnockout();
         }
 
         // ==========================================
-        // === ПРИРУЧЕНИЕ (override из BaseLivingEntity) ===
+        // === ПРИРУЧЕНИЕ ===
         // ==========================================
 
-        public override bool AddTamingProgress(float amount) => _taming != null && _taming.AddTamingProgress(amount);
-        public override void AddTorpor(float amount) => _taming?.AddTorpor(amount);
-        public override void AddFood(float amount) => _taming?.AddFood(amount);
-        public override bool ConsumeFood(float amount) => _taming != null && _taming.ConsumeFood(amount);
-        public override void Unclaim() => _taming?.Unclaim();
+        public bool AddTamingProgress(float amount) => _taming != null && _taming.AddTamingProgress(amount);
+        public void AddTorpor(float amount) => _taming?.AddTorpor(amount);
+        public void AddFood(float amount) => _taming?.AddFood(amount);
+        public bool ConsumeFood(float amount) => _taming != null && _taming.ConsumeFood(amount);
+        public void Unclaim() => _taming?.Unclaim();
 
         // ==========================================
-        // === КОМАНДЫ (override из BaseLivingEntity) ===
+        // === КОМАНДЫ ===
         // ==========================================
 
-        public override void SetTamedFollowing(bool value) => _commands?.SetTamedFollowing(value);
-        public override void SetTamedWandering(bool value) => _commands?.SetTamedWandering(value);
-        public override void SetTamedMating(bool value) => _commands?.SetTamedMating(value);
-        public override void SetTamedBehavior(TamedBehavior value) => _commands?.SetTamedBehavior(value);
-        public override void SetFollowDistance(FollowDistance value) => _commands?.SetFollowDistance(value);
+        public void SetTamedFollowing(bool value) => _commands?.SetTamedFollowing(value);
+        public void SetTamedWandering(bool value) => _commands?.SetTamedWandering(value);
+        public void SetTamedMating(bool value) => _commands?.SetTamedMating(value);
+        public void SetTamedBehavior(TamedBehavior value) => _commands?.SetTamedBehavior(value);
+        public void SetFollowDistance(FollowDistance value) => _commands?.SetFollowDistance(value);
 
-        public override void ExecuteRadialAction(string actionId) => _commands?.ExecuteRadialAction(actionId);
-        public override string GetRadialRadioValue(string radioGroupId) => _commands?.GetRadialRadioValue(radioGroupId);
-        public override void SetRadialRadioValue(string radioGroupId, string radioValue) => _commands?.SetRadialRadioValue(radioGroupId, radioValue);
-        public override string GetRadialDynamicLabel(string actionId) => _commands?.GetRadialDynamicLabel(actionId);
-        public override string GetBehaviorText() => _commands != null ? _commands.TamedBehaviorToText() : "Wild";
+        public void ExecuteRadialAction(string actionId) => _commands?.ExecuteRadialAction(actionId);
+        public string GetRadialRadioValue(string radioGroupId) => _commands?.GetRadialRadioValue(radioGroupId);
+        public void SetRadialRadioValue(string radioGroupId, string radioValue) => _commands?.SetRadialRadioValue(radioGroupId, radioValue);
+        public string GetRadialDynamicLabel(string actionId) => _commands?.GetRadialDynamicLabel(actionId);
+        public string GetBehaviorText() => _commands != null ? _commands.TamedBehaviorToText() : "Wild";
 
 
         private void UpdateAnimation()
@@ -356,17 +478,17 @@ namespace Assets.Scripts.Creatures
             animator.SetBool(animIDIsMoving, currentSpeed > 0.1f);
         }
 
-        protected override float GetMaxHealthFromConfiguration()
+        protected float GetMaxHealthFromConfiguration()
         {
             return _data?.maxHealth ?? 100f;
         }
 
-        protected override float GetMaxStaminaFromConfiguration()
+        protected float GetMaxStaminaFromConfiguration()
         {
             return _data?.maxStamina ?? 50f;
         }
 
-        protected override float GetMaxFoodFromConfiguration()
+        protected float GetMaxFoodFromConfiguration()
         {
             return _data?.maxFood ?? 100f;
         }

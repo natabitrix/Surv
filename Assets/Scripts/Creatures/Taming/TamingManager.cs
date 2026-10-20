@@ -62,14 +62,11 @@ namespace Assets.Scripts.Creatures.Taming
         /// </summary>
         public string RegisterCreature(GameObject creatureGO, string ownerPlayerId = "world")
         {
-            var livingEntity = creatureGO.GetComponent<BaseLivingEntity>();
-            if (livingEntity == null) { Debug.LogError("[TamingManager] Нет BaseLivingEntity!"); return null; }
-
             var creature = creatureGO.GetComponent<Creature>();
             if (creature == null || creature.Data == null) { Debug.LogError("[TamingManager] Нет Creature/Data!"); return null; }
 
             string instanceId = Guid.NewGuid().ToString();
-            var saveData = BuildSaveData(instanceId, livingEntity, creature, ownerPlayerId);
+            var saveData = BuildSaveData(instanceId, creature, ownerPlayerId);
 
             SaveToDisk(saveData);
             _loadedCreatures[instanceId] = creatureGO;
@@ -87,11 +84,10 @@ namespace Assets.Scripts.Creatures.Taming
             if (!_loadedCreatures.TryGetValue(instanceId, out var creatureGO)) return;
             if (creatureGO == null) { _loadedCreatures.Remove(instanceId); return; }
 
-            var livingEntity = creatureGO.GetComponent<BaseLivingEntity>();
             var creature = creatureGO.GetComponent<Creature>();
-            if (livingEntity == null || creature == null) return;
+            if (creature == null) return;
 
-            var saveData = BuildSaveData(instanceId, livingEntity, creature, ownerPlayerId);
+            var saveData = BuildSaveData(instanceId, creature, ownerPlayerId);
             SaveToDisk(saveData);
 
             // Debug.Log($"[TamingManager] Saved: progress={saveData.tamingProgress:F1}, " +
@@ -134,44 +130,45 @@ namespace Assets.Scripts.Creatures.Taming
             for (int i = 0; i < files.Length; i++)
             {
                 var file = files[i];
-                try
+                // try
+                // {
+                string json = File.ReadAllText(file);
+                var data = JsonConvert.DeserializeObject<TamingSaveData>(json);
+                if (data == null) Debug.LogError($"[TamingManager] data null");
+                if (data == null) continue;
+
+                // === Проверка времени ===
+                float elapsed = GameTime.ElapsedSeconds(data.savedAtTime, GameTime.Now);
+
+                // Если нокаутнутый и torpor упадёт до 0 — удаляем, не спавним
+                if (data.knockedOut && !data.tamed)
                 {
-                    string json = File.ReadAllText(file);
-                    var data = JsonConvert.DeserializeObject<TamingSaveData>(json);
-                    if (data == null) continue;
-
-                    // === Проверка времени ===
-                    float elapsed = GameTime.ElapsedSeconds(data.savedAtTime, GameTime.Now);
-
-                    // Если нокаутнутый и torpor упадёт до 0 — удаляем, не спавним
-                    if (data.knockedOut && !data.tamed)
+                    float torporNow = data.torpor - data.torporRecoveryRate * elapsed;
+                    if (torporNow <= 0f)
                     {
-                        float torporNow = data.torpor - data.torporRecoveryRate * elapsed;
-                        if (torporNow <= 0f)
-                        {
-                            File.Delete(file);
-                            continue;
-                        }
-
-                        // Пересчитываем food
-                        float foodNow = data.food - data.foodDrainRateKnockedOut * elapsed;
-                        data.torpor = torporNow;
-                        data.food = Mathf.Max(0f, foodNow);
-                    }
-                    else if (data.tamed)
-                    {
-                        // Прирученные — food падает со временем
-                        float foodNow = data.food - data.foodDrainRateTamed * elapsed;
-                        data.food = Mathf.Max(0f, foodNow);
+                        File.Delete(file);
+                        continue;
                     }
 
-                    SpawnFromData(data);
-                    loaded++;
+                    // Пересчитываем food
+                    float foodNow = data.food - data.foodDrainRateKnockedOut * elapsed;
+                    data.torpor = torporNow;
+                    data.food = Mathf.Max(0f, foodNow);
                 }
-                catch (Exception e)
+                else if (data.tamed)
                 {
-                    Debug.LogError($"[TamingManager] Ошибка загрузки {file}: {e.Message}");
+                    // Прирученные — food падает со временем
+                    float foodNow = data.food - data.foodDrainRateTamed * elapsed;
+                    data.food = Mathf.Max(0f, foodNow);
                 }
+
+                SpawnFromData(data);
+                loaded++;
+                // }
+                // catch (Exception e)
+                // {
+                //     Debug.LogError($"[TamingManager] Ошибка загрузки {file}: {e.Message}");
+                // }
 
                 if (i % 5 == 0) yield return null;
             }
@@ -196,33 +193,33 @@ namespace Assets.Scripts.Creatures.Taming
             string statusName = data.tamed ? "tamed" : "knockedout";
             go.name = $"{data.creatureId}_{statusName}_{data.instanceId.Substring(0, 6)}";
 
-            var livingEntity = go.GetComponent<BaseLivingEntity>();
             var creature = go.GetComponent<Creature>();
-            if (livingEntity == null || creature == null)
+            if (creature == null)
             {
-                Debug.LogError("[TamingManager] Префаб без BaseLivingEntity/Creature!");
+                Debug.LogError("[TamingManager] Префаб без Creature!");
                 Destroy(go);
                 return;
             }
 
             // Восстанавливаем состояние
-            livingEntity.torpor = data.torpor;
-            livingEntity.maxTorpor = data.maxTorpor;
-            livingEntity.tamingProgress = data.tamingProgress;
-            livingEntity.tamed = data.tamed;
-            livingEntity.knockedOut = data.knockedOut;
-            livingEntity.TamingInstanceId = data.instanceId;
+            creature.torpor = data.torpor;
+            creature.maxTorpor = data.maxTorpor;
+            creature.tamingProgress = data.tamingProgress;
+            creature.tamed = data.tamed;
+            creature.knockedOut = data.knockedOut;
+            creature.TamingInstanceId = data.instanceId;
 
-            livingEntity.SetHealth(data.health);
-            livingEntity.SetFood(data.food);
-            livingEntity.SetStamina(data.stamina);
+            creature.SetHealth(data.health);
+            creature.SetFood(data.food);
+            creature.SetStamina(data.stamina);
+
 
             // Команды прирученного
-            livingEntity.tamedFollowing = data.tamedFollowing;
-            livingEntity.tamedWandering = data.tamedWandering;
-            livingEntity.tamedMating = data.tamedMating;
-            livingEntity.tamedBehavior = data.tamedBehavior;
-            livingEntity.tamedFollowDistance = data.tamedFollowDistance;
+            creature.tamedFollowing = data.tamedFollowing;
+            creature.tamedWandering = data.tamedWandering;
+            creature.tamedMating = data.tamedMating;
+            creature.tamedBehavior = data.tamedBehavior;
+            creature.tamedFollowDistance = data.tamedFollowDistance;
 
             // Инвентарь
             if (data.inventoryData != null && itemDatabase != null)
@@ -233,19 +230,24 @@ namespace Assets.Scripts.Creatures.Taming
                 int size = data.inventoryData.slots?.Length ?? 100;
                 chestInv.Initialize(size, $"TamingCorpse_{data.instanceId}");
                 chestInv.Data.FromSerializable(data.inventoryData, itemDatabase.ItemLookup);
-                livingEntity.SetInventory(chestInv);
+                if (creature.Interactable == null)
+                {
+                    Debug.LogError("[SpawnFromData] creature.Interactable is null");
+
+                }
+                creature.Interactable.SetInventory(chestInv);
             }
 
             // Применяем состояние
             if (data.knockedOut && !data.tamed)
             {
                 // Нокаут: ragdoll, отключение AI
-                livingEntity.KnockOutFromLoad();
+                creature.KnockOutFromLoad();
             }
             else if (data.tamed)
             {
                 // Прирученный: стоит, AI отключён
-                livingEntity.TamedFromLoad();
+                creature.TamedFromLoad();
             }
 
             _loadedCreatures[data.instanceId] = go;
@@ -255,21 +257,21 @@ namespace Assets.Scripts.Creatures.Taming
         // === УТИЛИТЫ ===
         // ==========================================
 
-        private TamingSaveData BuildSaveData(string instanceId, BaseLivingEntity living, Creature creature, string ownerPlayerId)
+        private TamingSaveData BuildSaveData(string instanceId, Creature creature, string ownerPlayerId)
         {
             var data = new TamingSaveData
             {
                 instanceId = instanceId,
                 creatureId = creature.creatureId,
 
-                knockedOut = living.knockedOut,
-                tamed = living.tamed,
-                torpor = living.torpor,
-                maxTorpor = living.maxTorpor,
-                tamingProgress = living.tamingProgress,
-                health = living.GetHealth(),
-                food = living.GetFood(),
-                stamina = living.GetStamina(),
+                knockedOut = creature.knockedOut,
+                tamed = creature.tamed,
+                torpor = creature.torpor,
+                maxTorpor = creature.maxTorpor,
+                tamingProgress = creature.tamingProgress,
+                health = creature.GetHealth(),
+                food = creature.GetFood(),
+                stamina = creature.GetStamina(),
 
                 torporRecoveryRate = creature.Data.torporRecoveryRate,
                 foodDrainRateKnockedOut = creature.Data.foodDrainRateKnockedOut,
@@ -288,14 +290,14 @@ namespace Assets.Scripts.Creatures.Taming
                 despawnDuration = 0f,   // прирученные не деспавнятся
 
                 // Команды прирученного
-                tamedFollowing = living.tamedFollowing,
-                tamedWandering = living.tamedWandering,
-                tamedMating = living.tamedMating,
-                tamedBehavior = living.tamedBehavior,
-                tamedFollowDistance = living.tamedFollowDistance,
+                tamedFollowing = creature.tamedFollowing,
+                tamedWandering = creature.tamedWandering,
+                tamedMating = creature.tamedMating,
+                tamedBehavior = creature.tamedBehavior,
+                tamedFollowDistance = creature.tamedFollowDistance,
             };
 
-            var inv = living.GetInventory();
+            var inv = creature.Interactable.GetInventory();
             if (inv?.Data != null)
                 data.inventoryData = inv.Data.ToSerializable(inv.Data.size);
 
@@ -336,14 +338,13 @@ namespace Assets.Scripts.Creatures.Taming
                 if (!_loadedCreatures.TryGetValue(id, out var go)) continue;
                 if (go == null) { _loadedCreatures.Remove(id); continue; }
 
-                var living = go.GetComponent<BaseLivingEntity>();
                 var creature = go.GetComponent<Creature>();
-                if (living == null || creature == null) continue;
+                if (creature == null || creature == null) continue;
 
                 // Если существо мертво — не сохраняем (файл уже удалён в Die)
-                if (living.IsDead()) continue;
+                if (creature.IsDead()) continue;
 
-                var data = BuildSaveData(id, living, creature, "player_001");
+                var data = BuildSaveData(id, creature, "player_001");
                 SaveToDisk(data);
             }
 

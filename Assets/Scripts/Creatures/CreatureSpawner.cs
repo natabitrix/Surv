@@ -86,7 +86,7 @@ namespace Assets.Scripts.Core
             }
         }
 
-        void OnCreatureDied(BaseLivingEntity entity)
+        void OnCreatureDied(Creature entity)
         {
             GameObject go = entity.gameObject;
 

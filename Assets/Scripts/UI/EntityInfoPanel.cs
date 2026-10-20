@@ -152,7 +152,7 @@ namespace Assets.Scripts.UI
             }
         }
 
-        public string GetStatusText(BaseLivingEntity entity)
+        public string GetStatusText(Creature entity)
         {
 
             if (entity.tamed) return "Tamed";
@@ -163,14 +163,14 @@ namespace Assets.Scripts.UI
             return "Wild · Not Tamable";
         }
 
-        public Color GetStatusTextColor(BaseLivingEntity entity)
+        public Color GetStatusTextColor(Creature entity)
         {
             if (entity.tamed) return Color.green;
             if (entity.tamableKO || entity.tamablePassive) return Color.yellow;
             return Color.red;
         }
 
-        private string GetCreatureId(BaseLivingEntity entity)
+        private string GetCreatureId(Creature entity)
         {
             // Если это Creature — берём creatureId. Иначе пусто.
             var creature = entity as Creature;

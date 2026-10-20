@@ -12,7 +12,7 @@ namespace Assets.Scripts.Interactables
 {
     /// <summary>
     /// Маркер радиального меню на объекте.
-    /// - Для существ: IRadialMenuContext (IInteractable — на BaseLivingEntity).
+    /// - Для существ: IRadialMenuContext (IInteractable — на Creature).
     /// - Для структур: IRadialMenuContext + IInteractable (возвращает InteractType.RadialMenu).
     ///
     /// Конфиги берутся из GameAssets.RadialMenuGlobalConfig по состоянию.
@@ -31,11 +31,11 @@ namespace Assets.Scripts.Interactables
         // [Tooltip("Заголовок меню для структур (если не существ/трупов).")]
         // public string structureTitleOverride;
 
-        private BaseLivingEntity _living;
+        // private Creature _living;
 
         private void Awake()
         {
-            _living = GetComponent<BaseLivingEntity>();
+            // _living = GetComponent<Creature>();
 
             if (creature == null) creature = GetComponent<Creature>();
             if (corpse == null) corpse = GetComponent<Corpse>();
@@ -94,7 +94,7 @@ namespace Assets.Scripts.Interactables
                 case "ride":
                     return creature != null && creature.Data != null && creature.Data.canBeRidden;
                 case "open_inventory":
-                    return (corpse != null && corpse.HasInventory()) || (creature != null && creature.HasInventory()) || (structure != null && structure.HasInventory());
+                    return (corpse != null && corpse.HasInventory()) || (creature != null && creature.Interactable.HasInventory()) || (structure != null && structure.HasInventory());
                 case "unclaim":
                     return creature != null && creature.tamed;
                 default:
@@ -157,24 +157,24 @@ namespace Assets.Scripts.Interactables
 
 
 
-            Debug.Log($"[RadialMenu] Action: {actionId} (нет BaseLivingEntity — структура/предмет)");
+            Debug.Log($"[RadialMenu] Action: {actionId} (нет Creature — структура/предмет)");
         }
 
 
         public string GetRadioValue(string radioGroupId)
         {
-            if (_living != null) return _living.GetRadialRadioValue(radioGroupId);
+            if (creature != null) return creature.GetRadialRadioValue(radioGroupId);
             return null;
         }
 
         public void SetRadioValue(string radioGroupId, string radioValue)
         {
-            if (_living != null) _living.SetRadialRadioValue(radioGroupId, radioValue);
+            if (creature != null) creature.SetRadialRadioValue(radioGroupId, radioValue);
         }
 
         public string GetDynamicLabel(string actionId)
         {
-            if (_living != null) return _living.GetRadialDynamicLabel(actionId);
+            if (creature != null) return creature.GetRadialDynamicLabel(actionId);
             return null;
         }
 

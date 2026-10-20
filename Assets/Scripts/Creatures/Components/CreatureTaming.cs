@@ -123,11 +123,11 @@ namespace Assets.Scripts.Creatures.Components
                 _creature.TamingInstanceId = "";
             }
 
-            var inv = _creature.GetInventory();
+            var inv = _creature.Interactable.GetInventory();
             if (inv != null)
             {
                 Destroy(inv);
-                _creature.SetInventory(null);
+                _creature.Interactable.SetInventory(null);
             }
 
             _creature.SetCreatureLayer();
@@ -186,8 +186,11 @@ namespace Assets.Scripts.Creatures.Components
 
         private bool TryEatFood()
         {
-            var inv = _creature.GetInventory();
-            if (inv?.Data == null) return false;
+            var inv = _creature.Interactable.GetInventory();
+
+            if (inv == null) {Debug.Log("[TryEatFood]: inv = null"); return false;}
+            if (inv?.Data == null) {Debug.Log("[TryEatFood]: inv.Data = null"); return false;}
+
             if (_creature.Data.tamingFoodPreferences == null ||
                 _creature.Data.tamingFoodPreferences.Length == 0) return false;
 
@@ -205,6 +208,7 @@ namespace Assets.Scripts.Creatures.Components
 
                     float recovery = eaten.foodRecoveryAmount > 0f ? eaten.foodRecoveryAmount : 10f;
                     AddFood(recovery);
+                    _creature.Heal(recovery);
 
                     if (!_creature.tamed)
                     {

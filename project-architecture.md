@@ -1433,7 +1433,7 @@ _currentAttackTarget.Combat.NotifyAttackedBy(_creature);
 - `CreatureCommands.SetTamedWandering` → `_creature.TimedAI.ResetWanderState()`.
 
 
-#### 26 Система оседлания (Creature Riding)
+### 26. Система оседлания (Creature Riding)
 
 Реализована полноценная механика оседлания прирученных существ (ARK-style).
 
@@ -1457,6 +1457,27 @@ _currentAttackTarget.Combat.NotifyAttackedBy(_creature);
 **Известные особенности:**
 - `E` работает без наведения на цель (по флагу `IsMounted` или `_currentlyDraggingCorpse`).
 - Селфи-камера не вращает существо (`look = Vector2.zero` в `TickRidden`).
+
+
+
+### 27. Удаление BaseLivingEntity (Финальный рефакторинг)
+
+Класс `BaseLivingEntity` полностью удалён. Архитектура существ переведена на чистый компонентный подход.
+
+**Что изменилось:**
+- **`Creature`** — единственный класс данных существа. Все статы (`health`, `torpor`, `food`, `tamed`, `knockedOut` и т.д.) и логика (`IsAlive`, `Heal`, `SetDead`, `TamedFromLoad`) перенесены сюда из `BaseLivingEntity`.
+- **`CreatureInteractable`** — новый компонент. Забрал на себя интерфейсы `IInteractable`, `IInventorySource`, `IImpactSoundProvider`. Теперь открытие инвентаря, проверка коллайдеров и звуки ударов живут здесь.
+- **`Creature`** больше не наследуется от абстрактного класса, а просто от `MonoBehaviour`.
+- Все пустые `virtual` и `override` методы-заглушки удалены. Вызовы методов (`AddTorpor`, `KnockOut`, `SetTamedFollowing` и т.д.) теперь идут напрямую к компонентам (`CreatureTaming`, `CreatureKnockout`, `CreatureCommands`).
+
+**Обновления зависимостей:**
+- `PlayerInteraction` ищет `CreatureInteractable` вместо `BaseLivingEntity`.
+- `CorpseManager` и `TamingManager` работают напрямую с `Creature`.
+- `RadialMenu` получает данные через `CreatureInteractable`.
+
+**Известные особенности:**
+- Инвентарь существ теперь хранится в `CreatureInteractable` (`GetInventory()`, `SetInventory()`).
+- Урон и звуки ударов обрабатываются в `CreatureInteractable` (на нем висит `IImpactSoundProvider`).
 
 
 ## TODO

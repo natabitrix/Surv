@@ -382,10 +382,10 @@ namespace Assets.Scripts.InventorySystem
 
             // Если источник — нокаутнутое существо, обновляем его сейв,
             // чтобы при перезагрузке пустой инвентарь не вернулся.
-            if (ChestUIManager.Instance.CurrentSource is BaseLivingEntity living
-                && !string.IsNullOrEmpty(living.TamingInstanceId))
+            if (ChestUIManager.Instance.CurrentSource is Creature creature
+                && !string.IsNullOrEmpty(creature.TamingInstanceId))
             {
-                TamingManager.Instance?.UpdateSave(living.TamingInstanceId, "player_001");
+                TamingManager.Instance?.UpdateSave(creature.TamingInstanceId, "player_001");
             }
         }
 

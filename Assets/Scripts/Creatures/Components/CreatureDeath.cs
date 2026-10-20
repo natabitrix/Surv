@@ -50,11 +50,11 @@ namespace Assets.Scripts.Creatures.Components
             }
 
             // Уничтожаем инвентарь (ChestInventory)
-            var inv = _creature.GetInventory();
+            var inv = _creature.Interactable.GetInventory();
             if (inv != null)
             {
                 Destroy(inv);
-                _creature.SetInventory(null);
+                _creature.Interactable.SetInventory(null);
             }
 
             _creature.CancelInvoke();

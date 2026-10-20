@@ -110,7 +110,7 @@ namespace Assets.Scripts.InventorySystem
             if (chestUI == null) return;
 
             // Только нокаутнутое существо
-            if (chestUI.SourceInteractable is not BaseLivingEntity target) return;
+            if (chestUI.SourceInteractable is not Creature target) return;
 
             if (!target.knockedOut || target.tamed) return;
 

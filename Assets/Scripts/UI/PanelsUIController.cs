@@ -259,6 +259,7 @@ namespace Assets.Scripts.UI
             PanelMode(setPanelMode);
 
             if (_tooltipManager != null) _tooltipManager.HideTooltip();
+            
             // Сбрасываем зажатие E, если меню закрылось
             _input?.ForceResetInteract();
         }

@@ -408,14 +408,12 @@ namespace Assets.Scripts.Player
         /// </summary>
         public void ForceResetInteract()
         {
-            // Останавливаем корутину повторов (RepeatInteract)
             StopRepeatInteract();
-
-            // Дёргаем событие, как будто игрок отпустил E
+            IsForceReset = true; // Ставим флаг
             OnInteractStopPressed?.Invoke();
-
+            IsForceReset = false; // Сразу снимаем (т.к. Invoke синхронный)
         }
 
-
+        public bool IsForceReset { get; private set; } = false;
     }
 }

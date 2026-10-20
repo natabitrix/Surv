@@ -15,7 +15,7 @@ public class HealthMaterialBlender : MonoBehaviour
     [Tooltip("Как часто проверять здоровье (0.05 = 20 раз в сек, достаточно)")]
     [SerializeField] private float checkInterval = 0.05f;
 
-    private BaseLivingEntity _entity;
+    private Creature _entity;
     private MaterialPropertyBlock _block;
     private int _blendID;
     private int _intensityID;
@@ -24,7 +24,7 @@ public class HealthMaterialBlender : MonoBehaviour
 
     private void Awake()
     {
-        _entity = GetComponent<BaseLivingEntity>();
+        _entity = GetComponent<Creature>();
         if(_entity == null) return;
         if (targetRenderer == null) targetRenderer = GetComponent<Renderer>();
 

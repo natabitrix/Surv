@@ -49,12 +49,12 @@ namespace Assets.Scripts.Creatures.Components
 
             if (_creature.TryGetComponent<RadialMenu>(out var menu)) menu.enabled = true;
 
-            if (_creature.GetInventory() == null)
+            if (_creature.Interactable.GetInventory() == null)
             {
                 var chestInv = _creature.gameObject.AddComponent<ChestInventory>();
                 string key = $"TamingCorpse_{System.Guid.NewGuid().ToString().Substring(0, 8)}";
                 chestInv.Initialize(100, key);
-                _creature.SetInventory(chestInv);
+                _creature.Interactable.SetInventory(chestInv);
             }
 
             if (string.IsNullOrEmpty(_creature.TamingInstanceId))
@@ -127,12 +127,12 @@ namespace Assets.Scripts.Creatures.Components
             if (_creature.TryGetComponent<RadialMenu>(out var menu))
                 menu.enabled = false;
 
-            _creature.CloseInventory();
+            _creature.Interactable.CloseInventory();
 
-            if (!_creature.tamed && _creature.GetInventory() != null)
+            if (!_creature.tamed && _creature.Interactable.GetInventory() != null)
             {
-                Destroy(_creature.GetInventory());
-                _creature.SetInventory(null);
+                Destroy(_creature.Interactable.GetInventory());
+                _creature.Interactable.SetInventory(null);
             }
         }
 

@@ -68,7 +68,8 @@ namespace Assets.Scripts.InventorySystem
             // Если уже открыт этот же — закрываем (toggle)
             if (CurrentSource == source)
             {
-                Close();
+                Debug.Log("[ChestUIManager.Open] Если уже открыт этот же — закрываем (toggle)");
+                // Close();
                 return;
             }
 

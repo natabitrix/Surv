@@ -93,7 +93,7 @@ namespace Assets.Scripts.Creatures.Components
                     break;
 
                 case "open_inventory":
-                    _creature.OpenInventory();
+                    _creature.Interactable.OpenInventory();
                     Debug.Log($"[{gameObject.name}] OpenInventory");
                     break;
 

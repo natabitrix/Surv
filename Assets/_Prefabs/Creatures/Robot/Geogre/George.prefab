@@ -2576,6 +2576,7 @@ GameObject:
   - component: {fileID: 4034927764043862403}
   - component: {fileID: 725431833466252242}
   - component: {fileID: 8552856856609517731}
+  - component: {fileID: 1785388502556155429}
   - component: {fileID: 8498111371151193743}
   m_Layer: 12
   m_Name: George
@@ -2887,6 +2888,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Creatures.Components.CreatureRiding
   riderAttachPoint: {fileID: 7405081125186852726}
   dismountOffset: {x: 2, y: 0, z: 0}
+--- !u!114 &1785388502556155429
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8196958937981766394}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c53bbe1664d697d46b01b8fc8a652677, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Creatures.Components.CreatureInteractable
+  _interactionCollider: {fileID: 757373293651612418}
+  _impactType: 2
+  _inventory: {fileID: 0}
 --- !u!114 &8498111371151193743
 MonoBehaviour:
   m_ObjectHideFlags: 0
