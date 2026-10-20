@@ -128,9 +128,15 @@ namespace Assets.Scripts.Creatures
         // ==========================================
         // === ИНТЕРФЕЙС IInteractable ===
         // ==========================================
-        public InteractType GetInteractType() => tamed || (tamableKO && knockedOut) ? InteractType.OpenTargetInventory : InteractType.None;
-        public InteractType GetInteractType2() => tamable && tamablePassive ? InteractType.Interact : InteractType.None;
+        // public InteractType GetInteractType() => tamed || (tamableKO && knockedOut) ? InteractType.OpenTargetInventory : InteractType.None;
+        // public InteractType GetInteractType2() => tamable && tamablePassive ? InteractType.Interact : InteractType.None;
+        // public InteractType GetInteractType2() =>
+        //     (tamable && tamablePassive) || (tamed && Data != null && Data.canBeRidden)
+        //     ? InteractType.Interact
+        //     : InteractType.None;
 
+        public abstract InteractType GetInteractType();
+        public abstract InteractType GetInteractType2();
         public void Interact(InteractContext context)
         {
             if ((tamed || (tamableKO && knockedOut)) && context.isTargetInventory)

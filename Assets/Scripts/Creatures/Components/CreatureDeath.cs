@@ -30,6 +30,8 @@ namespace Assets.Scripts.Creatures.Components
         {
             if (_creature == null) return;
             if (_creature.IsDead()) return;
+            
+            _creature.Riding?.ForceDismount();
 
             _creature.SetDead();
 

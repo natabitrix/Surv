@@ -312,6 +312,8 @@ namespace Assets.Scripts.Corpses
                 if (corpseGO.TryGetComponent<CreatureCommands>(out var creatureCommands)) Destroy(creatureCommands);
                 if (corpseGO.TryGetComponent<CreatureAudio>(out var creatureAudio)) Destroy(creatureAudio);
                 if (corpseGO.TryGetComponent<CreatureWildAI>(out var creatureWildAI)) Destroy(creatureWildAI);
+                if (corpseGO.TryGetComponent<CreatureTamedAI>(out var creatureTamedAI)) Destroy(creatureTamedAI);
+                if (corpseGO.TryGetComponent<CreatureRiding>(out var creatureRiding)) Destroy(creatureRiding);
             }
 
             // Устанавливаем слой Corpse для восстановленного трупа,

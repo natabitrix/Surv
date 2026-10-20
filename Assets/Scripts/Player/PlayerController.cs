@@ -49,6 +49,38 @@ namespace Assets.Scripts.Player
         public Transform Head; // Ссылка на объект головы (должен быть дочерним элементом тела)
         public Transform EyeCenterForCamera;
 
+        [Header("Riding")]
+        [SerializeField] private RidingController _ridingController;
+
+        // Временные заглушки — будут заполнены в Подпункте 2
+        // public RidingController RidingController { get; set; }
+        public RidingController RidingController => _ridingController;
+        public Vector2 MoveInput => _input != null ? _input.move : Vector2.zero;
+        public Vector2 LookInput => _input != null ? _input.look : Vector2.zero;
+        public bool IsMounted { get; private set; } = false;
+        public bool SprintInput => _input != null ? _input.sprint : false;
+
+        public void SetMounted(bool mounted)
+        {
+            IsMounted = mounted;
+
+            // Отключаем CharacterController — чтобы физика не толкала игрока в седле
+            if (_controller != null)
+                _controller.enabled = !mounted;
+
+            // Управляем анимацией
+            if (_animator != null)
+            {
+                _animator.SetBool(_animIDIsRiding, mounted);
+
+                // if (mounted)
+                //     _animator.SetTrigger("Mounting"); // Если настроишь триггер прыжка
+                // else
+                //     _animator.SetTrigger("Dismounting");
+            }
+        }
+
+
         [Header("Visual Effects")]
         public UnderwaterEffects VisualEffects;
 
@@ -81,6 +113,7 @@ namespace Assets.Scripts.Player
         private int _animIDAttackAxe;
         private int _animIDAttackSword;
         private int _animIDAttackBow;
+        private int _animIDIsRiding;
 
         private PlayerInput _playerInput;
         [SerializeField] private Animator _animator; // назначен в инспекторе
@@ -109,9 +142,6 @@ namespace Assets.Scripts.Player
         private bool _isCrouching = false;
         private bool _isCrawling = false;
         private bool _isFreeFall = false;
-
-        // private int? _selectedSlotIndex = null;
-        // private int? _selectedEngramIndex = null;
 
         private bool IsCurrentDeviceMouse
         {
@@ -146,6 +176,9 @@ namespace Assets.Scripts.Player
             {
                 Debug.LogError("PlayerInputHandler is missing on Player!", this);
             }
+
+            if (_ridingController == null)
+                _ridingController = GetComponent<RidingController>();
 
             if (_mainCamera == null)
             {
@@ -192,6 +225,19 @@ namespace Assets.Scripts.Player
 
             // _hasAnimator = TryGetComponent(out _animator);
             _hasAnimator = _animator != null;
+
+            // === Верхом: физика игрока отключена ===
+            if (IsMounted)
+            {
+                // Обновляем только анимацию (IsMoving = false, Speed = 0)
+                if (_hasAnimator)
+                {
+                    _animator.SetBool(_animIDIsMoving, false);
+                    _animator.SetFloat(_animIDSpeed, 0f);
+                    _animator.SetBool(_animIDIsRiding, true); // ← Включаем позу езды
+                }
+                return;
+            }
 
             // if (!Application.isFocused || LockCameraOnEsc) return;
 
@@ -291,6 +337,7 @@ namespace Assets.Scripts.Player
 
         // Также можно добавить свойство для полной скорости, если нужно:
         public float CurrentSpeed => _controller != null ? _controller.velocity.magnitude : 0f;
+
 
         public float GetAttackDamage()
         {
@@ -669,6 +716,7 @@ namespace Assets.Scripts.Player
                 }
                 _input.jump = false;
             }
+
             if (_verticalVelocity < settings.TerminalVelocity)
             {
                 _verticalVelocity += settings.Gravity * Time.deltaTime;
@@ -773,13 +821,54 @@ namespace Assets.Scripts.Player
 
         private void CameraRotation()
         {
-            if (!Application.isFocused || LockCameraOnEsc || _isInSelfieMode) return; // Не вращать камеру, если позиция заблокирована
+            // Не вращать камеру, если позиция заблокирована
+            if (!Application.isFocused || LockCameraOnEsc || _isInSelfieMode) return;
+            // Не вращать камеру если вращаем фундамент
+            if (buildMode != null && buildMode.IsActive() && buildMode.IsRotatingPreview()) return;
+            // Не вращать камеру пока загрузочный экран
+            if (LoadingScreenManager.Instance != null && LoadingScreenManager.Instance.IsLoading) return;
+            // Не вращать камеру при Selfie — этим занимается SelfieCameraOrbit
+            if (CameraManager.Instance != null && CameraManager.Instance.IsSelfie) return;
 
-            if (buildMode != null && buildMode.IsActive() && buildMode.IsRotatingPreview()) return; // Не вращать камеру если вращаем фундамент
 
-            if (LoadingScreenManager.Instance != null && LoadingScreenManager.Instance.IsLoading) return; // Не вращать камеру пока загрузочный экран
+            // Поворачиваем тело на _cinemachineTargetYaw (на лестнице тело не поворачиваем)
+            // Верхом тело игрока тоже не поворачиваем — оно в седле.
+            if (!_onLadder && !IsMounted)
+            {
+                transform.rotation = Quaternion.Euler(0.0f, _cinemachineTargetYaw, 0.0f);
+            }
 
-            if (CameraManager.Instance != null && CameraManager.Instance.IsSelfie) return; // Не вращать камеру при Selfie — этим занимается SelfieCameraOrbit
+            // Позиция цели камеры = глаза
+            CinemachineCameraTarget.transform.position = EyeCenterForCamera.position;
+
+            if (IsMounted)
+            {
+                // === Верхом ===
+                // yaw берём из существа, pitch — из мыши
+                var mount = _ridingController?.CurrentMount;
+                if (mount != null)
+                {
+                    _cinemachineTargetYaw = mount.transform.eulerAngles.y;
+                }
+
+                // pitch обрабатываем из look.y
+                if (Mathf.Abs(_input.look.y) >= _threshold)
+                {
+                    float deltaTimeMultiplier = IsCurrentDeviceMouse ? 1.0f : Time.deltaTime;
+                    _cinemachineTargetPitch += _input.look.y * deltaTimeMultiplier;
+                }
+                _input.look = Vector2.zero;
+
+                _cinemachineTargetPitch = PlayerUtils.ClampAngle(_cinemachineTargetPitch, settings.BottomClamp, settings.TopClamp);
+
+                CinemachineCameraTarget.transform.rotation = Quaternion.Euler(
+                    _cinemachineTargetPitch + settings.CameraAngleOverride,
+                    _cinemachineTargetYaw,
+                    0.0f
+                );
+                return;
+            }
+
 
             // Камера должна следовать глазам, но не должна применяться анимация персонажа к камере, 
             // поэтому прикрепим ее к EyeCenterForCamera, которую установим посредине глаз
@@ -1009,7 +1098,7 @@ namespace Assets.Scripts.Player
             _animIDAttackAxe = Animator.StringToHash("AttackAxe");
             _animIDAttackSword = Animator.StringToHash("AttackSword");
             _animIDAttackBow = Animator.StringToHash("ShootingBow");
-            // _animIDAttackBow = Animator.StringToHash("AttackBow");
+            _animIDIsRiding = Animator.StringToHash("IsRiding");
         }
     }
 }

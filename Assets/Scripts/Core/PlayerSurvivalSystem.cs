@@ -139,6 +139,10 @@ namespace Assets.Scripts.Core
             var pc = PlayerProgress.Instance?.playerController;
             if (pc == null) yield break;
 
+
+            // 0. Спешиваемся если были верхом
+            PlayerController.Instance?.RidingController?.CurrentMount?.ForceDismount();
+
             // 1. Снимаем экипировку и выходим из build mode
             if (pc.equipment != null && pc.equipment.IsEquipped)
                 pc.equipment.Unequip();

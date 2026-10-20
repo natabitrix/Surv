@@ -35,6 +35,7 @@ namespace Assets.Scripts.Creatures
         private CreatureAudio _audio;
         private CreatureWildAI _wildAI;
         private CreatureTamedAI _tamedAI;
+        private CreatureRiding _riding;
 
         // === Статы (берутся из _data через свойства) ===
         public int Level => _data?.level ?? 1;
@@ -47,6 +48,10 @@ namespace Assets.Scripts.Creatures
         public float AttackRange => _data?.attackRange ?? 2f;
         public float AttackDamage => _data?.attackDamage ?? 10f;
         public float AttackCooldown => _data?.attackCooldown ?? 2f;
+
+        public float RideSpeed => _data?.rideSpeed ?? 4f;
+        public float RideSprintSpeed => _data?.rideSprintSpeed ?? 8f;
+        public float TurnSpeed => _data?.turnSpeed ?? 3f;
 
         private NavMeshAgent _agent;
         private Transform _playerTransform;
@@ -72,6 +77,7 @@ namespace Assets.Scripts.Creatures
         public CreatureAudio Audio => _audio;
         public CreatureWildAI WildAI => _wildAI;
         public CreatureTamedAI TamedAI => _tamedAI;
+        public CreatureRiding Riding => _riding;
 
         public NavMeshAgent Agent => _agent;
         public Transform PlayerTransform => _playerTransform;
@@ -137,6 +143,8 @@ namespace Assets.Scripts.Creatures
             _tamedAI = GetComponent<CreatureTamedAI>();
             if (_tamedAI == null) Debug.LogError($"[Creature] Нет CreatureTamedAI на {gameObject.name}!");
 
+            _riding = GetComponent<CreatureRiding>();
+            if (_riding == null) Debug.LogError($"[Creature] Нет CreatureRiding на {gameObject.name}!");
 
             // === Применяем поведение ===
             tamable = _data.tamable;
@@ -203,8 +211,18 @@ namespace Assets.Scripts.Creatures
             // === Прирученное существо ===
             if (tamed)
             {
+
+                // === Верхом — AI не работает ===
+                if (_riding != null && _riding.IsRidden)
+                {
+                    if (playerController != null)
+                        _riding.TickRidden(playerController.MoveInput, playerController.LookInput, playerController.SprintInput, false);
+                    UpdateAnimation();
+                    return;
+                    
+                }
+
                 if (_tamedAI != null) _tamedAI.Tick();
-                // HandleTamedState();
                 UpdateAnimation();
                 return;
             }
@@ -243,6 +261,15 @@ namespace Assets.Scripts.Creatures
         {
             return !SessionMode.IsMultiplayer && LoadingScreenManager.Instance.IsLoading;
         }
+
+        // ==========================================
+        // === ИНТЕРФЕЙС IInteractable ===
+        // ==========================================
+        public override InteractType GetInteractType() => tamed || (tamableKO && knockedOut) ? InteractType.OpenTargetInventory : InteractType.None;
+        public override InteractType GetInteractType2() =>
+            (tamable && tamablePassive) || (tamed && Data != null && Data.canBeRidden)
+            ? InteractType.Interact
+            : InteractType.None;
 
         // ==========================================
         // === УРОН ===

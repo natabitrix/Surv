@@ -1,6 +1,7 @@
 // Assets/Scripts/Creatures/Components/CreatureCommands.cs
 using UnityEngine;
 using Assets.Scripts.Creatures.Taming;
+using Assets.Scripts.Player;
 
 namespace Assets.Scripts.Creatures.Components
 {
@@ -66,6 +67,16 @@ namespace Assets.Scripts.Creatures.Components
         {
             switch (actionId)
             {
+                case "ride":
+                    if (_creature.Riding.IsRidden)
+                        _creature.Riding.ForceDismount();
+                    else
+                    {
+                        var pc = PlayerController.Instance;
+                        if (pc != null) _creature.Riding.Mount(pc);
+                    }
+                    break;
+
                 case "toggle_follow":
                     SetTamedFollowing(!_creature.tamedFollowing);
                     Debug.Log($"[{gameObject.name}] Follow = {_creature.tamedFollowing}");
@@ -113,10 +124,6 @@ namespace Assets.Scripts.Creatures.Components
 
                 case "pick_up":
                     Debug.Log($"[{gameObject.name}] Pick up (TODO)");
-                    break;
-
-                case "ride":
-                    Debug.Log($"[{gameObject.name}] Ride (TODO)");
                     break;
 
                 case "rename":
@@ -186,6 +193,8 @@ namespace Assets.Scripts.Creatures.Components
                     return _creature.tamedWandering ? "Отключить блуждание" : "Включить блуждание";
                 case "toggle_mating":
                     return _creature.tamedMating ? "Отключить спаривание" : "Включить спаривание";
+                case "ride":
+                    return _creature.Riding.IsRidden ? "Спешиться" : "Оседлать";
                 default:
                     return null;
             }

@@ -157,22 +157,54 @@ namespace Assets.Scripts.Player
         {
             _isInteractHeld = false;
 
+            // 1. Тащим труп — отпускаем (без цели)
+            if (_currentlyDraggingCorpse != null)
+            {
+                _currentlyDraggingCorpse.StopDragging();
+                HandleMenuClosed();
+                _interactionHoldTimer = 0f;
+                _radialMenuOpenedThisHold = false;
+                return;
+            }
+
+            // 2. Верхом — спешиваемся (без цели)
+            if (_playerController != null && _playerController.IsMounted)
+            {
+                var mount = _playerController.RidingController?.CurrentMount;
+                if (mount != null) mount.ForceDismount();
+                HandleMenuClosed();
+                _interactionHoldTimer = 0f;
+                _radialMenuOpenedThisHold = false;
+                return;
+            }
+
+            // 3. Не верхом — ищем цель для оседлания/взаимодействия
             if (!_radialMenuOpenedThisHold)
             {
-                if (_currentlyDraggingCorpse != null)
+                // Сначала проверяем, не ездовое ли существо под прицелом
+                foreach (var target in _allTargets)
                 {
-                    _currentlyDraggingCorpse.StopDragging();
-
-                    HandleMenuClosed();
-                    _interactionHoldTimer = 0f;
-                    _radialMenuOpenedThisHold = false;
-                    return;
+                    if (target is Creature creature
+                        && creature.Data != null
+                        && creature.Data.canBeRidden
+                        && creature.tamed
+                        && creature.Riding != null
+                        && !creature.Riding.IsRidden)
+                    {
+                        creature.Riding.Mount(_playerController);
+                        HandleMenuClosed();
+                        _interactionHoldTimer = 0f;
+                        _radialMenuOpenedThisHold = false;
+                        return;
+                    }
                 }
 
+                // Обычная логика анимации
                 foreach (var target in _allTargets)
                 {
                     InteractType type = target.GetInteractType();
                     InteractType type2 = target.GetInteractType2();
+
                     if ((type != InteractType.RadialMenu && type != InteractType.OpenTargetInventory) || type2 == InteractType.Interact)
                     {
                         _playerAnimator.SetTrigger(_animIDPickup);
@@ -182,7 +214,6 @@ namespace Assets.Scripts.Player
             }
 
             HandleMenuClosed();
-
             _interactionHoldTimer = 0f;
             _radialMenuOpenedThisHold = false;
         }
@@ -480,12 +511,9 @@ namespace Assets.Scripts.Player
 
         private void UpdateInteractionUI()
         {
-            if (_currentlyDraggingCorpse != null)
+            if (_currentlyDraggingCorpse != null || (_playerController != null && _playerController.IsMounted))
             {
-                if (interactionUI != null)
-                {
-                    interactionUI.SetActive(false);
-                }
+                if (interactionUI != null) interactionUI.SetActive(false);
                 return;
             }
 
@@ -875,10 +903,28 @@ namespace Assets.Scripts.Player
                         return doorController.IsVisuallyOpen() ? "[E] Закрыть" + targetName : "[E] Открыть" + targetName;
                     }
 
-                    var corpse = targetGO.GetComponent<Corpse>() ?? targetGO.GetComponentInParent<Corpse>();
-                    if (corpse != null && corpse.enabled)
+                    // var corpse = targetGO.GetComponent<Corpse>() ?? targetGO.GetComponentInParent<Corpse>();
+                    // if (corpse != null && corpse.enabled)
+                    // {
+                    //     return corpse.IsDragging ? "[E] Отпустить тело" + targetName : "[E] Тащить тело" + targetName;
+                    // }
+
+                    if (targetGO.TryGetComponent(out Corpse corpse))
                     {
-                        return corpse.IsDragging ? "[E] Отпустить тело" + targetName : "[E] Тащить тело" + targetName;
+                        if (corpse.enabled)
+                            return corpse.IsDragging ? "[E] Отпустить тело" + targetName : "[E] Тащить тело" + targetName;
+                    }
+
+                    // var creature = targetGO.GetComponent<Creature>();
+                    // if (creature != null && creature.Data != null && creature.Data.canBeRidden && creature.tamed)
+                    // {
+                    //     return creature.Riding.IsRidden ? "[E] Спешиться" : "[E] Оседлать";
+                    // }
+
+                    if (targetGO.TryGetComponent(out Creature creature))
+                    {
+                        if (creature.Data != null && creature.Data.canBeRidden && creature.tamed)
+                            return creature.Riding.IsRidden ? "[E] Спешиться" : "[E] Оседлать";
                     }
                 }
             }

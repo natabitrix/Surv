@@ -37,7 +37,7 @@ namespace Assets.Scripts.UI
         [SerializeField] private float _lingerTime = 2f;
 
         // === Состояние ===
-        private BaseLivingEntity _currentTarget;   // цель, которую сейчас отслеживаем
+        private Creature _currentTarget;   // цель, которую сейчас отслеживаем
         private float _targetEnterTime;             // когда цель появилась под прицелом
         private float _lastSeenTime;                // когда цель в последний раз была под прицелом
 
@@ -57,11 +57,11 @@ namespace Assets.Scripts.UI
             // Ray из центра экрана
             Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f));
 
-            BaseLivingEntity found = null;
+            Creature found = null;
 
             if (Physics.Raycast(ray, out RaycastHit hit, _maxDistance, _targetLayers, QueryTriggerInteraction.Collide))
             {
-                found = hit.collider.GetComponentInParent<BaseLivingEntity>();
+                found = hit.collider.GetComponentInParent<Creature>();
                 if (found != null && !found.IsAlive() && !found.knockedOut)
                     found = null;
             }

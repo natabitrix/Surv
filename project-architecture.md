@@ -1407,11 +1407,6 @@ _currentAttackTarget.Combat.NotifyAttackedBy(_creature);
 - В `Update`: _wildAI.Tick(); вместо дикого AI блока.
 - Раскомментировано _creature.WildAI.SetState(...) в ResetAttackState.
 
-
-
-
-
-
 #### 25.24 Этап 8: CreatureTimedAI ✅
 
 **Файл:** `Assets/Scripts/Creatures/Components/CreatureTimedAI.cs`.
@@ -1436,6 +1431,32 @@ _currentAttackTarget.Combat.NotifyAttackedBy(_creature);
   `StartTamedWandering`, `IdleTamed`, `ResetWanderState`, `HandleFlee`, `HandleNeutral`,
   `HandleAttackOwnerTarget`, `FOLLOW_DIST_*`, `FOLLOW_CHASE_EXTRA`.
 - `CreatureCommands.SetTamedWandering` → `_creature.TimedAI.ResetWanderState()`.
+
+
+#### 26 Система оседлания (Creature Riding)
+
+Реализована полноценная механика оседлания прирученных существ (ARK-style).
+
+**Новые компоненты:**
+- `CreatureRiding` (`Assets/Scripts/Creatures/Components/CreatureRiding.cs`) — на существе:
+  - `IsRidden`, `Mount(PlayerController)`, `Dismount()`, `ForceDismount()`.
+  - `TickRidden(...)` — прямое управление скоростью и поворотом.
+  - Отключает `Agent.updateRotation` во время езды (чтобы `A/D/S` не крутили существо).
+- `RidingController` (`Assets/Scripts/Player/RidingController.cs`) — на игроке:
+  - Переприцеп игрока к `riderAttachPoint` (с компенсацией scale).
+  - Принудительное спешивание при выходе (`OnApplicationQuit/Pause/Focus/Destroy`).
+
+**Правки в других системах:**
+- `CreatureData`: поля `canBeRidden`, `rideSpeed`, `rideSprintSpeed`, `turnSpeed`.
+- `Creature`: блокировка AI при `IsRidden`, геттеры `RideSpeed`, `TurnSpeed`, вызов `TickRidden`.
+- `PlayerController`: `IsMounted`, `SetMounted(bool)` (отключает `CharacterController` и анимацию), `RidingController`.
+- `PlayerInteraction`: универсальное `E` (спешивание/отпускание трупа без цели), скрытие UI-подсказок в этих состояниях.
+- `CreatureKnockout`, `CreatureDeath`, `PlayerSurvivalSystem`: принудительное спешивание при нокауте/смерти.
+- Аниматор: параметры `IsRiding`, `Mounting`, `Dismounting`.
+
+**Известные особенности:**
+- `E` работает без наведения на цель (по флагу `IsMounted` или `_currentlyDraggingCorpse`).
+- Селфи-камера не вращает существо (`look = Vector2.zero` в `TickRidden`).
 
 
 ## TODO
@@ -1595,7 +1616,7 @@ MainMenu (Scene)
 GameWorld (Scene)
 │
 ├── [GameAssets]                                       ← корневой, DontDestroyOnLoad
-│   ├── GameAssets (Script)                            ← при Awake видит Instance != null → удаляет себя
+│   ├── 📦GameAssets (Script)                            ← при Awake видит Instance != null → удаляет себя
 │   ├── LoadingScreenManager (Script)                  ← удаляется вместе с GameObject
 │   ├── AudioManager (Script)                          ← удаляется
 │   ├── LanguageManager (Script)                       ← удаляется
@@ -1603,20 +1624,20 @@ GameWorld (Scene)
 │   # Если игра стартует с GameWorld напрямую — этот [GameAssets] становится primary (DontDestroyOnLoad),
 │   # и удаляется только [GameAssets] из MainMenu (если он там есть при повторной загрузке).
 │
-├── ===WorldManagers=== (GameObject)                   ← сценовый, умирает со сценой
+├── 🏁WorldManagers (GameObject)                   ← сценовый, умирает со сценой
 │   └── WorldBootstrap (Script)
 │         ├── _chunkSize: 32
 │         ├── _loadRadiusInChunks: 2
 │         ├── _saveInterval: 5
 │         └── (в Start → корутина: ждёт GameAssets, создаёт CorpseManager/LootBagManager/TamingManager/WorldManager)
 │
-│   ── компоненты, добавляемые на ===WorldManagers=== через AddComponent: ──
+│   ── компоненты, добавляемые на 🏁WorldManagers через AddComponent: ──
 │       ├── CorpseManager
 │       ├── LootBagManager
 │       ├── TamingManager
 │       └── WorldManager
 │
-├── ===GameManagers=== (GameObject)                    ← сценовый
+├── 🧠GameManagers (GameObject)                    ← сценовый
 │   ├── HUDManager (Script)
 │   ├── UIManager (Script)
 │   ├── PauseManager (Script)
@@ -1631,11 +1652,11 @@ GameWorld (Scene)
 │   ├── EntityInfoPanelManager (Script)
 │   └── DamageNumberPool (Script)
 │
-├── ===InventoryManager=== (GameObject)                ← сценовый
+├── 🎒InventoryManager (GameObject)                ← сценовый
 │   ├── InventoryManager (Script)
 │   └── ChestUIManager (Script)
 │
-├── ===PanelsController=== (GameObject)                ← сценовый
+├── 📟PanelsController (GameObject)                ← сценовый
 │   └── PanelsUIController (Script)
 │
 ├── ---Player--- (GameObject, Tag: Player, Layer: Player)
@@ -1664,7 +1685,7 @@ GameWorld (Scene)
 │   ├── EyeCenterForCamera (child)
 │   └── CinemachineCameraTarget (child)
 │
-├── Cameras (GameObject)
+├── 📽️Cameras (GameObject)
 │   ├── Directional Light
 │   ├── MainCamera (Tag: MainCamera)
 │   ├── ThirdPersonPlayerFollowCamera
@@ -1675,7 +1696,7 @@ GameWorld (Scene)
 │   ├── PlayerHurtVolume
 │   └── CharacterPreviewCamera
 │
-├── UICanvases (GameObject)
+├── 🖼️UICanvases (GameObject)
 │   ├── InventoryCanvas
 │   ├── InteractionCanvas
 │   ├── AimCanvas

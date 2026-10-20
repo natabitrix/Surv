@@ -37,6 +37,9 @@ namespace Assets.Scripts.Creatures.Components
                 return;
             }
 
+            if (_creature.Riding != null && _creature.Riding.IsRidden)
+                _creature.Riding.ForceDismount();
+
             _creature.knockedOut = true;
 
             SetBodyRagdoll(false);

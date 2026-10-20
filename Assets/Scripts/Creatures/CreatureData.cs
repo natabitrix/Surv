@@ -158,6 +158,11 @@ namespace Assets.Scripts.Creatures
 
         [Tooltip("AttackOwnerTarget: радиус от игрока, где работает поведение.")]
         public float tamedAttackOwnerRadius = 30f;
-        
+
+        [Header("Riding Movement")]
+        public float rideSpeed = 4f;
+        public float rideSprintSpeed = 8f;
+        public float turnSpeed = 3f;
+
     }
 }

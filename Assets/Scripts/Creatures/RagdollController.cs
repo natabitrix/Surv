@@ -186,21 +186,6 @@ namespace Assets.Scripts.Creatures
             }
         }
 
-
-        // public void WakeAllRigidbodies()
-        // {
-        //     foreach (var part in ragdollSettings.ragdollParts)
-        //     {
-        //         var rb = part.GetComponent<Rigidbody>();
-        //         if (rb != null)
-        //         {
-        //             rb.isKinematic = false;
-        //             rb.WakeUp();
-        //             // Убрали случайный импульс
-        //         }
-        //     }
-        // }
-
         public void ResetVelocities()
         {
             if (ragdollSettings?.ragdollParts == null) return;

@@ -38,12 +38,12 @@ namespace Assets.Scripts.UI
         [SerializeField] private Image _tamingFill;
         [SerializeField] private TextMeshProUGUI _tamingText;
 
-        private BaseLivingEntity _target;
+        private Creature _target;
 
         /// <summary>
         /// Показать панель для указанной цели.
         /// </summary>
-        public void Show(BaseLivingEntity target)
+        public void Show(Creature target)
         {
             _target = target;
 
@@ -95,7 +95,21 @@ namespace Assets.Scripts.UI
             // === Поведение ===
             if (_behaviorText != null)
             {
-                _behaviorText.text = (_target.tamed) ? $"Поведение: {_target.GetBehaviorText()}" : "";
+                if (_target.tamed)
+                {
+                    _behaviorText.text = $"Поведение: {_target.GetBehaviorText()}";
+
+                    string state;
+                    if(_target.tamedFollowing) state = "Следует";
+                    else if(_target.tamedWandering) state = "Гуляет";
+                    else state = "Стоит";
+
+                    _behaviorText.text += $". {state}";
+                }
+                else
+                {
+                    _behaviorText.text = "";
+                }
             }
 
             // === Health ===
@@ -135,12 +149,12 @@ namespace Assets.Scripts.UI
                 float progressNorm = progress / 100f;
                 if (_tamingFill != null) _tamingFill.fillAmount = progressNorm;
                 if (_tamingText != null) _tamingText.text = $"Taming: {Mathf.RoundToInt(progress)}%";
-            } 
+            }
         }
 
         public string GetStatusText(BaseLivingEntity entity)
         {
-            
+
             if (entity.tamed) return "Tamed";
             if (entity.tamableKO && entity.tamablePassive) return "Wild · Tamable (KO / Passive)";
             if (entity.tamableKO) return "Wild · Tamable (KO)";
