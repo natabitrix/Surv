@@ -109,7 +109,8 @@ namespace Assets.Scripts.Creatures.Components
 
             NotificationManager.Instance?.ShowTopNote(
                 NotificationType.TameComplete,
-                $"{_creature.GetDisplayName()} приручен!"
+                $"{_creature.GetDisplayName()} приручен!",
+                playSound: true
             );
 
             Debug.Log($"[{_creature.gameObject.name}] Приручение завершено!");

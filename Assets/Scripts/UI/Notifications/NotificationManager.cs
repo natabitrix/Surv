@@ -130,13 +130,14 @@ namespace Assets.Scripts.UI.Notifications
         //         StartCoroutine(HideAfterDelay(noteTopUI, duration));
         // }
 
-        public void ShowTopNote(NotificationType type, string text, bool autoHide = true, float duration = 5f)
+        public void ShowTopNote(NotificationType type, string text, bool autoHide = true, float duration = 5f, bool playSound = true)
         {
             noteTopUI.SetActive(true);
 
             SetNoteText(text, noteTopUI);
 
-            PlayNotificationSound(type);
+            if (playSound)
+                PlayNotificationSound(type);
 
             // Автоскрытие через duration
             if (autoHide)

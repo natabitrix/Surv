@@ -134,7 +134,7 @@ namespace Assets.Scripts.Core
             while (_playerController == null)
                 yield return null;
 
-            ShowLevelUpNote();
+            ShowLevelUpNote(playSound: false);
             OnPlayerLoaded?.Invoke();
         }
 
@@ -315,13 +315,14 @@ namespace Assets.Scripts.Core
             return RATE;
         }
 
-        public void ShowLevelUpNote()
+        public void ShowLevelUpNote(bool playSound = true)
         {
             if (StatPointsAvailable > 0)
             {
                 NotificationManager.Instance.ShowTopNote(
                     NotificationType.LevelUp,
-                    "Доступно повышение уровня! Откройте свой инвентарь."
+                    "Доступно повышение уровня! Откройте свой инвентарь.",
+                    playSound: playSound
                 );
             }
             else
@@ -355,12 +356,34 @@ namespace Assets.Scripts.Core
             return _statLevels.TryGetValue(stat, out int level) ? level : 0;
         }
 
+        // public void AddExperience(int amount)
+        // {
+        //     if (amount <= 0) return;
+
+        //     _experience += amount;
+
+        //     Save("PlayerProgress.AddExperience");
+
+        //     ShowLevelUpNote(playSound: true);
+
+        //     OnProgressChanged?.Invoke();
+        // }
+
         public void AddExperience(int amount)
         {
             if (amount <= 0) return;
+
+            int levelBefore = _level + StatPointsAvailable;   // потенциальный уровень до
             _experience += amount;
+            int levelAfter = _level + StatPointsAvailable;    // потенциальный уровень после
+
             Save("PlayerProgress.AddExperience");
-            ShowLevelUpNote();
+
+            if (levelAfter > levelBefore)
+                ShowLevelUpNote(playSound: true);   // реальное повышение — со звуком
+            else
+                ShowLevelUpNote(playSound: false);  // просто обновить ноту без звука
+
             OnProgressChanged?.Invoke();
         }
 
@@ -408,7 +431,8 @@ namespace Assets.Scripts.Core
                 NotificationType.LevelUp,
                 $"Улучшен {stat}. Новый уровень: {_level}, Энграмм: {_engramPoints}",
                 true,
-                10f
+                10f,
+                playSound: false
             );
 
             OnProgressChanged?.Invoke();
