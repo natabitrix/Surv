@@ -370,6 +370,15 @@ public partial class @MyInputActions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""RadialMenu"",
+                    ""type"": ""Button"",
+                    ""id"": ""733118fa-a5eb-4737-afb0-b24f648191a1"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -999,6 +1008,17 @@ public partial class @MyInputActions: IInputActionCollection2, IDisposable
                     ""action"": ""Hotbar10"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""f925c421-0288-403c-884f-29ba13ab6b09"",
+                    ""path"": ""<Keyboard>/t"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""RadialMenu"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         },
@@ -1626,6 +1646,7 @@ public partial class @MyInputActions: IInputActionCollection2, IDisposable
         m_Player_Hotbar8 = m_Player.FindAction("Hotbar8", throwIfNotFound: true);
         m_Player_Hotbar9 = m_Player.FindAction("Hotbar9", throwIfNotFound: true);
         m_Player_Hotbar10 = m_Player.FindAction("Hotbar10", throwIfNotFound: true);
+        m_Player_RadialMenu = m_Player.FindAction("RadialMenu", throwIfNotFound: true);
         // UI
         m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
         m_UI_Navigate = m_UI.FindAction("Navigate", throwIfNotFound: true);
@@ -1750,6 +1771,7 @@ public partial class @MyInputActions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_Hotbar8;
     private readonly InputAction m_Player_Hotbar9;
     private readonly InputAction m_Player_Hotbar10;
+    private readonly InputAction m_Player_RadialMenu;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -1886,6 +1908,10 @@ public partial class @MyInputActions: IInputActionCollection2, IDisposable
         /// </summary>
         public InputAction @Hotbar10 => m_Wrapper.m_Player_Hotbar10;
         /// <summary>
+        /// Provides access to the underlying input action "Player/RadialMenu".
+        /// </summary>
+        public InputAction @RadialMenu => m_Wrapper.m_Player_RadialMenu;
+        /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
         public InputActionMap Get() { return m_Wrapper.m_Player; }
@@ -2004,6 +2030,9 @@ public partial class @MyInputActions: IInputActionCollection2, IDisposable
             @Hotbar10.started += instance.OnHotbar10;
             @Hotbar10.performed += instance.OnHotbar10;
             @Hotbar10.canceled += instance.OnHotbar10;
+            @RadialMenu.started += instance.OnRadialMenu;
+            @RadialMenu.performed += instance.OnRadialMenu;
+            @RadialMenu.canceled += instance.OnRadialMenu;
         }
 
         /// <summary>
@@ -2108,6 +2137,9 @@ public partial class @MyInputActions: IInputActionCollection2, IDisposable
             @Hotbar10.started -= instance.OnHotbar10;
             @Hotbar10.performed -= instance.OnHotbar10;
             @Hotbar10.canceled -= instance.OnHotbar10;
+            @RadialMenu.started -= instance.OnRadialMenu;
+            @RadialMenu.performed -= instance.OnRadialMenu;
+            @RadialMenu.canceled -= instance.OnRadialMenu;
         }
 
         /// <summary>
@@ -2625,6 +2657,13 @@ public partial class @MyInputActions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnHotbar10(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "RadialMenu" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnRadialMenu(InputAction.CallbackContext context);
     }
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "UI" which allows adding and removing callbacks.

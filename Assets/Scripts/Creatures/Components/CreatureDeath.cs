@@ -150,7 +150,10 @@ namespace Assets.Scripts.Creatures.Components
                     "world",
                     creatureId
                 );
+                
+                CorpseManager.Instance.RemoveAliveComponentsFromCreatureCorpse(_creature.gameObject);
             }
+
         }
 
         private void SetLayerRecursively(GameObject obj, int layer)

@@ -299,21 +299,7 @@ namespace Assets.Scripts.Corpses
             // Отключаем живые компоненты для существ
             if (data.corpseType == "CreatureCorpse")
             {
-                if (corpseGO.TryGetComponent<Creature>(out var creature)) creature.enabled = false; // можем обращаться к полям и методам Creature
-                // if (corpseGO.TryGetComponent<Creature>(out var creature)) Destroy(creature); // не конфликтуем с Creature, например меню
-                if (corpseGO.TryGetComponent<NavMeshAgent>(out var agent)) Destroy(agent);
-                // if (corpseGO.TryGetComponent<Animator>(out var anim)) anim.enabled = false;
-                if (corpseGO.TryGetComponent<Animator>(out var anim)) Destroy(anim);
-
-                if (corpseGO.TryGetComponent<CreatureCombat>(out var creatureCombat)) Destroy(creatureCombat);
-                if (corpseGO.TryGetComponent<CreatureDeath>(out var creatureDeath)) Destroy(creatureDeath);
-                if (corpseGO.TryGetComponent<CreatureKnockout>(out var creatureKnockout)) Destroy(creatureKnockout);
-                if (corpseGO.TryGetComponent<CreatureTaming>(out var creatureTaming)) Destroy(creatureTaming);
-                if (corpseGO.TryGetComponent<CreatureCommands>(out var creatureCommands)) Destroy(creatureCommands);
-                if (corpseGO.TryGetComponent<CreatureAudio>(out var creatureAudio)) Destroy(creatureAudio);
-                if (corpseGO.TryGetComponent<CreatureWildAI>(out var creatureWildAI)) Destroy(creatureWildAI);
-                if (corpseGO.TryGetComponent<CreatureTamedAI>(out var creatureTamedAI)) Destroy(creatureTamedAI);
-                if (corpseGO.TryGetComponent<CreatureRiding>(out var creatureRiding)) Destroy(creatureRiding);
+                RemoveAliveComponentsFromCreatureCorpse(corpseGO);
             }
 
             // Устанавливаем слой Corpse для восстановленного трупа,
@@ -372,6 +358,25 @@ namespace Assets.Scripts.Corpses
             obj.layer = layer;
             foreach (Transform child in obj.transform)
                 SetLayerRecursively(child.gameObject, layer);
+        }
+
+        public void RemoveAliveComponentsFromCreatureCorpse(GameObject corpseGO)
+        {
+            if (corpseGO.TryGetComponent<Creature>(out var creature)) creature.enabled = false; // можем обращаться к полям и методам Creature
+            // if (corpseGO.TryGetComponent<Creature>(out var creature)) Destroy(creature); // не конфликтуем с Creature, например меню
+            if (corpseGO.TryGetComponent<NavMeshAgent>(out var agent)) Destroy(agent);
+            // if (corpseGO.TryGetComponent<Animator>(out var anim)) anim.enabled = false;
+            if (corpseGO.TryGetComponent<Animator>(out var anim)) Destroy(anim);
+
+            if (corpseGO.TryGetComponent<CreatureCombat>(out var creatureCombat)) Destroy(creatureCombat);
+            if (corpseGO.TryGetComponent<CreatureDeath>(out var creatureDeath)) Destroy(creatureDeath);
+            if (corpseGO.TryGetComponent<CreatureKnockout>(out var creatureKnockout)) Destroy(creatureKnockout);
+            if (corpseGO.TryGetComponent<CreatureTaming>(out var creatureTaming)) Destroy(creatureTaming);
+            if (corpseGO.TryGetComponent<CreatureCommands>(out var creatureCommands)) Destroy(creatureCommands);
+            if (corpseGO.TryGetComponent<CreatureAudio>(out var creatureAudio)) Destroy(creatureAudio);
+            if (corpseGO.TryGetComponent<CreatureWildAI>(out var creatureWildAI)) Destroy(creatureWildAI);
+            if (corpseGO.TryGetComponent<CreatureTamedAI>(out var creatureTamedAI)) Destroy(creatureTamedAI);
+            if (corpseGO.TryGetComponent<CreatureRiding>(out var creatureRiding)) Destroy(creatureRiding);
         }
 
         // ==========================================

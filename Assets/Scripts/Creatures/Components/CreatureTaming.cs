@@ -39,6 +39,16 @@ namespace Assets.Scripts.Creatures.Components
                     ? _creature.Data.foodDrainRateKnockedOut
                     : _creature.Data.foodDrainRateTamed;
 
+                if (_creature.tamed)
+                {
+                    float damaged = _creature.GetMaxHealth() - _creature.Health;
+                    if (damaged > 0 && _creature.GetMaxHealth() > 0)
+                    {
+                        float d = _creature.Health / _creature.GetMaxHealth();
+                        drain += d;
+                    }
+
+                }
                 TickFood(drain);
 
                 if (ShouldEat()) TryEatFood();
@@ -188,8 +198,8 @@ namespace Assets.Scripts.Creatures.Components
         {
             var inv = _creature.Interactable.GetInventory();
 
-            if (inv == null) {Debug.Log("[TryEatFood]: inv = null"); return false;}
-            if (inv?.Data == null) {Debug.Log("[TryEatFood]: inv.Data = null"); return false;}
+            if (inv == null) { Debug.Log("[TryEatFood]: inv = null"); return false; }
+            if (inv?.Data == null) { Debug.Log("[TryEatFood]: inv.Data = null"); return false; }
 
             if (_creature.Data.tamingFoodPreferences == null ||
                 _creature.Data.tamingFoodPreferences.Length == 0) return false;
@@ -208,7 +218,6 @@ namespace Assets.Scripts.Creatures.Components
 
                     float recovery = eaten.foodRecoveryAmount > 0f ? eaten.foodRecoveryAmount : 10f;
                     AddFood(recovery);
-                    _creature.Heal(recovery);
 
                     if (!_creature.tamed)
                     {

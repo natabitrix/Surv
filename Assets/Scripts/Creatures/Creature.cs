@@ -72,7 +72,6 @@ namespace Assets.Scripts.Creatures
         // Событие
         public System.Action<Creature> OnDeath; // Раньше было Action<BaseLivingEntity>, меняем на Creature
 
-        // --- Методы из BaseLivingEntity ---
 
         public bool IsDead() => _isDead;
         public float GetHealth() => health;

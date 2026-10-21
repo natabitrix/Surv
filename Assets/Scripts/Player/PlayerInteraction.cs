@@ -74,7 +74,7 @@ namespace Assets.Scripts.Player
         private float _interactionHoldTimer = 0f;
         private bool _radialMenuOpenedThisHold = false;
         // private float _ignoreStopUntilTime = 0f;
-        private bool _isMenuInteraction = false;
+        // private bool _isMenuInteraction = false;
 
         private Animator _playerAnimator;
         private Transform _playerHead;
@@ -122,11 +122,19 @@ namespace Assets.Scripts.Player
 
         private void Update()
         {
-            _isMenuInteraction = _panelsController != null && _panelsController.IsRadialMenuOpened();
-            PerformInteractionRaycast();
-            UpdateInteractionUI();
-            HandleHoldLogic();
-            CheckCorpsePhysicsState();
+            // _isMenuInteraction = _panelsController != null && _panelsController.IsRadialMenuOpened();
+
+            // В инвентаре/паузе не сканируем мир
+            bool isInventoryOpened = _panelsController != null && _panelsController.IsInventoryOpened();
+            bool isPauseOpened = _pauseManager != null && _pauseManager.IsPauseOpened();
+
+            if (!isInventoryOpened && !isPauseOpened)
+            {
+                PerformInteractionRaycast();
+                UpdateInteractionUI();
+                HandleHoldLogic();
+                CheckCorpsePhysicsState();
+            }
         }
 
         private void HandleHoldLogic()
@@ -165,9 +173,13 @@ namespace Assets.Scripts.Player
         // Зажимаем E
         private void HandleInteractStarted()
         {
+            // В инвентаре мир не трогаем
+            if (_panelsController != null && _panelsController.IsInventoryOpened())
+                return;
             _isInteractHeld = true;
             _interactionHoldTimer = 0f;
             _radialMenuOpenedThisHold = false;
+
         }
 
         // Держим E
@@ -182,6 +194,17 @@ namespace Assets.Scripts.Player
 
             // Если это был принудительный сброс (клик по меню) — игнорируем
             if (_input.IsForceReset) return;
+
+            // в инвентаре мир не трогаем
+            if (_panelsController != null && _panelsController.IsInventoryOpened())
+                return;
+
+            if (_radialMenuOpenedThisHold)
+            {
+                _radialMenuOpenedThisHold = false;
+                HandleMenuClosed();
+                return;
+            }
 
             // 1. Тащим труп — отпускаем (без цели)
             if (_currentlyDraggingCorpse != null)
@@ -201,6 +224,7 @@ namespace Assets.Scripts.Player
                 HandleMenuClosed();
                 _interactionHoldTimer = 0f;
                 _radialMenuOpenedThisHold = false;
+                // _input?.ForceResetInteract();
                 return;
             }
 

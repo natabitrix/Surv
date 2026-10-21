@@ -1479,7 +1479,16 @@ _currentAttackTarget.Combat.NotifyAttackedBy(_creature);
 - Инвентарь существ теперь хранится в `CreatureInteractable` (`GetInventory()`, `SetInventory()`).
 - Урон и звуки ударов обрабатываются в `CreatureInteractable` (на нем висит `IImpactSoundProvider`).
 
+- **E в инвентаре не трогает мир.** `PlayerInteraction.HandleInteractStarted/Ended`
+  в начале проверяют `PanelsUIController.IsInventoryOpened()` и выходят.
+  Иначе отпускание E в инвентаре при существе рядом вызывало оседлание.
 
+
+
+
+
+
+  
 ## TODO
 
 ### Ближайшее (Следующий шаг)
