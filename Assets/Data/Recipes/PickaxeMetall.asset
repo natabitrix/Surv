@@ -19,7 +19,7 @@ MonoBehaviour:
   craftedAmount: 1
   requiredLevel: 5
   engramPointsCost: 10
-  experienceReward: 10
+  experienceReward: 200
   ingredients:
   - item: {fileID: 11400000, guid: 711784597c887ec488d4c7417899ae02, type: 2}
     amount: 10

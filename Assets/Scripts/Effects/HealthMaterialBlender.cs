@@ -26,6 +26,7 @@ public class HealthMaterialBlender : MonoBehaviour
     {
         _entity = GetComponent<Creature>();
         if(_entity == null) return;
+
         if (targetRenderer == null) targetRenderer = GetComponent<Renderer>();
 
         _block = new MaterialPropertyBlock();
@@ -42,6 +43,7 @@ public class HealthMaterialBlender : MonoBehaviour
     private void Update()
     {
         if(_entity == null) return;
+
         if (Time.time < _nextCheckTime) return;
         _nextCheckTime = Time.time + checkInterval;
 
@@ -56,7 +58,6 @@ public class HealthMaterialBlender : MonoBehaviour
         {
             _lastRatio = ratio;
             float blend = 1f - ratio; // 🔥 Прямая линейная зависимость
-
             _block.SetFloat(_blendID, blend);
             targetRenderer.SetPropertyBlock(_block);
         }

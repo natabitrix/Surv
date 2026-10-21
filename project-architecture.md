@@ -784,11 +784,17 @@ Screen Space всплывающие числа урона над точкой у
   - `Physics.SyncTransforms()` после сброса.
   - Это устраняет дёргание и разлёт.
 
+- **HealthMaterialBlender на трупах.** При загрузке трупа из сохранения
+  `CorpseManager.RemoveAliveComponentsFromCreatureCorpse` выставляет
+  `creature.Health = 0f`. Иначе `Creature.Awake` оставлял `health = maxHealth`,
+  и `HealthMaterialBlender.Update` считал `ratio = 1`, `blend = 0` —
+  труп выглядел как живой. Для живых существ `Health` не трогается.
+
 - **`CreateCorpse` вызывается напрямую из `Die()`**, не через `OnDeathAnimationFinished`.
 
 - **Известные особенности**:
   - «Щелчок» из позы смерти в T-позу при включённой анимации смерти — неизбежен. Поэтому анимация смерти **отключена**.
-  - Труп — отдельный объект, не тот же самый. Ссылки на убитого робота инвалидируются (`Destroy`).
+
 
 ### 19. Приручение (Taming) и сохранение существ
 
@@ -1488,7 +1494,7 @@ _currentAttackTarget.Combat.NotifyAttackedBy(_creature);
 
 
 
-  
+
 ## TODO
 
 ### Ближайшее (Следующий шаг)
