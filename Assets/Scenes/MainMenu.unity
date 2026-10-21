@@ -1186,7 +1186,7 @@ GameObject:
   - component: {fileID: 210022754}
   - component: {fileID: 210022753}
   m_Layer: 0
-  m_Name: ===GameAssets===
+  m_Name: "\U0001F4E6GameAssets"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1258,6 +1258,8 @@ MonoBehaviour:
   _recipeDatabase: {fileID: 11400000, guid: 08b9e5f407896124eafc5f3473a57a93, type: 2}
   _playerCorpsePrefab: {fileID: 7881994360618582535, guid: 5b8c8f421cdca80479a335e16589a204, type: 3}
   _lootBagPrefab: {fileID: 4309089054926544229, guid: 27ea0d0c5535c3d47a83045f2d6eeb8a, type: 3}
+  _notificationSoundConfig: {fileID: 0}
+  _radialMenuGlobalConfig: {fileID: 0}
 --- !u!4 &210022757
 Transform:
   m_ObjectHideFlags: 0

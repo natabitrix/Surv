@@ -82,4 +82,4 @@ MonoBehaviour:
   tamedAttackOwnerRadius: 30
   rideSpeed: 4
   rideSprintSpeed: 10
-  turnSpeed: 3
+  turnSpeed: 1

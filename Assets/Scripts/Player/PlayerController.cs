@@ -72,11 +72,6 @@ namespace Assets.Scripts.Player
             if (_animator != null)
             {
                 _animator.SetBool(_animIDIsRiding, mounted);
-
-                // if (mounted)
-                //     _animator.SetTrigger("Mounting"); // Если настроишь триггер прыжка
-                // else
-                //     _animator.SetTrigger("Dismounting");
             }
         }
 
@@ -400,9 +395,10 @@ namespace Assets.Scripts.Player
                     }
 
                     // if (!_isMoving)
-                    // {
-                    _animator.SetTrigger(animToPlay);
-                    // }
+                    if (!buildMode.IsActive())
+                    {
+                        _animator.SetTrigger(animToPlay);
+                    }
                 }
                 // _input.ResetAttack();
             }

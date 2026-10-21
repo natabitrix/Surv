@@ -71,3 +71,4 @@
 - [x] Damage numbers (pool).
 - [x] CreatureHitZone (крит/броня).
 - [x] PlayerDamageFeedback (тряска + звук + вспышка).
+- [x] Оптимизация рендера: починены LOD-переходы, отключены тени на дальних LOD'ах (скрипт TreeOptimizer.cs), нагрузка на GPU снижена с 10.8ms до 4.0ms.

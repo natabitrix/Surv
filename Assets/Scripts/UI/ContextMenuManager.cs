@@ -100,7 +100,8 @@ namespace Assets.Scripts.UI
             // Добавление кнопок
             if (_currentItem != null)
             {
-                AddButton("Использовать", OnUseClicked);
+                string useButton = (_currentItem.itemType == ItemType.Placeable) ? "Разместить" : "Использовать";
+                AddButton(useButton, OnUseClicked);
                 AddButton("Выбросить", OnDropClicked);
                 if (_currentItem.hasDurability) AddButton("Ремонтировать", OnRepairClicked);
             }

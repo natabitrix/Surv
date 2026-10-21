@@ -27,7 +27,6 @@ namespace Assets.Scripts.Loot
         private ItemDatabase _itemDatabase;
         private GameSettings _gameSettings;
 
-        public GameObject lootBagPrefab => _lootBagPrefab;
 
         private Dictionary<string, GameObject> _loadedLootBags = new();
         private string _saveDirectory;
@@ -82,14 +81,14 @@ namespace Assets.Scripts.Loot
                 return null;
             }
 
-            if (lootBagPrefab == null)
+            if (_lootBagPrefab == null)
             {
                 Debug.LogError("[LootBagManager] lootBagPrefab не назначен! Сумка не создана.");
                 return null;
             }
 
             // Создаем GameObject сумки
-            GameObject bagGO = Instantiate(lootBagPrefab, position, Quaternion.identity);
+            GameObject bagGO = Instantiate(_lootBagPrefab, position, Quaternion.identity);
             bagGO.name = $"LootBag_Dropped";
 
             // Создаем инвентарь для сумки
@@ -289,7 +288,7 @@ namespace Assets.Scripts.Loot
         {
             if (_loadedLootBags.ContainsKey(data.instanceId)) return;
 
-            if (lootBagPrefab == null)
+            if (_lootBagPrefab == null)
             {
                 Debug.LogError("[LootBagManager] lootBagPrefab не назначен!");
                 return;
@@ -298,7 +297,7 @@ namespace Assets.Scripts.Loot
             Vector3 position = new Vector3(data.posX, data.posY, data.posZ);
             Quaternion rotation = new Quaternion(data.rotX, data.rotY, data.rotZ, data.rotW);
 
-            GameObject lootBagGO = Instantiate(lootBagPrefab, position, rotation);
+            GameObject lootBagGO = Instantiate(_lootBagPrefab, position, rotation);
             lootBagGO.name = $"LootBag_{data.instanceId.Substring(0, 8)}";
 
             var lootBag = lootBagGO.GetComponent<LootBag>();

@@ -122,7 +122,6 @@ namespace Assets.Scripts.Player
 
         private void Update()
         {
-            // _isMenuInteraction = _panelsController != null && _panelsController.IsRadialMenuOpened();
 
             // В инвентаре/паузе не сканируем мир
             bool isInventoryOpened = _panelsController != null && _panelsController.IsInventoryOpened();
@@ -165,8 +164,6 @@ namespace Assets.Scripts.Player
             if (_panelsController != null)
             {
                 _panelsController.CloseRadialMenu();
-                // Игнорируем вызов OnInteractStopPressed в течение 0.1 секунды после закрытия меню
-                // _ignoreStopUntilTime = Time.time + 0.1f;
             }
         }
 
@@ -217,7 +214,7 @@ namespace Assets.Scripts.Player
             }
 
             // 2. Верхом — спешиваемся (без цели)
-            if (_playerController != null && _playerController.IsMounted) // && !isInventoryOpened
+            if (_playerController != null && _playerController.IsMounted)
             {
                 var mount = _playerController.RidingController?.CurrentMount;
                 if (mount != null) mount.ForceDismount();
@@ -241,7 +238,6 @@ namespace Assets.Scripts.Player
                         && interactable.Creature.tamed
                         && interactable.Creature.Riding != null
                         && !interactable.Creature.Riding.IsRidden
-                        //&& !isInventoryOpened
                         )
                     {
                         interactable.Creature.Riding.Mount(_playerController);
@@ -346,9 +342,6 @@ namespace Assets.Scripts.Player
                         break;
                     }
                 }
-
-                // if (target == null)
-                //     target = _allTargets[0];
             }
 
 
@@ -400,70 +393,6 @@ namespace Assets.Scripts.Player
                     return;
                 }
             }
-        }
-
-        private bool IsVisibleByCamera(GameObject target, float maxDistance)
-        {
-            if (target == null || _playerCamera == null) return false;
-
-            float dist = Vector3.Distance(_playerHead.position, target.transform.position);
-            if (dist > maxDistance) return false;
-
-            Vector3 viewportPos = _playerCamera.WorldToViewportPoint(target.transform.position);
-
-            if (viewportPos.z <= 0) return false;
-
-            float edgeMargin = 0.05f;
-            if (viewportPos.x < -edgeMargin || viewportPos.x > 1 + edgeMargin ||
-                viewportPos.y < -edgeMargin || viewportPos.y > 1 + edgeMargin)
-            {
-                Plane[] planes = GeometryUtility.CalculateFrustumPlanes(_playerCamera);
-                Collider col = target.GetComponent<Collider>();
-
-                if (col != null && !GeometryUtility.TestPlanesAABB(planes, col.bounds))
-                {
-                    return false;
-                }
-                else if (col == null)
-                {
-                    return false;
-                }
-            }
-
-            Vector3 dir = target.transform.position - _playerHead.position;
-            if (Physics.Linecast(_playerHead.position, target.transform.position, out RaycastHit hit, _interactableLayers))
-            {
-                bool isPartOfTarget = false;
-
-                Transform t = hit.collider.transform;
-                while (t != null)
-                {
-                    if (t.gameObject == target)
-                    {
-                        isPartOfTarget = true;
-                        break;
-                    }
-                    t = t.parent;
-                }
-
-                if (!isPartOfTarget)
-                {
-                    t = target.transform;
-                    while (t != null)
-                    {
-                        if (t.gameObject == hit.collider.gameObject)
-                        {
-                            isPartOfTarget = true;
-                            break;
-                        }
-                        t = t.parent;
-                    }
-                }
-
-                if (!isPartOfTarget) return false;
-            }
-
-            return true;
         }
 
         private void PerformInteractionRaycast()
@@ -684,17 +613,6 @@ namespace Assets.Scripts.Player
                     }
                 }
             }
-        }
-
-        private void TryFindCreature(Collider collider)
-        {
-            if (_hitCreature != null) return;
-
-            var creature = collider.GetComponent<Creature>() ??
-                          collider.GetComponentInChildren<Creature>();
-
-            if (creature != null)
-                _hitCreature = creature;
         }
 
         public void OnAttackInteractFinished()
@@ -943,23 +861,11 @@ namespace Assets.Scripts.Player
                         return doorController.IsVisuallyOpen() ? "[E] Закрыть" + targetName : "[E] Открыть" + targetName;
                     }
 
-                    // var corpse = targetGO.GetComponent<Corpse>() ?? targetGO.GetComponentInParent<Corpse>();
-                    // if (corpse != null && corpse.enabled)
-                    // {
-                    //     return corpse.IsDragging ? "[E] Отпустить тело" + targetName : "[E] Тащить тело" + targetName;
-                    // }
-
                     if (targetGO.TryGetComponent(out Corpse corpse))
                     {
                         if (corpse.enabled)
                             return corpse.IsDragging ? "[E] Отпустить тело" + targetName : "[E] Тащить тело" + targetName;
                     }
-
-                    // var creature = targetGO.GetComponent<Creature>();
-                    // if (creature != null && creature.Data != null && creature.Data.canBeRidden && creature.tamed)
-                    // {
-                    //     return creature.Riding.IsRidden ? "[E] Спешиться" : "[E] Оседлать";
-                    // }
 
                     if (targetGO.TryGetComponent(out Creature creature))
                     {

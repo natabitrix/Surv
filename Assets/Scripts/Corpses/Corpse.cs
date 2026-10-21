@@ -70,7 +70,7 @@ namespace Assets.Scripts.Corpses
 
         [Header("Despawn Settings")]
         [SerializeField] private float _corpseDisappearTime = 300f;
-        [SerializeField] private GameObject _lootBagPrefab;
+        private GameObject _lootBagPrefab;
 
         [Header("Persistence")]
         public string InstanceId { get; set; }
@@ -108,6 +108,15 @@ namespace Assets.Scripts.Corpses
 
             if (shatterer == null) shatterer = GetComponent<Shatterer>();
             if (hitDecaler == null) hitDecaler = GetComponent<HitDecaler>();
+
+            var assets = GameAssets.Instance;
+            if (assets == null)
+            {
+                Debug.LogError("[Corpse] GameAssets.Instance == null!");
+                return;
+            }
+
+            _lootBagPrefab = assets.LootBagPrefab;
         }
 
         private void Start()

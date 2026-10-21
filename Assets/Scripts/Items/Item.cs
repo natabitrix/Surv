@@ -30,6 +30,7 @@ namespace Assets.Scripts.Items
 
         public GameObject model;
         public GameObject placeablePrefab; // для Placeable
+        
         public bool isLeftHand = false; // будет лежать в левой руке
 
         [Header("Item Type")]
