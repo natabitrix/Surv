@@ -662,13 +662,14 @@ namespace Assets.Scripts.Player
                 if (_hitCreature.IsAlive())
                 {
                     float damage = _playerController.GetAttackDamage();
-                    _hitCreature.TakeDamage(damage, this);
+                    _hitCreature.TakeDamage(damage, 0f, this, null, null, CombatMember.Player);
                 }
 
                 if (_hitCreature is IImpactSoundProvider provider)
                 {
                     hitImpactType = provider.GetImpactType();
                 }
+
                 hitPosition ??= _hitCreature.transform.position;
                 hitSomething = true;
                 _hitCreature = null;

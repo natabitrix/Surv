@@ -157,16 +157,29 @@
 
 ---
 
-## 8. Боевка существ
+## 8. Боевка существ (CreatureCombat) и Статы
 
-**Файлы:** `Creatures/Components/CreatureCombat.cs`, `Creatures/CreatureHitZone.cs`, `UI/DamageNumber*.cs`
+**Файлы:** `Creatures/Components/CreatureCombat.cs`, `Creatures/Creature.cs`, `Creatures/CreatureData.cs`, `Creatures/CreatureGlobalConfig.cs`, `UI/DamageNumber*.cs`
 
-**Инварианты:**
-- `CreatureCombat.TakeDamage` — принимает `PlayerInteraction` (может быть `null` для существо→существо), `hitCollider`, `hitPoint`.
-- Множитель зоны — `hitCollider.GetComponent<CreatureHitZone>()?.damageMultiplier ?? 1f`.
-- `LastAttacker` живёт 15 сек (`ATTACKER_MEMORY_DURATION`), потом `null`.
-- Дикие бьют **только** игрока и прирученных (`!tamed` фильтр в `FindWildTarget`).
-- `ResetAttackState` для дикого → `WildAI.SetState(Chase / Wander)`.
+**Архитектура данных:**
+- **`CreatureData`** (SO) — уникальные данные вида. Разбит на блоки:
+  - `BaseStats` (здоровье, стамина, макс. скорость, макс. урон и т.д.).
+  - `CombatProps` (радиус агрессии, дальность, кулдаун).
+  - `RiddenProps` (кулдаун атаки верхом).
+- **`CreatureGlobalConfig`** (SO, один на игру) — общие настройки для всех существ: наркотики, разрешения на добычу инструментами, радиусы блуждания и т.д. Ссылка лежит в `GameAssets`.
+- **`Creature.cs`** — геттеры вычисляют финальные статы (например, `RideSpeed` = `maxSpeed * 3`, `TamedAttackDamage` = `maxDamage * 10`). Это задел на будущую систему прокачки уровней.
+
+**Ключевые инварианты:**
+- **Атрибуция урона (`CombatMember`)**: Enum `Player`, `Wild`, `Tamed`, `Mounted`, `Other` передается в `TakeDamage` и `DamageNumberPool` для определения цвета цифры.
+  - Свой (Игрок, Прирученный, Верхом) по врагу = **Зеленый**.
+  - Дикий по своему (Игроку/Прирученному) = **Желтый**.
+  - Дикий по дикому = **урон не отображается** (скрыт в `DamageNumberPool`).
+- **Атака верхом**: В `DealDamageToTarget` проверяется `if (_creature.tamed && _creature.Riding.IsRidden)`. Если да — используется `OverlapBox` перед мордой и передается `CombatMember.Mounted`.
+- **Поиск целей (Targeting)**: В `FindWildTarget`, `FindNearestEnemy`, `FindEnemyNearPlayer` **обязательно** используется `hit.GetComponentInParent<Creature>()`. 
+  - *Ловушка:* `OverlapSphere` часто задевает коллайдеры костей (головы, ног). `GetComponent<Creature>()` вернет `null`, и ИИ проигнорирует цель.
+- **Ленивая инициализация `CreatureGlobalConfig`**: В `Creature.cs` свойство `Config` пытается получить `GameAssets.Instance.CreatureGlobalConfig` при первом обращении. Это защищает от `NullReferenceException`, если существо заспавнилось раньше, чем `GameAssets` (порядок `Awake` не гарантирован).
+- **Множитель зоны урона**: `hitCollider.GetComponent<CreatureHitZone>()?.damageMultiplier ?? 1f`.
+- **Память об атакующем**: `LastAttacker` живет 15 сек (`ATTACKER_MEMORY_DURATION`), потом `null`.
 - Цифры урона — Screen Space Overlay, всегда одного размера, не наклоняются.
 
 ---

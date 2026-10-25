@@ -2,88 +2,105 @@ using UnityEngine;
 using Assets.Scripts.Items;
 using Assets.Scripts.Corpses;
 using Assets.Scripts.Audio;
-using Assets.Scripts.InventorySystem;
 using Assets.Scripts.Loot;
-using Assets.Scripts.UI.RadialMenuUI;
 
 namespace Assets.Scripts.Creatures
 {
-    public enum CreatureBehaviorType
-    {
-        Passive,      // Не атакует, убегает
-        Aggressive,   // Атакует игрока
-        Skittish,     // Убегает при приближении
-        Territorial,  // Атакует, если игрок близко
-    }
+    public enum CreatureBehaviorType { Passive, Aggressive, Skittish, Territorial }
 
     [System.Serializable]
     public struct TamingFoodPreference
     {
         public Item food;
-        [Tooltip("Сколько процентов прогресса приручения дает одна единица этой еды.")]
         public float progressAmount;
     }
+
+    [System.Serializable]
+    public class BaseStats
+    {
+        public int level = 1;
+        public float maxHealth = 1000f;
+        public float maxStamina = 100f;
+        public float maxFood = 100f;
+        public float maxOxygen = 100f;
+        public float maxWeight = 100f;
+        public float maxSpeed = 2f;
+        public float maxDamage = 10f;
+        public float maxTorpor = 100f;
+    }
+
+    [System.Serializable]
+    public class CombatProps
+    {
+        public float aggressionRadius = 30f;
+        public float attackRange = 2f;
+        public float attackCooldown = 2f;
+    }
+
+    // [System.Serializable]
+    // public class WildProps
+    // {
+    // }
+
+    // [System.Serializable]
+    // public class TamedProps
+    // {
+
+    // }
+
+    [System.Serializable]
+    public class RiddenProps
+    {
+        public float rideAttackCooldown = 0.8f;
+    }
+
 
     [CreateAssetMenu(fileName = "Creature_", menuName = "Game/Creature Data")]
     public class CreatureData : ScriptableObject
     {
         [Header("Идентификация")]
-        [Tooltip("Уникальный ID (например, 'Raptor', 'Dodo'). Используется в сохранениях и мультиплеере.")]
         public string creatureId;
-
-        [Tooltip("Имя для UI")]
         public string displayName;
-
         public Sprite icon;
-
-        [TextArea(2, 4)]
-        public string description;
-
-        [Header("Префаб")]
-        [Tooltip("Единый префаб существа (используется и для живого, и для трупа)")]
+        // [TextArea(2, 4)] public string description;
         public GameObject prefab;
 
-        [Tooltip("Уровень существа. Для ARK-стиля — 1..150.")]
-        public int level = 1;
-
-        [Header("Статы")]
-        public float maxHealth = 100f;
-        public float maxStamina = 50f;
-        public float walkSpeed = 2f;
-        public float chaseSpeed = 5f;
-
-        [Header("Агрессия")]
-        public float aggressionRadius = 30f;
-        public float attackRange = 2f;
-        public float attackDamage = 10f;
-        public float attackCooldown = 2f;
-
-        [Header("Блуждание")]
-        public float wanderRange = 20f;
-        public float minWanderDelay = 2f;
-        public float maxWanderDelay = 5f;
-
-        [Header("Поведение")]
         public CreatureBehaviorType behaviorType = CreatureBehaviorType.Aggressive;
+
+        [Header("Базовые статы")]
+        public BaseStats baseStats = new();
+
+        [Header("Общая боевка")]
+        public CombatProps combatProps = new();
+
+        // [Header("Дикие: свойства")]
+        // public WildProps wildProps = new();
+
+        // [Header("Прирученные: свойства")]
+        // public TamedProps tamedProps = new();
+
+        [Header("Верхом: свойства")]
+        public RiddenProps riddenProps = new();
+
+        [Header("Приручение и Еда")]
         public bool tamable = false;
         public bool tamableKO = false;
         public bool tamablePassive = false;
 
-        [Header("Лут при убийстве (в инвентарь трупа)")]
-        public LootEntry[] inventoryLootTable;
+        public TamingFoodPreference[] tamingFoodPreferences;
 
-        [Header("Лут при разборе (ресурсы)")]
+        public float torporRecoveryRate = 1f;
+        public float foodDrainRateKnockedOut = 0.5f;
+        public float foodDrainRateTamed = 0.1f;
+        [Range(0f, 1f)] public float foodEatThresholdPercent = 0.5f;
+        public float starvationDamagePerSecond = 1f;
+
+        [Header("Лут и Добыча")]
+        public LootEntry[] inventoryLootTable;
         public Corpse.ResourceDrop[] harvestDrops;
         public int maxHarvestHits = 5;
-
-        [Header("Разрешения для добычи")]
-        public bool allowFists = false;
-        public bool allowAxe = true;
-        public bool allowPickaxe = true;
-        public bool allowSword = true;
-        public bool allowSickle = false;
-
-        [Header("Звуки")]
+ 
+        [Header("Звуки и Эффекты")]
         public AudioClip footstepClip;
         [Range(0, 1)] public float footstepVolume = 0.5f;
         public AudioClip attackClip;
@@ -92,77 +109,12 @@ namespace Assets.Scripts.Creatures
         [Range(0, 1)] public float takeDamageVolume = 0.5f;
         public AudioClip deathClip;
         [Range(0, 1)] public float deathVolume = 0.5f;
-
-        [Header("Эффекты")]
         public ParticleSystem damageEffect;
         public ImpactType impactType = ImpactType.Flesh;
 
-        [Header("Ограничения (опционально)")]
-        [Tooltip("Если > 0, переопределяет глобальное время жизни трупа. Если -1, используется глобальное.")]
-        public float corpseLifetimeOverride = -1f;
-
-        [Header("Приручение")]
-        [Tooltip("Массив предпочтений в еде для приручения.")]
-        public TamingFoodPreference[] tamingFoodPreferences;
-
-        [Tooltip("Предмет, который считается наркотиком для этого существа.")]
-        public Item narcoticItem;
-
-        [Tooltip("Сколько единиц торпора восстанавливает одна единица наркотика.")]
-        public float narcoticTorporAmount = 40f;
-        [Tooltip("Как быстро просыпается")]
-        public float torporRecoveryRate = 1f;
-
-        [Header("Food / Hunger")]
-        [Tooltip("Максимальный запас еды.")]
-        public float maxFood = 100f;
-
-        [Tooltip("Скорость падения еды в нокауте (единиц/сек). В ARK быстрее, чем у прирученного.")]
-        public float foodDrainRateKnockedOut = 0.5f;
-
-        [Tooltip("Скорость падения еды у прирученного (единиц/сек).")]
-        public float foodDrainRateTamed = 0.1f;
-
-        [Tooltip("Порог в процентах от максимума (0..1), ниже которого существо ест.")]
-        [Range(0f, 1f)] public float foodEatThresholdPercent = 0.5f;
-
-        [Tooltip("Сколько здоровья теряется в секунду, когда food == 0.")]
-        public float starvationDamagePerSecond = 1f;
-
-        // === Tamed AI ===
-        [Header("Tamed AI (после приручения)")]
-        [Tooltip("Радиус, в котором существо ищет врагов (при агрессивном поведении).")]
-        public float tamedAggroRadius = 15f;
-
-        [Tooltip("Радиус блуждания (команда 'Блуждать').")]
-        public float tamedWanderRadius = 10f;
-
-        [Tooltip("Скорость бега при следовании за игроком (если игрок далеко).")]
-        public float tamedFollowChaseSpeed = 5f;
-
-        [Tooltip("Можно ли подобрать существо (для мелких).")]
+        [Header("Ограничения")]
         public bool canBePickedUp = false;
-
-        [Tooltip("Можно ли оседлать существо.")]
         public bool canBeRidden = false;
-
-        [Header("Tamed AI (расширенные)")]
-        [Tooltip("Flee: максимальная дистанция убегания.")]
-        public float tamedFleeDistance = 20f;
-
-        [Tooltip("Flee: если обидчик дальше этого расстояния — Flee заканчивается.")]
-        public float tamedFleeMaxThreatDistance = 30f;
-
-        [Tooltip("Neutral: максимальный радиус преследования обидчика.")]
-        public float tamedNeutralChaseRadius = 20f;
-
-        [Tooltip("AttackOwnerTarget: радиус от игрока, где работает поведение.")]
-        public float tamedAttackOwnerRadius = 30f;
-
-        [Header("Riding Movement")]
-        public float rideSpeed = 4f;
-        public float rideSprintSpeed = 8f;
-        public float turnSpeed = 3f;
 
     }
 }

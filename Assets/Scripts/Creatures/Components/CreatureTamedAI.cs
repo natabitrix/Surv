@@ -140,7 +140,7 @@ namespace Assets.Scripts.Creatures.Components
             {
                 // Догонять
                 agent.isStopped = false;
-                agent.speed = _creature.Data != null ? _creature.Data.tamedFollowChaseSpeed : _creature.ChaseSpeed;
+                agent.speed = _creature.Data.baseStats.maxSpeed;
                 agent.SetDestination(_creature.PlayerTransform.position);
             }
             else if (dist <= stopDist)
@@ -170,7 +170,7 @@ namespace Assets.Scripts.Creatures.Components
             if (agent == null) return;
 
             agent.isStopped = false;
-            agent.speed = _creature.WalkSpeed;
+            agent.speed = _creature.TamedSpeed;
 
             if (!_isWandering || Time.time >= _nextWanderTime)
             {
@@ -185,7 +185,7 @@ namespace Assets.Scripts.Creatures.Components
 
             _isWandering = true;
 
-            float radius = _creature.Data != null ? _creature.Data.tamedWanderRadius : 10f;
+            float radius = _creature.Data != null ? _creature.WanderRange : 10f;
             Vector3 randomDirection = Random.insideUnitSphere * radius;
             randomDirection += transform.position;
 
@@ -232,7 +232,7 @@ namespace Assets.Scripts.Creatures.Components
             }
 
             float threatDist = Vector3.Distance(transform.position, threat.transform.position);
-            float maxThreatDist = _creature.Data != null ? _creature.Data.tamedFleeMaxThreatDistance : 30f;
+            float maxThreatDist = _creature.TamedFleeMaxThreatDistance;
 
             if (threatDist > maxThreatDist)
             {
@@ -258,7 +258,7 @@ namespace Assets.Scripts.Creatures.Components
             }
 
             float threatDist = Vector3.Distance(transform.position, threat.transform.position);
-            float chaseRadius = _creature.Data != null ? _creature.Data.tamedNeutralChaseRadius : 20f;
+            float chaseRadius = _creature.TamedNeutralChaseRadius;
 
             if (threatDist > chaseRadius)
             {
@@ -276,7 +276,7 @@ namespace Assets.Scripts.Creatures.Components
             if (_creature.PlayerTransform == null) return false;
 
             float playerDist = Vector3.Distance(transform.position, _creature.PlayerTransform.position);
-            float ownerRadius = _creature.Data != null ? _creature.Data.tamedAttackOwnerRadius : 30f;
+            float ownerRadius = _creature.TamedAttackOwnerRadius;
 
             if (playerDist > ownerRadius) return false;
 

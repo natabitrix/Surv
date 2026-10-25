@@ -1,9 +1,18 @@
 // Assets/Scripts/UI/DamageNumberPool.cs
 using System.Collections.Generic;
+using Assets.Scripts.Creatures.Components;
 using UnityEngine;
 
 namespace Assets.Scripts.UI
 {
+    public enum DamageColor
+    {
+        Green, // Игрок/Прирученный наносит урон дикому
+        Yellow, // Дикий наносит урон Игроку/Прирученному
+        Red,    // Дикий наносит урон дикому
+        White   // Дефолт (для ремонта структур, например)
+    }
+
     /// <summary>
     /// Пул всплывающих чисел урона. Живёт на ===GameManagers===.
     /// Числа создаются как дети DamageNumberCanvas.
@@ -53,16 +62,18 @@ namespace Assets.Scripts.UI
         /// <summary>
         /// Показать число урона над точкой удара.
         /// </summary>
-        public void ShowDamage(float amount, Vector3 worldPos)
+        public void ShowDamage(float amount, Vector3 worldPos, CombatMember attacker, CombatMember receiver)
         {
             if (_prefab == null || _canvasRoot == null) return;
             if (amount <= 0f) return;
+
+            if (attacker == CombatMember.Wild && receiver == CombatMember.Wild) return; // скрыть
 
             DamageNumber num = _pool.Count > 0
                 ? _pool.Dequeue()
                 : CreateNew();
 
-            num.Show(amount, worldPos + Vector3.up * _spawnOffsetY);
+            num.Show(amount, worldPos + Vector3.up * _spawnOffsetY, attacker, receiver);
         }
 
         public void Return(DamageNumber num)

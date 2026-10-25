@@ -41,11 +41,6 @@ namespace Assets.Scripts.Corpses
 
         [Header("Harvesting")]
         public bool allowHarvest = true;
-        public bool allowFists = false;
-        public bool allowAxe = true;
-        public bool allowPickaxe = true;
-        public bool allowSword = true;
-        public bool allowSickle = false;
 
         public LootEntry[] inventoryLootTable;
 
@@ -109,14 +104,13 @@ namespace Assets.Scripts.Corpses
             if (shatterer == null) shatterer = GetComponent<Shatterer>();
             if (hitDecaler == null) hitDecaler = GetComponent<HitDecaler>();
 
-            var assets = GameAssets.Instance;
-            if (assets == null)
+
+            if (CorpseManager.Instance != null && !string.IsNullOrEmpty(InstanceId))
             {
-                Debug.LogError("[Corpse] GameAssets.Instance == null!");
-                return;
+                CorpseManager.Instance.UnregisterCorpse(InstanceId);
+                _lootBagPrefab = CorpseManager.Instance.LootBagPrefab;
             }
 
-            _lootBagPrefab = assets.LootBagPrefab;
         }
 
         private void Start()
@@ -352,13 +346,14 @@ namespace Assets.Scripts.Corpses
             if (!allowHarvest) return;
 
             AttackAnimationType tool = context.Tool;
+            var config = GameAssets.Instance.CreatureGlobalConfig;
             bool toolAllowed = tool switch
             {
-                AttackAnimationType.Fists => allowFists,
-                AttackAnimationType.Axe => allowAxe,
-                AttackAnimationType.Pickaxe => allowPickaxe,
-                AttackAnimationType.Sword => allowSword,
-                AttackAnimationType.Sickle => allowSickle,
+                AttackAnimationType.Fists => config.allowFists,
+                AttackAnimationType.Axe => config.allowAxe,
+                AttackAnimationType.Pickaxe => config.allowPickaxe,
+                AttackAnimationType.Sword => config.allowSword,
+                AttackAnimationType.Sickle => config.allowSickle,
                 _ => false
             };
 

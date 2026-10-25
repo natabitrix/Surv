@@ -61,7 +61,7 @@ namespace Assets.Scripts.UI
             Instance.BuildAndShow();
         }
 
-        // Кравфт
+        // Крафт
         public static void Show(
             Recipe recipe,
             System.Action onCraft,

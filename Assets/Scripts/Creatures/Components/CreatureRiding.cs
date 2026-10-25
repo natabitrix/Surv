@@ -1,6 +1,7 @@
 // Assets/Scripts/Creatures/Components/CreatureRiding.cs
 using UnityEngine;
 using Assets.Scripts.Player;
+using UnityEngine.AI;
 
 namespace Assets.Scripts.Creatures.Components
 {
@@ -17,6 +18,8 @@ namespace Assets.Scripts.Creatures.Components
 
         private PlayerController _rider;
         public PlayerController Rider => _rider;
+
+        public Creature RidingCreature => _creature;
 
         private void Awake()
         {
@@ -70,6 +73,7 @@ namespace Assets.Scripts.Creatures.Components
             return true;
         }
 
+
         public bool Dismount()
         {
             if (!_isRidden) return false;
@@ -110,7 +114,6 @@ namespace Assets.Scripts.Creatures.Components
             if (!_creature.Agent.enabled) { Debug.Log("!_creature.Agent.enabled"); return; }
             if (!_creature.Agent.isOnNavMesh) { Debug.Log("!_creature.Agent.isOnNavMesh"); return; }
 
-
             // === Селфи: не вращаем существо ===
             bool isSelfie = CameraManager.Instance != null && CameraManager.Instance.IsSelfie;
             if (isSelfie)
@@ -121,7 +124,8 @@ namespace Assets.Scripts.Creatures.Components
             // === 1. Поворот по look.x ===
             if (Mathf.Abs(look.x) > 0.01f)
             {
-                float yaw = look.x * _creature.TurnSpeed * Time.deltaTime;
+                float creatureTurnSpeedMult = 1f;
+                float yaw = look.x * creatureTurnSpeedMult * Time.deltaTime;
                 _creature.transform.Rotate(Vector3.up, yaw, Space.World);
             }
 

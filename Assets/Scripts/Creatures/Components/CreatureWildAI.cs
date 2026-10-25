@@ -58,7 +58,10 @@ namespace Assets.Scripts.Creatures.Components
                 {
                     float dist = Vector3.Distance(transform.position, wildTarget.position);
 
-                    if (dist <= _creature.AttackRange &&
+                    // Добавляем запас, чтобы дикий не застревал на границе
+                    float attackDistance = _creature.AttackRange + 1.0f; 
+
+                    if (dist <= attackDistance &&
                         Time.time >= _creature.Combat.LastAttackTime + _creature.AttackCooldown)
                     {
                         SetState(State.Attack);
@@ -68,7 +71,7 @@ namespace Assets.Scripts.Creatures.Components
                     {
                         SetState(State.Chase);
                         _creature.Agent.isStopped = false;
-                        _creature.Agent.speed = _creature.ChaseSpeed;
+                        _creature.Agent.speed = _creature.SprintSpeed;
                         _creature.Agent.SetDestination(wildTarget.position);
                     }
                 }
@@ -105,11 +108,11 @@ namespace Assets.Scripts.Creatures.Components
                 switch (_state)
                 {
                     case State.Chase:
-                        agent.speed = _creature.ChaseSpeed;
+                        agent.speed = _creature.SprintSpeed;
                         agent.isStopped = false;
                         break;
                     case State.Wander:
-                        agent.speed = _creature.WalkSpeed;
+                        agent.speed = _creature.Speed;
                         agent.isStopped = false;
                         break;
                     case State.Attack:

@@ -9,6 +9,7 @@ using Assets.Scripts.Corpses;
 using Assets.Scripts.UI;
 using Assets.Scripts.Loot;
 using Assets.Scripts.Items;
+using Assets.Scripts.Creatures.Components;
 
 namespace Assets.Scripts.Structures
 {
@@ -52,7 +53,7 @@ namespace Assets.Scripts.Structures
 
         // События
         public System.Action<Structure> OnDeath;
-
+ 
         protected virtual void Awake()
         {
             playerProgress = PlayerProgress.Instance;
@@ -156,7 +157,7 @@ namespace Assets.Scripts.Structures
 
             if (damage > 0f)
             {
-                DamageNumberPool.Instance?.ShowDamage(damage, popupPos);
+                DamageNumberPool.Instance?.ShowDamage(damage, popupPos, CombatMember.Player, CombatMember.Tamed);
             }
 
             if (breakEffect != null && damage > 0)

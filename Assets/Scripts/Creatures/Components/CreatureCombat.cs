@@ -12,6 +12,17 @@ namespace Assets.Scripts.Creatures.Components
     /// Боевка существа: получение урона, память об атакующем, атака цели,
     /// поиск врагов (дикий/прирученный AI).
     /// </summary>
+    /// 
+    public enum CombatMember
+    {
+        Player,
+        Wild,
+        Tamed,
+        Mounted,
+        OtherPlayer,
+        OtherTamed
+    }
+
     public class CreatureCombat : MonoBehaviour
     {
         private Creature _creature;
@@ -57,6 +68,9 @@ namespace Assets.Scripts.Creatures.Components
         public float LastAttackTime => _lastAttackTime;
         public bool IsAttacking => _isAttacking;
 
+        private CombatMember _attacker;
+        private CombatMember _receiver;
+
         // ==========================================
         // === AWARE ===
         // ==========================================
@@ -66,26 +80,21 @@ namespace Assets.Scripts.Creatures.Components
             _creature = GetComponent<Creature>();
             if (_creature == null)
                 Debug.LogError($"[CreatureCombat] Нет Creature на {gameObject.name}!");
+
         }
 
         // ==========================================
         // === УРОН ===
         // ==========================================
 
-        public void TakeDamage(float damage, PlayerInteraction playerInteraction)
-            => TakeDamage(damage, 0f, playerInteraction, null, null);
-
-        public void TakeDamage(float damage, float torporAmount, PlayerInteraction playerInteraction)
-            => TakeDamage(damage, torporAmount, playerInteraction, null, null);
-
-        public void TakeDamage(float damage, float torporAmount = 0f)
-            => TakeDamage(damage, torporAmount, null, null, null);
-
         public void TakeDamage(float damage, float torporAmount, PlayerInteraction playerInteraction,
-                               Collider hitCollider = null, Vector3? hitPoint = null)
+                                Collider hitCollider = null, Vector3? hitPoint = null,
+                                CombatMember attacker = CombatMember.Wild)
         {
             if (_creature == null) return;
             if (!_creature.IsAlive()) return;
+
+            CombatMember receiver = _creature.tamed ? CombatMember.Tamed : CombatMember.Wild;
 
             Collider col = hitCollider ?? playerInteraction?.GetTargetHitCollider();
 
@@ -101,7 +110,7 @@ namespace Assets.Scripts.Creatures.Components
 
             if (finalDamage > 0f)
             {
-                DamageNumberPool.Instance?.ShowDamage(finalDamage, popupPos);
+                DamageNumberPool.Instance?.ShowDamage(finalDamage, popupPos, attacker, receiver);
             }
 
             if (torporAmount > 0f && !_creature.IsDead())
@@ -141,6 +150,7 @@ namespace Assets.Scripts.Creatures.Components
             if (attacker == null || attacker == _creature) return;
             _lastAttacker = attacker;
             _lastAttackedTime = Time.time;
+            // Debug.Log("[NotifyAttackedBy] _lastAttacker: " + _lastAttacker);
         }
 
         public void ClearLastAttacker()
@@ -178,20 +188,61 @@ namespace Assets.Scripts.Creatures.Components
         {
             if (_creature == null) return;
 
-            if (!_isAttackingPlayer && _currentAttackTarget != null)
-            {
-                if (_currentAttackTarget.IsAlive())
-                {
-                    // Уведомляем ЦЕЛЬ о том, что её атаковал наш _creature.
-                    // _currentAttackTarget.Combat — CreatureCombat цели.
-                    if (_currentAttackTarget.Combat != null)
-                        _currentAttackTarget.Combat.NotifyAttackedBy(_creature);
+            
 
-                    _currentAttackTarget.TakeDamage(_creature.AttackDamage, 0f);
+            // 1. Сначала проверяем: если мы - прирученное существо верхом, и бьем скиллом
+            if (_creature.tamed && _creature.Riding != null && _creature.Riding.IsRidden)
+            {
+                int layerMask = LayerMask.GetMask("Creature", "Default");
+                float attackRadius = _creature.AttackRange * 2f;
+                Vector3 attackCenter = _creature.transform.position + _creature.transform.forward * attackRadius;
+                Vector3 halfExtents = new Vector3(attackRadius, attackRadius, attackRadius);
+
+                Collider[] hits = Physics.OverlapBox(attackCenter, halfExtents, _creature.transform.rotation, layerMask, QueryTriggerInteraction.Ignore);
+
+                foreach (var hit in hits)
+                {
+                    var targetCreature = hit.GetComponentInParent<Creature>();
+                    if (targetCreature != null && targetCreature != _creature)
+                    {
+                        targetCreature.TakeDamage(_creature.TamedAttackDamage, 0f, null, null, null, CombatMember.Mounted);
+                        break;
+                    }
                 }
                 return;
             }
 
+            // 2. Если дикий/прирученный AI бьет свою цель
+            // _isAttackingPlayer - атакует ли сейчас игрока
+            if (!_isAttackingPlayer && _currentAttackTarget != null)
+            {
+                if (_currentAttackTarget.IsAlive())
+                {
+                    if (_currentAttackTarget.Combat != null)
+                        _currentAttackTarget.Combat.NotifyAttackedBy(_creature);
+
+                    float damage = _creature.tamed ? _creature.TamedAttackDamage : _creature.AttackDamage;
+                    CombatMember attacker = _creature.tamed ? CombatMember.Tamed : CombatMember.Wild;
+
+                    _currentAttackTarget.TakeDamage(damage, 0f, null, null, null, attacker);
+                }
+
+                return;
+            }
+
+            // 3. Если дикий бьет игрока (но если игрок верхом - бьет маунта)
+            var pc = PlayerController.Instance;
+            if (pc != null && pc.IsMounted && pc.RidingController != null && pc.RidingController.CurrentMount != null)
+            {
+                var mountCreature = pc.RidingController.CurrentMount.GetComponent<Creature>();
+                if (mountCreature != null && mountCreature.IsAlive())
+                {
+                    mountCreature.TakeDamage(_creature.AttackDamage, 0f, null, null, null, CombatMember.Wild);
+                    return;
+                }
+            }
+
+            // Если не верхом, бьем игрока
             PlayerSurvivalSystem.Instance?.TakeDamage(_creature.AttackDamage);
         }
 
@@ -241,15 +292,18 @@ namespace Assets.Scripts.Creatures.Components
             {
                 _creature.Agent.isStopped = true;
 
-                if (Time.time >= _lastAttackTime + _creature.AttackCooldown)
+                float coolDown = _creature.AttackCooldown;
+
+                if (Time.time >= _lastAttackTime + coolDown)
                 {
                     PerformAttack();
                 }
             }
             else
             {
+                float chaseSpeed = _creature.tamed ? _creature.TamedSprintSpeed : _creature.SprintSpeed;
                 _creature.Agent.isStopped = false;
-                _creature.Agent.speed = _creature.ChaseSpeed;
+                _creature.Agent.speed = chaseSpeed;
                 _creature.Agent.SetDestination(target.position);
             }
         }
@@ -272,7 +326,7 @@ namespace Assets.Scripts.Creatures.Components
                 else
                 {
                     float d = Vector3.Distance(transform.position, _currentEnemy.transform.position);
-                    if (d > _creature.Data.tamedAggroRadius * 1.5f)
+                    if (d > _creature.Data.combatProps.aggressionRadius * 1.5f)
                     {
                         _currentEnemy = null;
                         _currentAttackTarget = null;
@@ -297,7 +351,7 @@ namespace Assets.Scripts.Creatures.Components
 
             Collider[] hits = Physics.OverlapSphere(
                 transform.position,
-                _creature.Data.tamedAggroRadius,
+                _creature.Data.combatProps.aggressionRadius,
                 1 << creatureLayer,
                 QueryTriggerInteraction.Ignore);
 
@@ -335,7 +389,7 @@ namespace Assets.Scripts.Creatures.Components
             var playerT = _creature.PlayerTransform;
             float aggroRadius = _creature.AggressionRadius;
 
-            // === 1. Игрок ===
+            // 1. Игрок
             if (playerT != null)
             {
                 float d = Vector3.Distance(transform.position, playerT.position);
@@ -347,32 +401,25 @@ namespace Assets.Scripts.Creatures.Components
                 }
             }
 
-            // === 2. Прирученные ===
+            // 2. Прирученные
             int creatureLayer = LayerMask.NameToLayer("Creature");
             if (creatureLayer != -1)
             {
-                Collider[] hits = Physics.OverlapSphere(
-                    transform.position,
-                    aggroRadius,
-                    1 << creatureLayer,
-                    QueryTriggerInteraction.Ignore);
+                Collider[] hits = Physics.OverlapSphere(transform.position, aggroRadius, 1 << creatureLayer, QueryTriggerInteraction.Ignore);
 
                 foreach (var hit in hits)
                 {
-                    if (hit.gameObject == gameObject) continue;
+                    var living = hit.GetComponentInParent<Creature>();
+                    if (living == null || living == _creature) continue;
+                    if (!living.tamed || living.knockedOut || living.IsDead() || !living.IsAlive()) continue;
 
-                    var living = hit.GetComponent<Creature>();
-                    if (living == null) continue;
-                    if (!living.tamed) continue;
-                    if (living.knockedOut || living.IsDead() || !living.IsAlive()) continue;
-
-                    float d = Vector3.Distance(transform.position, hit.transform.position);
+                    float d = Vector3.Distance(transform.position, living.transform.position);
                     if (d < bestDist)
                     {
                         bestDist = d;
                         bestCreature = living;
                         bestIsPlayer = false;
-                        bestTransform = hit.transform;
+                        bestTransform = living.transform;
                     }
                 }
             }
@@ -386,30 +433,25 @@ namespace Assets.Scripts.Creatures.Components
         public Creature FindEnemyNearPlayer()
         {
             var playerT = _creature.PlayerTransform;
-            if (playerT == null) return null;
-            if (_creature.Data == null) return null;
+            if (playerT == null || _creature.Data == null) return null;
 
             int creatureLayer = LayerMask.NameToLayer("Creature");
             if (creatureLayer == -1) return null;
 
-            Collider[] hits = Physics.OverlapSphere(
-                playerT.position,
-                _creature.Data.tamedAggroRadius,
-                1 << creatureLayer,
-                QueryTriggerInteraction.Ignore);
+            Collider[] hits = Physics.OverlapSphere(playerT.position, _creature.Data.combatProps.aggressionRadius, 1 << creatureLayer, QueryTriggerInteraction.Ignore);
 
             Creature nearest = null;
             float minDist = float.MaxValue;
 
             foreach (var hit in hits)
             {
-                if (hit.gameObject == gameObject) continue;
+                var living = hit.GetComponentInParent<Creature>();
+                if (living == null || living == _creature) continue;
 
-                var living = hit.GetComponent<Creature>();
-                if (living == null) continue;
+                // Игнорируем прирученных (и себя), и мертвых
                 if (living.tamed || living.knockedOut || living.IsDead() || !living.IsAlive()) continue;
 
-                float d = Vector3.Distance(transform.position, hit.transform.position);
+                float d = Vector3.Distance(playerT.position, living.transform.position);
                 if (d < minDist)
                 {
                     minDist = d;
@@ -432,7 +474,7 @@ namespace Assets.Scripts.Creatures.Components
             if (NavMesh.SamplePosition(targetPos, out NavMeshHit hit, 5f, NavMesh.AllAreas))
             {
                 _creature.Agent.isStopped = false;
-                _creature.Agent.speed = _creature.ChaseSpeed;
+                _creature.Agent.speed = _creature.TamedSprintSpeed;
                 _creature.Agent.SetDestination(hit.position);
             }
         }
@@ -449,6 +491,33 @@ namespace Assets.Scripts.Creatures.Components
         /// <summary>Тик боевки (пока пусто, для будущих фич).</summary>
         public void Tick()
         {
+        }
+
+        /// <summary>
+        /// Атака по команде игрока (когда он сидит верхом).
+        /// Не ищет цели сама — просто проигрывает анимацию, 
+        /// а урон наносится через Animation Event (DealDamageToTarget).
+        /// </summary>
+        public void AttackFromRider()
+        {
+            if (_creature == null) return;
+
+            if (Time.time < _lastAttackTime + _creature.RideAttackCooldown) return;
+
+            _isAttacking = true;
+            _lastAttackTime = Time.time;
+
+            var animator = _creature.Animator;
+            if (animator != null)
+            {
+                animator.SetTrigger(_creature.AnimIDAttack);
+            }
+            else
+            {
+                Invoke(nameof(DealDamageToTarget), 0.5f);
+            }
+
+            Invoke(nameof(ResetAttackState), _creature.RideAttackCooldown);
         }
     }
 }

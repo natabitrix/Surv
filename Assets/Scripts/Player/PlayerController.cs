@@ -12,6 +12,7 @@ using Assets.Scripts.UI.Tooltip;
 using Assets.Scripts.Utils;
 using Assets.Scripts.Core;
 using Assets.Scripts.UI;
+using Assets.Scripts.Creatures;
 
 namespace Assets.Scripts.Player
 {
@@ -72,6 +73,18 @@ namespace Assets.Scripts.Player
             if (_animator != null)
             {
                 _animator.SetBool(_animIDIsRiding, mounted);
+            }
+
+            // === НОВОЕ: Синхронизация углов камеры при оседлании ===
+            if (mounted)
+            {
+                var mount = _ridingController?.CurrentMount;
+                if (mount != null)
+                {
+                    // Берем текущий угол существа и задаем его как базовый для камеры
+                    _cinemachineTargetYaw = mount.transform.eulerAngles.y;
+                    _cinemachineTargetPitch = 0f; // Сбрасываем взгляд в горизонт (или можно оставить текущий)
+                }
             }
         }
 
@@ -366,6 +379,18 @@ namespace Assets.Scripts.Player
 
             if (!LockCameraOnEsc && !IsPanelOpened)
             {
+                // Если игрок верхом, атакует существo
+                if (IsMounted && _ridingController != null && _ridingController.CurrentMount != null)
+                {
+                    // Находим компонент Creature на существе и вызываем атаку
+                    var mountCreature = _ridingController.CurrentMount.GetComponent<Creature>();
+                    if (mountCreature != null)
+                    {
+                        mountCreature.Combat.AttackFromRider();
+                    }
+                    return; // Выходим, чтобы игрок не махал кулаками/топором
+                }
+
                 if (_hasAnimator)
                 {
                     int animToPlay = _animIDAttackFist; // по умолчанию — кулаки
@@ -839,22 +864,15 @@ namespace Assets.Scripts.Player
 
             if (IsMounted)
             {
-                // === Верхом ===
-                // yaw берём из существа, pitch — из мыши
-                var mount = _ridingController?.CurrentMount;
-                if (mount != null)
-                {
-                    _cinemachineTargetYaw = mount.transform.eulerAngles.y;
-                }
-
-                // pitch обрабатываем из look.y
-                if (Mathf.Abs(_input.look.y) >= _threshold)
+                if (_input.look.sqrMagnitude >= _threshold)
                 {
                     float deltaTimeMultiplier = IsCurrentDeviceMouse ? 1.0f : Time.deltaTime;
+                    _cinemachineTargetYaw += _input.look.x * deltaTimeMultiplier;
                     _cinemachineTargetPitch += _input.look.y * deltaTimeMultiplier;
                 }
                 _input.look = Vector2.zero;
 
+                _cinemachineTargetYaw = PlayerUtils.ClampAngle(_cinemachineTargetYaw, float.MinValue, float.MaxValue);
                 _cinemachineTargetPitch = PlayerUtils.ClampAngle(_cinemachineTargetPitch, settings.BottomClamp, settings.TopClamp);
 
                 CinemachineCameraTarget.transform.rotation = Quaternion.Euler(
@@ -864,7 +882,6 @@ namespace Assets.Scripts.Player
                 );
                 return;
             }
-
 
             // Камера должна следовать глазам, но не должна применяться анимация персонажа к камере, 
             // поэтому прикрепим ее к EyeCenterForCamera, которую установим посредине глаз

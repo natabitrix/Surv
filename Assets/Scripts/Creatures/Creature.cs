@@ -22,7 +22,6 @@ namespace Assets.Scripts.Creatures
         [Tooltip("ID существа (например, 'Raptor', 'Dodo')")]
         public string creatureId;
 
-        // --- Перенесено из BaseLivingEntity ---
         [Header("Taming Stats")]
         public float torpor = 0f;
         public float maxTorpor = 100f;
@@ -69,9 +68,7 @@ namespace Assets.Scripts.Creatures
         [Header("ParticleSystem for Damage Effect")]
         public ParticleSystem damageEffect;
 
-        // Событие
         public System.Action<Creature> OnDeath; // Раньше было Action<BaseLivingEntity>, меняем на Creature
-
 
         public bool IsDead() => _isDead;
         public float GetHealth() => health;
@@ -95,7 +92,7 @@ namespace Assets.Scripts.Creatures
             health = Mathf.Clamp(health + amount, 0, maxHealth);
         }
 
-        public void SetCreatureLayer() // Был в BaseLivingEntity
+        public void SetCreatureLayer()
         {
             int creatureLayer = LayerMask.NameToLayer("Creature");
             if (creatureLayer != -1) SetLayerRecursively(gameObject, creatureLayer);
@@ -109,19 +106,6 @@ namespace Assets.Scripts.Creatures
                 SetLayerRecursively(child.gameObject, layer);
         }
 
-        // Статы
-        // protected virtual void InitializeStats()
-        // {
-        //     maxHealth = GetMaxHealthFromConfiguration();
-        //     health = maxHealth;
-
-        //     maxStamina = GetMaxStaminaFromConfiguration();
-        //     stamina = maxStamina;
-
-        //     maxFood = GetMaxFoodFromConfiguration();
-        //     food = maxFood;
-        // }
-
         public void TamedFromLoad()
         {
             tamed = true;
@@ -133,6 +117,20 @@ namespace Assets.Scripts.Creatures
         // Кэшированная ссылка на данные
         private CreatureData _data;
         public CreatureData Data => _data;
+
+        // Ленивая загрузка конфига
+        private CreatureGlobalConfig _config;
+        public CreatureGlobalConfig Config
+        {
+            get
+            {
+                if (_config == null && GameAssets.Instance != null)
+                {
+                    _config = GameAssets.Instance.CreatureGlobalConfig;
+                }
+                return _config;
+            }
+        }
 
         [Header("Components")]
         private CreatureCombat _combat;
@@ -147,20 +145,34 @@ namespace Assets.Scripts.Creatures
         private CreatureInteractable _interactable;
 
         // === Статы (берутся из _data через свойства) ===
-        public int Level => _data?.level ?? 1;
-        public float WanderRange => _data?.wanderRange ?? 20f;
-        public float MinWanderDelay => _data?.minWanderDelay ?? 2f;
-        public float MaxWanderDelay => _data?.maxWanderDelay ?? 5f;
-        public float WalkSpeed => _data?.walkSpeed ?? 2f;
-        public float ChaseSpeed => _data?.chaseSpeed ?? 5f;
-        public float AggressionRadius => _data?.aggressionRadius ?? 30f;
-        public float AttackRange => _data?.attackRange ?? 2f;
-        public float AttackDamage => _data?.attackDamage ?? 10f;
-        public float AttackCooldown => _data?.attackCooldown ?? 2f;
+        public int Level => _data?.baseStats.level ?? 1;
 
-        public float RideSpeed => _data?.rideSpeed ?? 4f;
-        public float RideSprintSpeed => _data?.rideSprintSpeed ?? 8f;
-        public float TurnSpeed => _data?.turnSpeed ?? 3f;
+        public float WanderRange => Config.wanderRange;
+        public float MinWanderDelay => Config.minWanderDelay;
+        public float MaxWanderDelay => Config.maxWanderDelay;
+
+        public float TamedFleeDistance => Config.tamedFleeDistance;
+        public float TamedFleeMaxThreatDistance => Config.tamedFleeMaxThreatDistance;
+        public float TamedNeutralChaseRadius => Config.tamedNeutralChaseRadius;
+        public float TamedAttackOwnerRadius => Config.tamedAttackOwnerRadius;
+
+        public float Speed => _data.baseStats.maxSpeed;
+        public float SprintSpeed => _data.baseStats.maxSpeed * 2f;
+
+        public float TamedSpeed => _data.baseStats.maxSpeed * 2f; //пока так для тестов, потом будет прокачка статов
+        public float TamedSprintSpeed => _data.baseStats.maxSpeed * 4f; //пока так для тестов, потом будет прокачка статов
+
+        public float RideSpeed => _data.baseStats.maxSpeed * 3f; //пока так для тестов, потом будет прокачка статов
+        public float RideSprintSpeed => _data.baseStats.maxSpeed * 5f; //пока так для тестов, потом будет прокачка статов
+
+        public float AggressionRadius => _data.combatProps.aggressionRadius;
+        public float AttackRange => _data.combatProps.attackRange;
+
+        public float AttackDamage => _data.baseStats.maxDamage;
+        public float TamedAttackDamage => _data.baseStats.maxDamage * 10f; //пока так для тестов, потом будет прокачка статов
+
+        public float AttackCooldown => _data.combatProps.attackCooldown;
+        public float RideAttackCooldown => _data.riddenProps.rideAttackCooldown;
 
         private NavMeshAgent _agent;
         private Transform _playerTransform;
@@ -190,9 +202,21 @@ namespace Assets.Scripts.Creatures
         public CreatureInteractable Interactable => _interactable;
 
         public NavMeshAgent Agent => _agent;
+        // public Transform PlayerTransform 
+        // { 
+        //     get 
+        //     {
+        //         if (_playerTransform == null && PlayerController.Instance != null)
+        //         {
+        //             _playerTransform = PlayerController.Instance.transform;
+        //         }
+        //         return _playerTransform; 
+        //     } 
+        // }
+
         public Transform PlayerTransform => _playerTransform;
 
-        public CreatureBehaviorType BehaviorType => _data?.behaviorType ?? CreatureBehaviorType.Aggressive;
+        public CreatureBehaviorType BehaviorType => _data.behaviorType;
 
         public Animator Animator => animator;
         public int AnimIDAttack => animIDAttack;
@@ -206,8 +230,6 @@ namespace Assets.Scripts.Creatures
 
         private void Awake()
         {
-
-            // base.Awake();
 
             playerProgress = PlayerProgress.Instance;
             survivalSystem = PlayerSurvivalSystem.Instance;
@@ -225,8 +247,6 @@ namespace Assets.Scripts.Creatures
                 animIDDeath = Animator.StringToHash("Death");
             }
 
-
-
             // === Загружаем данные из базы ===
             if (creatureDatabase == null)
             {
@@ -238,6 +258,12 @@ namespace Assets.Scripts.Creatures
             {
                 Debug.LogError($"[Creature] creatureId не задан на {gameObject.name}!");
                 return;
+            }
+
+            // Пытаемся получить конфиг сразу, если GameAssets уже существует
+            if (GameAssets.Instance != null)
+            {
+                _config = GameAssets.Instance.CreatureGlobalConfig;
             }
 
             _data = creatureDatabase.GetCreature(creatureId);
@@ -289,11 +315,11 @@ namespace Assets.Scripts.Creatures
             damageEffect = _data.damageEffect;
 
             // === Применяем статы здоровья ===
-            maxHealth = _data.maxHealth;
+            maxHealth = _data.baseStats.maxHealth;
             health = maxHealth;
-            maxStamina = _data.maxStamina;
+            maxStamina = _data.baseStats.maxStamina;
             stamina = maxStamina;
-            maxFood = _data.maxFood;
+            maxFood = _data.baseStats.maxFood;
             food = maxFood;
 
             // === Инициализация компонентов ===
@@ -345,8 +371,12 @@ namespace Assets.Scripts.Creatures
                 // === Верхом — AI не работает ===
                 if (_riding != null && _riding.IsRidden)
                 {
-                    if (playerController != null)
-                        _riding.TickRidden(playerController.MoveInput, playerController.LookInput, playerController.SprintInput, false);
+                    // Берем игрока напрямую из синглтона
+                    var pc = PlayerController.Instance;
+
+                    if (pc != null)
+                        _riding.TickRidden(pc.MoveInput, pc.LookInput, pc.SprintInput, false);
+
                     UpdateAnimation();
                     return;
 
@@ -396,28 +426,10 @@ namespace Assets.Scripts.Creatures
         // === УРОН ===
         // ==========================================
 
-        public void TakeDamage(float damage, float torporAmount = 0f)
+        public void TakeDamage(float damage, float torporAmount, PlayerInteraction pi, Collider hit, Vector3? point, CombatMember attacker)
         {
             if (_combat == null) return;
-            _combat.TakeDamage(damage, torporAmount);
-        }
-
-        public void TakeDamage(float damage, PlayerInteraction pi)
-        {
-            if (_combat == null) return;
-            _combat.TakeDamage(damage, pi);
-        }
-
-        public void TakeDamage(float damage, float torporAmount, PlayerInteraction pi)
-        {
-            if (_combat == null) return;
-            _combat.TakeDamage(damage, torporAmount, pi);
-        }
-
-        public void TakeDamage(float damage, float torporAmount, PlayerInteraction pi, Collider hit, Vector3? point)
-        {
-            if (_combat == null) return;
-            _combat.TakeDamage(damage, torporAmount, pi, hit, point);
+            _combat.TakeDamage(damage, torporAmount, pi, hit, point, attacker);
         }
 
         // ==========================================
@@ -477,20 +489,6 @@ namespace Assets.Scripts.Creatures
             animator.SetBool(animIDIsMoving, currentSpeed > 0.1f);
         }
 
-        protected float GetMaxHealthFromConfiguration()
-        {
-            return _data?.maxHealth ?? 100f;
-        }
-
-        protected float GetMaxStaminaFromConfiguration()
-        {
-            return _data?.maxStamina ?? 50f;
-        }
-
-        protected float GetMaxFoodFromConfiguration()
-        {
-            return _data?.maxFood ?? 100f;
-        }
 
 
     }

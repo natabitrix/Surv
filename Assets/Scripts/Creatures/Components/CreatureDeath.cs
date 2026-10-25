@@ -130,11 +130,6 @@ namespace Assets.Scripts.Creatures.Components
             corpse.harvestDrops = data.harvestDrops;
             corpse.inventoryLootTable = data.inventoryLootTable;
             corpse.maxHarvestHits = data.maxHarvestHits;
-            corpse.allowFists = data.allowFists;
-            corpse.allowAxe = data.allowAxe;
-            corpse.allowPickaxe = data.allowPickaxe;
-            corpse.allowSword = data.allowSword;
-            corpse.allowSickle = data.allowSickle;
 
             corpse.InitializeCorpse();
 

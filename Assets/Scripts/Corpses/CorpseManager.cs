@@ -27,10 +27,14 @@ namespace Assets.Scripts.Corpses
 
         // Ссылки на ассеты (берутся из GameAssets в Initialize)
         private GameObject _corpseBodyPrefab;
+        private GameObject _lootBagPrefab;
+
         private CreatureDatabase _creatureDatabase;
         private ItemDatabase _itemDatabase;
 
-        public GameObject corpseBodyPrefab => _corpseBodyPrefab;
+        public GameObject CorpseBodyPrefab => _corpseBodyPrefab;
+        public GameObject LootBagPrefab => _lootBagPrefab;
+        
 
         private Dictionary<string, GameObject> _loadedCorpses = new();
         private string _saveDirectory;
@@ -144,7 +148,7 @@ namespace Assets.Scripts.Corpses
             corpse.OwnerPlayerId = ownerPlayerId;
             corpse.CorpseId = string.IsNullOrEmpty(creatureId) ? corpseType : creatureId;
 
-            float lifetime = GetLifetime(creatureId);
+            float lifetime = SessionMode.CorpseLifetime;
 
             // ЗАПОЛНЯЕМ ВСЕ ПОЛЯ
             var saveData = new CorpseSaveData
@@ -224,27 +228,6 @@ namespace Assets.Scripts.Corpses
             }
         }
 
-        /// <summary>
-        /// Возвращает время жизни для трупа.
-        /// Для существ может быть переопределено в CreatureData.
-        /// </summary>
-        private float GetLifetime(string creatureId)
-        {
-            // float defaultLifetime = gameSettings != null ? gameSettings.corpseLifetime : 300f;
-            float defaultLifetime = SessionMode.CorpseLifetime;
-
-            // Если у существа есть override — используем его
-            if (!string.IsNullOrEmpty(creatureId) && _creatureDatabase != null)
-            {
-                var data = _creatureDatabase.GetCreature(creatureId);
-                if (data != null && data.corpseLifetimeOverride > 0)
-                {
-                    return data.corpseLifetimeOverride;
-                }
-            }
-
-            return defaultLifetime;
-        }
 
         // ==========================================
         // === СОХРАНЕНИЕ НА ДИСК ===
@@ -281,7 +264,7 @@ namespace Assets.Scripts.Corpses
 
             if (data.corpseType == "PlayerCorpse")
             {
-                prefab = corpseBodyPrefab;  // ← префаб тела
+                prefab = _corpseBodyPrefab;  // ← префаб тела
             }
             else if (!string.IsNullOrEmpty(data.creatureId))
             {

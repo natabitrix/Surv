@@ -27,8 +27,9 @@ namespace Assets.Scripts.Core
         [Header("Databases")]
         [SerializeField] private GameSettings _gameSettings;
         [SerializeField] private ItemDatabase _itemDatabase;
-        [SerializeField] private CreatureDatabase _creatureDatabase;
         [SerializeField] private RecipeDatabase _recipeDatabase;
+        [SerializeField] private CreatureDatabase _creatureDatabase;
+        [SerializeField] private CreatureGlobalConfig _creatureGlobalConfig;
 
         [Header("Prefabs")]
         [SerializeField] private GameObject _playerCorpsePrefab;
@@ -44,11 +45,13 @@ namespace Assets.Scripts.Core
         public GameSettings GameSettings => _gameSettings;
         public ItemDatabase ItemDatabase => _itemDatabase;
         public CreatureDatabase CreatureDatabase => _creatureDatabase;
+        public CreatureGlobalConfig CreatureGlobalConfig => _creatureGlobalConfig;
         public RecipeDatabase RecipeDatabase => _recipeDatabase;
         public GameObject PlayerCorpsePrefab => _playerCorpsePrefab;
         public GameObject LootBagPrefab => _lootBagPrefab;
         public NotificationSoundConfig NotificationSoundConfig => _notificationSoundConfig;
         public RadialMenuGlobalConfig RadialMenuGlobalConfig => _radialMenuGlobalConfig;
+        
 
 
         private bool _isPrimary = false;
@@ -76,6 +79,7 @@ namespace Assets.Scripts.Core
             if (_gameSettings == null) Debug.LogError("[GameAssets] GameSettings не назначен!");
             if (_itemDatabase == null) Debug.LogError("[GameAssets] ItemDatabase не назначен!");
             if (_creatureDatabase == null) Debug.LogError("[GameAssets] CreatureDatabase не назначен!");
+            if (_creatureGlobalConfig == null) Debug.LogError("[GameAssets] CreatureGlobalConfig не назначен!");
             if (_recipeDatabase == null) Debug.LogError("[GameAssets] RecipeDatabase не назначен!");
             if (_playerCorpsePrefab == null) Debug.LogError("[GameAssets] PlayerCorpsePrefab не назначен!");
             if (_lootBagPrefab == null) Debug.LogError("[GameAssets] LootBagPrefab не назначен!");

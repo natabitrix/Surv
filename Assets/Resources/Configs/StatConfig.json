@@ -101,7 +101,7 @@
       "progressDirectionString": "Decreasing"
     },
     {
-      "statTypeString": "Torpidity",
+      "statTypeString": "Torpor",
       "displayName": "Оглушение",
       "baseValue": 200.0,
       "showPlusButton": false,

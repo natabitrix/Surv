@@ -24,7 +24,7 @@ namespace Assets.Scripts.Core
         private float _food;
         private float _water;
         private float _weight;
-        private float _torpidity;
+        private float _torpor;
 
         [Header("Consumption Rates")]
         [SerializeField] private float _foodLossPerSecond = 0.05f;
@@ -55,7 +55,7 @@ namespace Assets.Scripts.Core
         public float Food => _food;
         public float Water => _water;
         public float Weight => _weight;
-        public float Torpidity => _torpidity;
+        public float Torpor => _torpor;
 
         public float MaxHealth => PlayerProgress.Instance?.GetMaxValue(StatType.Health) ?? 100f;
         public float MaxStamina => PlayerProgress.Instance?.GetMaxValue(StatType.Stamina) ?? 100f;
@@ -63,7 +63,7 @@ namespace Assets.Scripts.Core
         public float MaxFood => PlayerProgress.Instance?.GetMaxValue(StatType.Food) ?? 100f;
         public float MaxWater => PlayerProgress.Instance?.GetMaxValue(StatType.Water) ?? 100f;
         public float MaxWeight => PlayerProgress.Instance?.GetMaxValue(StatType.Weight) ?? 100f;
-        public float MaxTorpidity => PlayerProgress.Instance?.GetMaxValue(StatType.Weight) ?? 100f;
+        public float MaxTorpor => PlayerProgress.Instance?.GetMaxValue(StatType.Torpor) ?? 100f;
 
         private bool _isDead = false;
         public bool DieManually = false;
@@ -117,7 +117,7 @@ namespace Assets.Scripts.Core
             _water = MaxWater;
             _oxygen = MaxOxygen;
             _weight = 0f;
-            _torpidity = 0f;
+            _torpor = 0f;
         }
 
         // ==========================================
@@ -159,7 +159,7 @@ namespace Assets.Scripts.Core
                 yield break;
             }
 
-            GameObject corpseBodyPrefab = CorpseManager.Instance.corpseBodyPrefab;
+            GameObject corpseBodyPrefab = CorpseManager.Instance.CorpseBodyPrefab;
             GameObject playerCorpseGO = Instantiate(corpseBodyPrefab, pc.transform.position, Quaternion.identity);
 
             if (playerCorpseGO.TryGetComponent<Corpse>(out var corpse))
@@ -219,7 +219,7 @@ namespace Assets.Scripts.Core
             _oxygen = MaxOxygen;
             _food = MaxFood;
             _water = MaxWater;
-            _torpidity = 0f;
+            _torpor = 0f;
 
             OnSurvivalStatsChanged?.Invoke();
             OnPlayerRespawned?.Invoke();
@@ -277,7 +277,7 @@ namespace Assets.Scripts.Core
                     _oxygen = Mathf.Min(MaxOxygen, _oxygen + _oxygenRecoveryPerSecond * updateInterval);
 
                 bool isCritical = (_oxygen <= 0f) || (_food <= 0f) || (_water <= 0f)
-                               || (_stamina <= 0f) || (_torpidity >= MaxTorpidity);
+                               || (_stamina <= 0f) || (_torpor >= MaxTorpor);
                 if (isCritical)
                     _health = Mathf.Max(0f, _health - _healthLossPerSecondWhenCritical * updateInterval);
                 else
@@ -301,7 +301,7 @@ namespace Assets.Scripts.Core
                 { StatType.Food, _food },
                 { StatType.Water, _water },
                 { StatType.Weight, _weight },
-                { StatType.Torpidity, _torpidity }
+                { StatType.Torpor, _torpor }
             };
         }
 
@@ -315,7 +315,7 @@ namespace Assets.Scripts.Core
             _food = MaxFood;
             _water = MaxWater;
             _weight = Get(src, StatType.Weight, 0f);
-            _torpidity = 0f;
+            _torpor = 0f;
 
             OnSurvivalStatsChanged?.Invoke();
         }
@@ -362,9 +362,9 @@ namespace Assets.Scripts.Core
                 OnPlayerDamaged?.Invoke(damage);
         }
 
-        public void AddTorpidity(float amount)
+        public void AddTorpor(float amount)
         {
-            _torpidity = Mathf.Min(MaxTorpidity, _torpidity + amount);
+            _torpor = Mathf.Min(MaxTorpor, _torpor + amount);
             OnSurvivalStatsChanged?.Invoke();
         }
 

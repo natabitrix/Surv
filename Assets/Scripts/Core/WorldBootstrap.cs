@@ -5,22 +5,34 @@ using Assets.Scripts.Corpses;
 using Assets.Scripts.Loot;
 using Assets.Scripts.Creatures.Taming;
 using Assets.Scripts.UI;
+using System;
+using Unity.Collections;
+using UnityEngine.UIElements;
+using System.Collections.Generic;
 
 namespace Assets.Scripts.Core
 {
     /// <summary>
-    /// Лежит на ===WorldManagers=== в сцене GameWorld.
+    /// Лежит на WorldManagers в сцене GameWorld.
     /// Создаёт сценовые менеджеры и запускает их загрузку через LoadingScreenManager.
     /// НЕ DontDestroyOnLoad — умирает вместе со сценой.
     /// </summary>
     public class WorldBootstrap : MonoBehaviour
     {
+        [Header("CorpseManager; LootBagManager; TamingManager; WorldManager")]
         public static WorldBootstrap Instance { get; private set; }
 
         [Header("WorldManager Settings")]
         [SerializeField] private int _chunkSize = 32;
         [SerializeField] private int _loadRadiusInChunks = 2;
         [SerializeField] private float _saveInterval = 5f;
+
+
+        [field: Header("Loading Managers for info only")]
+        [field: SerializeField, ReadOnly, TextArea(4, 2)]
+        public string LoadingManagers { get; private set; } = "CorpseManager\nLootBagManager\nTamingManager\nWorldManager";
+
+        
 
         public CorpseManager CorpseManager { get; private set; }
         public LootBagManager LootBagManager { get; private set; }

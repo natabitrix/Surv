@@ -1,5 +1,6 @@
 using Assets.Scripts.Core;
 using Assets.Scripts.Creatures;
+using Assets.Scripts.Creatures.Components;
 using Assets.Scripts.Interactables;
 using Assets.Scripts.Items;
 using Assets.Scripts.Utils;
@@ -203,7 +204,7 @@ namespace Assets.Scripts.Combat
             var creature = other.GetComponentInParent<Creature>();
             if (creature != null && creature.IsAlive())
             {
-                creature.TakeDamage(_damage, _torpor, null, other, point);
+                creature.TakeDamage(_damage, _torpor, null, other, point, CombatMember.Player);
 
                 if (_debugHits)
                     Debug.Log($"[Arrow.OnHit] Урон {_damage}, Torpor {_torpor} → {creature.name}, collider={other.name}");

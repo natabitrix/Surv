@@ -2563,10 +2563,10 @@ GameObject:
   - component: {fileID: 7887871224253335526}
   - component: {fileID: 6956621357819741081}
   - component: {fileID: 8687273615005878227}
+  - component: {fileID: 451961857296479224}
   - component: {fileID: 6608624559327030497}
   - component: {fileID: 5299522424631932480}
   - component: {fileID: 7676246001704360448}
-  - component: {fileID: 451961857296479224}
   - component: {fileID: 5413270530890730107}
   - component: {fileID: 5889643070522982295}
   - component: {fileID: 3823734640053907566}
@@ -2615,8 +2615,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff15c44bff5204847b7acdb036fde5fa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Creatures.BasicCreature
-  _impactType: 2
-  damageEffect: {fileID: 1503726256431937902, guid: a712d1db095d33740bea793cc4816dd5, type: 3}
+  creatureDatabase: {fileID: 11400000, guid: 475c5b1ef39d77d43ab9f3523b647009, type: 2}
+  creatureId: Robot_George
+  torpor: 0
+  maxTorpor: 100
+  food: 100
+  maxFood: 100
   tamed: 0
   tamable: 0
   tamableKO: 0
@@ -2628,14 +2632,7 @@ MonoBehaviour:
   tamedMating: 0
   tamedBehavior: 2
   tamedFollowDistance: 2
-  _interactionCollider: {fileID: 757373293651612418}
-  _inventory: {fileID: 0}
-  torpor: 0
-  maxTorpor: 100
-  food: 100
-  maxFood: 100
-  creatureDatabase: {fileID: 11400000, guid: 475c5b1ef39d77d43ab9f3523b647009, type: 2}
-  creatureId: Robot_George
+  damageEffect: {fileID: 1503726256431937902, guid: a712d1db095d33740bea793cc4816dd5, type: 3}
   DieManually: 0
 --- !u!114 &8687273615005878227
 MonoBehaviour:
@@ -2684,7 +2681,23 @@ MonoBehaviour:
     totalAmount: 100
   maxHarvestHits: 3
   _corpseDisappearTime: 5000
-  _lootBagPrefab: {fileID: 4309089054926544229, guid: 27ea0d0c5535c3d47a83045f2d6eeb8a, type: 3}
+--- !u!114 &451961857296479224
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8196958937981766394}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1665aaf0d53d5045b5ed1d107c342fc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Interactables.RadialMenu
+  item: {fileID: 0}
+  corpse: {fileID: 0}
+  creature: {fileID: 0}
+  structure: {fileID: 0}
+  chest: {fileID: 0}
 --- !u!114 &6608624559327030497
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2761,23 +2774,6 @@ NavMeshAgent:
   m_BaseOffset: -0.11
   m_WalkableMask: 5
   m_ObstacleAvoidanceType: 4
---- !u!114 &451961857296479224
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8196958937981766394}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d1665aaf0d53d5045b5ed1d107c342fc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Interactables.RadialMenu
-  item: {fileID: 0}
-  corpse: {fileID: 0}
-  creature: {fileID: 0}
-  structure: {fileID: 0}
-  chest: {fileID: 0}
 --- !u!114 &5413270530890730107
 MonoBehaviour:
   m_ObjectHideFlags: 0

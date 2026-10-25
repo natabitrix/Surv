@@ -191,8 +191,8 @@ namespace Assets.Scripts.Creatures.Components
 
         private bool ShouldEat()
         {
-            if (_creature.Data.maxFood <= 0f) return false;
-            return _creature.food <= _creature.Data.maxFood * _creature.Data.foodEatThresholdPercent;
+            if (_creature.Data.baseStats.maxFood <= 0f) return false;
+            return _creature.food <= _creature.Data.baseStats.maxFood * _creature.Data.foodEatThresholdPercent;
         }
 
         private bool TryEatFood()

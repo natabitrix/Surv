@@ -195,7 +195,7 @@ namespace Assets.Scripts.UI
                 StatType.Food => SurvivalInstance.Food,
                 StatType.Water => SurvivalInstance.Water,
                 StatType.Weight => SurvivalInstance.Weight,
-                StatType.Torpidity => SurvivalInstance.Torpidity,
+                StatType.Torpor => SurvivalInstance.Torpor,
 
                 // Остальные характеристики (MeleeDamage, Speed и т.д.) — не имеют "текущего" состояния,
                 // они всегда равны максимуму (или производным от экипировки/инвентаря)
@@ -216,7 +216,7 @@ namespace Assets.Scripts.UI
             StatType.MovementSpeed => speedIcon,
             StatType.CraftingSpeed => craftingIcon,
             StatType.Fortitude => fortitudeIcon,
-            StatType.Torpidity => torporIcon,
+            StatType.Torpor => torporIcon,
             _ => null
         };
 

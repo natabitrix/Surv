@@ -177,6 +177,8 @@ namespace Assets.Scripts.InventorySystem
             }
 
             SourceInteractable = source;
+
+            // Debug.Log("[ChestUI.OpenWith] source: " + source);
             SourceChest = source as ChestController;
 
             // Подписываемся на новый

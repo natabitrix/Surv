@@ -1,5 +1,6 @@
 using Assets.Scripts.Core;
 using Assets.Scripts.Creatures;
+using Assets.Scripts.Creatures.Components;
 using Assets.Scripts.Creatures.Taming;
 using Assets.Scripts.Items;
 using Assets.Scripts.Player;
@@ -29,6 +30,7 @@ namespace Assets.Scripts.InventorySystem
         /// </summary>
         public void UseItem(InventorySlot slot, SlotOwner owner, int localIndex, InventorySlotUI ui = null)
         {
+            
             if (slot == null || slot.IsEmpty || slot.item == null) return;
 
             switch (owner)
@@ -103,58 +105,53 @@ namespace Assets.Scripts.InventorySystem
             progress.Save("ItemUsageRouter.UseFromPlayerInventory");
         }
 
-        // === Чужой инвентарь: только существа, никаких сундуков ===
+        // === Чужой инвентарь: пока только существа ===
         private void UseFromOtherInventory(InventorySlot slot, int localIndex)
         {
             var chestUI = ChestUI.Instance;
             if (chestUI == null) return;
 
-            // Только нокаутнутое существо
-            if (chestUI.SourceInteractable is not Creature target) return;
+            if (chestUI.SourceInteractable is not CreatureInteractable cInteractable) return;
 
-            if (!target.knockedOut || target.tamed) return;
+            cInteractable.TryGetComponent<Creature>(out var creature);
 
-            if (target is not Creature creature || creature.Data == null) return;
+            if (creature == null || creature.Data == null) return;
 
-            var data = creature.Data;
+            var usedItem = slot.item;
+            var usedIcon = slot.item.icon;
 
             // Наркотик → torpor
-            if (data.narcoticItem != null && slot.item == data.narcoticItem)
+            var config = creature.Config;
+
+            if (config != null && config.narcoticItem != null && slot.item == config.narcoticItem)
             {
-                var usedItem = slot.item;
-                var usedIcon = slot.item.icon;
 
                 chestUI.Data.RemoveItemFromSlot(localIndex, 1);
-                target.AddTorpor(data.narcoticTorporAmount);
-                if (!string.IsNullOrEmpty(target.TamingInstanceId))
+                creature.AddTorpor(config.narcoticTorporAmount);
+                if (!string.IsNullOrEmpty(creature.TamingInstanceId))
                 {
-                    TamingManager.Instance?.UpdateSave(target.TamingInstanceId, "player_001");
+                    TamingManager.Instance?.UpdateSave(creature.TamingInstanceId, "player_001");
                 }
 
                 NotificationManager.Instance?.Show(
-                    $"Наркотик: {usedItem.itemName}. Torpor: {target.torpor:F0}/{target.maxTorpor:F0}",
+                    $"Наркотик: {usedItem.itemName}. Torpor: {creature.torpor:F0}/{creature.maxTorpor:F0}",
                     usedIcon
                 );
                 return;
             }
-
-            // Еда → подсказка
-            foreach (var pref in data.tamingFoodPreferences)
+            else
             {
-                if (pref.food == slot.item)
+                // Еда → отхиливание
+                foreach (var pref in creature.Data.tamingFoodPreferences)
                 {
-                    NotificationManager.Instance?.Show(
-                        "Положите еду — существо съест её само.",
-                        slot.item.icon
-                    );
-                    return;
+                    if (pref.food == slot.item)
+                    {
+                        chestUI.Data.RemoveItemFromSlot(localIndex, 1);
+                        creature.AddFood(1);
+                    }
                 }
+                return;
             }
-
-            NotificationManager.Instance?.Show(
-                "Этот предмет нельзя использовать на существе.",
-                null
-            );
         }
 
         // вызывается, когда игрок отпустил E
