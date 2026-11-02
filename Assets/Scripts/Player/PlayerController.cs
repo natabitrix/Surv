@@ -429,8 +429,29 @@ namespace Assets.Scripts.Player
             }
         }
 
+        private Vector3 _frozenCameraTargetPos;
+        private Quaternion _frozenCameraTargetRot;
+        private bool _cameraTargetFrozen;
+
         private void LateUpdate()
         {
+            if (LockCameraOnEsc && CinemachineCameraTarget != null)
+            {
+                if (!_cameraTargetFrozen)
+                {
+                    _frozenCameraTargetPos = CinemachineCameraTarget.transform.position;
+                    _frozenCameraTargetRot = CinemachineCameraTarget.transform.rotation;
+                    _cameraTargetFrozen = true;
+                }
+                CinemachineCameraTarget.transform.position = _frozenCameraTargetPos;
+                CinemachineCameraTarget.transform.rotation = _frozenCameraTargetRot;
+                return;
+            }
+            else
+            {
+                _cameraTargetFrozen = false;
+            }
+
             CameraRotation();
             HeadRotation();
         }

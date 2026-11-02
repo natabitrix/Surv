@@ -406,8 +406,11 @@ namespace Assets.Scripts.Player
         /// Вызывать при клике по Action-кнопке радиального меню, чтобы
         /// «унаследованное» удержание не провалилось в UI.
         /// </summary>
+
+
         public void ForceResetInteract()
         {
+            Debug.Log("ForceResetInteract");
             StopRepeatInteract();
             IsForceReset = true; // Ставим флаг
             OnInteractStopPressed?.Invoke();

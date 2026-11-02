@@ -43,6 +43,7 @@ namespace Assets.Scripts.Player
 
         [Header("Hold Settings")]
         [SerializeField] private float _holdThreshold = 0.5f;
+        [SerializeField] private float _radialMenuMaxDistance = 5f;
 
         [Header("Combat")]
         [SerializeField] private LayerMask _damageLayers;
@@ -73,8 +74,6 @@ namespace Assets.Scripts.Player
         private bool _isInteractHeld = false;
         private float _interactionHoldTimer = 0f;
         private bool _radialMenuOpenedThisHold = false;
-        // private float _ignoreStopUntilTime = 0f;
-        // private bool _isMenuInteraction = false;
 
         private Animator _playerAnimator;
         private Transform _playerHead;
@@ -123,16 +122,59 @@ namespace Assets.Scripts.Player
         private void Update()
         {
 
-            // В инвентаре/паузе не сканируем мир
-            bool isInventoryOpened = _panelsController != null && _panelsController.IsInventoryOpened();
             bool isPauseOpened = _pauseManager != null && _pauseManager.IsPauseOpened();
+            bool isPanelOpened = _panelsController != null && _panelsController.IsPanelOpened();
 
-            if (!isInventoryOpened && !isPauseOpened)
+            if (isPanelOpened || isPauseOpened)
+            {
+                if (interactionUI != null && interactionUI.activeSelf)
+                    interactionUI.SetActive(false);
+            }
+
+            if (!isPanelOpened && !isPauseOpened)
             {
                 PerformInteractionRaycast();
                 UpdateInteractionUI();
                 HandleHoldLogic();
                 CheckCorpsePhysicsState();
+            }
+
+            CheckRadialMenuTargetDistance();
+            CheckInventoryTargetDistance();
+
+        }
+
+        private void CheckRadialMenuTargetDistance()
+        {
+            if (_panelsController == null || !_panelsController.IsRadialMenuOpened()) return;
+
+            var target = _panelsController.RadialMenuCurrentTargetGO;
+
+            if (target == null)
+            {
+                HandleMenuClosed();
+                return;
+            }
+
+            float dist = Vector3.Distance(transform.position, target.transform.position);
+            if (dist > _radialMenuMaxDistance)
+                HandleMenuClosed();
+        }
+
+        private void CheckInventoryTargetDistance()
+        {
+            if (_panelsController == null || !_panelsController.IsInventoryOpened()) return;
+
+            var source = ChestUIManager.Instance?.CurrentSource;
+            if (source == null) return;
+
+            if (source is MonoBehaviour mb)
+            {
+                float dist = Vector3.Distance(transform.position, mb.transform.position);
+                if (dist > _radialMenuMaxDistance)   // или отдельный порог
+                {
+                    _panelsController.CloseAllPanels();
+                }
             }
         }
 
@@ -148,6 +190,8 @@ namespace Assets.Scripts.Player
                     _radialMenuOpenedThisHold = true;
                 }
             }
+
+
         }
 
 
@@ -171,8 +215,13 @@ namespace Assets.Scripts.Player
         private void HandleInteractStarted()
         {
             // В инвентаре мир не трогаем
-            if (_panelsController != null && _panelsController.IsInventoryOpened())
+            // if (_panelsController != null && _panelsController.IsInventoryOpened())
+            if (_panelsController != null && _panelsController.IsPanelOpened())
                 return;
+
+            if (_playerController != null && _playerController.IsMounted)
+                return;   // <-- верхом E не начинает удержание
+
             _isInteractHeld = true;
             _interactionHoldTimer = 0f;
             _radialMenuOpenedThisHold = false;
@@ -192,16 +241,17 @@ namespace Assets.Scripts.Player
             // Если это был принудительный сброс (клик по меню) — игнорируем
             if (_input.IsForceReset) return;
 
-            // в инвентаре мир не трогаем
-            if (_panelsController != null && _panelsController.IsInventoryOpened())
-                return;
-
             if (_radialMenuOpenedThisHold)
             {
                 _radialMenuOpenedThisHold = false;
                 HandleMenuClosed();
                 return;
             }
+
+            // в инвентаре мир не трогаем
+            if (_panelsController != null && _panelsController.IsInventoryOpened())
+                // if (_panelsController != null && _panelsController.IsPanelOpened())
+                return;
 
             // 1. Тащим труп — отпускаем (без цели)
             if (_currentlyDraggingCorpse != null)
@@ -269,23 +319,39 @@ namespace Assets.Scripts.Player
 
         private void HandleTargetInventory()
         {
+            // Верхом — F открывает инвентарь оседланного существа без анимации
+            if (_playerController != null && _playerController.IsMounted)
+            {
+                var mount = _playerController.RidingController?.CurrentMount;
+                if (mount == null) return;
+
+                if (_panelsController != null && _panelsController.IsInventoryOpened())
+                {
+                    _panelsController.CloseAllPanels();
+                    return;
+                }
+
+                var creatureInteractable = mount.GetComponent<CreatureInteractable>();
+                if (creatureInteractable != null)
+                    OnOpenInventoryFinished(creatureInteractable);
+                return;
+            }
+
+            // Обычный путь — поиск цели, анимация
             foreach (var target in _allTargets)
             {
+                if (target is MonoBehaviour mb && !mb.enabled) continue;
+
                 InteractType type = target.GetInteractType();
                 InteractType type2 = target.GetInteractType2();
+
                 if (type == InteractType.OpenTargetInventory || type2 == InteractType.OpenTargetInventory)
                 {
                     _pendingInteractionTarget = target;
-
                     if (_hasAnimator)
-                    {
                         _playerAnimator.SetTrigger(_animIDOpenInventory);
-                    }
                     else
-                    {
-                        float delay = 0.5f;
-                        Invoke(nameof(OnOpenInventoryFinishedNoArg), delay);
-                    }
+                        Invoke(nameof(OnOpenInventoryFinishedNoArg), 0.5f);
                     return;
                 }
             }
@@ -326,8 +392,10 @@ namespace Assets.Scripts.Player
 
         public void OnOpenInventoryFinished(IInteractable specificTarget = null)
         {
-            _pendingInteractionTarget = null;
+
             IInteractable target = specificTarget ?? _pendingInteractionTarget;
+            _pendingInteractionTarget = null;
+            // if (target == null) return;
 
             if (target == null && _allTargets.Count > 0)
             {
@@ -344,14 +412,13 @@ namespace Assets.Scripts.Player
                 }
             }
 
-
-
             if (target == null)
             {
                 Debug.LogWarning("[OnOpenInventoryFinished] target == null — пропускаем");
                 return;
             }
 
+            // ВЕТКА ЗАКРЫТИЯ 
             if (target.HasInventory() && _panelsController != null && _panelsController.IsInventoryOpened())
             {
                 _panelsController.CloseAllPanels();
@@ -360,6 +427,7 @@ namespace Assets.Scripts.Player
                 return;
             }
 
+            // ВЕТКА ОТКРЫТИЯ
             var context = new InteractContext
             {
                 Tool = AttackAnimationType.Fists,
@@ -438,35 +506,7 @@ namespace Assets.Scripts.Player
         {
             if (hitObject == null) return false;
 
-            Transform current = hitObject.transform;
-            GameObject candidateRoot = null;
-
-            for (int i = 0; i < 10 && current != null; i++)
-            {
-                if (current.TryGetComponent<Corpse>(out var corpse) && corpse.enabled)
-                {
-                    candidateRoot = current.gameObject;
-                    break;
-                }
-
-                if (current.TryGetComponent<Creature>(out var living) && living.IsAlive())
-                {
-                    candidateRoot = current.gameObject;
-                    break;
-                }
-
-                var interactable = current.GetComponent<IInteractable>();
-                if (interactable != null
-                    && !(interactable is Corpse)
-                    && !(interactable is Creature))
-                {
-                    candidateRoot = current.gameObject;
-                    break;
-                }
-
-                current = current.parent;
-            }
-
+            GameObject candidateRoot = FindInteractableRoot(hitObject);   // <-- вместо ручного цикла
             if (candidateRoot == null) return false;
 
             Collider col = hitObject.GetComponent<Collider>();
@@ -494,6 +534,30 @@ namespace Assets.Scripts.Player
             }
         }
 
+        private GameObject FindInteractableRoot(GameObject hit)
+        {
+            if (hit == null) return null;
+
+            Transform current = hit.transform;
+            for (int i = 0; i < 10 && current != null; i++)
+            {
+                if (current.TryGetComponent<Corpse>(out var corpse) && corpse.enabled)
+                    return current.gameObject;
+
+                if (current.TryGetComponent<Creature>(out var living) && living.IsAlive())
+                    return current.gameObject;
+
+                var interactable = current.GetComponent<IInteractable>();
+                if (interactable != null
+                    && !(interactable is Corpse)
+                    && !(interactable is Creature))
+                    return current.gameObject;
+
+                current = current.parent;
+            }
+            return null;
+        }
+
         private void UpdateInteractionUI()
         {
             if (_currentlyDraggingCorpse != null || (_playerController != null && _playerController.IsMounted))
@@ -503,10 +567,7 @@ namespace Assets.Scripts.Player
             }
 
             StringBuilder sb = new StringBuilder();
-            bool isInventoryOpened = _panelsController?.IsInventoryOpened() == true;
             bool isMenuAlreadyOpen = _panelsController?.IsRadialMenuOpened() == true;
-            bool isPauseOpened = _pauseManager?.IsPauseOpened() == true;
-
             foreach (var target in _allTargets)
             {
                 InteractType type = target.GetInteractType();
@@ -550,7 +611,7 @@ namespace Assets.Scripts.Player
             if (interactionUI != null)
             {
                 interactionText.text = sb.ToString();
-                interactionUI.SetActive(!isPauseOpened && !isInventoryOpened && sb.Length > 0);
+                interactionUI.SetActive(sb.Length > 0);
             }
         }
 
@@ -824,24 +885,19 @@ namespace Assets.Scripts.Player
 
         private void OnTriggerEnter(Collider other)
         {
-            FindInteractablesOnObject(other.gameObject);
+            var root = FindInteractableRoot(other.gameObject);
+            if (root == null) return;
+
+            FindInteractablesOnObject(root);
             if (_allTargets.Count > 0)
-            {
-                _targetGO = other.gameObject;
-            }
+                _targetGO = root;
         }
 
         private void OnTriggerExit(Collider other)
         {
-            if (_targetGO != null && other.gameObject == _targetGO)
-            {
-                foreach (var target in _allTargets)
-                {
-                    if (target?.HasInventory() == true && _panelsController != null)
-                        _panelsController.CloseAllPanels();
-                }
-                ClearTriggerTarget();
-            }
+            if (_targetGO == null) return;
+            if (other.gameObject != _targetGO) return;
+            ClearTriggerTarget();
         }
 
         private void ClearTriggerTarget()

@@ -281,21 +281,15 @@ namespace Assets.Scripts.UI.RadialMenuUI
                         // Обновить labels (могли измениться после toggle)
                         Rebuild();
 
-                        // Закрываем меню после выбора
-                        // Close();
+                        if (entry.actionId == "open_inventory")
+                        {
+                            PanelsUIController.Instance?.CloseRadialMenu();
+                            PanelsUIController.Instance?.OpenOtherInventory();   // <-- явно
+                            return;
+                        }
 
-                        // После отпускания E -> 
-                        // HandleInteractEnded -> 
-                        // HandleMenuClosed -> 
-                        // CloseRadialMenu (PanelMode(false)) -> RadialMenuController.Instance?.Close
-                        // Если выбрали Открыть инвентарь
-                        // PanelMode должен быть true
 
-                        var panelsUIController = PanelsUIController.Instance;
-                        if (panelsUIController == null) return;
-
-                        bool setPanelMode = (entry.actionId == "open_inventory") ? true : false;
-                        panelsUIController.CloseRadialMenu(setPanelMode);
+                        PanelsUIController.Instance?.CloseRadialMenu();
 
 
                     }

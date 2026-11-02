@@ -161,6 +161,7 @@ namespace Assets.Scripts.Creatures
 
         public float TamedSpeed => _data.baseStats.maxSpeed * 2f; //пока так для тестов, потом будет прокачка статов
         public float TamedSprintSpeed => _data.baseStats.maxSpeed * 4f; //пока так для тестов, потом будет прокачка статов
+        public float TamedWanderSpeed => _data.baseStats.maxSpeed * 0.5f; //пока так для тестов, потом будет прокачка статов
 
         public float RideSpeed => _data.baseStats.maxSpeed * 3f; //пока так для тестов, потом будет прокачка статов
         public float RideSprintSpeed => _data.baseStats.maxSpeed * 5f; //пока так для тестов, потом будет прокачка статов
@@ -369,17 +370,34 @@ namespace Assets.Scripts.Creatures
             if (tamed)
             {
                 // === Верхом — AI не работает ===
+                // if (_riding != null && _riding.IsRidden)
+                // {
+                //     // Берем игрока напрямую из синглтона
+                //     var pc = PlayerController.Instance;
+
+                //     if (pc != null)
+                //         _riding.TickRidden(pc.MoveInput, pc.LookInput, pc.SprintInput, false);
+
+                //     UpdateAnimation();
+                //     return;
+
+                // }
+
                 if (_riding != null && _riding.IsRidden)
                 {
-                    // Берем игрока напрямую из синглтона
                     var pc = PlayerController.Instance;
-
                     if (pc != null)
-                        _riding.TickRidden(pc.MoveInput, pc.LookInput, pc.SprintInput, false);
+                    {
+                        bool blocked = pc.LockCameraOnEsc;
+                        Vector2 move = blocked ? Vector2.zero : pc.MoveInput;
+                        Vector2 look = blocked ? Vector2.zero : pc.LookInput;
+                        bool sprint = blocked ? false : pc.SprintInput;
+
+                        _riding.TickRidden(move, look, sprint, false);
+                    }
 
                     UpdateAnimation();
                     return;
-
                 }
 
                 if (_tamedAI != null) _tamedAI.Tick();

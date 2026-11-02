@@ -170,7 +170,7 @@ namespace Assets.Scripts.Creatures.Components
             if (agent == null) return;
 
             agent.isStopped = false;
-            agent.speed = _creature.TamedSpeed;
+            agent.speed = _creature.TamedWanderSpeed;
 
             if (!_isWandering || Time.time >= _nextWanderTime)
             {

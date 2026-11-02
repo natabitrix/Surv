@@ -142,7 +142,6 @@ namespace Assets.Scripts.UI
         }
 
         // === TOGGLE PANELS ===
-        // Управление состоянием панелей и курсора
         private void PanelMode(bool on = false)
         {
             _isInventoryOpened = on;
@@ -200,6 +199,7 @@ namespace Assets.Scripts.UI
 
             if (_previewManager != null) _previewManager.ClosePreview();
 
+            _isInventoryOpened = true;
             PanelMode(true);
 
             _input.OnInteractTriggered += _inventoryManager.UseSelectedSlot;
@@ -244,26 +244,28 @@ namespace Assets.Scripts.UI
 
             _isRadialMenuOpened = true;
             PanelMode(true);
+            // SyncPanelMode(); 
         }
 
-        public void CloseRadialMenu(bool setPanelMode = false)
+        // public void CloseRadialMenu(bool setPanelMode = false)
+        public void CloseRadialMenu()
         {
+            RadialMenuController.Instance?.Close();
+
             if (!_isRadialMenuOpened) return;
 
             RadialMenuCurrentTarget = null;
             RadialMenuCurrentTargetGO = null;
 
-            RadialMenuController.Instance?.Close();
-
             _isRadialMenuOpened = false;
-            PanelMode(setPanelMode);
+            PanelMode(false);
+            // SyncPanelMode();
 
             if (_tooltipManager != null) _tooltipManager.HideTooltip();
 
             // Сбрасываем зажатие E, если меню закрылось
             _input?.ForceResetInteract();
-            // Сбрасываем зажатие T (не E!)
-            // _input?.ForceResetRadialMenu();
+
         }
 
 
@@ -288,6 +290,11 @@ namespace Assets.Scripts.UI
 
             _input.OnInteractTriggered -= _inventoryManager.UseSelectedSlot;
             _input.OnInteractStopPressed -= _itemUsageRouter.OnUseItemFinished;
+
+            _isInventoryOpened = false;
+            PanelMode(false);
+            // SetInventoryOpened(false);
+            // SyncPanelMode();
         }
 
         // Закрытие панели энграмм
