@@ -215,9 +215,9 @@ namespace Assets.Scripts.Creatures.Taming
 
 
             // Команды прирученного
-            creature.tamedFollowing = data.tamedFollowing;
-            creature.tamedWandering = data.tamedWandering;
-            creature.tamedMating = data.tamedMating;
+            creature.isFollowing = data.isFollowing;
+            creature.isWandering = data.isWandering;
+            creature.isMating = data.isMating;
             creature.tamedBehavior = data.tamedBehavior;
             creature.tamedFollowDistance = data.tamedFollowDistance;
 
@@ -290,9 +290,9 @@ namespace Assets.Scripts.Creatures.Taming
                 despawnDuration = 0f,   // прирученные не деспавнятся
 
                 // Команды прирученного
-                tamedFollowing = creature.tamedFollowing,
-                tamedWandering = creature.tamedWandering,
-                tamedMating = creature.tamedMating,
+                isFollowing = creature.isFollowing,
+                isWandering = creature.isWandering,
+                isMating = creature.isMating,
                 tamedBehavior = creature.tamedBehavior,
                 tamedFollowDistance = creature.tamedFollowDistance,
             };

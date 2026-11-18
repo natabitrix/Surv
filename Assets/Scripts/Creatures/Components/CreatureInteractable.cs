@@ -16,12 +16,15 @@ namespace Assets.Scripts.Creatures.Components
         private Creature _creature;
 
         [Header("Interaction")]
-        [SerializeField] private Collider _interactionCollider;
+        private Collider _interactionCollider;
         public Collider InteractionCollider => _interactionCollider;
 
-        [Header("Audio")]
-        [SerializeField] private ImpactType _impactType = ImpactType.Flesh;
-        public ImpactType GetImpactType() => _impactType;
+        public ImpactType GetImpactType()
+        {
+            if (_creature != null && _creature.Data != null)
+                return _creature.Data.impactType;
+            return ImpactType.Flesh;
+        }
 
         [Header("Inventory")]
         [SerializeField] private ChestInventory _inventory;
@@ -34,6 +37,8 @@ namespace Assets.Scripts.Creatures.Components
             _creature = GetComponent<Creature>();
             if (_creature == null)
                 Debug.LogError($"[CreatureInteractable] Нет Creature на {gameObject.name}!");
+
+            _interactionCollider = _creature.InteractionCollider;
         }
 
         // ==========================================
@@ -43,7 +48,7 @@ namespace Assets.Scripts.Creatures.Components
         public InteractType GetInteractType()
         {
             // Если приручен или нокаутнут (для КО-приручения) — открываем инвентарь (F)
-            if (_creature.tamed || (_creature.tamableKO && _creature.knockedOut))
+            if (_creature.tamed || (_creature.TamableKO && _creature.knockedOut))
                 return InteractType.OpenTargetInventory;
 
             return InteractType.None;
@@ -52,7 +57,7 @@ namespace Assets.Scripts.Creatures.Components
         public InteractType GetInteractType2()
         {
             // Если пассивное приручение или приручен и можно ездить (Оседлать/Спешиться на E)
-            if ((_creature.tamable && _creature.tamablePassive) || (_creature.tamed && _creature.Data != null && _creature.Data.canBeRidden))
+            if ((_creature.Tamable && _creature.TamablePassive) || (_creature.tamed && _creature.Data != null && _creature.Data.canBeRidden))
                 return InteractType.Interact;
 
             return InteractType.None;
@@ -60,7 +65,7 @@ namespace Assets.Scripts.Creatures.Components
 
         public void Interact(InteractContext context)
         {
-            if (context.isTargetInventory && (_creature.tamed || (_creature.tamableKO && _creature.knockedOut)))
+            if (context.isTargetInventory && (_creature.tamed || (_creature.TamableKO && _creature.knockedOut)))
             {
                 ToggleInventory();
             }

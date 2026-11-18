@@ -3,17 +3,30 @@ using UnityEngine;
 
 public class HealthMaterialBlender : MonoBehaviour
 {
-    [Header("Настройки")]
-    [SerializeField] private Renderer targetRenderer;
-    [SerializeField] private string blendParameter = "_DamageBlend";
-    [SerializeField] private string intensityParameter = "_DamageIntensity";
-    
-    [Header("Визуал")]
-    [Tooltip("Усиление эффекта повреждений (1 = как в текстуре, 2 = вдвое ярче)")]
-    [SerializeField] private float damageIntensity = 1.5f;
-    
-    [Tooltip("Как часто проверять здоровье (0.05 = 20 раз в сек, достаточно)")]
-    [SerializeField] private float checkInterval = 0.05f;
+    // [Header("Настройки")]
+    // [SerializeField] private Renderer targetRenderer;
+    // [SerializeField] private string blendParameter = "_DamageBlend";
+    // [SerializeField] private string intensityParameter = "_DamageIntensity";
+
+    // [Header("Визуал")]
+    // [Tooltip("Усиление эффекта повреждений (1 = как в текстуре, 2 = вдвое ярче)")]
+    // [SerializeField] private float damageIntensity = 1.5f;
+
+    // [Tooltip("Как часто проверять здоровье (0.05 = 20 раз в сек, достаточно)")]
+    // [SerializeField] private float checkInterval = 0.1f;
+
+    // Настройки
+    private Renderer targetRenderer;
+    private string blendParameter = "_DamageBlend";
+    private string intensityParameter = "_DamageIntensity";
+
+    // Визуал
+    //Усиление эффекта повреждений (1 = как в текстуре, 2 = вдвое ярче)
+    private float damageIntensity = 1.5f;
+
+    //Как часто проверять здоровье (0.05 = 20 раз в сек, достаточно)
+    private float checkInterval = 0.1f;
+
 
     private Creature _entity;
     private MaterialPropertyBlock _block;
@@ -25,24 +38,25 @@ public class HealthMaterialBlender : MonoBehaviour
     private void Awake()
     {
         _entity = GetComponent<Creature>();
-        if(_entity == null) return;
+        if (_entity == null) return;
 
-        if (targetRenderer == null) targetRenderer = GetComponent<Renderer>();
+        // if (targetRenderer == null) targetRenderer = GetComponent<Renderer>();
+        targetRenderer = GetComponentInChildren<Renderer>();
 
         _block = new MaterialPropertyBlock();
         _blendID = Shader.PropertyToID(blendParameter);
         _intensityID = Shader.PropertyToID(intensityParameter);
-        
+
         // Применяем интенсивность один раз при старте
         _block.SetFloat(_intensityID, damageIntensity);
         targetRenderer.SetPropertyBlock(_block);
-        
+
         _nextCheckTime = Time.time;
     }
 
     private void Update()
     {
-        if(_entity == null) return;
+        if (_entity == null) return;
 
         if (Time.time < _nextCheckTime) return;
         _nextCheckTime = Time.time + checkInterval;

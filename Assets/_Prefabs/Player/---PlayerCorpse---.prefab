@@ -738,6 +738,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1164035763396051585}
+  - component: {fileID: 7838662899731450334}
+  - component: {fileID: 5550197666774965848}
   m_Layer: 17
   m_Name: foot.L
   m_TagString: Untagged
@@ -762,6 +764,79 @@ Transform:
   - {fileID: 9208200194635479629}
   m_Father: {fileID: 8267036372871253820}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!54 &7838662899731450334
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2144467990723005989}
+  serializedVersion: 5
+  m_Mass: 5.625
+  m_LinearDamping: 1
+  m_AngularDamping: 3
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 1
+  m_Interpolate: 1
+  m_Constraints: 0
+  m_CollisionDetection: 2
+--- !u!144 &5550197666774965848
+CharacterJoint:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2144467990723005989}
+  serializedVersion: 3
+  m_ConnectedBody: {fileID: 352166797029476889}
+  m_ConnectedArticulationBody: {fileID: 0}
+  m_Anchor: {x: 0, y: 0, z: 0}
+  m_Axis: {x: 1, y: 0, z: 0}
+  m_AutoConfigureConnectedAnchor: 1
+  m_ConnectedAnchor: {x: 0, y: 0, z: 0}
+  m_SwingAxis: {x: 0, y: 0, z: -1}
+  m_TwistLimitSpring:
+    spring: 0
+    damper: 0
+  m_LowTwistLimit:
+    limit: -20
+    bounciness: 0
+    contactDistance: 0
+  m_HighTwistLimit:
+    limit: 70
+    bounciness: 0
+    contactDistance: 0
+  m_SwingLimitSpring:
+    spring: 0
+    damper: 0
+  m_Swing1Limit:
+    limit: 40
+    bounciness: 0
+    contactDistance: 0
+  m_Swing2Limit:
+    limit: 40
+    bounciness: 0
+    contactDistance: 0
+  m_EnableProjection: 0
+  m_ProjectionDistance: 0.1
+  m_ProjectionAngle: 180
+  m_BreakForce: Infinity
+  m_BreakTorque: Infinity
+  m_EnableCollision: 0
+  m_EnablePreprocessing: 0
+  m_MassScale: 1
+  m_ConnectedMassScale: 1
 --- !u!1 &2253684722377209835
 GameObject:
   m_ObjectHideFlags: 0
@@ -2851,32 +2926,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58cd31a1b2f00848bf1cbc7cca71af0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Creatures.Corpse
-  _ragdollController: {fileID: 3321671290676940435}
-  _dragRigidbody: {fileID: 6529509373495793384}
-  _centerBone: {fileID: 1150119814400764130}
-  _interactionCollider: {fileID: 5906720190356917627}
-  _interactionAnchor: {fileID: 1502837383900671138}
   _inventory: {fileID: 0}
-  allowHarvest: 1
-  allowFists: 1
-  allowAxe: 1
-  allowPickaxe: 1
-  allowSword: 1
-  allowSickle: 0
   inventoryLootTable: []
-  breakEffect: {fileID: 0}
   shatterer: {fileID: 0}
   hitDecaler: {fileID: 0}
   animator: {fileID: 0}
-  _impactType: 1
   harvestDrops:
   - item: {fileID: 11400000, guid: 14e07d6a5fa29dd469fc0ecd04bd0d01, type: 2}
     totalAmount: 50
   - item: {fileID: 11400000, guid: 1ad4a3a8b65eb0d41bd64511934ea685, type: 2}
     totalAmount: 100
   maxHarvestHits: 3
-  _corpseDisappearTime: 5000
-  _lootBagPrefab: {fileID: 4309089054926544229, guid: 27ea0d0c5535c3d47a83045f2d6eeb8a, type: 3}
+  dragRigidbody: {fileID: 7838662899731450334}
+  centerBone: {fileID: 1977493426630750914}
+  interactionCollider: {fileID: 5906720190356917627}
+  interactionAnchor: {fileID: 1502837383900671138}
+  breakEffect: {fileID: 0}
 --- !u!114 &3321671290676940435
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2894,16 +2959,16 @@ MonoBehaviour:
     - {fileID: 1150119814400764130}
     - {fileID: 1977493426630750914}
     - {fileID: 4792775661271827781}
-    - {fileID: 5934516625409033493}
     - {fileID: 8725182982668655773}
+    - {fileID: 5934516625409033493}
     - {fileID: 2581827106994613368}
     - {fileID: 7183280094652099060}
     - {fileID: 1060356342752038445}
     - {fileID: 8267036372871253820}
     - {fileID: 5955443550431743504}
     - {fileID: 2061271704534065008}
-    linearDamp: 1
-    angularDamp: 3
+    linearDamp: 0.5
+    angularDamp: 2
     velocityInherit: 0.1
 --- !u!114 &630576923232797033
 MonoBehaviour:
@@ -2922,7 +2987,6 @@ MonoBehaviour:
   creature: {fileID: 0}
   structure: {fileID: 0}
   chest: {fileID: 0}
-  IsStructure: 0
 --- !u!1 &8012638579492073318
 GameObject:
   m_ObjectHideFlags: 0

@@ -15,7 +15,7 @@ MonoBehaviour:
   creatureId: Robot_George
   displayName: Robot George
   icon: {fileID: 0}
-  prefab: {fileID: 8196958937981766394, guid: b09242b7b6b48da4faef3df8050f0539, type: 3}
+  prefab: {fileID: 2059893251731163871, guid: c449fcff177e99243af6172ab51f36c9, type: 3}
   behaviorType: 1
   baseStats:
     level: 1
@@ -48,6 +48,10 @@ MonoBehaviour:
   starvationDamagePerSecond: 1
   inventoryLootTable:
   - item: {fileID: 11400000, guid: dc69f91a959d4494c9ba7b0b71c6b2ec, type: 2}
+    minAmount: 1
+    maxAmount: 1
+    dropChance: 1
+  - item: {fileID: 11400000, guid: 69fd5c78dc00af14d975536ced700dbc, type: 2}
     minAmount: 1
     maxAmount: 1
     dropChance: 1

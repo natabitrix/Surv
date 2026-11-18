@@ -8,17 +8,15 @@ namespace Assets.Scripts.Creatures.Components
     public class CreatureRiding : MonoBehaviour
     {
         private Creature _creature;
-
         private bool _isRidden = false;
-        public bool IsRidden => _isRidden;
-
-        [Header("Riding Points")]
-        public Transform riderAttachPoint;
-        public Vector3 dismountOffset = new Vector3(2f, 0f, 0f);
-
+        private Transform _riderAttachPoint;
+        private Vector3 _dismountOffset;
         private PlayerController _rider;
-        public PlayerController Rider => _rider;
 
+        public bool IsRidden => _isRidden;
+        public Transform RiderAttachPoint => _riderAttachPoint;
+        public Vector3 DismountOffset => _dismountOffset;
+        public PlayerController Rider => _rider;
         public Creature RidingCreature => _creature;
 
         private void Awake()
@@ -26,6 +24,9 @@ namespace Assets.Scripts.Creatures.Components
             _creature = GetComponent<Creature>();
             if (_creature == null)
                 Debug.LogError($"[CreatureRiding] Нет Creature на {gameObject.name}!");
+
+            _riderAttachPoint = _creature.CreatureRidingRiderAttachPoint;
+            _dismountOffset = _creature.CreatureRidingDismountOffset;
         }
 
         // ==========================================
@@ -42,7 +43,7 @@ namespace Assets.Scripts.Creatures.Components
             if (!_creature.IsAlive()) return false;
             if (_creature.Data == null) return false;
             if (!_creature.Data.canBeRidden) return false;
-            if (riderAttachPoint == null) return false;
+            if (_riderAttachPoint == null) return false;
             return true;
         }
 

@@ -10,16 +10,42 @@ using Assets.Scripts.UI;
 using Assets.Scripts.Creatures.Taming;
 using Assets.Scripts.Creatures.Components;
 using Assets.Scripts.Player;
+using Assets.Scripts.Corpses;
+
+// === СОЗДАНИЕ СУЩЕСТВА ===
+// 1. Импортировать модель с анимациями и материалами, создать Humanoid или Generic аватар из модели
+// 2. Перетащить модель на сцену, распаковать префаб модели
+// 3. На корень повесить компоненты Animator, NavMeshAgent, Creature
+// 4. Дочерние объекты: Меш, Скелет
+// 5. Создать материал с шейдером DamageRobotTexture (создать дамаженные текстуры, создать нормали из текстур)
+// 6. Скопировать клипы в папку префаба, в Idle, Walk-Run клипах установить LoopTime
+// 7. Скопировать AnimationController из другого существа, поменять клипы
+// 8. В Animator назначить AnimationController и созданный аватар
+// 9. В анимациях установить события:
+// 		на атаку: DealDamageToTarget(), SoundOnAttack()
+// 		на урон: SoundOnTakeDamage()
+// 		на смерть: SoundOnDeath()
+// 		на бег, ходьбу: SoundOnFootstep()
+// 10. Создать RagDoll на костях GameObject -> 3D Object -> Ragdoll... (Rigidbody, Collider, CharacterJoint)
+// 11. Создать кость DragRigidbody (повесить Rigidbody и CharacterJoint)
+// 12. Заполнить в Creature поля 
+// 		CreatureId - такой же как в CreatureDatа
+// 		CorpseDragRigidbody - часть тела за которую тащить труп (нога, рука)
+// 		InteractionCollider - рекомендуется Body или создать дочерний
+// 		CreatureRidingRiderAttachPoint - точка оседлания, дочерний трансформ к шее, спине
+// 		RagdollParts - кости на которых есть Rigidbody
+// 13. Запаковать префаб, перетащить в папку
+// 14. Создать ассет CreatureDatа, заполнить данные, CreatureId - такой же как в Creatur, ссылку на префаб
+// 15. Добавить ассет CreatureDatа в ассет _CreatureDatabase
 
 namespace Assets.Scripts.Creatures
 {
     public class Creature : MonoBehaviour
     {
-        [Header("Database")]
-        [Tooltip("Ссылка на базу данных существ")]
-        public CreatureDatabase creatureDatabase;
 
-        [Tooltip("ID существа (например, 'Raptor', 'Dodo')")]
+        private CreatureDatabase _creatureDatabase;
+
+        [Tooltip("ID существа в базе (например, 'Robot_Mike')")]
         public string creatureId;
 
         [Header("Taming Stats")]
@@ -30,20 +56,40 @@ namespace Assets.Scripts.Creatures
         public float food = 100f;
         public float maxFood = 100f;
 
+        public bool Tamable => _data != null && _data.tamable;
+        public bool TamableKO => _data != null && _data.tamableKO;
+        public bool TamablePassive => _data != null && _data.tamablePassive;
+
         public bool tamed = false;
-        public bool tamable = false;
-        public bool tamableKO = false;
         public bool knockedOut = false;
-        public bool tamablePassive = false;
+
         public float tamingProgress = 0f;
         public string TamingInstanceId { get; set; } = "";
 
         // Команды прирученного
-        public bool tamedFollowing = false;
-        public bool tamedWandering = false;
-        public bool tamedMating = false;
+        public bool isFollowing = false;
+        public bool isWandering = false;
+        public bool isMating = false;
         public TamedBehavior tamedBehavior = TamedBehavior.Neutral;
         public FollowDistance tamedFollowDistance = FollowDistance.Medium;
+
+
+        [Header("Corpse Drag Target")]
+        public Rigidbody CorpseDragRigidbody;
+        // public Transform CorpseCenterBone;
+
+        [Header("Corpse/CreatureInteractable Interaction")]
+        public Collider InteractionCollider;
+
+        // [Header("Corpse Interaction Anchor (для стабильного рейкаста)")]
+        // public Transform CorpseInteractionAnchor;
+
+        [Header("CreatureRiding Riding Points")]
+        public Transform CreatureRidingRiderAttachPoint;
+        public Vector3 CreatureRidingDismountOffset = new Vector3(2f, 0f, 0f);
+
+        [Header("RagdollController Ragdoll Settings")]
+        public RagdollSettings RagdollControllerRagdollSettings;
 
         protected float health;
         protected float maxHealth;
@@ -66,9 +112,9 @@ namespace Assets.Scripts.Creatures
         protected int animIDDeath;
 
         [Header("ParticleSystem for Damage Effect")]
-        public ParticleSystem damageEffect;
+        public ParticleSystem DamageEffect => _data?.damageEffect;
 
-        public System.Action<Creature> OnDeath; // Раньше было Action<BaseLivingEntity>, меняем на Creature
+        public System.Action<Creature> OnDeath;
 
         public bool IsDead() => _isDead;
         public float GetHealth() => health;
@@ -249,9 +295,17 @@ namespace Assets.Scripts.Creatures
             }
 
             // === Загружаем данные из базы ===
-            if (creatureDatabase == null)
+            var assets = GameAssets.Instance;
+            if (assets == null)
             {
-                Debug.LogError($"[Creature] creatureDatabase не назначена на {gameObject.name}!");
+                Debug.LogError("[Creature] GameAssets.Instance == null!");
+                return;
+            }
+            _creatureDatabase = assets.CreatureDatabase;
+
+            if (_creatureDatabase == null)
+            {
+                Debug.LogError($"[Creature] _creatureDatabase не назначена на {gameObject.name}!");
                 return;
             }
 
@@ -267,53 +321,35 @@ namespace Assets.Scripts.Creatures
                 _config = GameAssets.Instance.CreatureGlobalConfig;
             }
 
-            _data = creatureDatabase.GetCreature(creatureId);
+            _data = _creatureDatabase.GetCreature(creatureId);
             if (_data == null)
             {
                 Debug.LogError($"[Creature] Существо '{creatureId}' не найдено в базе!");
                 return;
             }
 
-            _combat = GetComponent<CreatureCombat>();
-            if (_combat == null) Debug.LogError($"[Creature] Нет CreatureCombat на {gameObject.name}!");
+            _combat = gameObject.AddComponent<CreatureCombat>();
+            _death = gameObject.AddComponent<CreatureDeath>();
+            _knockout = gameObject.AddComponent<CreatureKnockout>();
+            _taming = gameObject.AddComponent<CreatureTaming>();
+            _commands = gameObject.AddComponent<CreatureCommands>();
+            _audio = gameObject.AddComponent<CreatureAudio>();
+            _wildAI = gameObject.AddComponent<CreatureWildAI>();
+            _tamedAI = gameObject.AddComponent<CreatureTamedAI>();
+            _riding = gameObject.AddComponent<CreatureRiding>();
+            _interactable = gameObject.AddComponent<CreatureInteractable>();
+            gameObject.AddComponent<RagdollController>();
+            gameObject.AddComponent<HealthMaterialBlender>();
 
-            _death = GetComponent<CreatureDeath>();
-            if (_death == null) Debug.LogError($"[Creature] Нет CreatureDeath на {gameObject.name}!");
+            var corpse = gameObject.AddComponent<Corpse>();
+            corpse.enabled = false;
 
-            _knockout = GetComponent<CreatureKnockout>();
-            if (_knockout == null) Debug.LogError($"[Creature] Нет CreatureKnockout на {gameObject.name}!");
-
-            _taming = GetComponent<CreatureTaming>();
-            if (_taming == null) Debug.LogError($"[Creature] Нет CreatureTaming на {gameObject.name}!");
-
-            _commands = GetComponent<CreatureCommands>();
-            if (_commands == null) Debug.LogError($"[Creature] Нет CreatureCommands на {gameObject.name}!");
-
-            _audio = GetComponent<CreatureAudio>();
-            if (_audio == null) Debug.LogError($"[Creature] Нет CreatureAudio на {gameObject.name}!");
-
-            _wildAI = GetComponent<CreatureWildAI>();
-            if (_wildAI == null) Debug.LogError($"[Creature] Нет CreatureWildAI на {gameObject.name}!");
-
-            _tamedAI = GetComponent<CreatureTamedAI>();
-            if (_tamedAI == null) Debug.LogError($"[Creature] Нет CreatureTamedAI на {gameObject.name}!");
-
-            _riding = GetComponent<CreatureRiding>();
-            if (_riding == null) Debug.LogError($"[Creature] Нет CreatureRiding на {gameObject.name}!");
-
-            _interactable = GetComponent<CreatureInteractable>();
-            if (_interactable == null) Debug.LogError($"[Creature] Нет CreatureInteractable на {gameObject.name}!");
-
-            // === Применяем поведение ===
-            tamable = _data.tamable;
-            tamableKO = _data.tamableKO;
-            tamablePassive = _data.tamablePassive;
+            var menu = gameObject.AddComponent<RadialMenu>();
+            menu.enabled = false;
 
             // === Инициализация звуков ===
             _audio.Initialize(_data);
 
-            // === Применяем эффекты ===
-            damageEffect = _data.damageEffect;
 
             // === Применяем статы здоровья ===
             maxHealth = _data.baseStats.maxHealth;
@@ -370,19 +406,6 @@ namespace Assets.Scripts.Creatures
             if (tamed)
             {
                 // === Верхом — AI не работает ===
-                // if (_riding != null && _riding.IsRidden)
-                // {
-                //     // Берем игрока напрямую из синглтона
-                //     var pc = PlayerController.Instance;
-
-                //     if (pc != null)
-                //         _riding.TickRidden(pc.MoveInput, pc.LookInput, pc.SprintInput, false);
-
-                //     UpdateAnimation();
-                //     return;
-
-                // }
-
                 if (_riding != null && _riding.IsRidden)
                 {
                     var pc = PlayerController.Instance;
@@ -495,6 +518,15 @@ namespace Assets.Scripts.Creatures
         public string GetRadialDynamicLabel(string actionId) => _commands?.GetRadialDynamicLabel(actionId);
         public string GetBehaviorText() => _commands != null ? _commands.TamedBehaviorToText() : "Wild";
 
+        // ==========================================
+        // === СОБЫТИЯ АНИМАЦИИ ===
+        // ==========================================
+
+        public void DealDamageToTarget() => _combat?.DealDamageToTarget();
+        public void SoundOnAttack(AnimationEvent animEv) => _audio?.SoundOnAttack(animEv);
+        public void SoundOnTakeDamage(AnimationEvent animEv) => _audio?.SoundOnTakeDamage(animEv);
+        public void SoundOnDeath(AnimationEvent animEv) => _audio?.SoundOnDeath(animEv);
+        public void SoundOnFootstep(AnimationEvent animEv) => _audio?.SoundOnFootstep(animEv);
 
         private void UpdateAnimation()
         {

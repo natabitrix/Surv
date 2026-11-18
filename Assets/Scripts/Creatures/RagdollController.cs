@@ -11,8 +11,13 @@ namespace Assets.Scripts.Creatures
     /// </summary>
     public class RagdollController : MonoBehaviour
     {
-        [Header("Ragdoll Settings")]
-        public RagdollSettings ragdollSettings;
+        private Creature _creature;
+
+        [Header("Заполнять если компонент добавлен вручную")]
+        public RagdollSettings ragdollSettings; // для тела игрока
+
+        private RagdollSettings _ragdollSettings; // для тела существа
+        public RagdollSettings RagdollSettings => _ragdollSettings;
 
         private Vector3[] _initialLocalPositions;
         private Quaternion[] _initialLocalRotations;
@@ -23,6 +28,22 @@ namespace Assets.Scripts.Creatures
 
         private void Awake()
         {
+            _creature = GetComponent<Creature>();
+
+            if (_creature != null)
+            {
+                _ragdollSettings = _creature.RagdollControllerRagdollSettings;
+            }
+            else if (ragdollSettings != null)
+            {
+                _ragdollSettings = ragdollSettings;
+            }
+
+            if (_ragdollSettings == null)
+            {
+                Debug.LogError($"[RagdollController] Нет Creature или ragdollSettings на {gameObject.name}!");
+            }
+
             CaptureInitialPoses();
         }
 
@@ -33,15 +54,15 @@ namespace Assets.Scripts.Creatures
         private void CaptureInitialPoses()
         {
             if (_initialPosesCaptured) return;
-            if (ragdollSettings == null || ragdollSettings.ragdollParts == null) return;
+            if (_ragdollSettings == null || _ragdollSettings.ragdollParts == null) return;
 
-            int n = ragdollSettings.ragdollParts.Length;
+            int n = _ragdollSettings.ragdollParts.Length;
             _initialLocalPositions = new Vector3[n];
             _initialLocalRotations = new Quaternion[n];
 
             for (int i = 0; i < n; i++)
             {
-                var part = ragdollSettings.ragdollParts[i];
+                var part = _ragdollSettings.ragdollParts[i];
                 if (part == null) continue;
 
                 _initialLocalPositions[i] = part.localPosition;
@@ -54,12 +75,12 @@ namespace Assets.Scripts.Creatures
         private void ResetPosesToInitial()
         {
             if (!_initialPosesCaptured) return;
-            if (ragdollSettings == null) return;
+            if (_ragdollSettings == null) return;
 
-            int n = ragdollSettings.ragdollParts.Length;
+            int n = _ragdollSettings.ragdollParts.Length;
             for (int i = 0; i < n; i++)
             {
-                var part = ragdollSettings.ragdollParts[i];
+                var part = _ragdollSettings.ragdollParts[i];
                 if (part == null) continue;
 
                 part.localPosition = _initialLocalPositions[i];
@@ -74,12 +95,12 @@ namespace Assets.Scripts.Creatures
         {
             if (!_initialPosesCaptured) CaptureInitialPoses();
             if (_isActive) return;
-            if (ragdollSettings == null || ragdollSettings.ragdollParts == null) return;
+            if (_ragdollSettings == null || _ragdollSettings.ragdollParts == null) return;
 
             ResetPosesToInitial();
             Physics.SyncTransforms();
 
-            foreach (var part in ragdollSettings.ragdollParts)
+            foreach (var part in _ragdollSettings.ragdollParts)
             {
                 if (part == null) continue;
                 var rb = part.GetComponent<Rigidbody>();
@@ -92,8 +113,8 @@ namespace Assets.Scripts.Creatures
                 rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
 
-                rb.linearDamping = ragdollSettings.linearDamp;
-                rb.angularDamping = ragdollSettings.angularDamp;
+                rb.linearDamping = _ragdollSettings.linearDamp;
+                rb.angularDamping = _ragdollSettings.angularDamp;
 
                 rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
             }
@@ -108,9 +129,9 @@ namespace Assets.Scripts.Creatures
         public void DeactivateRagdoll()
         {
             if (!_isActive) return;
-            if (ragdollSettings == null || ragdollSettings.ragdollParts == null) return;
+            if (_ragdollSettings == null || _ragdollSettings.ragdollParts == null) return;
 
-            foreach (var part in ragdollSettings.ragdollParts)
+            foreach (var part in _ragdollSettings.ragdollParts)
             {
                 if (part == null) continue;
                 var rb = part.GetComponent<Rigidbody>();
@@ -145,9 +166,9 @@ namespace Assets.Scripts.Creatures
         /// </summary>
         public void StabilizeRagdoll(bool stabilize)
         {
-            if (ragdollSettings == null || ragdollSettings.ragdollParts == null) return;
+            if (_ragdollSettings == null || _ragdollSettings.ragdollParts == null) return;
 
-            foreach (var part in ragdollSettings.ragdollParts)
+            foreach (var part in _ragdollSettings.ragdollParts)
             {
                 if (part == null) continue;
                 var rb = part.GetComponent<Rigidbody>();
@@ -160,8 +181,8 @@ namespace Assets.Scripts.Creatures
                     }
                     else
                     {
-                        rb.linearDamping = ragdollSettings.linearDamp;
-                        rb.angularDamping = ragdollSettings.angularDamp;
+                        rb.linearDamping = _ragdollSettings.linearDamp;
+                        rb.angularDamping = _ragdollSettings.angularDamp;
                     }
                 }
             }
@@ -169,16 +190,16 @@ namespace Assets.Scripts.Creatures
 
         public void WakeAllRigidbodies()
         {
-            if (ragdollSettings?.ragdollParts == null) return;
+            if (_ragdollSettings?.ragdollParts == null) return;
 
-            foreach (var part in ragdollSettings.ragdollParts)
+            foreach (var part in _ragdollSettings.ragdollParts)
             {
                 if (part == null) continue;
                 var rb = part.GetComponent<Rigidbody>();
                 if (rb != null)
                 {
-                    rb.linearDamping = ragdollSettings.linearDamp;
-                    rb.angularDamping = ragdollSettings.angularDamp;
+                    rb.linearDamping = _ragdollSettings.linearDamp;
+                    rb.angularDamping = _ragdollSettings.angularDamp;
                     rb.isKinematic = false;
                     rb.WakeUp();
                     rb.AddForce(Random.insideUnitSphere * 2f, ForceMode.Impulse);
@@ -188,9 +209,9 @@ namespace Assets.Scripts.Creatures
 
         public void ResetVelocities()
         {
-            if (ragdollSettings?.ragdollParts == null) return;
+            if (_ragdollSettings?.ragdollParts == null) return;
 
-            foreach (var part in ragdollSettings.ragdollParts)
+            foreach (var part in _ragdollSettings.ragdollParts)
             {
                 if (part == null) continue;
                 var rb = part.GetComponent<Rigidbody>();
@@ -204,9 +225,9 @@ namespace Assets.Scripts.Creatures
 
         public void DampAngularVelocity(float factor = 0.5f)
         {
-            if (ragdollSettings?.ragdollParts == null) return;
+            if (_ragdollSettings?.ragdollParts == null) return;
 
-            foreach (var part in ragdollSettings.ragdollParts)
+            foreach (var part in _ragdollSettings.ragdollParts)
             {
                 if (part == null) continue;
                 var rb = part.GetComponent<Rigidbody>();

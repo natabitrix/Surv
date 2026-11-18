@@ -13,5 +13,7 @@ MonoBehaviour:
   m_Name: _CreatureDatabase
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Creatures.CreatureDatabase
   _creatures:
-  - {fileID: 11400000, guid: 7bf11e2c27e88d142af71a463b4264b6, type: 2}
   - {fileID: 11400000, guid: 9a8d89c3cc3ea1d4fb824de6cfcd3779, type: 2}
+  - {fileID: 11400000, guid: 7bf11e2c27e88d142af71a463b4264b6, type: 2}
+  - {fileID: 11400000, guid: c44712336cf6b254bb5f4e18cb77d6d3, type: 2}
+  - {fileID: 11400000, guid: 2f883acf6925f7c4ea1caaa35b691d6d, type: 2}

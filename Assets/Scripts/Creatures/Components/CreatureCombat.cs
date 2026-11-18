@@ -123,9 +123,9 @@ namespace Assets.Scripts.Creatures.Components
                 _creature.Animator.SetTrigger(_creature.AnimIDTakeDamage);
             }
 
-            if (_creature.damageEffect != null && finalDamage > 0)
+            if (_creature.DamageEffect != null && finalDamage > 0)
             {
-                PlayDamageEffect(_creature.damageEffect, popupPos);
+                PlayDamageEffect(_creature.DamageEffect, popupPos);
             }
 
             if (_creature.IsHealthBelowZero())
@@ -187,8 +187,6 @@ namespace Assets.Scripts.Creatures.Components
         public void DealDamageToTarget()
         {
             if (_creature == null) return;
-
-            
 
             // 1. Сначала проверяем: если мы - прирученное существо верхом, и бьем скиллом
             if (_creature.tamed && _creature.Riding != null && _creature.Riding.IsRidden)

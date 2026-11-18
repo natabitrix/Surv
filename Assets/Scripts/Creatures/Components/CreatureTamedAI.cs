@@ -109,14 +109,14 @@ namespace Assets.Scripts.Creatures.Components
             }
 
             // === 5. Follow ===
-            if (_creature.tamedFollowing && _creature.PlayerTransform != null)
+            if (_creature.isFollowing && _creature.PlayerTransform != null)
             {
                 FollowOwner();
                 return;
             }
 
             // === 6. Wander ===
-            if (_creature.tamedWandering)
+            if (_creature.isWandering)
             {
                 WanderTamed();
                 return;

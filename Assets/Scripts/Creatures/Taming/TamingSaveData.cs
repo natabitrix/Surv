@@ -34,9 +34,9 @@ namespace Assets.Scripts.Creatures.Taming
         public string customName = "";
 
         // === Команды прирученного ===
-        public bool tamedFollowing;
-        public bool tamedWandering;
-        public bool tamedMating;
+        public bool isFollowing;
+        public bool isWandering;
+        public bool isMating;
         public TamedBehavior tamedBehavior = TamedBehavior.Neutral;
         public FollowDistance tamedFollowDistance = FollowDistance.Medium;
 

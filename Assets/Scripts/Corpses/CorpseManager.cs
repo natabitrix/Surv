@@ -350,8 +350,6 @@ namespace Assets.Scripts.Corpses
                 creature.enabled = false; 
                 creature.Health = 0f; // для HealthMaterialBlender
             }
-            // не конфликтуем с Creature, например меню
-            // if (corpseGO.TryGetComponent<Creature>(out var creature)) Destroy(creature); 
             if (corpseGO.TryGetComponent<NavMeshAgent>(out var agent)) Destroy(agent);
             // if (corpseGO.TryGetComponent<Animator>(out var anim)) anim.enabled = false;
             if (corpseGO.TryGetComponent<Animator>(out var anim)) Destroy(anim);

@@ -26,17 +26,17 @@ namespace Assets.Scripts.Creatures.Components
         public void SetTamedFollowing(bool value)
         {
             if (!_creature.tamed) return;
-            _creature.tamedFollowing = value;
-            if (value) _creature.tamedWandering = false;
+            _creature.isFollowing = value;
+            if (value) _creature.isWandering = false;
         }
 
         public void SetTamedWandering(bool value)
         {
             if (!_creature.tamed) return;
-            _creature.tamedWandering = value;
+            _creature.isWandering = value;
             if (value)
             {
-                _creature.tamedFollowing = false;
+                _creature.isFollowing = false;
                 _creature.TamedAI.ResetWanderState();
             }
         }
@@ -44,7 +44,7 @@ namespace Assets.Scripts.Creatures.Components
         public void SetTamedMating(bool value)
         {
             if (!_creature.tamed) return;
-            _creature.tamedMating = value;
+            _creature.isMating = value;
         }
 
         public void SetTamedBehavior(TamedBehavior value)
@@ -78,18 +78,18 @@ namespace Assets.Scripts.Creatures.Components
                     break;
 
                 case "toggle_follow":
-                    SetTamedFollowing(!_creature.tamedFollowing);
-                    Debug.Log($"[{gameObject.name}] Follow = {_creature.tamedFollowing}");
+                    SetTamedFollowing(!_creature.isFollowing);
+                    Debug.Log($"[{gameObject.name}] Follow = {_creature.isFollowing}");
                     break;
 
                 case "toggle_wander":
-                    SetTamedWandering(!_creature.tamedWandering);
-                    Debug.Log($"[{gameObject.name}] Wander = {_creature.tamedWandering}");
+                    SetTamedWandering(!_creature.isWandering);
+                    Debug.Log($"[{gameObject.name}] Wander = {_creature.isWandering}");
                     break;
 
                 case "toggle_mating":
-                    SetTamedMating(!_creature.tamedMating);
-                    Debug.Log($"[{gameObject.name}] Mating = {_creature.tamedMating}");
+                    SetTamedMating(!_creature.isMating);
+                    Debug.Log($"[{gameObject.name}] Mating = {_creature.isMating}");
                     break;
 
                 case "open_inventory":
@@ -188,11 +188,11 @@ namespace Assets.Scripts.Creatures.Components
             switch (actionId)
             {
                 case "toggle_follow":
-                    return _creature.tamedFollowing ? "Отключить следование" : "Включить следование";
+                    return _creature.isFollowing ? "Отключить следование" : "Включить следование";
                 case "toggle_wander":
-                    return _creature.tamedWandering ? "Отключить блуждание" : "Включить блуждание";
+                    return _creature.isWandering ? "Отключить блуждание" : "Включить блуждание";
                 case "toggle_mating":
-                    return _creature.tamedMating ? "Отключить спаривание" : "Включить спаривание";
+                    return _creature.isMating ? "Отключить спаривание" : "Включить спаривание";
                 case "ride":
                     return _creature.Riding.IsRidden ? "Спешиться" : "Оседлать";
                 default:

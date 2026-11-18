@@ -90,9 +90,9 @@ namespace Assets.Scripts.Creatures.Components
             _creature.tamingProgress = 100f;
 
             // Дефолтные команды
-            _creature.tamedFollowing = true;
-            _creature.tamedWandering = false;
-            _creature.tamedMating = false;
+            _creature.isFollowing = true;
+            _creature.isWandering = false;
+            _creature.isMating = false;
             _creature.tamedBehavior = TamedBehavior.AttackOwnerTarget;
             _creature.tamedFollowDistance = FollowDistance.Medium;
 
@@ -121,9 +121,9 @@ namespace Assets.Scripts.Creatures.Components
             if (!_creature.tamed) return;
 
             _creature.tamed = false;
-            _creature.tamedFollowing = false;
-            _creature.tamedWandering = false;
-            _creature.tamedMating = false;
+            _creature.isFollowing = false;
+            _creature.isWandering = false;
+            _creature.isMating = false;
             _creature.tamedBehavior = TamedBehavior.Neutral;
             _creature.tamedFollowDistance = FollowDistance.Medium;
             _creature.tamingProgress = 0f;

@@ -100,8 +100,8 @@ namespace Assets.Scripts.UI
                     _behaviorText.text = $"Поведение: {_target.GetBehaviorText()}";
 
                     string state;
-                    if(_target.tamedFollowing) state = "Следует";
-                    else if(_target.tamedWandering) state = "Гуляет";
+                    if (_target.isFollowing) state = "Следует";
+                    else if (_target.isWandering) state = "Гуляет";
                     else state = "Стоит";
 
                     _behaviorText.text += $". {state}";
@@ -156,9 +156,9 @@ namespace Assets.Scripts.UI
         {
 
             if (entity.tamed) return "Tamed";
-            if (entity.tamableKO && entity.tamablePassive) return "Wild · Tamable (KO / Passive)";
-            if (entity.tamableKO) return "Wild · Tamable (KO)";
-            if (entity.tamablePassive) return "Wild · Tamable (Passive)";
+            if (entity.TamableKO && entity.TamablePassive) return "Wild · Tamable (KO / Passive)";
+            if (entity.TamableKO) return "Wild · Tamable (KO)";
+            if (entity.TamablePassive) return "Wild · Tamable (Passive)";
 
             return "Wild · Not Tamable";
         }
@@ -166,7 +166,7 @@ namespace Assets.Scripts.UI
         public Color GetStatusTextColor(Creature entity)
         {
             if (entity.tamed) return Color.green;
-            if (entity.tamableKO || entity.tamablePassive) return Color.yellow;
+            if (entity.TamableKO || entity.TamablePassive) return Color.yellow;
             return Color.red;
         }
 

@@ -15,32 +15,13 @@ namespace Assets.Scripts.Corpses
 {
     public class Corpse : MonoBehaviour, IInteractable, IImpactSoundProvider, IInventorySource
     {
-        [Header("Ragdoll")]
-        [SerializeField] private RagdollController _ragdollController;
 
         public bool IsDragging { get; private set; }
         public bool IsHarvested { get; private set; } = false;
 
-        [Header("Drag Target")]
-        [SerializeField] private Rigidbody _dragRigidbody;
-        [SerializeField] private Transform _centerBone;
-        private SpringJoint _springJointToGrabPoint;
-
-        private Creature _creature;
-
-        [Header("Interaction")]
-        [SerializeField] private Collider _interactionCollider;
-        public Collider InteractionCollider => _interactionCollider;
-
-        [Header("Interaction Anchor (для стабильного рейкаста)")]
-        [SerializeField] private Transform _interactionAnchor;
-
         [Header("Inventory")]
         [SerializeField] private ChestInventory _inventory;
         private bool _isOpen = false;
-
-        [Header("Harvesting")]
-        public bool allowHarvest = true;
 
         public LootEntry[] inventoryLootTable;
 
@@ -52,19 +33,25 @@ namespace Assets.Scripts.Corpses
         }
 
         [Header("Harvest Visuals & Audio")]
-        public ParticleSystem breakEffect;
+
         public Shatterer shatterer;
         public HitDecaler hitDecaler;
         public Animator animator;
 
-        [SerializeField] private ImpactType _impactType = ImpactType.Metal;
-        public ImpactType GetImpactType() => _impactType;
+        public ImpactType GetImpactType()
+        {
+            // Если это труп существа — берем тип из его данных
+            if (_creature != null && _creature.Data != null)
+                return _creature.Data.impactType;
+
+            // Fallback для игрока или неизвестных трупов
+            return ImpactType.Flesh;
+        }
 
         public ResourceDrop[] harvestDrops;
         public int maxHarvestHits = 5;
 
-        [Header("Despawn Settings")]
-        [SerializeField] private float _corpseDisappearTime = 300f;
+        private float _corpseDisappearTime = 300f;
         private GameObject _lootBagPrefab;
 
         [Header("Persistence")]
@@ -72,15 +59,28 @@ namespace Assets.Scripts.Corpses
         public string OwnerPlayerId { get; set; } = "player_001";
         public string CorpseId { get; set; } = "Unknown";
 
-        private float _remainingLifetime;
+        private Creature _creature;
+
+        private Rigidbody _dragRigidbody;
+        // private Transform _centerBone;
+        private RagdollController _ragdollController;
+        private Collider _interactionCollider;
+        // private Transform _interactionAnchor;
+        private ParticleSystem _breakEffect;
+
+        [Header("Заполнять если компонент добавлен вручную")]
+        public Rigidbody dragRigidbody;
+        public Transform centerBone;
+        public Collider interactionCollider;
+        public Transform interactionAnchor;
+        public ParticleSystem breakEffect;
+
         private string _corpseName = "";
-        private float _creationTime = 0f;
         private int _harvestHits = 0;
         private int[] _remainingAmounts;
         private bool _isDepleted = false;
         private Coroutine _despawnCoroutine;
 
-        public RagdollController RagdollController => _ragdollController;
 
         public string GetDisplayName()
         {
@@ -91,6 +91,8 @@ namespace Assets.Scripts.Corpses
 
         private void Awake()
         {
+            _corpseDisappearTime = SessionMode.CorpseLifetime;
+
             if (_ragdollController == null)
                 _ragdollController = GetComponent<RagdollController>();
 
@@ -101,9 +103,24 @@ namespace Assets.Scripts.Corpses
                 enabled = false;
             }
 
+            if (_creature != null)
+            {
+                _dragRigidbody = _creature.CorpseDragRigidbody;
+                // _centerBone = _creature.CorpseCenterBone;
+                _interactionCollider = _creature.InteractionCollider;
+                // _interactionAnchor = _creature.CorpseInteractionAnchor;
+                _breakEffect = _creature.DamageEffect;
+            }
+            else
+            {
+                if (dragRigidbody != null) _dragRigidbody = dragRigidbody;
+                if (interactionCollider != null) _interactionCollider = interactionCollider;
+                // if (interactionAnchor != null) _interactionAnchor = interactionAnchor;
+                if (breakEffect != null) _breakEffect = breakEffect;
+            }
+
             if (shatterer == null) shatterer = GetComponent<Shatterer>();
             if (hitDecaler == null) hitDecaler = GetComponent<HitDecaler>();
-
 
             if (CorpseManager.Instance != null && !string.IsNullOrEmpty(InstanceId))
             {
@@ -115,34 +132,32 @@ namespace Assets.Scripts.Corpses
 
         private void Start()
         {
-            _creationTime = Time.time;
-
             if (_despawnCoroutine != null) StopCoroutine(_despawnCoroutine);
             _despawnCoroutine = StartCoroutine(DespawnAfterTime());
         }
 
-        private void LateUpdate()
-        {
-            if (enabled && _interactionAnchor != null)
-            {
-                UpdateInteractionAnchorPosition();
-            }
-        }
+        // private void LateUpdate()
+        // {
+        //     if (enabled && _interactionAnchor != null)
+        //     {
+        //         UpdateInteractionAnchorPosition();
+        //     }
+        // }
 
-        private void UpdateInteractionAnchorPosition()
-        {
-            if (_centerBone != null)
-            {
-                if (_interactionAnchor != null)
-                {
-                    _interactionAnchor.position = _centerBone.position;
-                }
-                if (IsDragging)
-                {
-                    transform.position = _centerBone.position;
-                }
-            }
-        }
+        // private void UpdateInteractionAnchorPosition()
+        // {
+        //     if (_centerBone != null)
+        //     {
+        //         if (_interactionAnchor != null)
+        //         {
+        //             _interactionAnchor.position = _centerBone.position;
+        //         }
+        //         if (IsDragging)
+        //         {
+        //             transform.position = _centerBone.position;
+        //         }
+        //     }
+        // }
 
         public void InitializeCorpse()
         {
@@ -343,8 +358,6 @@ namespace Assets.Scripts.Corpses
 
         private void HandleHarvest(InteractContext context)
         {
-            if (!allowHarvest) return;
-
             AttackAnimationType tool = context.Tool;
             var config = GameAssets.Instance.CreatureGlobalConfig;
             bool toolAllowed = tool switch
@@ -435,9 +448,9 @@ namespace Assets.Scripts.Corpses
         {
             if (animator != null) animator.SetTrigger("Hit");
 
-            if (breakEffect != null)
+            if (_breakEffect != null)
             {
-                var effectInstance = Instantiate(breakEffect, hitPos, transform.rotation);
+                var effectInstance = Instantiate(_breakEffect, hitPos, transform.rotation);
                 effectInstance.Play();
                 Destroy(effectInstance.gameObject, effectInstance.main.duration + 1.5f);
             }
@@ -630,7 +643,6 @@ namespace Assets.Scripts.Corpses
 
         public void StartDespawnTimer(float lifetime)
         {
-            _remainingLifetime = lifetime;
             if (_despawnCoroutine != null) StopCoroutine(_despawnCoroutine);
             _despawnCoroutine = StartCoroutine(DespawnAfterTime(lifetime));
         }

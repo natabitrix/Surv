@@ -31,9 +31,9 @@ namespace Assets.Scripts.Player
         public void Mount(CreatureRiding mount)
         {
             if (mount == null || _isMounted) return;
-            if (mount.riderAttachPoint == null)
+            if (mount.RiderAttachPoint == null)
             {
-                Debug.LogError("[RidingController.Mount] riderAttachPoint == null!");
+                Debug.LogError("[RidingController.Mount] RiderAttachPoint == null!");
                 return;
             }
 
@@ -53,12 +53,12 @@ namespace Assets.Scripts.Player
                     _playerController.PlayerAnimator.SetTrigger("Mounting"); // Дергаем прыжок
             }
 
-            transform.SetParent(mount.riderAttachPoint, worldPositionStays: false);
+            transform.SetParent(mount.RiderAttachPoint, worldPositionStays: false);
             transform.localPosition = Vector3.zero;
             transform.localRotation = Quaternion.identity;
 
             // Компенсация scale
-            Vector3 parentScale = mount.riderAttachPoint.lossyScale;
+            Vector3 parentScale = mount.RiderAttachPoint.lossyScale;
             transform.localScale = new Vector3(
                 parentScale.x != 0f ? 1f / parentScale.x : 1f,
                 parentScale.y != 0f ? 1f / parentScale.y : 1f,
@@ -97,7 +97,7 @@ namespace Assets.Scripts.Player
             if (mount == null) return transform.position;
 
             Vector3 basePos = mount.transform.position;
-            Vector3 offset = mount.transform.TransformDirection(mount.dismountOffset);
+            Vector3 offset = mount.transform.TransformDirection(mount.DismountOffset);
             Vector3 target = basePos + offset;
 
             if (NavMesh.SamplePosition(target, out NavMeshHit hit, 3f, NavMesh.AllAreas))

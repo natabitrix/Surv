@@ -50,7 +50,7 @@ namespace Assets.Scripts.Creatures.Components
         // === ANIMATION EVENTS ===
         // ==========================================
 
-        private void SoundOnFootstep(AnimationEvent animationEvent)
+        public void SoundOnFootstep(AnimationEvent animationEvent)
         {
             if (animationEvent.animatorClipInfo.weight > 0.5f)
             {
@@ -58,7 +58,7 @@ namespace Assets.Scripts.Creatures.Components
             }
         }
 
-        private void SoundOnAttack(AnimationEvent animationEvent)
+        public void SoundOnAttack(AnimationEvent animationEvent)
         {
             if (animationEvent.animatorClipInfo.weight > 0.5f)
             {
@@ -66,7 +66,7 @@ namespace Assets.Scripts.Creatures.Components
             }
         }
 
-        private void SoundOnTakeDamage(AnimationEvent animationEvent)
+        public void SoundOnTakeDamage(AnimationEvent animationEvent)
         {
             if (animationEvent.animatorClipInfo.weight > 0.2f)
             {
@@ -74,7 +74,7 @@ namespace Assets.Scripts.Creatures.Components
             }
         }
 
-        private void SoundOnDeath(AnimationEvent animationEvent)
+        public void SoundOnDeath(AnimationEvent animationEvent)
         {
             if (animationEvent.animatorClipInfo.weight > 0.2f)
             {

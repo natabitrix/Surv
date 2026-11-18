@@ -726,7 +726,8 @@ namespace Assets.Scripts.Player
                     _hitCreature.TakeDamage(damage, 0f, this, null, null, CombatMember.Player);
                 }
 
-                if (_hitCreature is IImpactSoundProvider provider)
+                var provider = _hitCreature.GetComponent<IImpactSoundProvider>();
+                if (provider != null)
                 {
                     hitImpactType = provider.GetImpactType();
                 }
