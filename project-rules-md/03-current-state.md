@@ -96,10 +96,12 @@
 - `Corpse.OnDestroy` → только `ForgetCorpse(instanceId)` (in-memory). **Файл не трогает.**
 - Файл удаляется **только** через `UnregisterCorpse(instanceId)` — при harvest/despawn.
 - При смерти существа `SetLayerRecursively(Corpse)` — иначе `EntityInfoPanel` найдёт труп как живого.
-- `CorpseManager.RemoveAliveComponentsFromCreatureCorpse` выставляет `Creature.Health = 0` — для `HealthMaterialBlender`.
+- `CorpseManager.RemoveAliveComponentsFromCreatureCorpse` выставляет `Creature.Health = 0` — для `HealthMaterialBlender`. Также **удаляет** (Destroy) все живые компоненты (`CreatureCombat`, `CreatureDeath`, `CreatureKnockout`, `CreatureTaming`, `CreatureCommands`, `CreatureAudio`, `CreatureWildAI`, `CreatureTamedAI`, `CreatureRiding`), чтобы они не мешали трупу.
 - `Corpse.ActivateRagdoll` перед `isKinematic = false` сбрасывает позы в T-позу (`ResetPosesToInitial` + `Physics.SyncTransforms`).
 
 **Ловушки:**
+- **`Corpse` бывает двух типов:** «существо» (добавляется через `Creature.Awake`) и «ручной» (например, для трупа игрока). Для ручного типа в инспекторе есть блок `[Header("Заполнять если компонент добавлен вручную")]` — поля `dragRigidbody`, `centerBone`, `interactionCollider`, `interactionAnchor`, `breakEffect`. Они **не используются**, если `_creature != null` (ссылки берутся из `Creature`).
+- В `Corpse.Awake` при наличии `Creature` поля берутся из `_creature.CorpseDragRigidbody`, `_creature.InteractionCollider`, `_creature.DamageEffect`. Поля `centerBone` и `interactionAnchor` сейчас **не используются** (закомментированы).
 - При загрузке из сейва **слой не сохраняется** — `SpawnCorpseFromData` выставляет `Corpse` вручную.
 - `IsQuitting` **удалён** (был утечкой состояния между сценами).
 
@@ -166,11 +168,15 @@
   - `BaseStats` (здоровье, стамина, макс. скорость, макс. урон и т.д.).
   - `CombatProps` (радиус агрессии, дальность, кулдаун).
   - `RiddenProps` (кулдаун атаки верхом).
-- **`CreatureGlobalConfig`** (SO, один на игру) — общие настройки для всех существ: наркотики, разрешения на добычу инструментами, радиусы блуждания и т.д. Ссылка лежит в `GameAssets`.
-- **`Creature.cs`** — геттеры вычисляют финальные статы (например, `RideSpeed` = `maxSpeed * 3`, `TamedAttackDamage` = `maxDamage * 10`). Это задел на будущую систему прокачки уровней.
+  - `tamable`, `tamableKO`, `tamablePassive` — флаги приручения.
+  - `impactType` — тип звука удара (Flesh, Metal, Wood, ...). **Единственный источник правды** для звука удара (и по живому, и по трупу).
+  - `damageEffect`, звуки (footstep, attack, takeDamage, death).
+- **`CreatureGlobalConfig`** (SO, один на игру) — общие настройки: наркотики, разрешения на добычу инструментами, радиусы блуждания и т.д. Ссылка в `GameAssets`.
+- **`Creature.cs`** — геттеры вычисляют финальные статы (например, `RideSpeed` = `maxSpeed * 3`, `TamedAttackDamage` = `maxDamage * 10`). Это задел на прокачку уровней.
+- **Дублирующие поля удалены.** `Creature` больше не хранит `tamable`, `tamableKO`, `tamablePassive`, `damageEffect`. Вместо них — свойства: `Tamable => _data != null && _data.tamable`, `DamageEffect => _data?.damageEffect` и т.д.
 
 **Ключевые инварианты:**
-- **Атрибуция урона (`CombatMember`)**: Enum `Player`, `Wild`, `Tamed`, `Mounted`, `Other` передается в `TakeDamage` и `DamageNumberPool` для определения цвета цифры.
+- **Атрибуция урона (`CombatMember`)**: Enum `Player`, `Wild`, `Tamed`, `Mounted`, `OtherPlayer`, `OtherTamed` передается в `TakeDamage` и `DamageNumberPool` для определения цвета цифры.
   - Свой (Игрок, Прирученный, Верхом) по врагу = **Зеленый**.
   - Дикий по своему (Игроку/Прирученному) = **Желтый**.
   - Дикий по дикому = **урон не отображается** (скрыт в `DamageNumberPool`).
@@ -180,7 +186,40 @@
 - **Ленивая инициализация `CreatureGlobalConfig`**: В `Creature.cs` свойство `Config` пытается получить `GameAssets.Instance.CreatureGlobalConfig` при первом обращении. Это защищает от `NullReferenceException`, если существо заспавнилось раньше, чем `GameAssets` (порядок `Awake` не гарантирован).
 - **Множитель зоны урона**: `hitCollider.GetComponent<CreatureHitZone>()?.damageMultiplier ?? 1f`.
 - **Память об атакующем**: `LastAttacker` живет 15 сек (`ATTACKER_MEMORY_DURATION`), потом `null`.
-- Цифры урона — Screen Space Overlay, всегда одного размера, не наклоняются.
+- **Звук удара (impactType)**: `CreatureInteractable.GetImpactType()` и `Corpse.GetImpactType()` читают из `_creature.Data.impactType`. В `PlayerInteraction.OnAttackInteractFinished` провайдер ищется на `Creature` (а не на `Corpse`), чтобы избежать перехвата звука трупом.
+
+---
+
+## 8.1. Создание существа (новый раздел)
+
+**Файлы:** `Creatures/Creature.cs` (инструкция в комментарии в начале файла), `Creatures/CreatureData.cs`.
+
+**Что изменилось:** префаб существа теперь содержит минимум компонентов. Всё остальное добавляется в `Awake` через `AddComponent`.
+
+**На префабе (вручную):**
+- `Animator` (Controller + Avatar)
+- `NavMeshAgent`
+- `Creature` (с полями: `creatureId`, `CorpseDragRigidbody`, `InteractionCollider`, `CreatureRidingRiderAttachPoint`, `RagdollControllerRagdollSettings`)
+
+**Автодобавляемые (в `Creature.Awake`):**
+- `CreatureCombat`, `CreatureDeath`, `CreatureKnockout`, `CreatureTaming`, `CreatureCommands`, `CreatureAudio`, `CreatureWildAI`, `CreatureTamedAI`, `CreatureRiding`, `CreatureInteractable`
+- `RagdollController`, `HealthMaterialBlender`
+- `Corpse` (disabled), `RadialMenu` (disabled)
+
+**Данные (в `CreatureData`):**
+- Все статы, лут, звуки, эффекты, `impactType`, `tamable` и т.д.
+
+**Animation Events (на клипах):**
+- Атака: `DealDamageToTarget()`, `SoundOnAttack(AnimationEvent)`
+- Урон: `SoundOnTakeDamage(AnimationEvent)`
+- Смерть: `SoundOnDeath(AnimationEvent)`
+- Шаги: `SoundOnFootstep(AnimationEvent)`
+
+**Ловушки:**
+- `RagdollParts` заполняется в `Creature.RagdollControllerRagdollSettings` (а не в отдельном компоненте `RagdollController`).
+- `CreatureDatabase` берётся из `GameAssets.CreatureDatabase` (поле `creatureDatabase` в `Creature` удалено).
+- `InteractionCollider` в `Creature` и `CreatureInteractable._interactionCollider` — это **два разных поля**. В `Creature.Awake` после `AddComponent<CreatureInteractable>()` нужно передать ссылку (публичный сеттер или `Initialize`).
+- Animation Events ищут методы **на GameObject**, поэтому прокси-методы `SoundOn*` и `DealDamageToTarget` живут в `Creature`, а не в `CreatureAudio`/`CreatureCombat`.
 
 ---
 

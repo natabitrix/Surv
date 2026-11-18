@@ -22,14 +22,18 @@
 - [ ] **`EntityInfoPanel`** — torpor bar скрывается, если `torpor == 0 && !knockedOut` (сейчас всегда активен, если не скрыт вручную).
 - [ ] **`ChestController.OnDestroy`** — проверить, что не удаляет `Chest_*.save` при выходе в MainMenu (должно работать через `IsCorpseInventory`, но `ChestController` — не труп).
 - [ ] **`Structure.Die`** — `DropAllItemsToBag` вызывает `InventoryManager.Instance`, но менеджер может быть `null` при загрузке мира. Защитить.
-- [ ] **`CreatureKnockout.KnockOut`** — проверить, что при повторном нокауте не создаётся второй `ChestInventory` (сейчас `if (_creature.Interactable.GetInventory() == null)`).
-- [ ] **`TamingManager.SpawnFromData`** — `creature.Interactable` может быть `null` до `Awake`, проверить порядок.
-- [ ] **`PlayerInteraction.ProcessHitObject`** — при попадании в `Corpse` не должен добавлять `Creature` в `_allTargets`.
+- [ ] **`Corpse.Awake` → `_creature` == null** — при ручном добавлении `Corpse` (игрок) `_breakEffect` берётся из инспектора, но в коде `_breakEffect = _creature.DamageEffect;` в блоке `if (_creature != null)`. Проверить, что для игрока `breakEffect` заполняется вручную.
+- [ ] **`Corpse` поля `centerBone` / `interactionAnchor`** — сейчас закомментированы в `Awake`. Если они нужны для стабильного рейкаста/таскания, вернуть логику. Если нет — удалить из класса, чтобы не путали.
+- [ ] **`Creature.Awake` → `AddComponent<Corpse>()`** — передать ссылки из `Creature` в `Corpse` (сейчас `Corpse.Awake` сам берёт `CorpseDragRigidbody` / `InteractionCollider` из `Creature`, но порядок `AddComponent` и `Awake` может сыграть злую шутку). Убедиться, что `_creature` в `Corpse` заполняется до первого использования.
+- [ ] **`Creature.Awake` → `AddComponent<RagdollController>()`** — передать `RagdollControllerRagdollSettings` в `RagdollController.ragdollSettings`. Сейчас поле есть в `Creature`, но `RagdollController` его не получает (остаётся `null`).
+- [ ] **`CreatureRiding`** — `CreatureRidingRiderAttachPoint` и `CreatureRidingDismountOffset` теперь в `Creature`, но `CreatureRiding` их не получает. Нужен `Initialize(Transform attachPoint, Vector3 dismountOffset)`.
+- [ ] **`CreatureInteractable`** — `InteractionCollider` в `Creature` и `CreatureInteractable._interactionCollider` — это **два разных поля**. В `Creature.Awake` после `AddComponent<CreatureInteractable>()` нужно передать ссылку (публичный сеттер или `Initialize`).
 
 ---
 
 ## 🚧 В работе (текущий спринт)
 
+- [ ] **Фикс-сессия после рефакторинга Creature** — проверить, что все автодобавляемые компоненты получают нужные ссылки из `Creature` (см. «Доработки»). Без этого `CreatureInteractable`, `RagdollController`, `CreatureRiding`, `Corpse` могут работать некорректно.
 - [ ] **`SettingsController`** — единая система настроек (MainMenu + Pause).
   - Префаб UI + скрипт.
   - Хранение в JSON (`persistentDataPath/settings.json`).
@@ -61,6 +65,10 @@
 
 > Полная история — в git log. Здесь только чтобы помнить контекст.
 
+- [x] **Упрощение создания существ**: `Creature` добавляет все подсистемы через `AddComponent` в `Awake`. На префабе — только `Animator`, `NavMeshAgent`, `Creature`.
+- [x] **Единый источник данных**: `CreatureData` — единственный источник правды для статов, звуков, `impactType`. Дублирующие поля из `Creature` удалены.
+- [x] **Фикс звука удара**: `PlayerInteraction` ищет `IImpactSoundProvider` на `Creature`, а не на `Corpse`. `Corpse.GetImpactType()` читает из `CreatureData`.
+- [x] **Прокси-методы Animation Events**: `SoundOnAttack`, `SoundOnTakeDamage`, `SoundOnDeath`, `SoundOnFootstep`, `DealDamageToTarget` перенесены в `Creature` (Animation Events ищут методы на GameObject).
 - [x] Радиальное меню для структур, трупов, сундуков.
 - [x] `ChestUIManager` — единая точка Open/Close.
 - [x] Сброс слотов в `ChestUI.Close`.
