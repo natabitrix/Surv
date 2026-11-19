@@ -574,6 +574,8 @@ namespace Assets.Scripts.Corpses
 
         public void StartDragging()
         {
+            Debug.Log($"[Corpse.StartDragging] _dragRigidbody={(_dragRigidbody != null)}, IsDragging={IsDragging}, enabled={enabled}");
+
             if (IsDragging || _dragRigidbody == null) return;
 
             var player = PlayerController.Instance;

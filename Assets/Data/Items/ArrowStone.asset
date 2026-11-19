@@ -16,11 +16,12 @@ MonoBehaviour:
   itemName: "\u041A\u0430\u043C\u0435\u043D\u043D\u0430\u044F \u0441\u0442\u0440\u0435\u043B\u0430"
   description: 
   icon: {fileID: 21300000, guid: c45e9fafc37130943a1615c2923f58c3, type: 3}
-  maxStack: 100
+  maxStack: 1000
   experienceOnPickup: 0
   foodRecoveryAmount: 0
   healthRecoveryAmount: 0
   damage: 50
+  torporDamage: 0
   hasDurability: 0
   maxDurability: 0
   model: {fileID: 5594435687386807671, guid: f738262e8242e2a45aeb5c39ea6c9ca6, type: 3}
@@ -32,3 +33,5 @@ MonoBehaviour:
   projectileItem: {fileID: 0}
   projectileSpeed: 60
   projectileGravityScale: 1
+  aimFov: 0
+  aimBlendTime: 0.15

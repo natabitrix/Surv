@@ -369,7 +369,11 @@ namespace Assets.Scripts.Player
         public void OnInteractFinished(IInteractable specificTarget = null)
         {
             IInteractable target = specificTarget ?? (_allTargets.Count > 0 ? _allTargets[0] : null);
-            if (target == null) return;
+            if (target == null) { Debug.Log("[OnInteractFinished] target == null"); return; }
+
+            Debug.Log($"[OnInteractFinished] target={target.GetType().Name}, " +
+                      $"mb.enabled={(target is MonoBehaviour m ? m.enabled : true)}, " +
+                      $"allTargets=[{string.Join(", ", _allTargets.ConvertAll(t => t.GetType().Name))}]");
 
             var context = new InteractContext
             {

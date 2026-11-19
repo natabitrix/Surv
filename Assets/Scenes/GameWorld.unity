@@ -118537,7 +118537,6 @@ GameObject:
   - component: {fileID: 7864820799555817427}
   - component: {fileID: 8630628981685344266}
   - component: {fileID: 8534511745338947437}
-  - component: {fileID: 8630628981685344270}
   - component: {fileID: 8630628981685344267}
   - component: {fileID: 8630628981685344268}
   - component: {fileID: 8630628981685344269}
@@ -243662,28 +243661,6 @@ MonoBehaviour:
   _buildMode: {fileID: 4376182723507437245}
   _itemUsageSystem: {fileID: 7105037069088534424}
   _panelsController: {fileID: 9206748585222272317}
---- !u!114 &8630628981685344270
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1476676313870333778}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cc104592810eac244a36ed76e4db7bf6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Core.PlayerSurvivalSystem
-  _foodLossPerSecond: 0.05
-  _waterLossPerSecond: 0.07
-  _staminaLossPerSecondAtMaxSpeed: 2
-  _oxygenLossPerSecondUnderwater: 3
-  _healthLossPerSecondWhenCritical: 1
-  _staminaRecoveryPerSecond: 20
-  _oxygenRecoveryPerSecond: 20
-  _healthRecoveryPerSecond: 1
-  _deathScreenDelay: 1
-  DieManually: 0
 --- !u!114 &8630628981685344271
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -247454,6 +247431,7 @@ GameObject:
   - component: {fileID: 8846076155618937102}
   - component: {fileID: 8846076155618937103}
   - component: {fileID: 8846076155618937104}
+  - component: {fileID: 8846076155618937105}
   m_Layer: 0
   m_Name: "\U0001F579\uFE0FGameManagers"
   m_TagString: Untagged
@@ -247688,6 +247666,28 @@ MonoBehaviour:
   _canvasRoot: {fileID: 1047182607}
   _initialSize: 20
   _spawnOffsetY: 1.2
+--- !u!114 &8846076155618937105
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8846076155618937090}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc104592810eac244a36ed76e4db7bf6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Core.PlayerSurvivalSystem
+  _foodLossPerSecond: 0.05
+  _waterLossPerSecond: 0.07
+  _staminaLossPerSecondAtMaxSpeed: 2
+  _oxygenLossPerSecondUnderwater: 3
+  _healthLossPerSecondWhenCritical: 1
+  _staminaRecoveryPerSecond: 20
+  _oxygenRecoveryPerSecond: 20
+  _healthRecoveryPerSecond: 1
+  _deathScreenDelay: 1
+  DieManually: 0
 --- !u!1001 &8847372186602849139
 PrefabInstance:
   m_ObjectHideFlags: 0
