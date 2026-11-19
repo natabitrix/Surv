@@ -65,6 +65,7 @@
 
 > Полная история — в git log. Здесь только чтобы помнить контекст.
 
+- [x] **E на трупе существа не тащил тело** — `CreatureInteractable` оставался `enabled` и перехватывал `OnInteractFinished`. Фикс: `PlayerInteraction.PickPrimaryInteractTarget()` с приоритетом `Corpse`, фильтр в `ProcessHitObject`, `Destroy(CreatureInteractable)` в `CorpseManager.RemoveAliveComponentsFromCreatureCorpse`.
 - [x] **Упрощение создания существ**: `Creature` добавляет все подсистемы через `AddComponent` в `Awake`. На префабе — только `Animator`, `NavMeshAgent`, `Creature`.
 - [x] **Единый источник данных**: `CreatureData` — единственный источник правды для статов, звуков, `impactType`. Дублирующие поля из `Creature` удалены.
 - [x] **Фикс звука удара**: `PlayerInteraction` ищет `IImpactSoundProvider` на `Creature`, а не на `Corpse`. `Corpse.GetImpactType()` читает из `CreatureData`.

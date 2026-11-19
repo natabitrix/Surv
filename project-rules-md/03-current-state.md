@@ -98,6 +98,7 @@
 - При смерти существа `SetLayerRecursively(Corpse)` — иначе `EntityInfoPanel` найдёт труп как живого.
 - `CorpseManager.RemoveAliveComponentsFromCreatureCorpse` выставляет `Creature.Health = 0` — для `HealthMaterialBlender`. Также **удаляет** (Destroy) все живые компоненты (`CreatureCombat`, `CreatureDeath`, `CreatureKnockout`, `CreatureTaming`, `CreatureCommands`, `CreatureAudio`, `CreatureWildAI`, `CreatureTamedAI`, `CreatureRiding`), чтобы они не мешали трупу.
 - `Corpse.ActivateRagdoll` перед `isKinematic = false` сбрасывает позы в T-позу (`ResetPosesToInitial` + `Physics.SyncTransforms`).
+- **E на трупе существа**: `CreatureInteractable` может оставаться `enabled` на трупе (не удаляется в `RemoveAliveComponentsFromCreatureCorpse` по историческим причинам). `PlayerInteraction.PickPrimaryInteractTarget()` всегда отдаёт приоритет `Corpse` над `RadialMenu`/`CreatureInteractable`, иначе `OnInteractFinished` вызовет не тот `IInteractable` и drag не стартует.
 
 **Ловушки:**
 - **`Corpse` бывает двух типов:** «существо» (добавляется через `Creature.Awake`) и «ручной» (например, для трупа игрока). Для ручного типа в инспекторе есть блок `[Header("Заполнять если компонент добавлен вручную")]` — поля `dragRigidbody`, `centerBone`, `interactionCollider`, `interactionAnchor`, `breakEffect`. Они **не используются**, если `_creature != null` (ссылки берутся из `Creature`).

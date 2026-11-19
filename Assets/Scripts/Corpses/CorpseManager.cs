@@ -363,6 +363,7 @@ namespace Assets.Scripts.Corpses
             if (corpseGO.TryGetComponent<CreatureWildAI>(out var creatureWildAI)) Destroy(creatureWildAI);
             if (corpseGO.TryGetComponent<CreatureTamedAI>(out var creatureTamedAI)) Destroy(creatureTamedAI);
             if (corpseGO.TryGetComponent<CreatureRiding>(out var creatureRiding)) Destroy(creatureRiding);
+            if (corpseGO.TryGetComponent<CreatureInteractable>(out var ci)) Destroy(ci);
         }
 
         // ==========================================
