@@ -298,11 +298,12 @@ namespace Assets.Scripts.Player
                     }
                 }
 
-                // Обычная логика анимации
-                foreach (var target in _allTargets)
+                // Обычная логика анимации: играем Pickup, если есть цель для E
+                var primary = PickPrimaryInteractTarget();
+                if (primary != null)
                 {
-                    InteractType type = target.GetInteractType();
-                    InteractType type2 = target.GetInteractType2();
+                    InteractType type = primary.GetInteractType();
+                    InteractType type2 = primary.GetInteractType2();
 
                     if ((type != InteractType.RadialMenu && type != InteractType.OpenTargetInventory) || type2 == InteractType.Interact)
                     {
@@ -368,7 +369,9 @@ namespace Assets.Scripts.Player
 
         public void OnInteractFinished(IInteractable specificTarget = null)
         {
-            IInteractable target = specificTarget ?? (_allTargets.Count > 0 ? _allTargets[0] : null);
+            // IInteractable target = specificTarget ?? (_allTargets.Count > 0 ? _allTargets[0] : null);
+            IInteractable target = specificTarget ?? PickPrimaryInteractTarget();
+
             if (target == null) { Debug.Log("[OnInteractFinished] target == null"); return; }
 
             Debug.Log($"[OnInteractFinished] target={target.GetType().Name}, " +
@@ -387,6 +390,41 @@ namespace Assets.Scripts.Player
 
             if (target.ShouldDetachAfterInteract())
                 ClearTriggerTarget();
+        }
+
+        /// <summary>
+        /// Выбирает цель для E (Interact) с приоритетом:
+        /// Corpse (тащить) > прочие IInteractable, кроме RadialMenu/CreatureInteractable.
+        /// На трупе существа CreatureInteractable остаётся enabled и иначе перехватывает E.
+        /// </summary>
+        private IInteractable PickPrimaryInteractTarget()
+        {
+            if (_allTargets.Count == 0) return null;
+
+            // 1. Труп — всегда приоритет для E (тащить/отпустить).
+            foreach (var t in _allTargets)
+            {
+                if (t is Corpse c && c.enabled)
+                    return c;
+            }
+
+            // 2. Пропускаем RadialMenu (только для долгого E) и CreatureInteractable
+            //    (он про живое существо — на трупе не должен ловить E).
+            foreach (var t in _allTargets)
+            {
+                if (t is RadialMenu) continue;
+                if (t is CreatureInteractable) continue;
+                if (t is MonoBehaviour mb && !mb.enabled) continue;
+                return t;
+            }
+
+            // 3. Fallback — первый валидный.
+            foreach (var t in _allTargets)
+            {
+                if (t is MonoBehaviour mb && !mb.enabled) continue;
+                return t;
+            }
+            return null;
         }
 
         public void OnInteractFinishedAnimationEvent()
@@ -632,7 +670,8 @@ namespace Assets.Scripts.Player
                 if (interactable is MonoBehaviour mb && !mb.enabled)
                     continue;
 
-                if (hasCorpse && interactable is Creature) continue;
+                // if (hasCorpse && interactable is Creature) continue;
+                if (hasCorpse && (interactable is Creature || interactable is CreatureInteractable)) continue;
                 if (!_allTargets.Contains(interactable)) _allTargets.Add(interactable);
             }
 
