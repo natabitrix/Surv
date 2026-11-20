@@ -229,7 +229,7 @@ namespace Assets.Scripts.Creatures.Components
             }
 
             // 3. Если дикий бьет игрока (но если игрок верхом - бьет маунта)
-            var pc = PlayerController.Instance;
+            var pc = PlayerController.LocalPlayer;
             if (pc != null && pc.IsMounted && pc.RidingController != null && pc.RidingController.CurrentMount != null)
             {
                 var mountCreature = pc.RidingController.CurrentMount.GetComponent<Creature>();

@@ -21,8 +21,11 @@ namespace Assets.Scripts.InventorySystem
     {
         public static InventoryManager Instance { get; private set; }
 
-        [SerializeField] private PlayerInputHandler _input;
-        // public PlayerInventory playerInventory;
+        // [SerializeField] private PlayerInputHandler _input;
+        private PlayerInputHandler _input => PlayerController.LocalPlayer != null
+            ? PlayerController.LocalPlayer.GetComponent<PlayerInputHandler>()
+            : null;
+
         public PlayerEquipment equipment;
         public PlayerBuildMode buildMode;
         public ItemUsageSystem itemUsageSystem;
@@ -654,8 +657,8 @@ namespace Assets.Scripts.InventorySystem
         private IEnumerator Start()
         {
             // Ждём PlayerProgress
-            while (PlayerProgress.Instance == null)
-                yield return null;
+            while (PlayerProgress.Instance == null) yield return null;
+            while (PlayerController.LocalPlayer == null) yield return null;
 
             // Регистрируемся
             PlayerProgress.Instance.RegisterInventoryManager(this);

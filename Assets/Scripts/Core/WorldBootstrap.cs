@@ -9,6 +9,7 @@ using System;
 using Unity.Collections;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
+using Assets.Scripts.Player;
 
 namespace Assets.Scripts.Core
 {
@@ -27,12 +28,9 @@ namespace Assets.Scripts.Core
         [SerializeField] private int _loadRadiusInChunks = 2;
         [SerializeField] private float _saveInterval = 5f;
 
-
         [field: Header("Loading Managers for info only")]
         [field: SerializeField, ReadOnly, TextArea(4, 2)]
         public string LoadingManagers { get; private set; } = "CorpseManager\nLootBagManager\nTamingManager\nWorldManager";
-
-        
 
         public CorpseManager CorpseManager { get; private set; }
         public LootBagManager LootBagManager { get; private set; }
@@ -87,13 +85,10 @@ namespace Assets.Scripts.Core
             CreateWorldManagers();
 
             // 3. Ждём PlayerController — он регистрируется в PlayerProgress из PlayerController.Awake.
-            while (PlayerProgress.Instance == null)
+            while (PlayerController.LocalPlayer == null)
                 yield return null;
 
-            while (PlayerProgress.Instance.playerController == null)
-                yield return null;
-
-            var playerController = PlayerProgress.Instance.playerController;
+            var playerController = PlayerController.LocalPlayer;
             yield return null; // дать PlayerController.Start() выполниться
 
             // 4. Регистрируем задачи.

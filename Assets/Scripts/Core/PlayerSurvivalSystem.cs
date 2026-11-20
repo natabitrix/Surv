@@ -141,7 +141,7 @@ namespace Assets.Scripts.Core
 
 
             // 0. Спешиваемся если были верхом
-            PlayerController.Instance?.RidingController?.CurrentMount?.ForceDismount();
+            PlayerController.LocalPlayer?.RidingController?.CurrentMount?.ForceDismount();
 
             // 1. Снимаем экипировку и выходим из build mode
             if (pc.equipment != null && pc.equipment.IsEquipped)

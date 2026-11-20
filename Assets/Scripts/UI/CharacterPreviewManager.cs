@@ -24,11 +24,14 @@ namespace Assets.Scripts.UI
         private bool isRotating = false;
         private Vector2 rotationAngles = new Vector2(0f, 180f); // X — вертикаль, Y — горизонталь
 
-        [SerializeField] private PlayerInputHandler _inputHandler;
+        // [SerializeField] private PlayerInputHandler _input;
+        private PlayerInputHandler _input => PlayerController.LocalPlayer != null
+            ? PlayerController.LocalPlayer.GetComponent<PlayerInputHandler>()
+            : null;
 
         private void Awake()
         {
-            if (_inputHandler == null)
+            if (_input == null)
             {
                 Debug.LogError("[CharacterPreviewManager] PlayerInputHandler not found in scene!");
             }
@@ -39,21 +42,21 @@ namespace Assets.Scripts.UI
         // ========================
         private void OnEnable()
         {
-            if (_inputHandler != null)
+            if (_input != null)
             {
                 // Подписываемся на событие начала "огня" (ЛКМ)
-                _inputHandler.OnFireTriggered += StartRotationCheck;
+                _input.OnFireTriggered += StartRotationCheck;
                 // Подписываемся на событие окончания "огня"
-                _inputHandler.OnFireEnded += StopRotation;
+                _input.OnFireEnded += StopRotation;
             }
         }
 
         private void OnDisable()
         {
-            if (_inputHandler != null)
+            if (_input != null)
             {
-                _inputHandler.OnFireTriggered -= StartRotationCheck;
-                _inputHandler.OnFireEnded -= StopRotation;
+                _input.OnFireTriggered -= StartRotationCheck;
+                _input.OnFireEnded -= StopRotation;
             }
             // Сбрасываем вращение при закрытии панели
             isRotating = false;

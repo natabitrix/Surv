@@ -19,8 +19,15 @@ namespace Assets.Scripts.UI
         public string GameScene;
         public string MainMenuScene;
 
-        [SerializeField] private PlayerInputHandler _input;
-        [SerializeField] private PlayerController _playerController;
+        // [SerializeField] private PlayerInputHandler _input;
+        // [SerializeField] private PlayerController _playerController;
+
+        private PlayerInputHandler _input => PlayerController.LocalPlayer != null
+            ? PlayerController.LocalPlayer.GetComponent<PlayerInputHandler>()
+            : null;
+
+        private PlayerController _playerController => PlayerController.LocalPlayer;
+
         [SerializeField] private PanelsUIController _panelsController;
         [SerializeField] private SettingsPanelController _settingsController;
 
@@ -42,6 +49,8 @@ namespace Assets.Scripts.UI
             // Не открываем паузу поверх экрана смерти
             if (DeathScreenManager.Instance != null && DeathScreenManager.Instance.IsDeathScreenOpened())
                 return;
+
+            if (_input == null || _panelsController == null) return; // ← защита
 
             if (_input.cancel)
             {
@@ -181,7 +190,7 @@ namespace Assets.Scripts.UI
         private void LockCamera(bool isLock)
         {
             if (_playerController != null)
-                _playerController.LockCameraOnEsc = isLock;
+                _playerController.LockCamera = isLock;
         }
 
         private void SetCursorVisible(bool visible)

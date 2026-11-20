@@ -63,7 +63,7 @@ namespace Assets.Scripts.Core
         public BeginnerItems[] beginnerItems;
         public bool GiveBeginnerItemsToPlayer = false;
 
-        private Vector3 defaultPlayerSpawnPoint = new(28.53f, 22.7f, 33.36f);
+        public Vector3 defaultPlayerSpawnPoint = new(140.740005f,8.30000019f,-1.15999997f);
 
         private PlayerController _playerController;
         private InventoryManager _inventoryManager;
@@ -598,6 +598,10 @@ namespace Assets.Scripts.Core
             {
                 Debug.LogError("[PlayerProgress] Save: позиция недоступна! Используется дефолтная.");
                 // Оставляем дефолтные значения из PlayerSaveData
+                saveData.playerPositionX = defaultPlayerSpawnPoint.x;
+                saveData.playerPositionY = defaultPlayerSpawnPoint.y;
+                saveData.playerPositionZ = defaultPlayerSpawnPoint.z;
+
             }
 
             // сохранение состояния выживания
@@ -638,10 +642,9 @@ namespace Assets.Scripts.Core
         public Dictionary<StatType, float> survivalStats = new();
 
         // Для позиции
-        Vector3 defaultPlayerSpawnPoint = new(187.5f, 5.26f, 110.9f);
-        public float playerPositionX = 187.5f;
-        public float playerPositionY = 5.26f;
-        public float playerPositionZ = 110.9f;
+        public float playerPositionX = 0f;
+        public float playerPositionY = 0f;
+        public float playerPositionZ = 0f;
 
         public float playerRotationX = 0f;
         public float playerRotationY = 0f;

@@ -18,8 +18,13 @@ namespace Assets.Scripts.UI
 {
     public class PanelsUIController : MonoBehaviour
     {
-        [SerializeField] private PlayerInputHandler _input;
-        [SerializeField] private PlayerController _playerController;
+        // [SerializeField] private PlayerInputHandler _input;
+        // [SerializeField] private PlayerController _playerController;
+
+        private PlayerInputHandler _input => PlayerController.LocalPlayer != null
+            ? PlayerController.LocalPlayer.GetComponent<PlayerInputHandler>()
+            : null;
+            
         [Header("Panels")]
         public GameObject TopButtons;
         public GameObject EngramsPanel;
@@ -137,6 +142,7 @@ namespace Assets.Scripts.UI
 
         private void Update()
         {
+            if (_inventoryManager == null) return; // ← защита
             ToggleInventory();
             _inventoryManager.DropItemFromSlotByDropKey();
         }
@@ -145,7 +151,10 @@ namespace Assets.Scripts.UI
         private void PanelMode(bool on = false)
         {
             _isInventoryOpened = on;
-            _playerController.LockCameraOnEsc = on;
+            // _playerController.LockCameraOnEsc = on;
+            if (PlayerController.LocalPlayer != null)
+                PlayerController.LocalPlayer.LockCamera = on;
+
             _input.SetCursorVisible(on);
         }
 

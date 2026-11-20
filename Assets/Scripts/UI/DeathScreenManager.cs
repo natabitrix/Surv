@@ -25,8 +25,9 @@ namespace Assets.Scripts.UI
         [Tooltip("Опционально: затемняющий оверлей внутри Canvas.")]
         [SerializeField] private GameObject _fullOverlay;
 
-        [Header("Ссылки")]
-        [SerializeField] private PlayerController _playerController;
+        // [Header("Ссылки")]
+        // [SerializeField] private PlayerController _playerController;
+        private PlayerController _playerController => PlayerController.LocalPlayer;
 
         [Header("Сцены")]
         [SerializeField] private string _mainMenuScene = "MainMenu";
@@ -66,7 +67,7 @@ namespace Assets.Scripts.UI
             SetCursorVisible(true);
 
             if (_playerController != null)
-                _playerController.LockCameraOnEsc = true;
+                _playerController.LockCamera = true;
         }
 
         public void Hide()
@@ -81,7 +82,7 @@ namespace Assets.Scripts.UI
             SetCursorVisible(false);
 
             if (_playerController != null)
-                _playerController.LockCameraOnEsc = false;
+                _playerController.LockCamera = false;
         }
 
         // === КНОПКИ ===

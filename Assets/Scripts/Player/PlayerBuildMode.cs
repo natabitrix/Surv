@@ -95,7 +95,7 @@ namespace Assets.Scripts.Player
 
             if (TryGetComponent<PlayerController>(out var pc)) _playerController = pc;
 
-            if (_playerController != null && _playerController.LockCameraOnEsc) return;
+            if (_playerController != null && _playerController.LockCamera) return;
 
             StructureType buildType = GetStructureType(_currentBlueprint);
             CalculatePreviewPlacement(buildType);

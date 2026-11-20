@@ -11,14 +11,14 @@ ARK Survival Evolved clone на Unity 6.5. Синглплеер сейчас, м
 
 ## Стек
 
-| Пакет | Назначение |
-|---|---|
-| Input System | Все контролы (`MyInputActions.inputactions`) |
-| Addressables | Загрузка ассетов (задел) |
-| TextMeshPro | UI + world text |
-| Localization | Мультиязычность |
-| Cinemachine | Камеры (TPS/FPS/Selfie) |
-| Newtonsoft.Json | Сериализация сейвов |
+| Пакет           | Назначение                                   |
+| --------------- | -------------------------------------------- |
+| Input System    | Все контролы (`MyInputActions.inputactions`) |
+| Addressables    | Загрузка ассетов (задел)                     |
+| TextMeshPro     | UI + world text                              |
+| Localization    | Мультиязычность                              |
+| Cinemachine     | Камеры (TPS/FPS/Selfie)                      |
+| Newtonsoft.Json | Сериализация сейвов                          |
 
 ## Структура проекта
 
@@ -36,10 +36,10 @@ Assets/
 ├── Shaders/
 └── TextMesh Pro/
 
-
 ## Ссылки на документацию
 
 **Unity:**
+
 - [Unity 6 Manual](https://docs.unity3d.com/6000.0/Documentation/Manual/)
 - [Scripting API](https://docs.unity3d.com/6000.0/Documentation/ScriptReference/)
 - [URP](https://docs.unity3d.com/Packages/com.unity.render-pipelines.universal@16.0/manual/)
@@ -48,10 +48,12 @@ Assets/
 - [Localization](https://docs.unity3d.com/Packages/com.unity.localization@1.4/manual/)
 
 **ARK-референс:**
+
 - [ARK Wiki](https://ark.wiki.gg/wiki/ARK_Survival_Evolved_Wiki)
 - [ARK Dev Kit](https://devkit.ark.wiki.gg/)
 
 **Паттерны:**
+
 - [Game Programming Patterns](https://gameprogrammingpatterns.com/)
 - [Unity Best Practices](https://resources.unity.com/games/unity-best-practices-guide-2022-lp)
 
@@ -60,6 +62,7 @@ Assets/
 ## Структура сцен (верхний уровень)
 
 **MainMenu:**
+
 - GameAssets (глобальные менеджеры)
 - MainMenuManager
 - EventSystem
@@ -67,6 +70,7 @@ Assets/
 - Canvas_MainMenu
 
 **GameWorld:**
+
 - GameAssets (глобальные менеджеры)
 - WorldManagers (сценовые мир-менеджеры)
 - GameManagers (сценовые UI-менеджеры)
@@ -77,9 +81,10 @@ Assets/
 - UICanvases
 - EventSystem
 - NavMeshBacker
-- _Env, Interactables, NPC_1, Robot_George, __CreatureSpawner__
+- \_Env, Interactables, NPC_1, Robot_George, **CreatureSpawner**
 
 **Архитектурное решение:**
+
 - Глобальные менеджеры (`GameController`, `PlayerProgress`, `GameTimeUpdater`, `LoadingScreenManager`, `AudioManager`, `LanguageManager`) живут на `GameAssets` в обеих сценах, `DontDestroyOnLoad`.
 - Сценовые мир-менеджеры (`CorpseManager`, `LootBagManager`, `TamingManager`, `WorldManager`) — на `WorldManagers`, создаются `WorldBootstrap`'ом через `AddComponent`.
 - Сценовые UI-менеджеры (`HUDManager`, `UIManager`, `PauseManager`, `DeathScreenManager`, `NotificationManager`, `TooltipManager`, `ContextMenuManager`, `CharacterPreviewManager`, `CombatAudioManager`, `ArrowPool`, `AimUI`, `EntityInfoPanelManager`, `DamageNumberPool`) — на `GameManagers`.
@@ -90,7 +95,8 @@ Assets/
 
 **Порядок загрузки GameWorld:**
 `WorldBootstrap.Start` → ждёт `GameAssets` → создаёт 4 сценовых менеджера → ждёт `PlayerProgress.playerController` → `LoadingScreenManager.RegisterTask(...)` × 4 → `StartLoading()`.
-## Правила работы в чате
+
+## Правила работы в чате + Формат выдачи файлов в чате
 
 **Главное:** не пиши сразу весь код. Обсуждаем → идём по пунктам → после каждого пункта тестируем → чиним баги → только потом дальше.
 
@@ -99,4 +105,12 @@ Assets/
 3. **В конце каждого сообщения — итоги:** что и где исправить (список файлов + изменений).
 4. **Если пришли логи/описание бага — не строй предположения сразу.** Задавай вопросы: в какой ситуации, скриншоты, логи, актуальные файлы.
 5. **После закрытия пункта — коммит на русском** (краткий) + обновление `03-current-state.md` и `04-todo-bugs.md`.
-6. **Файлы, которые ассистент должен прикреплять к новому чату:** все 5 файлов в `.continue/rules/` + актуальные `.cs` файлы по теме.
+6. **Файлы, которые ассистент должен прикреплять к новому чату:** все 5 файлов в `project-rules-md/rules/` + актуальные `.cs` файлы по теме.
+7. **Формат выдачи `.md`-файла (обязательно):**
+   - Весь файл оборачивается в **четыре бэктика** (`` ````md ``) — это **единственное** место, где используются бэктики. Они обозначают, что это именно `.md`-разметка.
+   - **Внутри файла тройные бэктики не используются вообще** — ни для `md`, ни для `csharp`, ни для чего-либо ещё.
+   - Код внутри файла оформляется **отступом в 4 пробела** — Markdown покажет его как код-блок, а парсер чата не сломается.
+   - Если нужно показать код именно с ` ```csharp ` — это делается **после** закрытия ` ````md `, отдельным блоком в чате, не внутри `.md`.
+   - **Один файл в сообщении** → маркеры `===== НАЧАЛО/КОНЕЦ ФАЙЛА =====` не нужны, достаточно ` ````md ` … ` ```` `.
+   - **Несколько файлов в одном сообщении** → перед каждым файлом обычным текстом писать `Файл 1: <путь>`, `Файл 2: <путь>` и т.д., и каждый оборачивать в свой ` ````md `.
+   - Если файл длинный и разбит на части — в конце каждой части писать `===== ПРОДОЛЖЕНИЕ СЛЕДУЕТ =====`, а в начале следующей — `===== ПРОДОЛЖЕНИЕ ФАЙЛА: <путь> =====`.

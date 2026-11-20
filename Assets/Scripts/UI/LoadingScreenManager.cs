@@ -115,7 +115,7 @@ namespace Assets.Scripts.UI
         private IEnumerator LoadingRoutine()
         {
             _isLoading = true;
-            var _playerController = PlayerController.Instance;
+            var _playerController = PlayerController.LocalPlayer;
             // if (_playerController != null) _playerController.LockCameraOnEsc = true;
 
             Show("Загрузка...");

@@ -33,7 +33,7 @@ namespace Assets.Scripts.Player
             if (playerCameraRoot == null) return;
             if (CameraManager.Instance == null || !CameraManager.Instance.IsSelfie) return;
 
-            if (_playerController != null && _playerController.LockCameraOnEsc)
+            if (_playerController != null && _playerController.LockCamera)
                 return;
 
             // Вращение мышью

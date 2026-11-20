@@ -384,7 +384,7 @@ namespace Assets.Scripts.Player
         public void ResetDrop() => drop = false;
         public void ResetHideTool() => hideTool = false;
 
-        public void LockCamera(bool isLock) => _playerController.LockCameraOnEsc = isLock;
+        public void LockCamera(bool isLock) => _playerController.LockCamera = isLock;
 
         public void SetCursorVisible(bool isCursorVisible)
         {

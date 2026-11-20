@@ -5,19 +5,17 @@ namespace Assets.Scripts.Player
 {
     public class AnimationEvents : MonoBehaviour
     {
-        // [SerializeField] private PlayerController _playerController;
         private PlayerMovementSettings _settings;
         private CharacterController _controller;
         private PlayerInteraction _playerInteraction;
         private PlayerRangedCombat _playerRangedCombat;
-        // [SerializeField] private PlayerInteraction _playerInteraction;
-
+        
         private void Start()
         {
-            var pc = PlayerController.Instance;
+            var pc = PlayerController.LocalPlayer;
             if (pc == null)
             {
-                Debug.LogError("PlayerController.Instance is null!", this);
+                Debug.LogError("PlayerController.LocalPlayer is null!", this);
                 return;
             }
             _controller = pc.CharacterController;

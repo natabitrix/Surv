@@ -2,7 +2,6 @@
 using System;
 using System.Collections;
 using Assets.Scripts.Environment;
-// using Cinemachine;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Random = UnityEngine.Random;
@@ -13,18 +12,16 @@ using Assets.Scripts.Utils;
 using Assets.Scripts.Core;
 using Assets.Scripts.UI;
 using Assets.Scripts.Creatures;
+using System.Collections.Generic;
 
 namespace Assets.Scripts.Player
 {
-    [RequireComponent(typeof(CharacterController))]
-    [RequireComponent(typeof(PlayerInput))]
-    [RequireComponent(typeof(PlayerInputHandler))]
     public class PlayerController : MonoBehaviour
     {
         public PlayerMovementSettings settings; // в инспекторе назначите
 
         [Tooltip("Для фиксации положения камеры по всем осям")]
-        public bool LockCameraOnEsc = false;
+        public bool LockCamera = false;
         [Tooltip("Для фиксации положения камеры по всем осям")]
         public bool Grounded = true;
 
@@ -34,8 +31,6 @@ namespace Assets.Scripts.Player
         [Header("UI")]
         [Tooltip("Все канвасы UI сгруппированы в пустом gameobject UI и скрыты на сцене чтобы не мешать, указать этот UI тут")]
         public GameObject UI;
-        // public GameObject StartCanvas;
-        // public GameObject PauseCanvas;
 
         [Header("Inventory")]
         // public PlayerInventory playerInventory;
@@ -88,10 +83,8 @@ namespace Assets.Scripts.Player
             }
         }
 
-
         [Header("Visual Effects")]
         public UnderwaterEffects VisualEffects;
-
 
         private float _cinemachineTargetYaw; // Поворот тела/камеры по Y (влево/вправо)
         private float _cinemachineTargetPitch; // Поворот камеры по X (вверх/вниз) относительно тела
@@ -131,6 +124,8 @@ namespace Assets.Scripts.Player
         public CharacterController CharacterController => _controller;
 
         private PlayerInputHandler _input;
+        public PlayerInputHandler PlayerInputHandler => _input;
+
         private GameObject _mainCamera;
         private bool _isInSelfieMode = false;
         private Vector3 _initialHeadLocalEulerAngles; // Начальный поворот головы
@@ -157,21 +152,33 @@ namespace Assets.Scripts.Player
         }
 
         // 1. Добавляем статическое свойство для доступа из любой точки кода
-        public static PlayerController Instance { get; private set; }
+        // public static PlayerController Instance { get; private set; }
+
+        public static PlayerController LocalPlayer { get; private set; }
+        public static readonly List<PlayerController> AllPlayers = new();
+
+        [SerializeField] private string _playerId = "player_001";
+        public string PlayerId => _playerId;
 
         private void Awake()
         {
 
-            // 2. Реализуем паттерн Синглтон
-            if (Instance != null && Instance != this)
-            {
-                // Если Instance уже существует и это не мы — значит, появился дубликат игрока.
-                // Удаляем дубликат, чтобы не ломать игру.
-                Destroy(gameObject);
-                return;
-            }
+            // // 2. Реализуем паттерн Синглтон
+            // if (Instance != null && Instance != this)
+            // {
+            //     // Если Instance уже существует и это не мы — значит, появился дубликат игрока.
+            //     // Удаляем дубликат, чтобы не ломать игру.
+            //     Destroy(gameObject);
+            //     return;
+            // }
+            // Instance = this; // Сохраняем ссылку на себя
 
-            Instance = this; // Сохраняем ссылку на себя
+            if (!AllPlayers.Contains(this))
+                AllPlayers.Add(this);
+
+            // Временно, пока нет NGO: LocalPlayer — всегда player_001
+            if (LocalPlayer == null || _playerId == "player_001")
+                LocalPlayer = this;
 
             _controller = GetComponent<CharacterController>();
             if (_controller == null)
@@ -230,8 +237,8 @@ namespace Assets.Scripts.Player
 
         private void Update()
         {
+            if (this != LocalPlayer) return;
 
-            // _hasAnimator = TryGetComponent(out _animator);
             _hasAnimator = _animator != null;
 
             // === Верхом: физика игрока отключена ===
@@ -377,7 +384,7 @@ namespace Assets.Scripts.Player
         {
             bool IsPanelOpened = _panelsController != null && _panelsController.IsPanelOpened();
 
-            if (!LockCameraOnEsc && !IsPanelOpened)
+            if (!LockCamera && !IsPanelOpened)
             {
                 // Если игрок верхом, атакует существo
                 if (IsMounted && _ridingController != null && _ridingController.CurrentMount != null)
@@ -435,7 +442,9 @@ namespace Assets.Scripts.Player
 
         private void LateUpdate()
         {
-            if (LockCameraOnEsc && CinemachineCameraTarget != null)
+            if (this != LocalPlayer) return;
+
+            if (LockCamera && CinemachineCameraTarget != null)
             {
                 if (!_cameraTargetFrozen)
                 {
@@ -639,7 +648,7 @@ namespace Assets.Scripts.Player
 
         private void Move()
         {
-            if (!Application.isFocused || LockCameraOnEsc || _onLadder) return;
+            if (!Application.isFocused || LockCamera || _onLadder) return;
             // Сброс анимации плавания при обычном движении
             if (_hasAnimator)
             {
@@ -820,7 +829,7 @@ namespace Assets.Scripts.Player
         {
             if (!_hasAnimator) return;
 
-            if (_isMoving || LockCameraOnEsc || _isInSelfieMode)
+            if (_isMoving || LockCamera || _isInSelfieMode)
             {
                 _currentTurnSpeed = 0f;
                 _animator.SetFloat(_animIDTurnSpeed, 0f);
@@ -864,7 +873,7 @@ namespace Assets.Scripts.Player
         private void CameraRotation()
         {
             // Не вращать камеру, если позиция заблокирована
-            if (!Application.isFocused || LockCameraOnEsc || _isInSelfieMode) return;
+            if (!Application.isFocused || LockCamera || _isInSelfieMode) return;
             // Не вращать камеру если вращаем фундамент
             if (buildMode != null && buildMode.IsActive() && buildMode.IsRotatingPreview()) return;
             // Не вращать камеру пока загрузочный экран
@@ -954,7 +963,7 @@ namespace Assets.Scripts.Player
             {
                 Head.localRotation = Quaternion.Euler(_initialHeadLocalEulerAngles);
             }
-            if (Head != null && !LockCameraOnEsc && !_isInSelfieMode)
+            if (Head != null && !LockCamera && !_isInSelfieMode)
             {
                 if (_onLadder)
                 {
@@ -1105,12 +1114,20 @@ namespace Assets.Scripts.Player
 
         private void OnDestroy()
         {
-            if (PlayerProgress.Instance != null && PlayerProgress.Instance.playerController == this)
-            {
-                PlayerProgress.Instance.UnregisterPlayerController();
-            }
-            if (Instance == this) Instance = null;
+            // if (PlayerProgress.Instance != null && PlayerProgress.Instance.playerController == this)
+            // {
+            //     PlayerProgress.Instance.UnregisterPlayerController();
+            // }
+            // if (Instance == this) Instance = null;
+
+            Debug.LogWarning($"[PlayerController] Уничтожается игрок {_playerId}. Стек вызовов:\n{System.Environment.StackTrace}");
+
+            AllPlayers.Remove(this);
+            if (LocalPlayer == this) LocalPlayer = null;
+            PlayerProgress.Instance?.UnregisterPlayerController();
         }
+
+
 
         private void AssignAnimationIDs()
         {

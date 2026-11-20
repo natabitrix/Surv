@@ -578,7 +578,7 @@ namespace Assets.Scripts.Corpses
 
             if (IsDragging || _dragRigidbody == null) return;
 
-            var player = PlayerController.Instance;
+            var player = PlayerController.LocalPlayer;
             if (player == null) return;
 
             var playerInteraction = player.GetComponent<PlayerInteraction>();
@@ -617,7 +617,7 @@ namespace Assets.Scripts.Corpses
             if (!IsDragging) return;
             IsDragging = false;
 
-            var player = PlayerController.Instance;
+            var player = PlayerController.LocalPlayer;
             if (player == null) return;
 
             var playerInteraction = player.GetComponent<PlayerInteraction>();
@@ -747,7 +747,7 @@ namespace Assets.Scripts.Corpses
         /// <summary>Выполнить действие из радиального меню.</summary>
         public void ExecuteRadialAction(string actionId)
         {
-            var player = PlayerController.Instance;
+            var player = PlayerController.LocalPlayer;
             if (player == null) return;
 
             switch (actionId)

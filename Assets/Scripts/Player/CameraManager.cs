@@ -58,7 +58,7 @@ namespace Assets.Scripts.Player
         private void Update()
         {
             // Если открыто меню/пауза — не трогаем камеру
-            if (TryGetComponent<PlayerController>(out var pc) && pc.LockCameraOnEsc)
+            if (TryGetComponent<PlayerController>(out var pc) && pc.LockCamera)
                 return;
 
             // K — toggle Selfie

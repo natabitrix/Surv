@@ -58,7 +58,7 @@ namespace Assets.Scripts.Structures
         {
             playerProgress = PlayerProgress.Instance;
             survivalSystem = PlayerSurvivalSystem.Instance;
-            playerController = PlayerController.Instance;
+            playerController = PlayerController.LocalPlayer;
 
             // if (playerProgress != null && playerProgress.playerController != null)
             //     playerController = playerProgress.playerController;

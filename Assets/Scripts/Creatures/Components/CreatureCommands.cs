@@ -72,7 +72,7 @@ namespace Assets.Scripts.Creatures.Components
                         _creature.Riding.ForceDismount();
                     else
                     {
-                        var pc = PlayerController.Instance;
+                        var pc = PlayerController.LocalPlayer;
                         if (pc != null) _creature.Riding.Mount(pc);
                     }
                     break;

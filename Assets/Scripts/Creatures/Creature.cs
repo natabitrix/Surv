@@ -247,33 +247,16 @@ namespace Assets.Scripts.Creatures
         public CreatureTamedAI TamedAI => _tamedAI;
         public CreatureRiding Riding => _riding;
         public CreatureInteractable Interactable => _interactable;
-
         public NavMeshAgent Agent => _agent;
-        // public Transform PlayerTransform 
-        // { 
-        //     get 
-        //     {
-        //         if (_playerTransform == null && PlayerController.Instance != null)
-        //         {
-        //             _playerTransform = PlayerController.Instance.transform;
-        //         }
-        //         return _playerTransform; 
-        //     } 
-        // }
-
         public Transform PlayerTransform => _playerTransform;
-
         public CreatureBehaviorType BehaviorType => _data.behaviorType;
-
         public Animator Animator => animator;
         public int AnimIDAttack => animIDAttack;
         public int AnimIDTakeDamage => animIDTakeDamage;
         public int AnimIDIsMoving => animIDIsMoving;
         public int AnimIDSpeed => animIDSpeed;
         public int AnimIDDeath => animIDDeath;
-
         public float Health { get => health; set => health = value; }
-
 
         private void Awake()
         {
@@ -408,10 +391,10 @@ namespace Assets.Scripts.Creatures
                 // === Верхом — AI не работает ===
                 if (_riding != null && _riding.IsRidden)
                 {
-                    var pc = PlayerController.Instance;
+                    var pc = PlayerController.LocalPlayer;
                     if (pc != null)
                     {
-                        bool blocked = pc.LockCameraOnEsc;
+                        bool blocked = pc.LockCamera;
                         Vector2 move = blocked ? Vector2.zero : pc.MoveInput;
                         Vector2 look = blocked ? Vector2.zero : pc.LookInput;
                         bool sprint = blocked ? false : pc.SprintInput;
