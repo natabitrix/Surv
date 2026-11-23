@@ -1,4 +1,5 @@
 // Assets/Scripts/Core/GameController.cs
+using Assets.Scripts.Player;
 using UnityEngine;
 
 namespace Assets.Scripts.Core
@@ -31,7 +32,13 @@ namespace Assets.Scripts.Core
 
         private void OnApplicationQuit()
         {
-            PlayerProgress.Instance?.Save("GameController.OnApplicationQuit");
+            var localPlayer = PlayerController.LocalPlayer;
+            if (localPlayer != null)
+            {
+                var progress = localPlayer.GetComponent<PlayerProgress>();
+                progress?.Save("GameController.OnApplicationQuit");
+            }
+
         }
 
         public void QuitGame()

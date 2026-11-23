@@ -99,7 +99,8 @@ namespace Assets.Scripts.Core
                 yield break;
             }
 
-            var playerPos = playerController.transform.position;
+            Vector3 defaultPlayerSpawnPoint = new(140.740005f,8.30000019f,-1.15999997f);
+            var playerPos = playerController != null ? playerController.transform.position : defaultPlayerSpawnPoint;
 
             lsm.RegisterTask("Загрузка трупов...", CorpseManager.LoadAllCorpsesAsync());
             lsm.RegisterTask("Загрузка сумок...", LootBagManager.LoadAllLootBagsAsync());

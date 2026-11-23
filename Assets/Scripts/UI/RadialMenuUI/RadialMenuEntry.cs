@@ -4,41 +4,63 @@ using UnityEngine;
 
 namespace Assets.Scripts.UI.RadialMenuUI
 {
-    /// <summary>
-    /// Одна кнопка в радиальном меню.
-    /// Может быть Action (выполнить), Submenu (открыть подменю) или Radio (выбор из группы).
-    /// </summary>
+    // ==========================================
+    // Базовый класс для общих полей
+    // ==========================================
     [Serializable]
-    public class RadialMenuEntry
+    public abstract class RadialMenuEntryBase
     {
-        [Tooltip("Текст кнопки. Если useDynamicLabel = true — будет перезаписан из контекста.")]
+        [Tooltip("Текст кнопки.")]
         public string label;
 
-        [Tooltip("Иконка (пока не используется, задел на будущее).")]
-        public Sprite icon = null;
+        [Tooltip("Иконка.")]
+        public Sprite icon;
 
         [Tooltip("Тип: Action / Submenu / Radio.")]
         public RadialMenuEntryType type = RadialMenuEntryType.Action;
 
-        [Tooltip("Для Action: ID действия. По нему контекст находит обработчик.")]
+        [Tooltip("Для Action: ID действия.")]
         public string actionId;
 
-        [Tooltip("Для Radio: ID группы. Все Radio с одним ID — взаимоисключающие.")]
+        [Tooltip("Для Radio: ID группы.")]
         public string radioGroupId;
 
-        [Tooltip("Для Radio: значение (например, 'aggressive', 'neutral').")]
+        [Tooltip("Для Radio: значение.")]
         public string radioValue;
 
-        [Tooltip("Для Action: если true — текст кнопки берётся из контекста (GetDynamicLabel).")]
+        [Tooltip("Для Action: использовать динамический текст.")]
         public bool useDynamicLabel = false;
 
-        [Tooltip("Если true — кнопка скрыта, если контекст говорит, что действие недоступно.")]
+        [Tooltip("Скрывать, если действие недоступно.")]
         public bool hideIfUnavailable = false;
+    }
 
+    // ==========================================
+    // Уровень 0 (Корневой)
+    // ==========================================
+    [Serializable]
+    public class RadialMenuEntry : RadialMenuEntryBase
+    {
+        [Tooltip("Дочерние кнопки (уровень 1).")]
+        public RadialMenuSubEntry[] children;
+    }
 
-        [Tooltip("Для Submenu: дочерние кнопки.")]
-        // [SerializeReference]
-        public RadialMenuEntry[] children;
+    // ==========================================
+    // Уровень 1 (Подменю)
+    // ==========================================
+    [Serializable]
+    public class RadialMenuSubEntry : RadialMenuEntryBase
+    {
+        [Tooltip("Дочерние кнопки (уровень 2).")]
+        public RadialMenuSubSubEntry[] children;
+    }
 
+    // ==========================================
+    // Уровень 2 (Подподменю)
+    // ==========================================
+    [Serializable]
+    public class RadialMenuSubSubEntry : RadialMenuEntryBase
+    {
+        // Детей больше нет — это максимальная глубина
     }
 }

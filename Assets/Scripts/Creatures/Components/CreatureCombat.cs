@@ -241,7 +241,15 @@ namespace Assets.Scripts.Creatures.Components
             }
 
             // Если не верхом, бьем игрока
-            PlayerSurvivalSystem.Instance?.TakeDamage(_creature.AttackDamage);
+            // PlayerSurvivalSystem.Instance?.TakeDamage(_creature.AttackDamage);
+            // Получаем ссылки на системы ТЕКУЩЕГО локального игрока
+            var localPlayer = PlayerController.LocalPlayer;
+            if (localPlayer == null) return; // Или ошибка
+
+            // Сейчас наносится урон только локальному игроку, переделать чтобы любому когда будет сеть
+            var survival = localPlayer.GetComponent<PlayerSurvivalSystem>();
+            survival.TakeDamage(_creature.AttackDamage);
+            
         }
 
         public void ResetAttackState()

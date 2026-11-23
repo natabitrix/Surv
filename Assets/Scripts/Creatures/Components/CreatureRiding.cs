@@ -12,6 +12,7 @@ namespace Assets.Scripts.Creatures.Components
         private Transform _riderAttachPoint;
         private Vector3 _dismountOffset;
         private PlayerController _rider;
+        private CameraManager _cameraManager;
 
         public bool IsRidden => _isRidden;
         public Transform RiderAttachPoint => _riderAttachPoint;
@@ -24,6 +25,9 @@ namespace Assets.Scripts.Creatures.Components
             _creature = GetComponent<Creature>();
             if (_creature == null)
                 Debug.LogError($"[CreatureRiding] Нет Creature на {gameObject.name}!");
+
+            if(_rider != null) 
+                _cameraManager = _rider.GetComponent<CameraManager>();
 
             _riderAttachPoint = _creature.CreatureRidingRiderAttachPoint;
             _dismountOffset = _creature.CreatureRidingDismountOffset;
@@ -116,7 +120,7 @@ namespace Assets.Scripts.Creatures.Components
             if (!_creature.Agent.isOnNavMesh) { Debug.Log("!_creature.Agent.isOnNavMesh"); return; }
 
             // === Селфи: не вращаем существо ===
-            bool isSelfie = CameraManager.Instance != null && CameraManager.Instance.IsSelfie;
+            bool isSelfie = _cameraManager != null && _cameraManager.IsSelfie;
             if (isSelfie)
                 look = Vector2.zero;
 

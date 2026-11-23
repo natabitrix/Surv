@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Assets.Scripts.Core;
 using Assets.Scripts.Crafting;
 using Assets.Scripts.Items;
+using Assets.Scripts.Player;
 using Assets.Scripts.UI;
 using UnityEngine;
 
@@ -66,7 +67,7 @@ namespace Assets.Scripts.InventorySystem
                 NotifyChanged();
             }
 
-            var progress = PlayerProgress.Instance;
+            var progress = PlayerController.LocalPlayer.GetComponent<PlayerProgress>();
             progress.Save("InventoryData.AddItemAnywhere");
 
             return added;

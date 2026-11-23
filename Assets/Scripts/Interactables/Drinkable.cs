@@ -1,5 +1,6 @@
 using Assets.Scripts.Core;
 using Assets.Scripts.InventorySystem;
+using Assets.Scripts.Player;
 using UnityEngine;
 
 namespace Assets.Scripts.Interactables
@@ -12,11 +13,18 @@ namespace Assets.Scripts.Interactables
         public bool HasInventory() => false;
         public bool ShouldDetachAfterInteract() => false;
 
-        private PlayerSurvivalSystem _survival => PlayerSurvivalSystem.Instance;
+        // private PlayerSurvivalSystem _survival => PlayerSurvivalSystem.Instance;
+        private PlayerController _localPlayer = PlayerController.LocalPlayer;
 
         public void Interact(InteractContext context)
         {
-            _survival.AddWater();
+            if (_localPlayer != null)
+            {
+                var survival = _localPlayer.GetComponent<PlayerSurvivalSystem>();
+
+                if (survival != null) survival.AddWater();
+            }
+
         }
     }
 }

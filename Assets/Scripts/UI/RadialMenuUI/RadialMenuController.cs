@@ -44,11 +44,11 @@ namespace Assets.Scripts.UI.RadialMenuUI
         [SerializeField] private float _ringStep = 80f;
 
         private IRadialMenuContext _context;
-        private readonly List<RadialMenuEntry[]> _stack = new();
+        private readonly List<RadialMenuEntryBase[]> _stack = new();
         private readonly List<RadialMenuButton> _spawnedButtons = new();
         private const int MAX_DEPTH = 3;   // 0, 1, 2 — три уровня
 
-        private RadialMenuEntry[] CurrentEntries =>
+        private RadialMenuEntryBase[] CurrentEntries =>
             _stack.Count > 0 ? _stack[_stack.Count - 1] : null;
 
         private void Awake()
@@ -134,7 +134,7 @@ namespace Assets.Scripts.UI.RadialMenuUI
             if (entries == null) return;
 
             // Фильтруем недоступные
-            var visible = new List<RadialMenuEntry>();
+            var visible = new List<RadialMenuEntryBase>();
             foreach (var entry in entries)
             {
                 if (entry == null) continue;
@@ -240,23 +240,44 @@ namespace Assets.Scripts.UI.RadialMenuUI
         // === CLICK ===
         // ==========================================
 
-        private void OnButtonClicked(RadialMenuEntry entry)
+        private void OnButtonClicked(RadialMenuEntryBase entry)
         {
             if (entry == null) return;
 
             switch (entry.type)
             {
+                // case RadialMenuEntryType.Submenu:
+                //     if (_stack.Count >= MAX_DEPTH)
+                //     {
+                //         Debug.LogWarning($"[RadialMenuController] Достигнут максимум вложенности ({MAX_DEPTH}). Submenu '{entry.label}' не открыт.");
+                //         break;
+                //     }
+                //     if (entry.children != null && entry.children.Length > 0)
+                //     {
+                //         _stack.Add(entry.children);
+                //         Rebuild();
+                //     }
+                //     break;
+
                 case RadialMenuEntryType.Submenu:
                     if (_stack.Count >= MAX_DEPTH)
                     {
-                        Debug.LogWarning($"[RadialMenuController] Достигнут максимум вложенности ({MAX_DEPTH}). Submenu '{entry.label}' не открыт.");
+                        Debug.LogWarning($"[RadialMenuController] Достигнут максимум вложенности ({MAX_DEPTH}).");
                         break;
                     }
-                    if (entry.children != null && entry.children.Length > 0)
+
+                    // Определяем тип entry и добавляем его детей в стек
+                    if (entry is RadialMenuEntry rootEntry && rootEntry.children != null)
                     {
-                        _stack.Add(entry.children);
+                        _stack.Add(rootEntry.children);
                         Rebuild();
                     }
+                    else if (entry is RadialMenuSubEntry subEntry && subEntry.children != null)
+                    {
+                        _stack.Add(subEntry.children);
+                        Rebuild();
+                    }
+                    // Для RadialMenuSubSubEntry детей нет
                     break;
 
                 case RadialMenuEntryType.Radio:

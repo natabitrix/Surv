@@ -91,8 +91,9 @@ namespace Assets.Scripts.UI
         {
             // PlayerSurvivalSystem.Respawn() вызовет OnPlayerRespawned →
             // UIManager.HandlePlayerRespawned → DeathScreenManager.Hide()
-            if (PlayerSurvivalSystem.Instance != null)
-                PlayerSurvivalSystem.Instance.Respawn();
+            var _survivalSystem = _playerController.GetComponent<PlayerSurvivalSystem>();
+            if (_survivalSystem != null)
+                _survivalSystem.Respawn();
         }
 
         public void OnQuitToMainMenuButtonClick()
@@ -100,8 +101,19 @@ namespace Assets.Scripts.UI
             SetRealPause(false);
             SetCursorVisible(false);
 
-            if (PlayerProgress.Instance != null)
-                PlayerProgress.Instance.Save("DeathScreen.QuitToMainMenu");
+            // if (PlayerProgress.Instance != null)
+            //     PlayerProgress.Instance.Save("DeathScreen.QuitToMainMenu");
+
+           var playerProgress = _playerController.GetComponent<PlayerProgress>();
+
+            if (playerProgress != null)
+            {
+                playerProgress.Save("DeathScreen.QuitToMainMenu");
+            }
+            else
+            {
+                Debug.LogError("[DeathScreenManager] PlayerProgress not found!", this);
+            }
 
             SceneManager.LoadScene(_mainMenuScene);
         }

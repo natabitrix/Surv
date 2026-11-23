@@ -1,4 +1,5 @@
 // Assets/Scripts/InventorySystem/InventoryUI.cs
+using System.Collections;
 using System.Collections.Generic;
 using Assets.Scripts.Core;
 using Assets.Scripts.Items;
@@ -13,16 +14,71 @@ namespace Assets.Scripts.InventorySystem
         public GameObject slotPrefab;
         public RectTransform dragLayer;
         public Canvas rootCanvas;
-        public InventoryManager inventoryManager;
 
         private List<InventorySlotUI> slotUIs;
-        private bool isInitialized = false; // Флаг инициализации
+        private bool isInitialized = false;
 
-        private InventoryData GetData() => PlayerProgress.Instance?.mainInventoryData;
+        private InventoryManager _inventoryManager;
+        private PlayerProgress _progress;
 
-        void Awake()
+        public InventoryManager InventoryManager => _inventoryManager;
+        public PlayerProgress PlayerProgress => _progress;
+
+        // void Awake()
+        // {
+        //     InitializeSlots();
+        // }
+
+        // private void Start()
+        // private IEnumerator Start()
+        // {
+        //     var localPlayer = PlayerController.LocalPlayer;
+        //     // Ждем, пока PlayerController зарегистрируется
+        //     while (localPlayer == null)
+        //         yield return null;
+
+        //     // if (localPlayer != null)
+        //     // {
+        //     _inventoryManager = localPlayer.GetComponent<InventoryManager>();
+        //     _progress = localPlayer.GetComponent<PlayerProgress>();
+        //     // if (_inventoryManager != null)
+        //     // {
+        //     //     _progress = _inventoryManager.Progress;
+        //     // }
+        //     // }
+
+        //     if (_progress == null)
+        //     {
+        //         Debug.LogError("[InventoryUI] Не удалось получить PlayerProgress!");
+        //     }
+        //     else
+        //     {
+        //         // === ПОДПИСКА НА ЗАГРУЗКУ ===
+        //         _progress.OnPlayerLoaded += RefreshUI;
+        //     }
+
+        //     InitializeSlots();
+        // }
+
+        private IEnumerator Start()
         {
+            while (PlayerController.LocalPlayer == null)
+                yield return null;
+
+            var localPlayer = PlayerController.LocalPlayer;   // читаем ПОСЛЕ цикла
+            _inventoryManager = localPlayer.GetComponent<InventoryManager>();
+            _progress = localPlayer.GetComponent<PlayerProgress>();
+
+            if (_progress == null)
+            {
+                Debug.LogError("[InventoryUI] Не удалось получить PlayerProgress!");
+                yield break;
+            }
+
+            _progress.OnPlayerLoaded += RefreshUI;
+
             InitializeSlots();
+            RefreshUI();   // ⚠️ обязательно! слоты только что созданы — заполнить их
         }
 
         private void InitializeSlots()
@@ -32,7 +88,7 @@ namespace Assets.Scripts.InventorySystem
             slotUIs = new List<InventorySlotUI>();
             foreach (Transform child in slotParent) Destroy(child.gameObject);
 
-            int inventorySize = PlayerProgress.Instance?.mainInventoryData?.size ?? 100;
+            int inventorySize = _progress?.mainInventoryData?.size ?? 100;
             for (int i = 0; i < inventorySize; i++)
             {
                 var slotGO = Instantiate(slotPrefab, slotParent);
@@ -45,74 +101,124 @@ namespace Assets.Scripts.InventorySystem
         }
 
 
+        // private void OnEnable()
+        // {
+        //     // Подписываемся на события локального инвентаря
+        //     if (_inventoryManager == null || _progress == null)
+        //     {
+        //         var localPlayer = PlayerController.LocalPlayer;
+        //         if (localPlayer != null)
+        //         {
+        //             _inventoryManager = localPlayer.GetComponent<InventoryManager>();
+        //             _progress = localPlayer.GetComponent<PlayerProgress>();
+        //             // if (_inventoryManager != null)
+        //             // {
+        //             //     _progress = _inventoryManager.Progress;
+        //             // }
+        //         }
+        //     }
+
+        //     if (_progress == null)
+        //     {
+        //         Debug.LogError("InventoryUI.OnEnable: PlayerProgress is null!");
+        //         return;
+        //     }
+
+        //     if (_progress.mainInventoryData == null)
+        //     {
+        //         Debug.LogError("InventoryUI.OnEnable: PlayerProgress.mainInventoryData is null!");
+        //         return;
+        //     }
+
+        //     _progress.mainInventoryData.OnInventoryChanged += RefreshUI;
+        //     RefreshUI();
+
+        // }
+
         private void OnEnable()
         {
-            var data = GetData();
-            if (data == null)
+            if (_progress == null || _progress.mainInventoryData == null)
             {
-                Debug.LogError("InventoryUI.OnEnable: PlayerProgress.Instance.mainInventoryData is null!");
+                StartCoroutine(SubscribeWhenReady());   // вместо return
                 return;
             }
-            data.OnInventoryChanged += RefreshUI;
+            Subscribe();
+        }
+
+        private IEnumerator SubscribeWhenReady()
+        {
+            while (PlayerController.LocalPlayer == null) yield return null;
+            var lp = PlayerController.LocalPlayer;
+            _inventoryManager = lp.GetComponent<InventoryManager>();
+            _progress = lp.GetComponent<PlayerProgress>();
+            while (_progress == null || _progress.mainInventoryData == null) yield return null;
+
+            Subscribe();
             RefreshUI();
+        }
+
+        private void Subscribe()
+        {
+            _progress.mainInventoryData.OnInventoryChanged -= RefreshUI;  // защита от двойной
+            _progress.mainInventoryData.OnInventoryChanged += RefreshUI;
         }
 
         private void OnDisable()
         {
-            var data = GetData();
-            if (data == null)
+            if (_progress != null && _progress.mainInventoryData != null)
             {
-                Debug.LogError("InventoryUI.OnDisable: PlayerProgress.Instance.mainInventoryData is null!");
-                return;
+                _progress.mainInventoryData.OnInventoryChanged -= RefreshUI;
             }
-            data.OnInventoryChanged -= RefreshUI;
         }
 
         public void RefreshUI()
         {
-            var progress = PlayerProgress.Instance;
-            if (progress == null || progress.hotbarInventoryData == null || slotUIs == null) return;
+            if (_inventoryManager == null || _progress == null) return;
 
-            var equipment = inventoryManager.equipment;
-            var buildMode = inventoryManager.buildMode;
-
-            // Item equipped = equipment?.IsEquipped == true ? equipment.GetCurrentItem() : null;
-            // int equippedSlotIndex = equipment.EquippedSlotIndex;
+            var equipment = _inventoryManager.Equipment;
+            var buildMode = _inventoryManager.BuildMode;
 
             Item itemInHand = null;
             int itemInHandSlotIndex = -1;
-            if (equipment.IsEquipped == true)
+
+            if (equipment != null && equipment.IsEquipped)
             {
                 itemInHand = equipment.GetCurrentItem();
                 itemInHandSlotIndex = equipment.EquippedSlotIndex;
             }
-            else if (buildMode.IsActive() == true)
+            else if (buildMode != null && buildMode.IsActive())
             {
                 itemInHand = buildMode.GetCurrentItem();
                 itemInHandSlotIndex = buildMode.ActiveBuildSlotIndex;
             }
 
+            if (slotUIs == null) return;
+
             for (int i = 0; i < Mathf.Min(100, slotUIs.Count); i++)
             {
-                if (i < progress.mainInventoryData.slots.Count)
+                if (i < _progress.mainInventoryData.slots.Count)
                 {
-                    slotUIs[i].SetSlot(progress.mainInventoryData.slots[i]);
+                    slotUIs[i].SetSlot(_progress.mainInventoryData.slots[i]);
+
                     // Конвертируем глобальный индекс экипировки (10-99) → локальный (0-89)
                     bool isSelected = itemInHand != null &&
                                      itemInHandSlotIndex >= 10 &&
                                      itemInHandSlotIndex < 109 &&
                                      (itemInHandSlotIndex - 10) == i &&
-                                     progress.mainInventoryData.slots[i]?.item == itemInHand;
-
+                                     _progress.mainInventoryData.slots[i]?.item == itemInHand;
 
                     slotUIs[i].HighLightSelectedSlot(isSelected);
                 }
             }
-
-            // progress.Save("InventoryUI.RefreshUI");
         }
 
-
+        private void OnDestroy()
+        {
+            if (_progress != null)
+            {
+                _progress.OnPlayerLoaded -= RefreshUI;
+            }
+        }
 
     }
 }

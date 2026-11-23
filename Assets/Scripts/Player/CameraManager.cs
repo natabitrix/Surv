@@ -5,8 +5,6 @@ namespace Assets.Scripts.Player
 {
     public class CameraManager : MonoBehaviour
     {
-        public static CameraManager Instance { get; private set; }
-
         public enum CameraMode
         {
             ThirdPerson,
@@ -18,6 +16,7 @@ namespace Assets.Scripts.Player
         [SerializeField] private CinemachineCamera _thirdPersonVcam;
         [SerializeField] private CinemachineCamera _firstPersonVcam;
         [SerializeField] private CinemachineCamera _selfieVcam;
+        [SerializeField] private Transform _playerCameraRoot;
 
         [Header("Priorities")]
         [SerializeField] private int _inactivePriority = 0;
@@ -28,18 +27,13 @@ namespace Assets.Scripts.Player
         public bool IsSelfie => _currentMode == CameraMode.Selfie;
         public bool IsFirstPerson => _currentMode == CameraMode.FirstPerson;
         public bool IsThirdPerson => _currentMode == CameraMode.ThirdPerson;
+        public Transform PlayerCameraRoot => _playerCameraRoot;
 
         public event System.Action<CameraMode> OnCameraModeChanged;
 
         private CameraMode _currentMode = CameraMode.ThirdPerson;
         private CameraMode _modeBeforeSelfie = CameraMode.ThirdPerson;
         private PlayerInputHandler _input;
-
-        private void Awake()
-        {
-            if (Instance != null && Instance != this) { Destroy(gameObject); return; }
-            Instance = this;
-        }
 
         private void Start()
         {

@@ -4,6 +4,7 @@ using TMPro;
 using Assets.Scripts.Core;
 using Assets.Scripts.Utils;
 using System.Collections.Generic;
+using Assets.Scripts.Player; // ← ДОБАВЛЕНО: для PlayerController.LocalPlayer
 
 namespace Assets.Scripts.UI
 {
@@ -41,9 +42,13 @@ namespace Assets.Scripts.UI
 
         private StatConfigData _config;
 
-        // Ленивые свойства — всегда актуальные
-        private PlayerProgress PlayerProgressInstance => PlayerProgress.Instance;
-        private PlayerSurvivalSystem SurvivalInstance => PlayerSurvivalSystem.Instance;
+        // // Ленивые свойства — всегда актуальные
+        // private PlayerProgress _playerProgress => PlayerProgress.Instance;
+        // private PlayerSurvivalSystem _survivalSystem => PlayerSurvivalSystem.Instance;
+
+        // === НОВОЕ: Локальные ссылки вместо синглтонов ===
+        private PlayerProgress _playerProgress;
+        private PlayerSurvivalSystem _survivalSystem;
 
         void Awake()
         {
@@ -51,35 +56,94 @@ namespace Assets.Scripts.UI
             if (_config == null)
             {
                 Debug.LogError($"Нет конфига для {statType}");
-                enabled = false;
-                return;
+                // удалено: enabled = false;
+                // удалено: return;
+                // === ИЗМЕНЕНО: не отключаем компонент при отсутствии конфига ===
+                // Если отключить (enabled = false), то OnEnable/OnDisable не будут вызываться,
+                // и ленивая привязка к LocalPlayer (TryLazyBind) никогда не сработает.
+                // Вместо этого просто логируем и позволяем Refresh() выходить по проверке _config == null.
             }
 
         }
 
+        /// <summary>
+        /// Вызывается из HUDManager или InventoryManager при создании строки.
+        /// </summary>
+        public void Initialize(PlayerProgress progress, PlayerSurvivalSystem survival)
+        {
+            _playerProgress = progress;
+            _survivalSystem = survival;
+
+            // Сразу обновляем, чтобы не ждать события
+            Refresh();
+        }
+
+
         void OnEnable()
         {
-            if (PlayerProgressInstance != null)
-                PlayerProgressInstance.OnProgressChanged += Refresh;
+            // === ДОБАВЛЕНО: ленивая привязка к LocalPlayer ===
+            // HUD-виджеты и строки инвентаря могут включаться раньше,
+            // чем игрок заспавнится и Initialize() будет вызван.
+            TryLazyBind();
 
-            if (SurvivalInstance != null)
-                SurvivalInstance.OnSurvivalStatsChanged += Refresh;
+            if (_playerProgress != null)
+                _playerProgress.OnProgressChanged += Refresh;
+
+            if (_survivalSystem != null)
+                _survivalSystem.OnSurvivalStatsChanged += Refresh;
 
             Refresh();
         }
 
         void OnDisable()
         {
-            if (PlayerProgressInstance != null)
-                PlayerProgressInstance.OnProgressChanged -= Refresh;
+            if (_playerProgress != null)
+                _playerProgress.OnProgressChanged -= Refresh;
 
-            if (SurvivalInstance != null)
-                SurvivalInstance.OnSurvivalStatsChanged -= Refresh;
+            if (_survivalSystem != null)
+                _survivalSystem.OnSurvivalStatsChanged -= Refresh;
+        }
+
+        // === ДОБАВЛЕНО: ленивая привязка к LocalPlayer ===
+        // Ищет PlayerProgress и PlayerSurvivalSystem у текущего LocalPlayer, если ссылок ещё нет.
+        // Подписки идемпотентны (сначала -=, потом +=), чтобы не было двойных вызовов Refresh.
+        private void TryLazyBind()
+        {
+            if (_playerProgress != null && _survivalSystem != null) return;
+
+            var lp = PlayerController.LocalPlayer;
+            if (lp == null) return;
+
+            bool progressWasNull = _playerProgress == null;
+            bool survivalWasNull = _survivalSystem == null;
+
+            if (_playerProgress == null)
+                _playerProgress = lp.GetComponent<PlayerProgress>();
+
+            if (_survivalSystem == null)
+                _survivalSystem = lp.GetComponent<PlayerSurvivalSystem>();
+
+            // Если только что получили ссылки — подпишемся (идемпотентно)
+            if (progressWasNull && _playerProgress != null)
+            {
+                _playerProgress.OnProgressChanged -= Refresh;
+                _playerProgress.OnProgressChanged += Refresh;
+            }
+
+            if (survivalWasNull && _survivalSystem != null)
+            {
+                _survivalSystem.OnSurvivalStatsChanged -= Refresh;
+                _survivalSystem.OnSurvivalStatsChanged += Refresh;
+            }
         }
 
         public void Refresh()
         {
             if (_config == null) return;
+
+            // === ДОБАВЛЕНО: попытка ленивой привязки перед обновлением ===
+            // Если OnEnable сработал до появления игрока, здесь можно "догнать" ссылки.
+            TryLazyBind();
 
             // Название
             if (nameLabel != null)
@@ -91,36 +155,39 @@ namespace Assets.Scripts.UI
             // TODO: иконка кислорода активна только если в воде
             if (statType == StatType.Oxygen)
             {
-                if (HUDIconImage != null)
+                if (_survivalSystem != null)
                 {
-                    HUDIconImage.gameObject.SetActive(SurvivalInstance.IsUnderwater);
+                    if (HUDIconImage != null)
+                    {
+                        HUDIconImage.gameObject.SetActive(_survivalSystem.IsUnderwater);
+                    }
                 }
             }
 
             if (statType == StatType.XP)
             {
-                if (PlayerProgressInstance != null)
+                if (_playerProgress != null)
                 {
-                    currentValue = PlayerProgressInstance.Experience;
-                    maxValue = PlayerProgressInstance.GetTotalXPForLevel(PlayerProgressInstance.Level + 1);
+                    currentValue = _playerProgress.Experience;
+                    maxValue = _playerProgress.GetTotalXPForLevel(_playerProgress.Level + 1);
                 }
 
             }
             else
             {
                 // Максимум всегда из PlayerProgress
-                if (PlayerProgressInstance != null)
+                if (_playerProgress != null)
                 {
-                    maxValue = PlayerProgressInstance.GetMaxValue(statType, _config.baseValue, _config.affectsMaxValue);
+                    maxValue = _playerProgress.GetMaxValue(statType, _config.baseValue, _config.affectsMaxValue);
                 }
                 else
                 {
                     maxValue = _config.baseValue; // fallback
                 }
 
-                
+
                 // Если это выживательная стата (тратится), иначе выводим maxValue
-                if(_config.isDynamic)
+                if (_config.isDynamic)
                 {
                     currentValue = GetCurrentFromSurvival(statType, maxValue);
                 }
@@ -158,7 +225,7 @@ namespace Assets.Scripts.UI
             if (plusButton != null)
             {
                 plusButton.gameObject.SetActive(_config.showPlusButton);
-                plusButton.interactable = PlayerProgressInstance != null && PlayerProgressInstance.StatPointsAvailable > 0;
+                plusButton.interactable = _playerProgress != null && _playerProgress.StatPointsAvailable > 0;
             }
 
             UpdateIcon();
@@ -169,8 +236,8 @@ namespace Assets.Scripts.UI
 
         public void OnPlusClicked()
         {
-            if (PlayerProgressInstance != null)
-                PlayerProgressInstance.AllocateStatPoint(statType);
+            if (_playerProgress != null)
+                _playerProgress.AllocateStatPoint(statType);
             Refresh();
         }
 
@@ -181,21 +248,29 @@ namespace Assets.Scripts.UI
 
         private float GetCurrentFromSurvival(StatType type, float defaultMax)
         {
-            if (SurvivalInstance == null)
+            if (_survivalSystem == null)
             {
-                Debug.LogError($"{type}: SurvivalInstance is null!");
-                return defaultMax;
+                // удалено: Debug.LogError($"{type}: _survivalSystem is null!");
+                // удалено: return defaultMax;
+
+                // === ИЗМЕНЕНО: не спамим LogError, а тихо возвращаем fallback ===
+                // _survivalSystem == null — нормальная ситуация в первые кадры
+                // (HUD-виджет включён до спавна игрока) и при пересоздании игрока.
+                // Пробуем лениво достать ссылки; если не вышло — просто maxValue.
+                TryLazyBind();
+                if (_survivalSystem == null)
+                    return defaultMax;
             }
 
             return type switch
             {
-                StatType.Health => SurvivalInstance.Health,
-                StatType.Stamina => SurvivalInstance.Stamina,
-                StatType.Oxygen => SurvivalInstance.Oxygen,
-                StatType.Food => SurvivalInstance.Food,
-                StatType.Water => SurvivalInstance.Water,
-                StatType.Weight => SurvivalInstance.Weight,
-                StatType.Torpor => SurvivalInstance.Torpor,
+                StatType.Health => _survivalSystem.Health,
+                StatType.Stamina => _survivalSystem.Stamina,
+                StatType.Oxygen => _survivalSystem.Oxygen,
+                StatType.Food => _survivalSystem.Food,
+                StatType.Water => _survivalSystem.Water,
+                StatType.Weight => _survivalSystem.Weight,
+                StatType.Torpor => _survivalSystem.Torpor,
 
                 // Остальные характеристики (MeleeDamage, Speed и т.д.) — не имеют "текущего" состояния,
                 // они всегда равны максимуму (или производным от экипировки/инвентаря)

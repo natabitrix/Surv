@@ -29,8 +29,8 @@ namespace Assets.Scripts.Player
         public TextMeshProUGUI interactionText;
 
         [Header("References")]
-        [SerializeField] private PlayerInputHandler _input;
-        [SerializeField] private PlayerController _playerController;
+        private PlayerInputHandler _input;
+        private PlayerController _playerController;
         [SerializeField] private PanelsUIController _panelsController;
         [SerializeField] private Camera _playerCamera;
 
@@ -85,13 +85,34 @@ namespace Assets.Scripts.Player
         private Corpse _currentlyDraggingCorpse;
         private PauseManager _pauseManager;
 
+        private void Awake()
+        {
+
+            _input = GetComponent<PlayerInputHandler>();
+            if (_input == null)
+                Debug.LogError($"PlayerInputHandler is missing on {gameObject.name}!", this);
+        }
+
         private void Start()
         {
-            _playerAnimator = _playerController?.PlayerAnimator;
-            _playerHead = _playerController?.Head;
+
+            _playerController = PlayerController.LocalPlayer;
+
+            // Если LocalPlayer еще не назначен, значит это не наш игрок (или порядок Awake такой)
+            if (_playerController == null)
+            {
+                // Для второго игрока это нормально, так как он отключен
+                Debug.LogWarning($"[PlayerInteraction] LocalPlayer is null in Awake for {gameObject.name}. Skipping initialization.", this);
+                return;
+            }
+
+            _playerAnimator = _playerController.PlayerAnimator;
+            _playerHead = _playerController.Head;
+
             _hasAnimator = _playerAnimator != null;
             _animIDPickup = Animator.StringToHash("Pickup");
             _animIDOpenInventory = Animator.StringToHash("OpenInventory");
+
             _settings = _playerController.settings;
             _waterLayers = _settings.WaterLayers;
 
@@ -103,6 +124,9 @@ namespace Assets.Scripts.Player
 
         private void OnEnable()
         {
+            // Добавляем проверку: если _input не найден, выходим
+            if (_input == null) return;
+
             _input.OnInteractPressed += HandleInteractStarted;
             _input.OnInteractTriggered += HandleInteractHeld;
             _input.OnInteractStopPressed += HandleInteractEnded;
@@ -111,6 +135,9 @@ namespace Assets.Scripts.Player
 
         private void OnDisable()
         {
+            // Добавляем проверку: если _input не найден, выходим
+            if (_input == null) return;
+
             _input.OnInteractPressed -= HandleInteractStarted;
             _input.OnInteractTriggered -= HandleInteractHeld;
             _input.OnInteractStopPressed -= HandleInteractEnded;
@@ -511,6 +538,8 @@ namespace Assets.Scripts.Player
             _targetGO = null;
             _hitCreature = null;
 
+            if (_playerHead == null) return;
+
             Vector3 headPos = _playerHead.position;
             Vector3 headDir = _playerHead.forward;
             float dist = _playerInteractionRadius;
@@ -790,12 +819,17 @@ namespace Assets.Scripts.Player
             {
                 var equipment = GetComponent<PlayerEquipment>();
                 var slot = equipment?.GetCurrentEquippedSlot();
+                var progress = GetComponent<PlayerProgress>();
 
                 if (slot != null && slot.item != null && slot.currentDurability > 0)
                 {
                     slot.currentDurability -= 10.0f;
-                    PlayerProgress.Instance.mainInventoryData.NotifyChanged();
-                    PlayerProgress.Instance.hotbarInventoryData.NotifyChanged();
+
+                    if (progress != null)
+                    {
+                        progress.mainInventoryData.NotifyChanged();
+                        progress.hotbarInventoryData.NotifyChanged();
+                    }
 
                     if (slot.currentDurability <= 0)
                     {

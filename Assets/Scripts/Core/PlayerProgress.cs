@@ -31,7 +31,7 @@ namespace Assets.Scripts.Core
 
     public class PlayerProgress : MonoBehaviour
     {
-        public static PlayerProgress Instance { get; private set; }
+        // public static PlayerProgress Instance { get; private set; }
 
         [SerializeField] private int _level = 1;
         [SerializeField] private float _experience = 0;
@@ -56,14 +56,14 @@ namespace Assets.Scripts.Core
         // public RecipeDatabase recipeDatabase;
         // public ItemDatabase itemDatabase;
         // Приходят из PlayerProgress.Initialize() через GameAssets
-        public RecipeDatabase recipeDatabase { get; private set; }
-        public ItemDatabase itemDatabase { get; private set; }
+        // public RecipeDatabase recipeDatabase { get; private set; }
+        // public ItemDatabase itemDatabase { get; private set; }
 
         // Начальный набор выдаваемых предметов новому игроку
         public BeginnerItems[] beginnerItems;
         public bool GiveBeginnerItemsToPlayer = false;
 
-        public Vector3 defaultPlayerSpawnPoint = new(140.740005f,8.30000019f,-1.15999997f);
+        public Vector3 defaultPlayerSpawnPoint = new(140.740005f, 8.30000019f, -1.15999997f);
 
         private PlayerController _playerController;
         private InventoryManager _inventoryManager;
@@ -110,21 +110,47 @@ namespace Assets.Scripts.Core
         /// <summary>
         /// Вызывается из GameAssets.CreateGlobalManagers().
         /// </summary>
-        public void Initialize(ItemDatabase itemDb, RecipeDatabase recipeDb)
+        // public void Initialize(ItemDatabase itemDb, RecipeDatabase recipeDb)
+        // {
+        //     // if (Instance != null && Instance != this)
+        //     // {
+        //     //     Destroy(gameObject);
+        //     //     return;
+        //     // }
+        //     // Instance = this;
+
+        //     itemDatabase = itemDb;
+        //     recipeDatabase = recipeDb;
+
+        //     StatConfigManager.Initialize();
+        //     InitializeLevelTable();
+        //     InitializeStats();
+        //     LoadData();
+        // }
+
+        // private IEnumerator Start()
+        // {
+        //     StatConfigManager.Initialize();
+        //     InitializeLevelTable();
+        //     InitializeStats();
+        //     LoadData();
+
+        //     // Ждем, пока PlayerController зарегистрируется
+        //     while (_playerController == null)
+        //         yield return null;
+
+        //     ShowLevelUpNote(playSound: false);
+        //     OnPlayerLoaded?.Invoke();
+        // }
+
+        private void Awake()
         {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-            Instance = this;
-
-            itemDatabase = itemDb;
-            recipeDatabase = recipeDb;
-
+            // Инициализируем таблицу и конфиги как можно раньше
             StatConfigManager.Initialize();
             InitializeLevelTable();
             InitializeStats();
+
+            // Загружаем данные
             LoadData();
         }
 
@@ -137,6 +163,7 @@ namespace Assets.Scripts.Core
             ShowLevelUpNote(playSound: false);
             OnPlayerLoaded?.Invoke();
         }
+
 
         private void LateUpdate()
         {
@@ -164,26 +191,36 @@ namespace Assets.Scripts.Core
                 _statLevels = saveData.statLevels ?? new Dictionary<StatType, int>();
                 InitializeStats();
 
+                var itemDb = GameAssets.Instance?.ItemDatabase;
+                var recipeDb = GameAssets.Instance?.RecipeDatabase;
+
                 hotbarInventoryData = new InventoryData(10);
-                hotbarInventoryData.FromSerializable(saveData.hotbar, itemDatabase.ItemLookup);
+                hotbarInventoryData.FromSerializable(saveData.hotbar, itemDb.ItemLookup);
 
                 mainInventoryData = new InventoryData(INVENTORY_SIZE);
-                mainInventoryData.FromSerializable(saveData.mainInventory, itemDatabase.ItemLookup);
+                mainInventoryData.FromSerializable(saveData.mainInventory, itemDb.ItemLookup);
 
                 hotbarSlotMap = saveData.hotbarSlotMap ?? new Dictionary<string, int>();
 
                 engramData = new EngramData();
-                engramData.InitializeFromDatabase(recipeDatabase);
-                engramData.FromSerializable(saveData.engrams, recipeDatabase);
+                engramData.InitializeFromDatabase(recipeDb);
+                engramData.FromSerializable(saveData.engrams, recipeDb);
 
                 UpdateEngramAvailability();
                 // GiveBeginnerItems(); // Ошибка [PlayerProgress] Save: позиция недоступна! Используется дефолтная.
 
-                if (PlayerSurvivalSystem.Instance != null)
-                {
-                    PlayerSurvivalSystem.Instance.LoadFrom(saveData);
-                }
+                // if (PlayerSurvivalSystem.Instance != null)
+                // {
+                //     PlayerSurvivalSystem.Instance.LoadFrom(saveData);
+                // }
 
+                var localPlayer = PlayerController.LocalPlayer;
+                if (localPlayer != null)
+                {
+                    var survival = localPlayer.GetComponent<PlayerSurvivalSystem>();
+                    if (survival != null)
+                        survival.LoadFrom(saveData);
+                }
 
             }
             else
@@ -194,7 +231,7 @@ namespace Assets.Scripts.Core
                 hotbarSlotMap = new Dictionary<string, int>();
 
                 engramData = new EngramData();
-                engramData.InitializeFromDatabase(recipeDatabase);
+                engramData.InitializeFromDatabase(GameAssets.Instance?.RecipeDatabase);
                 InitializeStats();
                 _engramPoints = 0;
                 UpdateEngramAvailability();
@@ -256,9 +293,9 @@ namespace Assets.Scripts.Core
         public PlayerSaveData GetLoadedSaveData() => _loadedSaveData;
 
 
-        public void RegisterPlayerController(PlayerController controller)
+        public void RegisterPlayerController(PlayerController pc)
         {
-            _playerController = controller;
+            _playerController = pc;
             ApplyData();
         }
 
@@ -301,6 +338,12 @@ namespace Assets.Scripts.Core
 
         public float GetTotalXPForLevel(int level)
         {
+            if (_levelTable == null || _levelTable.levels == null)
+            {
+                Debug.LogWarning("[PlayerProgress] LevelTable еще не загружена!");
+                return 0;
+            }
+
             if (level <= 1) return 0;
             float total = 0;
             for (int i = 0; i < level - 1 && i < _levelTable.levels.Length; i++)
@@ -605,8 +648,16 @@ namespace Assets.Scripts.Core
             }
 
             // сохранение состояния выживания
-            if (PlayerSurvivalSystem.Instance != null)
-                PlayerSurvivalSystem.Instance.SaveTo(saveData);
+            // if (PlayerSurvivalSystem.Instance != null)
+            //     PlayerSurvivalSystem.Instance.SaveTo(saveData);
+
+            var localPlayer = PlayerController.LocalPlayer;
+            if (localPlayer != null)
+            {
+                var survival = localPlayer.GetComponent<PlayerSurvivalSystem>();
+                if (survival != null)
+                    survival.SaveTo(saveData);
+            }
 
             // сохранение экипированного предмета
             if (inventoryManager != null)

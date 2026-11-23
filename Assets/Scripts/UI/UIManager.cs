@@ -1,5 +1,6 @@
 using Assets.Scripts.Core;
 using Assets.Scripts.InventorySystem;
+using Assets.Scripts.Player;
 using UnityEngine;
 
 namespace Assets.Scripts.UI
@@ -55,23 +56,43 @@ namespace Assets.Scripts.UI
         private void TrySubscribe()
         {
             if (_isSubscribed) return;
-            var survival = PlayerSurvivalSystem.Instance;
-            if (survival == null) return;
+            // var survival = PlayerSurvivalSystem.Instance;
+            // if (survival == null) return;
 
-            survival.OnPlayerDied += HandlePlayerDied;
-            survival.OnPlayerRespawned += HandlePlayerRespawned;
-            _isSubscribed = true;
+            var localPlayer = PlayerController.LocalPlayer;
+            if (localPlayer != null)
+            {
+                var survival = localPlayer.GetComponent<PlayerSurvivalSystem>();
+                if (survival != null)
+                {
+                    survival.OnPlayerDied += HandlePlayerDied;
+                    survival.OnPlayerRespawned += HandlePlayerRespawned;
+                    _isSubscribed = true;
+                }
+            }
         }
 
         private void Unsubscribe()
         {
             if (!_isSubscribed) return;
-            var survival = PlayerSurvivalSystem.Instance;
-            if (survival != null)
+            // var survival = PlayerSurvivalSystem.Instance;
+            // if (survival != null)
+            // {
+            //     survival.OnPlayerDied -= HandlePlayerDied;
+            //     survival.OnPlayerRespawned -= HandlePlayerRespawned;
+            // }
+
+            var localPlayer = PlayerController.LocalPlayer;
+            if (localPlayer != null)
             {
-                survival.OnPlayerDied -= HandlePlayerDied;
-                survival.OnPlayerRespawned -= HandlePlayerRespawned;
+                var survival = localPlayer.GetComponent<PlayerSurvivalSystem>();
+                if (survival != null)
+                {
+                    survival.OnPlayerDied -= HandlePlayerDied;
+                    survival.OnPlayerRespawned -= HandlePlayerRespawned;
+                }
             }
+
             _isSubscribed = false;
         }
 

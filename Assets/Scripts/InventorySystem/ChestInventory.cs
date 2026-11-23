@@ -30,8 +30,13 @@ namespace Assets.Scripts.InventorySystem
             }
 
             // Ждем PlayerProgress
-            while (PlayerProgress.Instance == null)
+            // while (PlayerProgress.Instance == null)
+            //     yield return null;
+
+            // === ИСПРАВЛЕНИЕ: Ждем GameAssets, а не PlayerProgress ===
+            while (GameAssets.Instance == null)
                 yield return null;
+
 
             Load();
         }
@@ -87,7 +92,9 @@ namespace Assets.Scripts.InventorySystem
                 return;
             }
 
-            var itemDb = PlayerProgress.Instance?.itemDatabase?.ItemLookup;
+            // var itemDb = PlayerProgress.Instance?.itemDatabase?.ItemLookup;
+            // === ИСПРАВЛЕНИЕ: Берем базу из GameAssets ===
+            var itemDb = GameAssets.Instance?.ItemDatabase?.ItemLookup;
 
             string path = System.IO.Path.Combine(Application.persistentDataPath, $"Chest_{saveKey}.save");
             if (System.IO.File.Exists(path))

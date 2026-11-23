@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using Assets.Scripts.Core;
+using Assets.Scripts.InventorySystem;
 using Assets.Scripts.Items;
+using Assets.Scripts.Player;
 using Assets.Scripts.UI;
 using Assets.Scripts.UI.Notifications;
 using Assets.Scripts.UI.Tooltip;
@@ -123,25 +125,39 @@ namespace Assets.Scripts.Crafting
             if (_data == null || _data.recipe == null || _data.isUnlocked)
                 return;
 
-            var _playerProgress = PlayerProgress.Instance;
-            if (_playerProgress == null) return;
+            var localPlayer = PlayerController.LocalPlayer;
+            if (localPlayer == null)
+            {
+                Debug.LogError("[EngramSlotUI] Не удалось получить PlayerController!");
+                return;
+            }
+
+            var localInv = localPlayer.GetComponent<InventoryManager>();
+            if (localInv == null)
+            {
+                Debug.LogError("[EngramSlotUI] Не удалось получить InventoryManager!");
+                return;
+            }
+
+            var progress = localInv.Progress;
+            if (progress == null) return;
 
             // 1. Проверка: достигнут ли требуемый уровень?
-            if (_playerProgress.Level < _data.recipe.requiredLevel)
+            if (progress.Level < _data.recipe.requiredLevel)
             {
                 NotificationManager.Instance?.Show($"Требуется уровень {_data.recipe.requiredLevel}", null);
                 return;
             }
 
             // 2. Проверка: есть ли очки энграмм?
-            if (_playerProgress.EngramPoints < _data.recipe.engramPointsCost)
+            if (progress.EngramPoints < _data.recipe.engramPointsCost)
             {
                 NotificationManager.Instance?.Show($"Недостаточно очков энграмм. Нужно: {_data.recipe.engramPointsCost}", null);
                 return;
             }
 
             // 3. Тратим очки через безопасный метод
-            if (!_playerProgress.TrySpendEngramPoints(_data.recipe.engramPointsCost))
+            if (!progress.TrySpendEngramPoints(_data.recipe.engramPointsCost))
             {
                 // На всякий случай (не должно случиться, если проверка выше верна)
                 NotificationManager.Instance?.Show("Не хватает очков энграмм!", null);
@@ -156,7 +172,7 @@ namespace Assets.Scripts.Crafting
             _engramUI?.OnEngramPointsChanged();
 
             // Сохраняем прогресс
-            _playerProgress.Save("EngramSlotUI.TryUnlock");
+            progress.Save("EngramSlotUI.TryUnlock");
 
             // Уведомление
             NotificationManager.Instance?.Show(

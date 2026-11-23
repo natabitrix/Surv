@@ -26,8 +26,6 @@ namespace Assets.Scripts.Loot
         private GameObject _lootBagPrefab;
         private ItemDatabase _itemDatabase;
         private GameSettings _gameSettings;
-
-
         private Dictionary<string, GameObject> _loadedLootBags = new();
         private string _saveDirectory;
 
@@ -60,7 +58,6 @@ namespace Assets.Scripts.Loot
         {
             if (Instance == this) Instance = null;
         }
-
 
         // ==========================================
         // === НОВЫЙ МЕТОД: СОЗДАНИЕ СУМКИ ИЗ ПРЕДМЕТОВ ===

@@ -44,9 +44,9 @@ namespace Assets.Scripts.Core
         // === Публичный доступ ===
         public GameSettings GameSettings => _gameSettings;
         public ItemDatabase ItemDatabase => _itemDatabase;
+        public RecipeDatabase RecipeDatabase => _recipeDatabase;
         public CreatureDatabase CreatureDatabase => _creatureDatabase;
         public CreatureGlobalConfig CreatureGlobalConfig => _creatureGlobalConfig;
-        public RecipeDatabase RecipeDatabase => _recipeDatabase;
         public GameObject PlayerCorpsePrefab => _playerCorpsePrefab;
         public GameObject LootBagPrefab => _lootBagPrefab;
         public NotificationSoundConfig NotificationSoundConfig => _notificationSoundConfig;
@@ -62,6 +62,7 @@ namespace Assets.Scripts.Core
             // Удаляем весь GameObject, включая LoadingScreenManager/AudioManager/LanguageManager.
             if (Instance != null && Instance != this)
             {
+                Debug.Log("[GameAssets] Защита от дубликата: если Instance уже есть — этот экземпляр лишний");
                 Destroy(gameObject);
                 return;
             }
@@ -98,8 +99,8 @@ namespace Assets.Scripts.Core
             CreateChildManager<GameController>("GameController", m =>
                 m.Initialize(_gameSettings));
 
-            CreateChildManager<PlayerProgress>("PlayerProgress", m =>
-                m.Initialize(_itemDatabase, _recipeDatabase));
+            // CreateChildManager<PlayerProgress>("PlayerProgress", m =>
+            //     m.Initialize(_itemDatabase, _recipeDatabase));
 
             CreateChildManager<GameTimeUpdater>("GameTimeUpdater");
 

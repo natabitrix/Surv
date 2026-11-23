@@ -65,7 +65,22 @@ namespace Assets.Scripts.UI
         public Button RadialMenuDragCorpseButton;
 
         [Header("Other Managers")]
-        [SerializeField] private InventoryManager _inventoryManager;
+        // удалено: private InventoryManager _inventoryManager;
+
+        // === ИЗМЕНЕНО: ленивое свойство вместо поля ===
+        // Поле могло остаться null навсегда, если Start() выполнился раньше появления игрока.
+        // Ленивое свойство всегда достаёт актуальный InventoryManager у LocalPlayer.
+        private InventoryManager _inventoryManagerCached;
+        private InventoryManager _inventoryManager
+        {
+            get
+            {
+                if (_inventoryManagerCached == null && PlayerController.LocalPlayer != null)
+                    _inventoryManagerCached = PlayerController.LocalPlayer.GetComponent<InventoryManager>();
+                return _inventoryManagerCached;
+            }
+        }
+
         [SerializeField] private CharacterPreviewManager _previewManager;
         [SerializeField] private TooltipManager _tooltipManager;
         [SerializeField] private ItemUsageRouter _itemUsageRouter;
@@ -81,6 +96,16 @@ namespace Assets.Scripts.UI
 
         private void Start()
         {
+            // удалено: var localPlayer = PlayerController.LocalPlayer;
+            // удалено: if (localPlayer != null)
+            // удалено: {
+            // удалено:     _inventoryManager = localPlayer.GetComponent<InventoryManager>();
+            // удалено: }
+            // === ИЗМЕНЕНО: ручное присваивание _inventoryManager убрано ===
+            // Ленивое свойство сделает это при первом обращении.
+            // Обращаемся один раз, чтобы закэшировать заранее (если игрок уже есть).
+            _ = _inventoryManager;
+
             // Top Buttons
             EngramsPanelButton.onClick.AddListener(() => ShowEngramsPanel());
             TooltipTrigger.AddTooltip(EngramsPanelButton.gameObject, "Энграммы");
@@ -165,6 +190,15 @@ namespace Assets.Scripts.UI
         // Открытие инвентаря игрока
         public void OpenPlayerInventory()
         {
+            // === ДОБАВЛЕНО: не открываем панель, пока нет InventoryManager ===
+            // Иначе StatUI-виджеты в сцене включились бы до того, как
+            // InitializeStatRows() успеет создать строки с валидными ссылками.
+            if (_inventoryManager == null)
+            {
+                Debug.LogWarning("[PanelsUIController] OpenPlayerInventory: InventoryManager ещё не готов — пропускаем открытие.");
+                return;
+            }
+
             TopButtons.SetActive(true);
             InventoryPanel.SetActive(true);
             PlayerCenterPanel.SetActive(true);
@@ -176,10 +210,10 @@ namespace Assets.Scripts.UI
             if (_previewManager != null) _previewManager.OpenPreview();
             if (_inventoryManager != null) _inventoryManager.RefreshPlayerStatsDisplay();
 
-            if (_inventoryManager.equipment != null)
+            if (_inventoryManager.Equipment != null)
             {
-                _inventoryManager.equipment.OnEquipped += RefreshPreview;
-                _inventoryManager.equipment.OnUnequipped += RefreshPreview;
+                _inventoryManager.Equipment.OnEquipped += RefreshPreview;
+                _inventoryManager.Equipment.OnUnequipped += RefreshPreview;
             }
 
             _input.OnInteractTriggered += _inventoryManager.UseSelectedSlot;
@@ -189,6 +223,14 @@ namespace Assets.Scripts.UI
         // Открытие чужого инвентаря (сундука)
         public void OpenOtherInventory()
         {
+            // === ДОБАВЛЕНО: защита, аналогично OpenPlayerInventory ===
+            // Без InventoryManager UI всё равно не заполнится, а StatUI начнёт ругаться.
+            if (_inventoryManager == null)
+            {
+                Debug.LogWarning("[PanelsUIController] OpenOtherInventory: InventoryManager ещё не готов — пропускаем открытие.");
+                return;
+            }
+
             TopButtons.SetActive(true);
             InventoryPanel.SetActive(true);
             OtherCenterPanel.SetActive(true);
@@ -291,10 +333,10 @@ namespace Assets.Scripts.UI
             if (_previewManager != null) _previewManager.ClosePreview();
             if (_tooltipManager != null) _tooltipManager.HideTooltip();
 
-            if (_inventoryManager.equipment != null)
+            if (_inventoryManager.Equipment != null)
             {
-                _inventoryManager.equipment.OnEquipped -= RefreshPreview;
-                _inventoryManager.equipment.OnUnequipped -= RefreshPreview;
+                _inventoryManager.Equipment.OnEquipped -= RefreshPreview;
+                _inventoryManager.Equipment.OnUnequipped -= RefreshPreview;
             }
 
             _input.OnInteractTriggered -= _inventoryManager.UseSelectedSlot;
@@ -337,7 +379,7 @@ namespace Assets.Scripts.UI
         // Переключение инвентаря по клавише
         public void ToggleInventory()
         {
-            if (_input.openInventory)
+            if (_input != null && _input.openInventory)
             {
                 if (!_isInventoryOpened)
                 {

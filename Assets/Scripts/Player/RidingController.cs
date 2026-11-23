@@ -7,7 +7,7 @@ namespace Assets.Scripts.Player
 {
     public class RidingController : MonoBehaviour
     {
-        [SerializeField] private PlayerController _playerController;
+        private PlayerController _playerController;
 
         private bool _isMounted = false;
         private CreatureRiding _currentMount;
@@ -22,8 +22,7 @@ namespace Assets.Scripts.Player
 
         private void Awake()
         {
-            if (_playerController == null)
-                _playerController = GetComponent<PlayerController>();
+            _playerController = GetComponent<PlayerController>();
             if (_playerController == null)
                 Debug.LogError("[RidingController] PlayerController не найден!");
         }

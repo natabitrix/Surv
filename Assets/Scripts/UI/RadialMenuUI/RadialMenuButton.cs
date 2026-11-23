@@ -6,7 +6,7 @@ using UnityEngine.UI;
 namespace Assets.Scripts.UI.RadialMenuUI
 {
     /// <summary>
-    /// Одна кнопка в радиальном меню. Хранит RadialMenuEntry и шлёт клик в RadialMenuController.
+    /// Одна кнопка в радиальном меню. Хранит RadialMenuEntryBase и шлёт клик в RadialMenuController.
     /// </summary>
     public class RadialMenuButton : MonoBehaviour
     {
@@ -14,9 +14,9 @@ namespace Assets.Scripts.UI.RadialMenuUI
         [SerializeField] private Button _button;
         [SerializeField] private Image _icon;
 
-        public RadialMenuEntry Entry { get; private set; }
+        public RadialMenuEntryBase Entry { get; private set; }
 
-        private System.Action<RadialMenuEntry> _onClick;
+        private System.Action<RadialMenuEntryBase> _onClick;
 
         private void Awake()
         {
@@ -32,7 +32,7 @@ namespace Assets.Scripts.UI.RadialMenuUI
         /// <summary>
         /// Настроить кнопку.
         /// </summary>
-        public void Setup(RadialMenuEntry entry, string displayLabel, System.Action<RadialMenuEntry> onClick)
+        public void Setup(RadialMenuEntryBase entry, string displayLabel, System.Action<RadialMenuEntryBase> onClick)
         {
             Entry = entry;
             _onClick = onClick;

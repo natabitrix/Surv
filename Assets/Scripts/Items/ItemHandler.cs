@@ -3,27 +3,47 @@ using UnityEngine;
 using Assets.Scripts.UI;
 using Assets.Scripts.Core;
 using Assets.Scripts.UI.Notifications;
+using Assets.Scripts.Player;
 
 namespace Assets.Scripts.Items
 {
     public class ItemHandler : MonoBehaviour
     {
+        private PlayerProgress _playerProgress;
+
+        private void Awake()
+        {
+            // Получаем компонент с этого же объекта (игрока)
+            _playerProgress = GetComponent<PlayerProgress>();
+            
+            // Если по какой-то причине его нет, пробуем найти у LocalPlayer (как запасной вариант)
+            if (_playerProgress == null && PlayerController.LocalPlayer != null)
+            {
+                _playerProgress = PlayerController.LocalPlayer.GetComponent<PlayerProgress>();
+            }
+
+            if (_playerProgress == null)
+            {
+                Debug.LogError("[ItemHandler] PlayerProgress not found!", this);
+            }
+        }
+        
         public bool PickupItem(Item item, int amount = 1, float durability = -2f)
         {
             if (item == null) return false;
 
-            int added = PlayerProgress.Instance.AddItemToPlayerInventory(item, amount, durability);
+            int added = _playerProgress.AddItemToPlayerInventory(item, amount, durability);
 
             if (added > 0)
             {
                 // Начисляем опыт за подбор
-                if (PlayerProgress.Instance != null && item != null)
+                if (_playerProgress != null && item != null)
                 {
                     // Можно задать XP в самом Item
                     int xp = item.experienceOnPickup; // добавь это поле в Item
                     if (xp > 0)
                     {
-                        PlayerProgress.Instance.AddExperience(xp * amount);
+                        _playerProgress.AddExperience(xp * amount);
                     }
                 }
 
@@ -43,9 +63,9 @@ namespace Assets.Scripts.Items
                     NotificationManager.Instance.Show("Инвентарь полон", null);
                 }
             }
-            if (PlayerProgress.Instance != null)
+            if (_playerProgress != null)
             {
-                PlayerProgress.Instance.Save("ItemHandler.PickupItem");
+                _playerProgress.Save("ItemHandler.PickupItem");
             }
 
             return added > 0;
@@ -63,9 +83,9 @@ namespace Assets.Scripts.Items
             
             Destroy(obj);
 
-            if (PlayerProgress.Instance != null)
+            if (_playerProgress != null)
             {
-                PlayerProgress.Instance.Save("ItemHandler.DestroyItem");
+                _playerProgress.Save("ItemHandler.DestroyItem");
             }
 
             // return destroyed > 0;

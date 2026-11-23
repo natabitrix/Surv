@@ -19,16 +19,113 @@ namespace Assets.Scripts.InventorySystem
 {
     public class InventoryManager : MonoBehaviour
     {
-        public static InventoryManager Instance { get; private set; }
+        // public static InventoryManager Instance { get; private set; }
+        // [SerializeField] private PlayerInputHandler _inputHandler;
+        // public PlayerEquipment _equipment;
+        // public PlayerBuildMode _buildMode;
+        // public ItemUsageSystem itemUsageSystem;
 
-        // [SerializeField] private PlayerInputHandler _input;
-        private PlayerInputHandler _input => PlayerController.LocalPlayer != null
-            ? PlayerController.LocalPlayer.GetComponent<PlayerInputHandler>()
-            : null;
+        // private PlayerController _playerController;
+        // private PlayerInputHandler _inputHandler;
+        // private PlayerProgress _progress;
+        // private PlayerSurvivalSystem _survival;
+        // private PlayerEquipment _equipment;
+        // private PlayerBuildMode _buildMode;
+        // private ItemUsageSystem _itemUsage;
+        // private ItemUsageRouter _itemUsageRouter;
 
-        public PlayerEquipment equipment;
-        public PlayerBuildMode buildMode;
-        public ItemUsageSystem itemUsageSystem;
+        // public PlayerInputHandler InputHandler => _inputHandler;
+        // public PlayerProgress Progress => _progress;
+        // public PlayerSurvivalSystem Survival =>_survival;
+        // public PlayerEquipment Equipment =>_equipment;
+        // public PlayerBuildMode BuildMode =>_buildMode;
+        // public ItemUsageSystem ItemUsage =>_itemUsage;
+        // public ItemUsageRouter ItemUsageRouter =>_itemUsageRouter;
+
+        // === Ленивые ссылки на компоненты игрока ===
+        // Позволяют получать компоненты в любой момент, независимо от порядка Awake/Start.
+        // GetComponent кэшируется Unity, так что повторные вызовы дешёвые.
+
+        private PlayerController _playerController;
+        public PlayerController PlayerController
+        {
+            get
+            {
+                if (_playerController == null) _playerController = GetComponent<PlayerController>();
+                return _playerController;
+            }
+        }
+
+        private PlayerInputHandler _inputHandler;
+        public PlayerInputHandler InputHandler
+        {
+            get
+            {
+                if (_inputHandler == null) _inputHandler = GetComponent<PlayerInputHandler>();
+                return _inputHandler;
+            }
+        }
+
+        private PlayerProgress _progress;
+        public PlayerProgress Progress
+        {
+            get
+            {
+                if (_progress == null) _progress = GetComponent<PlayerProgress>();
+                return _progress;
+            }
+        }
+
+        private PlayerSurvivalSystem _survival;
+        public PlayerSurvivalSystem Survival
+        {
+            get
+            {
+                if (_survival == null) _survival = GetComponent<PlayerSurvivalSystem>();
+                return _survival;
+            }
+        }
+
+        private PlayerEquipment _equipment;
+        public PlayerEquipment Equipment
+        {
+            get
+            {
+                if (_equipment == null) _equipment = GetComponent<PlayerEquipment>();
+                return _equipment;
+            }
+        }
+
+        private PlayerBuildMode _buildMode;
+        public PlayerBuildMode BuildMode
+        {
+            get
+            {
+                if (_buildMode == null) _buildMode = GetComponent<PlayerBuildMode>();
+                return _buildMode;
+            }
+        }
+
+        private ItemUsageSystem _itemUsage;
+        public ItemUsageSystem ItemUsage
+        {
+            get
+            {
+                if (_itemUsage == null) _itemUsage = GetComponent<ItemUsageSystem>();
+                return _itemUsage;
+            }
+        }
+
+        private ItemUsageRouter _itemUsageRouter;
+        public ItemUsageRouter ItemUsageRouter
+        {
+            get
+            {
+                if (_itemUsageRouter == null) _itemUsageRouter = GetComponent<ItemUsageRouter>();
+                return _itemUsageRouter;
+            }
+        }
+
 
         [Header("Player Stats Display")]
         public TMP_Text PlayerLevelText;
@@ -44,25 +141,95 @@ namespace Assets.Scripts.InventorySystem
         [Header("Other Managers")]
         public NotificationManager notificationManager;
         [SerializeField] private PanelsUIController _panelsController;
-        [SerializeField] private ItemUsageRouter _itemUsageRouter;
 
         private List<StatUI> _statRows = new List<StatUI>();
-        private PlayerProgress _playerProgress;
 
         private int _selectedSlotIndex = -1;
         private SlotOwner _selectedSlotOwner = SlotOwner.Inventory;
         private InventorySlotUI _selectedSlotUI = null;
 
+        private void Awake()
+        {
+            // Получаем ссылки на компоненты этого же игрока
+            // _playerController = GetComponent<PlayerController>();
+            // _equipment = GetComponent<PlayerEquipment>();
+            // _buildMode = GetComponent<PlayerBuildMode>();
+            // _itemUsage = GetComponent<ItemUsageSystem>();
+            // _itemUsageRouter = GetComponent<ItemUsageRouter>();
+
+            // if (_playerController == null)
+            // {
+            //     Debug.LogError("[InventoryManager] PlayerController not found on this object!", this);
+            // }
+            // Ленивые геттеры берут компоненты при первом обращении.
+            // Здесь — только ранняя валидация, чтобы ошибка вылезла сразу, а не при первом клике.
+            if (PlayerController == null)
+                Debug.LogError("[InventoryManager] PlayerController not found on this object!", this);
+            if (InputHandler == null)
+                Debug.LogError("[InventoryManager] PlayerInputHandler not found!", this);
+            if (Progress == null)
+                Debug.LogError("[InventoryManager] PlayerProgress not found!", this);
+        }
+
+        private IEnumerator Start()
+        {
+            // Ждем, пока LocalPlayer будет назначен (порядок Awake не гарантирован)
+            while (PlayerController.LocalPlayer == null) yield return null;
+
+            // Теперь безопасно берем компоненты у LocalPlayer (или используем свои, если мы и есть LocalPlayer)
+            // Но так как InventoryManager теперь висит на игроке, мы берем прогресс и выживание через GetComponent
+
+            // _progress = GetComponent<PlayerProgress>();
+            // _survival = GetComponent<PlayerSurvivalSystem>();
+
+            // // Если по какой-то причине их нет на этом объекте (например, забыли добавить в префаб), пробуем найти у LocalPlayer
+            // if (_progress == null && PlayerController.LocalPlayer != null)
+            //     _progress = PlayerController.LocalPlayer.GetComponent<PlayerProgress>();
+
+            // if (_survival == null && PlayerController.LocalPlayer != null)
+            //     _survival = PlayerController.LocalPlayer.GetComponent<PlayerSurvivalSystem>();
+
+            if (Progress == null)
+            {
+                Debug.LogError("[InventoryManager] PlayerProgress not found! Make sure it's on the player prefab.");
+                yield break;
+            }
+
+
+            // Регистрируемся в прогрессе
+            Progress.RegisterInventoryManager(this);
+
+            InitializeStatRows();
+
+            Progress.OnProgressChanged += RefreshPlayerStatsDisplay;
+
+            if (Survival != null)
+                Survival.OnSurvivalStatsChanged += RefreshSurvivalStatsDisplay;
+
+            if (Equipment != null)
+            {
+                Equipment.OnEquipped += RefreshAllUIs;
+                Equipment.OnUnequipped += RefreshAllUIs;
+            }
+
+            if (BuildMode != null)
+            {
+                BuildMode.OnBuildActive += RefreshAllUIs;
+                BuildMode.OnBuildExit += RefreshAllUIs;
+                BuildMode.OnStructurePlaced += HandleStructurePlaced;
+            }
+        }
+
         // === STATS ===
         // Обновление отображения уровня, опыта и очков
         public void RefreshPlayerStatsDisplay()
         {
-            if (PlayerProgress.Instance == null) return;
+            if (_progress == null) return;
 
-            int currentLevel = _playerProgress.Level;
-            float currentExp = _playerProgress.Experience;
-            int engramPoints = _playerProgress.EngramPoints;
-            float totalXPForNextLevel = _playerProgress.GetTotalXPForLevel(_playerProgress.Level + 1);
+            int currentLevel = _progress.Level;
+            float currentExp = _progress.Experience;
+            int engramPoints = _progress.EngramPoints;
+            float totalXPForNextLevel = _progress.GetTotalXPForLevel(_progress.Level + 1);
 
             if (PlayerLevelText != null)
                 PlayerLevelText.text = $"Уровень: {currentLevel}";
@@ -76,9 +243,9 @@ namespace Assets.Scripts.InventorySystem
             if (PlayerStatPointsAvailableText != null)
             {
                 PlayerStatPointsAvailableText.text = " ";
-                if (_playerProgress.StatPointsAvailable > 0)
+                if (_progress.StatPointsAvailable > 0)
                 {
-                    PlayerStatPointsAvailableText.text = $"Очков доступно: {_playerProgress.StatPointsAvailable}";
+                    PlayerStatPointsAvailableText.text = $"Очков доступно: {_progress.StatPointsAvailable}";
                 }
             }
 
@@ -90,7 +257,7 @@ namespace Assets.Scripts.InventorySystem
                 valueBarFill.fillAmount = fill;
             }
 
-            bool canLevelUp = _playerProgress.StatPointsAvailable > 0;
+            bool canLevelUp = _progress.StatPointsAvailable > 0;
             foreach (var row in _statRows)
             {
                 row.SetPlusButtonInteractable(canLevelUp);
@@ -119,17 +286,37 @@ namespace Assets.Scripts.InventorySystem
             {
                 if (stat != StatType.XP)
                 {
+                    // удалено: GameObject rowObj = Instantiate(statRowPrefab, StatRowsContainer.transform);
+                    // удалено: if (rowObj.TryGetComponent<StatUI>(out var row))
+                    // удалено: {
+                    // удалено:     row.statType = stat;
+                    // удалено:     // === ВАЖНО: Инициализируем конкретными системами ===
+                    // удалено:     row.Initialize(_progress, _survival);
+                    // удалено:     _statRows.Add(row);
+                    // удалено:     row.plusButton.onClick.AddListener(row.OnPlusClicked);
+                    // удалено: }
+
+                    // === ИЗМЕНЕНО: создаём строку неактивной, чтобы OnEnable
+                    // сработал ТОЛЬКО ПОСЛЕ Initialize() (иначе StatUI.OnEnable
+                    // обращается к _survivalSystem == null и спамит ошибками).
                     GameObject rowObj = Instantiate(statRowPrefab, StatRowsContainer.transform);
+                    rowObj.SetActive(false); // ← ключевая строка: OnEnable ещё не вызовется
+
                     if (rowObj.TryGetComponent<StatUI>(out var row))
                     {
                         row.statType = stat;
+                        // === ВАЖНО: Инициализируем конкретными системами ===
+                        // Теперь OnEnable (при SetActive(true) ниже) увидит уже
+                        // назначенные _progress и _survivalSystem.
+                        row.Initialize(Progress, Survival);
                         _statRows.Add(row);
                         row.plusButton.onClick.AddListener(row.OnPlusClicked);
                     }
+
+                    rowObj.SetActive(true); // ← теперь OnEnable отработает корректно
                 }
             }
         }
-
 
         // === USAGE ===
         public void SelectSlot(int slotIndex, SlotOwner owner, InventorySlotUI slotUI = null)
@@ -143,24 +330,21 @@ namespace Assets.Scripts.InventorySystem
         {
             if (index < 0) return null;
 
-            var progress = PlayerProgress.Instance;
-            if (progress == null) return null;
-
             InventorySlot slot = null;
 
             // Получаем слот из правильного контейнера
             if (_selectedSlotOwner == SlotOwner.Hotbar)
             {
-                if (index < progress.hotbarInventoryData.slots.Count)
+                if (index < _progress.hotbarInventoryData.slots.Count)
                 {
-                    slot = progress.hotbarInventoryData.slots[index];
+                    slot = _progress.hotbarInventoryData.slots[index];
                 }
             }
             else if (_selectedSlotOwner == SlotOwner.Inventory)
             {
-                if (index < progress.mainInventoryData.slots.Count)
+                if (index < _progress.mainInventoryData.slots.Count)
                 {
-                    slot = progress.mainInventoryData.slots[index];
+                    slot = _progress.mainInventoryData.slots[index];
                 }
             }
             else if (_selectedSlotOwner == SlotOwner.Chest)
@@ -175,21 +359,20 @@ namespace Assets.Scripts.InventorySystem
 
         public int GetGlobalSlotIndex(int index)
         {
-            var progress = PlayerProgress.Instance;
-            if (progress == null) return -1;
+            if (_progress == null) return -1;
 
             int globalSlotIndex = -1;
 
             if (_selectedSlotOwner == SlotOwner.Hotbar)
             {
-                if (index < progress.hotbarInventoryData.slots.Count)
+                if (index < _progress.hotbarInventoryData.slots.Count)
                 {
                     globalSlotIndex = index; // 0-9
                 }
             }
             else if (_selectedSlotOwner == SlotOwner.Inventory)
             {
-                if (index < progress.mainInventoryData.slots.Count)
+                if (index < _progress.mainInventoryData.slots.Count)
                 {
                     globalSlotIndex = index + 10; // 10-109
                 }
@@ -215,7 +398,6 @@ namespace Assets.Scripts.InventorySystem
             return localSlotIndex;
         }
 
-
         public void UseSelectedSlot()
         {
             // Не использовать, если панели не открыты
@@ -232,44 +414,41 @@ namespace Assets.Scripts.InventorySystem
         private void HandleStructurePlaced()
         {
             if (_selectedSlotIndex < 0 || _selectedSlotUI == null) return;
-            var progress = PlayerProgress.Instance;
-            if (progress == null) return;
+            if (_progress == null) return;
 
             // Удаляем ОДНУ штуку из правильного контейнера
             if (_selectedSlotOwner == SlotOwner.Hotbar)
             {
-                progress.hotbarInventoryData.RemoveItemFromSlot(_selectedSlotIndex, 1);
-                progress.hotbarInventoryData.NotifyChanged();
+                _progress.hotbarInventoryData.RemoveItemFromSlot(_selectedSlotIndex, 1);
+                _progress.hotbarInventoryData.NotifyChanged();
             }
             else if (_selectedSlotOwner == SlotOwner.Inventory)
             {
-                progress.mainInventoryData.RemoveItemFromSlot(_selectedSlotIndex, 1);
-                progress.mainInventoryData.NotifyChanged();
+                _progress.mainInventoryData.RemoveItemFromSlot(_selectedSlotIndex, 1);
+                _progress.mainInventoryData.NotifyChanged();
             }
 
-            progress.Save("InventoryManager.HandleStructurePlaced");
+            _progress.Save("InventoryManager.HandleStructurePlaced");
         }
 
 
         // === DROP ===
-
         public void DropItemFromSlot(int localSlotIndex, SlotOwner owner)
         {
-            var progress = PlayerProgress.Instance;
-            if (progress == null) return;
+            if (_progress == null) return;
 
             InventorySlot slot = null;
             InventoryData sourceData = null;
 
-            if (owner == SlotOwner.Hotbar && localSlotIndex < progress.hotbarInventoryData.slots.Count)
+            if (owner == SlotOwner.Hotbar && localSlotIndex < _progress.hotbarInventoryData.slots.Count)
             {
-                slot = progress.hotbarInventoryData.slots[localSlotIndex];
-                sourceData = progress.hotbarInventoryData;
+                slot = _progress.hotbarInventoryData.slots[localSlotIndex];
+                sourceData = _progress.hotbarInventoryData;
             }
-            else if (owner == SlotOwner.Inventory && localSlotIndex < progress.mainInventoryData.slots.Count)
+            else if (owner == SlotOwner.Inventory && localSlotIndex < _progress.mainInventoryData.slots.Count)
             {
-                slot = progress.mainInventoryData.slots[localSlotIndex];
-                sourceData = progress.mainInventoryData;
+                slot = _progress.mainInventoryData.slots[localSlotIndex];
+                sourceData = _progress.mainInventoryData;
             }
 
             if (slot?.IsEmpty != false || slot.item == null) return;
@@ -288,7 +467,7 @@ namespace Assets.Scripts.InventorySystem
 
             // === Вычисляем позицию для сумки ===
             Vector3 dropPosition = Vector3.zero;
-            var playerController = progress.playerController;
+            var playerController = _progress.playerController;
             if (playerController != null)
             {
                 dropPosition = playerController.transform.position
@@ -317,9 +496,9 @@ namespace Assets.Scripts.InventorySystem
 
             // === Снимаем экипировку ДО удаления из слота (если предмет был в руках) ===
             if ((itemType == ItemType.Tool || itemType == ItemType.Weapon) &&
-                equipment != null && equipment.IsEquipped && equipment.GetCurrentItem() == itemToDrop)
+                _equipment != null && _equipment.IsEquipped && _equipment.GetCurrentItem() == itemToDrop)
             {
-                equipment.Unequip();
+                _equipment.Unequip();
             }
 
             // === Удаляем из слота (теперь безопасно) ===
@@ -329,7 +508,7 @@ namespace Assets.Scripts.InventorySystem
                 sourceData.NotifyChanged();
             }
 
-            progress.Save("InventoryManager.DropItemFromSlot");
+            _progress.Save("InventoryManager.DropItemFromSlot");
 
             if (NotificationManager.Instance != null)
             {
@@ -340,7 +519,7 @@ namespace Assets.Scripts.InventorySystem
         // Вызывается по кнопке PlayerInventoryDropButton "Выбросить всё"
         public void DropItemsFromInventory()
         {
-            var progress = PlayerProgress.Instance;
+            var progress = _progress;
             if (progress?.mainInventoryData == null)
             {
                 Debug.LogError("[InventoryManager] mainInventoryData недоступен!");
@@ -407,8 +586,7 @@ namespace Assets.Scripts.InventorySystem
                 return;
             }
 
-            var playerController = PlayerProgress.Instance?.playerController;
-            if (playerController == null)
+            if (_playerController == null)
             {
                 Debug.LogError("[InventoryManager] PlayerController не найден!");
                 return;
@@ -438,20 +616,20 @@ namespace Assets.Scripts.InventorySystem
             }
 
             // === Снимаем экипировку, если предмет из mainInventory ===
-            if (unequipIfFromMainInventory && equipment != null && equipment.IsEquipped)
+            if (unequipIfFromMainInventory && _equipment != null && _equipment.IsEquipped)
             {
-                int equippedGlobalIndex = equipment.EquippedSlotIndex;
+                int equippedGlobalIndex = _equipment.EquippedSlotIndex;
                 // Индексы 10+ принадлежат mainInventory
                 if (equippedGlobalIndex >= 10)
                 {
-                    equipment.Unequip();
+                    _equipment.Unequip();
                 }
             }
 
             // === Позиция перед игроком ===
-            Vector3 dropPosition = playerController.transform.position
-                                 + playerController.transform.forward * 2f
-                                 + playerController.transform.up * 0.5f;
+            Vector3 dropPosition = _playerController.transform.position
+                                 + _playerController.transform.forward * 2f
+                                 + _playerController.transform.up * 0.5f;
 
             if (Physics.Raycast(dropPosition + Vector3.up * 5f, Vector3.down, out RaycastHit hit, 10f))
             {
@@ -478,17 +656,17 @@ namespace Assets.Scripts.InventorySystem
             NotificationManager.Instance?.Show($"Выброшено в сумку: {itemsToDrop.Count} стаков", null);
         }
 
-        // вызывается по клавише _input.drop "Выбросить"
+        // вызывается по клавише _inputHandler.drop "Выбросить"
         public void DropItemFromSlotByDropKey()
         {
-            if (_input.drop && _selectedSlotIndex > -1)
+            if (_inputHandler != null && _inputHandler.drop && _selectedSlotIndex > -1)
             {
                 DropItemFromSlot(_selectedSlotIndex, _selectedSlotOwner);
                 _selectedSlotUI?.HighLightHoverSlot(false);
                 _selectedSlotIndex = -1;
                 _selectedSlotOwner = SlotOwner.Inventory;
                 _selectedSlotUI = null;
-                _input.ResetDrop();
+                _inputHandler.ResetDrop();
             }
         }
 
@@ -502,7 +680,7 @@ namespace Assets.Scripts.InventorySystem
                 Debug.LogError("Нет открытого сундука!");
                 return;
             }
-            var progress = PlayerProgress.Instance;
+            var progress = _progress;
             if (progress == null) return;
 
             var playerData = progress.mainInventoryData;
@@ -554,7 +732,7 @@ namespace Assets.Scripts.InventorySystem
         public void EquipSavedEquippedItem(PlayerSaveData saveData)
         {
             if (saveData == null) return;
-            if (equipment == null) return;
+            if (_equipment == null) return;
 
             int savedIndex = saveData.equippedSlotIndex;
             if (savedIndex <= -1) return;
@@ -568,15 +746,15 @@ namespace Assets.Scripts.InventorySystem
             InventorySlot slot = GetSlotByIndex(localSlotIndex);
             if (slot != null && !slot.IsEmpty && slot.item != null)
             {
-                equipment.Equip(slot.item, savedIndex);
+                _equipment.Equip(slot.item, savedIndex);
             }
         }
 
         public void SaveEquippedItem(PlayerSaveData saveData)
         {
-            if (equipment != null && equipment.IsEquipped)
+            if (_equipment != null && _equipment.IsEquipped)
             {
-                int globalIdx = equipment.EquippedSlotIndex;
+                int globalIdx = _equipment.EquippedSlotIndex;
                 saveData.equippedSlotIndex = globalIdx;
 
                 // Владелец определяется по глобальному индексу, а не по _selectedSlotOwner
@@ -604,8 +782,9 @@ namespace Assets.Scripts.InventorySystem
                 return;
             }
 
-            // 1. Находим рецепт (убедись, что recipeDatabase доступен в InventoryManager)
-            Recipe recipe = PlayerProgress.Instance.recipeDatabase.GetRecipeForItem(slot.item);
+            // 1. Находим рецепт
+            var recipeDb = GameAssets.Instance?.RecipeDatabase;
+            Recipe recipe = recipeDb.GetRecipeForItem(slot.item);
 
             if (recipe == null)
             {
@@ -614,7 +793,7 @@ namespace Assets.Scripts.InventorySystem
             }
 
             // 2. Проверяем ресурсы (умножаем стоимость крафта на 0.5f)
-            var invData = PlayerProgress.Instance.mainInventoryData;
+            var invData = _progress.mainInventoryData;
             float repairMultiplier = invData.GetRepairMultiplier(slot.item.maxDurability, slot.currentDurability);
 
             if (invData.HasIngredientsForRepair(recipe, repairMultiplier))
@@ -644,7 +823,7 @@ namespace Assets.Scripts.InventorySystem
 
                 // 5. Обновляем UI
                 RefreshAllUIs();
-                PlayerProgress.Instance.Save("InventoryManager.Repair");
+                _progress.Save("InventoryManager.Repair");
             }
             else
             {
@@ -652,58 +831,44 @@ namespace Assets.Scripts.InventorySystem
             }
         }
 
-        // === Жизненный цикл ===
 
-        private IEnumerator Start()
-        {
-            // Ждём PlayerProgress
-            while (PlayerProgress.Instance == null) yield return null;
-            while (PlayerController.LocalPlayer == null) yield return null;
+        // private void OnDestroy()
+        // {
+        //     if (_progress != null)
+        //         _progress.OnProgressChanged -= RefreshPlayerStatsDisplay;
 
-            // Регистрируемся
-            PlayerProgress.Instance.RegisterInventoryManager(this);
+        //     if (_survival != null)
+        //         _survival.OnSurvivalStatsChanged -= RefreshSurvivalStatsDisplay;
 
-            InitializeStatRows();
-
-            if (PlayerProgress.Instance != null)
-            {
-                _playerProgress = PlayerProgress.Instance;
-                _playerProgress.OnProgressChanged += RefreshPlayerStatsDisplay;
-            }
-
-            if (PlayerSurvivalSystem.Instance != null)
-            {
-                PlayerSurvivalSystem.Instance.OnSurvivalStatsChanged += RefreshSurvivalStatsDisplay;
-            }
-
-            if (equipment != null)
-            {
-                equipment.OnEquipped += RefreshAllUIs;
-                equipment.OnUnequipped += RefreshAllUIs;
-            }
-
-            if (buildMode != null)
-            {
-                buildMode.OnBuildActive += RefreshAllUIs;
-                buildMode.OnBuildExit += RefreshAllUIs;
-                buildMode.OnStructurePlaced += HandleStructurePlaced;
-            }
-        }
+        //     if (_equipment != null)
+        //     {
+        //         _equipment.OnEquipped -= RefreshAllUIs;
+        //         _equipment.OnUnequipped -= RefreshAllUIs;
+        //     }
+        // }
 
         private void OnDestroy()
         {
-            if (_playerProgress != null)
-                _playerProgress.OnProgressChanged -= RefreshPlayerStatsDisplay;
+            if (Progress != null)
+                Progress.OnProgressChanged -= RefreshPlayerStatsDisplay;
 
-            if (PlayerSurvivalSystem.Instance != null)
-                PlayerSurvivalSystem.Instance.OnSurvivalStatsChanged -= RefreshSurvivalStatsDisplay;
+            if (Survival != null)
+                Survival.OnSurvivalStatsChanged -= RefreshSurvivalStatsDisplay;
 
-            if (equipment != null)
+            if (Equipment != null)
             {
-                equipment.OnEquipped -= RefreshAllUIs;
-                equipment.OnUnequipped -= RefreshAllUIs;
+                Equipment.OnEquipped -= RefreshAllUIs;
+                Equipment.OnUnequipped -= RefreshAllUIs;
+            }
+
+            if (BuildMode != null)
+            {
+                BuildMode.OnBuildActive -= RefreshAllUIs;
+                BuildMode.OnBuildExit -= RefreshAllUIs;
+                BuildMode.OnStructurePlaced -= HandleStructurePlaced;
             }
         }
+
 
         // Обновление UI при смене экипировки
         private void RefreshAllUIs()

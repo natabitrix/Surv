@@ -13,8 +13,10 @@ namespace Assets.Scripts.Loot
     public class LootBag : MonoBehaviour, IInteractable, IInventorySource
     {
         [Header("Interaction")]
-        [SerializeField] private Collider _interactionCollider;
+        [SerializeField] private BoxCollider _interactionCollider;
         public Collider InteractionCollider => _interactionCollider;
+
+        [SerializeField] private CapsuleCollider _capsuleCollider;
 
         [SerializeField] private ChestInventory _inventory;
         private bool _isOpen = false;
@@ -28,6 +30,13 @@ namespace Assets.Scripts.Loot
 
         private Coroutine _despawnCoroutine;
         private bool _isDespawning = false;
+        private bool _hasSettled = false; // Флаг: сумка уже упала и стала "призрачной"
+
+        [Header("Physics")]
+        [SerializeField] private float _settlingThreshold = 0.1f; // Порог скорости, считаем что упала
+        [SerializeField] private float _settleCheckDelay = 0.5f; // Задержка перед проверкой остановки (чтобы не сработало сразу)
+
+        private Rigidbody _rb;
 
         private void Start()
         {
@@ -38,6 +47,80 @@ namespace Assets.Scripts.Loot
             {
                 _inventory.Data.OnInventoryChanged += OnInventoryChanged;
             }
+
+            _rb = GetComponent<Rigidbody>();
+            
+            // Убедимся, что физика включена при спавне
+            if (_rb != null)
+            {
+                _rb.isKinematic = false;
+                _rb.detectCollisions = true;
+
+                // Генерируем случайное направление по X и Z
+                Vector3 randomPush = new Vector3(
+                    Random.Range(-100f, 100f), 
+                    0f, 
+                    Random.Range(-100f, 100f)
+                );
+                
+                // Применяем силу. ForceMode.Impulse дает мгновенный толчок
+                _rb.AddForce(randomPush, ForceMode.Impulse);
+            }
+            
+            // Запускаем корутину проверки остановки
+            StartCoroutine(CheckSettling());
+        }
+
+        /// <summary>
+        /// Проверяет, остановилась ли сумка, чтобы отключить физику и коллайдеры
+        /// </summary>
+        private IEnumerator CheckSettling()
+        {
+            // Ждем немного, чтобы сумка успела начать падать и не сработала триггер сразу при спавне
+            yield return new WaitForSeconds(_settleCheckDelay);
+
+            while (!_hasSettled && _rb != null)
+            {
+                // Проверяем скорость. linearVelocity.magnitude - это текущая скорость
+                if (_rb.linearVelocity.magnitude < _settlingThreshold && _rb.angularVelocity.magnitude < _settlingThreshold)
+                {
+                    SettleBag();
+                    break;
+                }
+                
+                yield return null; // Ждем следующего кадра
+            }
+        }
+
+        /// <summary>
+        /// Отключает физику и коллайдеры, фиксируя положение сумки
+        /// </summary>
+        /// <summary>
+        /// Отключает физику и коллайдеры, фиксируя положение сумки
+        /// </summary>
+        private void SettleBag()
+        {
+            if (_hasSettled) return;
+            _hasSettled = true;
+
+            Vector3 pos = transform.position;
+            Quaternion rot = transform.rotation;
+
+            if (_rb != null)
+            {
+                _rb.linearVelocity = Vector3.zero;
+                _rb.angularVelocity = Vector3.zero;
+                _rb.isKinematic = true;
+            }
+
+            // Вместо отключения коллайдеров, меняем слой на тот, который не имеет коллизий
+            // Предварительно создайте слой "LootGhost" в Unity и узнайте его ID
+            // gameObject.layer = LayerMask.NameToLayer("LootGhost"); 
+            
+            // Коллайдеры остаются включенными, но благодаря настройкам Physics Matrix они ни с чем не сталкиваются
+            // При этом Raycast всё равно может их находить, если вы указываете нужный LayerMask в луче
+
+            transform.SetPositionAndRotation(pos, rot);
         }
 
         private void OnDestroy()

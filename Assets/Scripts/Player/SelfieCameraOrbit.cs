@@ -5,7 +5,6 @@ namespace Assets.Scripts.Player
 {
     public class SelfieCameraOrbit : MonoBehaviour
     {
-        public Transform playerCameraRoot;
         public float sensitivity = 2f;
 
         [Header("Zoom")]
@@ -20,18 +19,59 @@ namespace Assets.Scripts.Player
 
         private PlayerInputHandler _inputHandler;
         private PlayerController _playerController;
+        private CameraManager _cameraManager;
+        private Transform _playerCameraRoot;
 
         private void Awake()
         {
             _inputHandler = FindAnyObjectByType<PlayerInputHandler>();
-            _playerController = FindAnyObjectByType<PlayerController>();
+
+            _playerController = PlayerController.LocalPlayer;
+
+            // if (_playerController == null)
+            //     Debug.LogError($"[SelfieCameraOrbit] Нет PlayerController.LocalPlayer!");
+
+            // _cameraManager = _playerController.GetComponent<CameraManager>();
+
+            // if (_cameraManager == null)
+            //     Debug.LogError($"[SelfieCameraOrbit] Нет CameraManager!");
+
+            // _playerCameraRoot = _cameraManager.PlayerCameraRoot;
+
+            // _distance = _defaultDistance;
+        }
+
+        private void Start()
+        {
+            // В Start все Awake уже отработали, LocalPlayer должен быть назначен
+            _playerController = PlayerController.LocalPlayer;
+
+            if (_playerController == null)
+            {
+                Debug.LogError($"[SelfieCameraOrbit] Нет PlayerController.LocalPlayer! Отключаю скрипт.", this);
+                enabled = false;
+                return;
+            }
+
+            _cameraManager = _playerController.GetComponent<CameraManager>();
+
+            if (_cameraManager == null)
+            {
+                Debug.LogError($"[SelfieCameraOrbit] Нет CameraManager на игроке {_playerController.name}!", this);
+                enabled = false;
+                return;
+            }
+
+            _playerCameraRoot = _cameraManager.PlayerCameraRoot;
+
             _distance = _defaultDistance;
         }
 
         private void LateUpdate()
         {
-            if (playerCameraRoot == null) return;
-            if (CameraManager.Instance == null || !CameraManager.Instance.IsSelfie) return;
+            if (_playerCameraRoot == null || _cameraManager == null) return;
+            
+            if (!_cameraManager.IsSelfie) return;
 
             if (_playerController != null && _playerController.LockCamera)
                 return;
@@ -55,8 +95,8 @@ namespace Assets.Scripts.Player
 
             // Позиционирование
             var rotation = Quaternion.Euler(_pitch, _yaw, 0f);
-            transform.position = playerCameraRoot.position - rotation * Vector3.forward * _distance;
-            transform.LookAt(playerCameraRoot);
+            transform.position = _playerCameraRoot.position - rotation * Vector3.forward * _distance;
+            transform.LookAt(_playerCameraRoot);
         }
     }
 }

@@ -16,7 +16,10 @@ namespace Assets.Scripts.InventorySystem
     {
         public static ChestUI Instance { get; private set; }
 
-        public InventoryManager inventoryManager;
+        // public InventoryManager inventoryManager;
+        private InventoryManager _inventoryManager;
+        public InventoryManager InventoryManager => _inventoryManager;
+
         public Transform playerSlotParent;
         public Transform chestSlotParent;
         public GameObject slotPrefab;
@@ -42,6 +45,12 @@ namespace Assets.Scripts.InventorySystem
                 return;
             }
             Instance = this;
+
+            var localPlayer = PlayerController.LocalPlayer;
+            if (localPlayer != null)
+            {
+                _inventoryManager = localPlayer.GetComponent<InventoryManager>();
+            }
         }
 
         void CreateChestSlots()
@@ -94,27 +103,35 @@ namespace Assets.Scripts.InventorySystem
                 return summary;
 
             var chestData = _currentChest.Data;
-            var progress = PlayerProgress.Instance;
 
-            for (int i = chestData.slots.Count - 1; i >= 0; i--)
+            var localPlayer = PlayerController.LocalPlayer;
+            if (localPlayer != null)
             {
-                var slot = chestData.slots[i];
-                if (slot.IsEmpty || slot.item == null) continue;
+                var progress = localPlayer.GetComponent<PlayerProgress>();
 
-                Item item = slot.item;
-                int countToMove = slot.count;
-                float originalDurability = slot.currentDurability;
-
-                int actuallyMoved = progress.AddItemToPlayerInventory(item, countToMove, originalDurability);
-
-                if (actuallyMoved > 0)
+                for (int i = chestData.slots.Count - 1; i >= 0; i--)
                 {
-                    chestData.RemoveItemFromSlot(i, actuallyMoved);
+                    var slot = chestData.slots[i];
+                    if (slot.IsEmpty || slot.item == null) continue;
 
-                    if (summary.ContainsKey(item))
-                        summary[item] += actuallyMoved;
-                    else
-                        summary[item] = actuallyMoved;
+                    Item item = slot.item;
+                    int countToMove = slot.count;
+                    float originalDurability = slot.currentDurability;
+
+                    if (progress != null)
+                    {
+                        int actuallyMoved = progress.AddItemToPlayerInventory(item, countToMove, originalDurability);
+
+                        if (actuallyMoved > 0)
+                        {
+                            chestData.RemoveItemFromSlot(i, actuallyMoved);
+
+                            if (summary.ContainsKey(item))
+                                summary[item] += actuallyMoved;
+                            else
+                                summary[item] = actuallyMoved;
+                        }
+                    }
                 }
             }
 

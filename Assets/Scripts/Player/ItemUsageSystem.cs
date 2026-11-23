@@ -9,7 +9,19 @@ namespace Assets.Scripts.Player
 {
     public class ItemUsageSystem : MonoBehaviour
     {
-        private PlayerSurvivalSystem _survival => PlayerSurvivalSystem.Instance;
+        // private PlayerSurvivalSystem _survival => PlayerSurvivalSystem.Instance;
+        // === НОВОЕ: Локальная ссылка вместо синглтона ===
+        private PlayerSurvivalSystem _survivalSystem;
+
+        private void Awake()
+        {
+            // Получаем компонент с этого же объекта
+            _survivalSystem = GetComponent<PlayerSurvivalSystem>();
+            if (_survivalSystem == null)
+            {
+                Debug.LogError("[ItemUsageSystem] PlayerSurvivalSystem not found on this player!", this);
+            }
+        }
 
         public void UseItem(Item item, int count)
         {
@@ -49,11 +61,11 @@ namespace Assets.Scripts.Player
             // Реализуй восстановление HP/HP/насыщения
             if (item.foodRecoveryAmount > 0)
             {
-                _survival.AddFood(item.foodRecoveryAmount);
+                _survivalSystem.AddFood(item.foodRecoveryAmount);
             }
             if (item.healthRecoveryAmount > 0)
             {
-                _survival.RecoveryHealth(item.healthRecoveryAmount);
+                _survivalSystem.RecoveryHealth(item.healthRecoveryAmount);
             }
         }
 

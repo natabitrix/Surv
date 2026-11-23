@@ -15,8 +15,10 @@ namespace Assets.Scripts.Player
     /// </summary>
     public class PlayerRangedCombat : MonoBehaviour
     {
-        [Header("References")]
-        [SerializeField] private PlayerEquipment _equipment;
+        // [Header("References")]
+        // [SerializeField] private PlayerEquipment _equipment;
+        private PlayerEquipment _equipment;
+        private PlayerProgress _progress;
 
         [Tooltip("Точка спавна стрелы (на модели лука). Заполняется из PlayerEquipment при экипировке.")]
         [SerializeField] private Transform _arrowSpawnPoint;
@@ -27,6 +29,17 @@ namespace Assets.Scripts.Player
         [Tooltip("Дистанция, на которую мысленно 'проецируется' точка прицеливания вдоль взгляда камеры. " +
                  "Нужна только для вычисления направления — сама стрела летит с реальной скоростью и гравитацией.")]
         [SerializeField] private float _aimDistance = 100f;
+
+        private void Awake()
+        {
+            _equipment = GetComponent<PlayerEquipment>();
+            if (_equipment == null)
+                Debug.LogError($"PlayerEquipment is missing on {gameObject.name}!", this);
+
+            _progress = GetComponent<PlayerProgress>();
+            if (_progress == null)
+                Debug.LogError($"PlayerProgress is missing on {gameObject.name}!", this);
+        }
 
         public void SetArrowSpawnPoint(Transform point)
         {
@@ -132,11 +145,10 @@ namespace Assets.Scripts.Player
 
         private bool TryConsumeArrow(Item arrowItem)
         {
-            var progress = PlayerProgress.Instance;
-            if (progress == null) return false;
+            if (_progress == null) return false;
 
-            if (TryConsumeFrom(progress.hotbarInventoryData, arrowItem)) return true;
-            if (TryConsumeFrom(progress.mainInventoryData, arrowItem)) return true;
+            if (TryConsumeFrom(_progress.hotbarInventoryData, arrowItem)) return true;
+            if (TryConsumeFrom(_progress.mainInventoryData, arrowItem)) return true;
 
             return false;
         }

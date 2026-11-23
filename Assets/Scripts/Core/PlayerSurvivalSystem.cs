@@ -15,7 +15,8 @@ namespace Assets.Scripts.Core
 {
     public class PlayerSurvivalSystem : MonoBehaviour
     {
-        public static PlayerSurvivalSystem Instance { get; private set; }
+        // public static PlayerSurvivalSystem Instance { get; private set; }
+        private PlayerProgress _progress;
 
         // === Текущие значения ===
         private float _health;
@@ -57,13 +58,13 @@ namespace Assets.Scripts.Core
         public float Weight => _weight;
         public float Torpor => _torpor;
 
-        public float MaxHealth => PlayerProgress.Instance?.GetMaxValue(StatType.Health) ?? 100f;
-        public float MaxStamina => PlayerProgress.Instance?.GetMaxValue(StatType.Stamina) ?? 100f;
-        public float MaxOxygen => PlayerProgress.Instance?.GetMaxValue(StatType.Oxygen) ?? 100f;
-        public float MaxFood => PlayerProgress.Instance?.GetMaxValue(StatType.Food) ?? 100f;
-        public float MaxWater => PlayerProgress.Instance?.GetMaxValue(StatType.Water) ?? 100f;
-        public float MaxWeight => PlayerProgress.Instance?.GetMaxValue(StatType.Weight) ?? 100f;
-        public float MaxTorpor => PlayerProgress.Instance?.GetMaxValue(StatType.Torpor) ?? 100f;
+        public float MaxHealth => _progress?.GetMaxValue(StatType.Health) ?? 100f;
+        public float MaxStamina => _progress?.GetMaxValue(StatType.Stamina) ?? 100f;
+        public float MaxOxygen => _progress?.GetMaxValue(StatType.Oxygen) ?? 100f;
+        public float MaxFood => _progress?.GetMaxValue(StatType.Food) ?? 100f;
+        public float MaxWater => _progress?.GetMaxValue(StatType.Water) ?? 100f;
+        public float MaxWeight => _progress?.GetMaxValue(StatType.Weight) ?? 100f;
+        public float MaxTorpor => _progress?.GetMaxValue(StatType.Torpor) ?? 100f;
 
         private bool _isDead = false;
         public bool DieManually = false;
@@ -83,19 +84,36 @@ namespace Assets.Scripts.Core
 
         private void Awake()
         {
-            if (Instance != null && Instance != this)
+            // if (Instance != null && Instance != this)
+            // {
+            //     Destroy(gameObject);
+            //     return;
+            // }
+            // Instance = this;
+            // // Сценовый менеджер — умирает вместе со сценой, DontDestroyOnLoad не нужен.
+            _progress = GetComponent<PlayerProgress>();
+            if (_progress == null)
             {
-                Destroy(gameObject);
-                return;
+                Debug.LogError("[PlayerSurvivalSystem] PlayerProgress not found on this player!", this);
             }
-            Instance = this;
-            // Сценовый менеджер — умирает вместе со сценой, DontDestroyOnLoad не нужен.
         }
 
         private void Start()
         {
             // Восстанавливаем статы из сохранения (загружено PlayerProgress).
-            var loadedData = PlayerProgress.Instance?.GetLoadedSaveData();
+            // var loadedData = _progress?.GetLoadedSaveData();
+            // if (loadedData != null)
+            // {
+            //     LoadFrom(loadedData);
+            // }
+            // else
+            // {
+            //     Debug.LogWarning("[PlayerSurvivalSystem] loadedData == null, используем дефолт.");
+            //     ResetToDefaults();
+            // }
+
+            // Восстанавливаем статы из сохранения (загружено PlayerProgress).
+            var loadedData = _progress?.GetLoadedSaveData();
             if (loadedData != null)
             {
                 LoadFrom(loadedData);
@@ -105,7 +123,6 @@ namespace Assets.Scripts.Core
                 Debug.LogWarning("[PlayerSurvivalSystem] loadedData == null, используем дефолт.");
                 ResetToDefaults();
             }
-
             StartCoroutine(UpdateSurvivalStats());
         }
 
@@ -136,18 +153,18 @@ namespace Assets.Scripts.Core
 
         private IEnumerator OnPlayerDeathRoutine()
         {
-            var pc = PlayerProgress.Instance?.playerController;
+            var pc = PlayerController.LocalPlayer;
             if (pc == null) yield break;
 
-
             // 0. Спешиваемся если были верхом
-            PlayerController.LocalPlayer?.RidingController?.CurrentMount?.ForceDismount();
+            pc?.RidingController?.CurrentMount?.ForceDismount();
 
             // 1. Снимаем экипировку и выходим из build mode
-            if (pc.equipment != null && pc.equipment.IsEquipped)
-                pc.equipment.Unequip();
-            if (pc.buildMode != null && pc.buildMode.IsActive())
-                pc.buildMode.ExitBuildMode();
+            if (pc.Equipment != null && pc.Equipment.IsEquipped)
+                pc.Equipment.Unequip();
+
+            if (pc.BuildMode != null && pc.BuildMode.IsActive())
+                pc.BuildMode.ExitBuildMode();
 
             // 2. Отключаем управление игроком
             TogglePlayerActive(pc, false);
@@ -175,8 +192,8 @@ namespace Assets.Scripts.Core
                 );
 
                 corpse.CopyPlayerItemsToCorpse(
-                    PlayerProgress.Instance.mainInventoryData,
-                    PlayerProgress.Instance.hotbarInventoryData
+                    _progress.mainInventoryData,
+                    _progress.hotbarInventoryData
                 );
 
                 if (corpse.TryGetComponent<RadialMenu>(out var menu)) menu.enabled = true;
@@ -186,9 +203,9 @@ namespace Assets.Scripts.Core
             CorpseManager.Instance.RegisterCorpse(playerCorpseGO, "player_001");
 
             // 5. Очищаем инвентарь (существующие InventoryData, без подмены ссылок)
-            ClearInventoryData(PlayerProgress.Instance.mainInventoryData);
-            ClearInventoryData(PlayerProgress.Instance.hotbarInventoryData);
-            PlayerProgress.Instance.Save("PlayerDeath.ClearedInventory");
+            ClearInventoryData(_progress.mainInventoryData);
+            ClearInventoryData(_progress.hotbarInventoryData);
+            _progress.Save("PlayerDeath.ClearedInventory");
 
             // 6. Ждём, пока тело упадёт. WaitForSecondsRealtime — работает при timeScale = 0.
             yield return new WaitForSecondsRealtime(_deathScreenDelay);
@@ -199,7 +216,7 @@ namespace Assets.Scripts.Core
 
         public void Respawn()
         {
-            var playerProgress = PlayerProgress.Instance;
+            var playerProgress = _progress;
             if (playerProgress == null)
             {
                 Debug.LogError("[PlayerSurvivalSystem] Respawn: PlayerProgress == null!");

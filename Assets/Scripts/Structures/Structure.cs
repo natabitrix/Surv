@@ -16,7 +16,7 @@ namespace Assets.Scripts.Structures
     public class Structure : MonoBehaviour, IInteractable, IImpactSoundProvider, IInventorySource
     {
         [Header("Database")]
-        [Tooltip("Ссылка на базу данных существ")]
+        [Tooltip("Ссылка на базу данных ")]
         // public ItemDatabase itemDatabase;
         public Item item;
 
@@ -38,7 +38,7 @@ namespace Assets.Scripts.Structures
         // Ссылки на системы
         protected PlayerController playerController;
         protected PlayerProgress playerProgress;
-        protected PlayerSurvivalSystem survivalSystem;
+        // protected PlayerSurvivalSystem survivalSystem;
 
         public float health;
         public float maxHealth = 5000f;
@@ -54,11 +54,11 @@ namespace Assets.Scripts.Structures
         // События
         public System.Action<Structure> OnDeath;
  
-        protected virtual void Awake()
+        protected virtual void Start()
         {
-            playerProgress = PlayerProgress.Instance;
-            survivalSystem = PlayerSurvivalSystem.Instance;
             playerController = PlayerController.LocalPlayer;
+            playerProgress = playerController.GetComponent<PlayerProgress>(); 
+            // survivalSystem = playerController.GetComponent<PlayerSurvivalSystem>(); 
 
             // if (playerProgress != null && playerProgress.playerController != null)
             //     playerController = playerProgress.playerController;
@@ -205,9 +205,11 @@ namespace Assets.Scripts.Structures
 
             if (hasLoot && _inventory.Data != null)
             {
-                if (InventoryManager.Instance != null)
+                var localInv = playerController.GetComponent<InventoryManager>();
+
+                if (localInv != null)
                 {
-                    InventoryManager.Instance.DropAllItemsToBag(
+                    localInv.DropAllItemsToBag(
                         _inventory.Data,
                         structureId,
                         false

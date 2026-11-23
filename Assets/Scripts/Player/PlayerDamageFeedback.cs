@@ -12,8 +12,9 @@ namespace Assets.Scripts.Player
     /// </summary>
     public class PlayerDamageFeedback : MonoBehaviour
     {
-        [Header("Camera Shake")]
-        [SerializeField] private CinemachineImpulseSource _impulseSource;
+        private CinemachineImpulseSource _impulseSource;
+        private PlayerSurvivalSystem _survivalSystem;
+
         [Tooltip("Сила тряски на единицу урона.")]
         [SerializeField] private float _impulsePerDamage = 0.05f;
         [Tooltip("Максимальная сила тряски (ограничение сверху).")]
@@ -37,11 +38,19 @@ namespace Assets.Scripts.Player
 
         private void Awake()
         {
+            _impulseSource = GetComponent<CinemachineImpulseSource>();
             if (_impulseSource == null)
-                _impulseSource = GetComponent<CinemachineImpulseSource>();
+                Debug.LogError($"CinemachineImpulseSource is missing on {gameObject.name}!", this);
 
             if (_damageVignette != null)
                 SetVignetteAlpha(0f);
+
+            // Получаем компонент с этого же объекта
+            _survivalSystem = GetComponent<PlayerSurvivalSystem>();
+            if (_survivalSystem == null)
+            {
+                Debug.LogWarning("[PlayerDamageFeedback] PlayerSurvivalSystem not found on this player!", this);
+            }
         }
 
         private void OnEnable()
@@ -56,9 +65,9 @@ namespace Assets.Scripts.Player
 
         private void OnDisable()
         {
-            if (_subscribed && PlayerSurvivalSystem.Instance != null)
+            if (_subscribed && _survivalSystem != null)
             {
-                PlayerSurvivalSystem.Instance.OnPlayerDamaged -= HandlePlayerDamaged;
+                _survivalSystem.OnPlayerDamaged -= HandlePlayerDamaged;
                 _subscribed = false;
             }
         }
@@ -66,9 +75,9 @@ namespace Assets.Scripts.Player
         private void TrySubscribe()
         {
             if (_subscribed) return;
-            if (PlayerSurvivalSystem.Instance == null) return;
+            if (_survivalSystem == null) return;
 
-            PlayerSurvivalSystem.Instance.OnPlayerDamaged += HandlePlayerDamaged;
+            _survivalSystem.OnPlayerDamaged += HandlePlayerDamaged;
             _subscribed = true;
         }
 

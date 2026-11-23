@@ -9,26 +9,13 @@ namespace Assets.Scripts.UI
 {
     public class MainMenuManager : MonoBehaviour
     {
-
         public GameObject MainMenuPanel;
         public GameObject SettingsPanel;
-
         public String GameScene;
-
         public float timeScale = 1f;
-
 
         [SerializeField] private SettingsPanelController _settingsController;
 
-        private void Start()
-        {
-
-        }
-
-        private void Update()
-        {
-
-        }
 
         public void SetCursorVisible(bool isCursorVisible)
         {
@@ -84,8 +71,20 @@ namespace Assets.Scripts.UI
         {
             SetRealPause(false);
             SetCursorVisible(false);
+
             // Перечитываем файл перед загрузкой сцены
-            PlayerProgress.Instance?.ReloadFromFile();
+            // PlayerProgress.Instance?.ReloadFromFile();
+            var playerProgress = PlayerController.LocalPlayer.GetComponent<PlayerProgress>();
+            if (playerProgress != null)
+            {
+                playerProgress.ReloadFromFile();
+            }
+            else
+            {
+                Debug.LogError("[MainMenuManager] PlayerProgress not found!", this);
+            }
+            
+
             // ✅ Показываем загрузочный экран
             if (LoadingScreenManager.Instance != null)
             {

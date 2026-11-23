@@ -51,17 +51,20 @@ namespace Assets.Scripts.InventorySystem
         private RectTransform dragRT;
 
         // External services inventoryUI
+        private PlayerProgress _progress;
         private InventoryManager _inventoryManager;
         private TooltipTrigger _tooltipTrigger;
-        [SerializeField] private PlayerInputHandler _inputHandler;
-        [SerializeField] private ItemUsageRouter _itemUsageRouter;
+        private PlayerInputHandler _inputHandler;
+        private ItemUsageRouter _itemUsageRouter;
 
         private void Awake()
         {
-            if (_inputHandler == null)
-                _inputHandler = FindAnyObjectByType<PlayerInputHandler>();
-            if (_itemUsageRouter == null)
-                _itemUsageRouter = FindAnyObjectByType<ItemUsageRouter>();
+
+            // _inputHandler = FindAnyObjectByType<PlayerInputHandler>();
+            // _itemUsageRouter = FindAnyObjectByType<ItemUsageRouter>();
+            // _inputHandler = _inventoryManager.InputHandler;
+            // _itemUsageRouter = _inventoryManager.ItemUsageRouter;
+            // _progress = _inventoryManager.Progress;
         }
 
         // Заменяем ссылки на MonoBehaviour индексами и флагами
@@ -77,7 +80,13 @@ namespace Assets.Scripts.InventorySystem
             inventoryUI = ui;
             hotbarUI = null;
             chestUI = null;
-            _inventoryManager = ui.inventoryManager;
+            _inventoryManager = ui.InventoryManager;
+            if (_inventoryManager != null)
+            {
+                _inputHandler = _inventoryManager.InputHandler;
+                _itemUsageRouter = _inventoryManager.ItemUsageRouter;
+                _progress = _inventoryManager.Progress;
+            }
         }
 
         public void SetupHotbar(int slotIndex, HotbarUI ui)
@@ -87,7 +96,13 @@ namespace Assets.Scripts.InventorySystem
             hotbarUI = ui;
             inventoryUI = null;
             chestUI = null;
-            _inventoryManager = ui.inventoryManager;
+            _inventoryManager = ui.InventoryManager;
+            if (_inventoryManager != null)
+            {
+                _inputHandler = _inventoryManager.InputHandler;
+                _itemUsageRouter = _inventoryManager.ItemUsageRouter;
+                _progress = _inventoryManager.Progress;
+            }
         }
 
         public void SetupChest(int slotIndex, ChestUI ui)
@@ -97,16 +112,48 @@ namespace Assets.Scripts.InventorySystem
             chestUI = ui;
             inventoryUI = null;
             hotbarUI = null;
-            _inventoryManager = ui.inventoryManager;
+            _inventoryManager = ui.InventoryManager;
+            if (_inventoryManager != null)
+            {
+                _inputHandler = _inventoryManager.InputHandler;
+                _itemUsageRouter = _inventoryManager.ItemUsageRouter;
+                _progress = _inventoryManager.Progress;
+            }
+        }
+
+
+        private void EnsureReferences()
+        {
+            if (_inventoryManager == null)
+            {
+                if (inventoryUI != null) _inventoryManager = inventoryUI.InventoryManager;
+                if (_inventoryManager == null && hotbarUI != null) _inventoryManager = hotbarUI.InventoryManager;
+                if (_inventoryManager == null && chestUI != null) _inventoryManager = chestUI.InventoryManager;
+
+                if (_inventoryManager == null)
+                {
+                    var lp = PlayerController.LocalPlayer;
+                    if (lp != null) _inventoryManager = lp.GetComponent<InventoryManager>();
+                }
+            }
+
+            if (_inventoryManager != null)
+            {
+                // Благодаря ленивым геттерам эти вызовы всегда актуальны
+                if (_inputHandler == null) _inputHandler = _inventoryManager.InputHandler;
+                if (_itemUsageRouter == null) _itemUsageRouter = _inventoryManager.ItemUsageRouter;
+                if (_progress == null) _progress = _inventoryManager.Progress;
+            }
         }
 
         // Получаем слот безопасно
         public InventorySlot GetSlot()
         {
-            var progress = PlayerProgress.Instance;
-            if (progress == null)
+            EnsureReferences();
+
+            if (_progress == null)
             {
-                Debug.LogError("progress is null");
+                Debug.LogError("PlayerProgress is null");
                 return null;
             }
 
@@ -120,18 +167,18 @@ namespace Assets.Scripts.InventorySystem
                 else if (IsHotBarSlot)
                 {
                     // Хотбар: слоты 0-9 напрямую из hotbarInventory
-                    if (progress.hotbarInventoryData != null &&
-                        index >= 0 && index < progress.hotbarInventoryData.slots.Count)
+                    if (_progress.hotbarInventoryData != null &&
+                        index >= 0 && index < _progress.hotbarInventoryData.slots.Count)
                     {
-                        return progress.hotbarInventoryData.slots[index];
+                        return _progress.hotbarInventoryData.slots[index];
                     }
                 }
                 else if (IsMainInventorySlot)
                 {
-                    if (progress.mainInventoryData != null &&
-                        index >= 0 && index < progress.mainInventoryData.slots.Count)
+                    if (_progress.mainInventoryData != null &&
+                        index >= 0 && index < _progress.mainInventoryData.slots.Count)
                     {
-                        return progress.mainInventoryData.slots[index];
+                        return _progress.mainInventoryData.slots[index];
                     }
                 }
             }
@@ -145,6 +192,8 @@ namespace Assets.Scripts.InventorySystem
 
         public void SetSlot(InventorySlot slot)
         {
+            EnsureReferences();
+            
             if (this == null || gameObject == null || icon == null)
                 return;
 
@@ -196,8 +245,8 @@ namespace Assets.Scripts.InventorySystem
 
                 if (slot.item.hasDurability)
                 {
-                    Recipe recipe = PlayerProgress.Instance.recipeDatabase.GetRecipeForItem(slot.item);
-                    var invData = PlayerProgress.Instance.mainInventoryData;
+                    Recipe recipe = GameAssets.Instance?.RecipeDatabase.GetRecipeForItem(slot.item);
+                    var invData = _progress.mainInventoryData;
                     float repairMultiplier = invData.GetRepairMultiplier(slot.item.maxDurability, slot.currentDurability);
 
                     foreach (var ing in recipe.ingredients)
@@ -240,6 +289,8 @@ namespace Assets.Scripts.InventorySystem
 
         public void OnBeginDrag(PointerEventData eventData)
         {
+            EnsureReferences();
+
             var slot = GetSlot();
             if (slot == null || slot.IsEmpty) return;
 
@@ -379,6 +430,7 @@ namespace Assets.Scripts.InventorySystem
 
         public void OnDrop(PointerEventData eventData)
         {
+            EnsureReferences();
 
             if (DragContext.draggedItem == null || DragContext.draggedCount <= 0)
             {
@@ -403,13 +455,13 @@ namespace Assets.Scripts.InventorySystem
                     if (IsHotBarSlot)
                     {
                         // Debug.Log($"[Hotbar] Item '{item.itemName}' marked for slot {index}");
-                        PlayerProgress.Instance.MarkItemAsHotbarPreferred(item, index);
+                        _progress.MarkItemAsHotbarPreferred(item, index);
                     }
 
                     if (DragContext.fromOwner == SlotOwner.Hotbar && !IsHotBarSlot)
                     {
                         // Мы утащили предмет с хотбара в инвентарь (или сундук)
-                        PlayerProgress.Instance.UnmarkItemAsHotbarPreferred(DragContext.draggedItem);
+                        _progress.UnmarkItemAsHotbarPreferred(DragContext.draggedItem);
                     }
 
                     string action = null;
@@ -440,7 +492,7 @@ namespace Assets.Scripts.InventorySystem
             CleanupDragContext();
             RefreshAllUIs();
 
-            var progress = PlayerProgress.Instance;
+            var progress = _progress;
             progress.Save("InventorySlotUI.OnDrop");
 
         }
@@ -514,13 +566,13 @@ namespace Assets.Scripts.InventorySystem
                 {
                     if (DragContext.fromOwner == SlotOwner.Hotbar)
                     {
-                        var hotbar = PlayerProgress.Instance?.hotbarInventoryData;
+                        var hotbar = _progress?.hotbarInventoryData;
                         if (hotbar != null && DragContext.fromSlotIndex >= 0 && DragContext.fromSlotIndex < hotbar.slots.Count)
                             return hotbar.slots[DragContext.fromSlotIndex];
                     }
                     else if (DragContext.fromOwner == SlotOwner.Inventory)
                     {
-                        var mainInv = PlayerProgress.Instance?.mainInventoryData;
+                        var mainInv = _progress?.mainInventoryData;
                         // int mainIndex = DragContext.fromSlotIndex - 10;
                         int mainIndex = DragContext.fromSlotIndex;
 
@@ -578,6 +630,8 @@ namespace Assets.Scripts.InventorySystem
 
         public void OnPointerEnter(PointerEventData eventData)
         {
+            EnsureReferences();
+
             if (_inventoryManager == null)
             {
                 Debug.Log("_inventoryManager is null!");
@@ -601,6 +655,8 @@ namespace Assets.Scripts.InventorySystem
 
         public void OnPointerClick(PointerEventData eventData)
         {
+            EnsureReferences();
+
             if (eventData.button == PointerEventData.InputButton.Right)
             {
                 _inventoryManager.SelectSlot(index, owner, this);
@@ -614,6 +670,7 @@ namespace Assets.Scripts.InventorySystem
 
         void ShowContextMenu(Vector2 clickPosition)
         {
+            EnsureReferences();
             var slot = GetSlot();
             if (slot?.IsEmpty == false)
             {

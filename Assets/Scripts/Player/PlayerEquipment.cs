@@ -10,7 +10,7 @@ namespace Assets.Scripts.Player
 {
     public class PlayerEquipment : MonoBehaviour
     {
-        public static PlayerEquipment Instance { get; private set; }
+        // public static PlayerEquipment Instance { get; private set; }
 
         [Header("References")]
         public Transform toolAttachPoint;
@@ -29,15 +29,19 @@ namespace Assets.Scripts.Player
         public bool IsEquipped => _currentItem != null;
         public int EquippedSlotIndex { get; private set; } = -1;
 
-        [Header("Ranged")]
-        [SerializeField] private PlayerRangedCombat _rangedCombat;
+        // [Header("Ranged")]
+        // [SerializeField] private PlayerRangedCombat _rangedCombat;
+        private PlayerRangedCombat _rangedCombat;
 
         private void Awake()
         {
-            if (Instance == null)
-                Instance = this;
-            else
-                Destroy(gameObject);
+            _rangedCombat = GetComponent<PlayerRangedCombat>();
+            if (_rangedCombat == null)
+                Debug.LogError($"PlayerRangedCombat is missing on {gameObject.name}!", this);
+            // if (Instance == null)
+            //     Instance = this;
+            // else
+            //     Destroy(gameObject);
         }
 
         public void Equip(Item item, int slotIndex)
@@ -117,9 +121,14 @@ namespace Assets.Scripts.Player
         {
             if (EquippedSlotIndex < 0) return null;
 
-            var progress = PlayerProgress.Instance;
+            // var progress = PlayerProgress.Instance;
+            var progress = GetComponent<PlayerProgress>();
             if (progress == null) return null;
-
+            if (progress == null)
+            {
+                Debug.LogError("[PlayerEquipment] PlayerProgress not found!", this);
+                return null;
+            }
             // Индексы 0-9 — это хотбар, 10 и выше — основной инвентарь
             if (EquippedSlotIndex < 10)
             {

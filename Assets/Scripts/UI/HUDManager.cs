@@ -9,8 +9,8 @@ namespace Assets.Scripts.UI
     public class HUDManager : MonoBehaviour
     {
 
-        public GameObject HUDCanvas; 
-        public GameObject HUDStatContainer; 
+        public GameObject HUDCanvas;
+        public GameObject HUDStatContainer;
         public GameObject HUDStatPrefab;
 
         private List<StatUI> _hudStats = new();
@@ -30,33 +30,49 @@ namespace Assets.Scripts.UI
 
         private void Start()
         {
-            _playerProgress = PlayerProgress.Instance;
-            _survival = PlayerSurvivalSystem.Instance;
+            // _playerProgress = PlayerProgress.Instance;
+            // _survival = PlayerSurvivalSystem.Instance;
 
             CreateHud();
 
             if (HUDCanvas != null) HUDCanvas.SetActive(true);
 
-            if (_playerProgress != null)
-                _playerProgress.OnProgressChanged += RefreshAll;
+            // Подписка на события больше не нужна здесь, 
+            // так как каждый StatUI подписывается сам в OnEnable/OnDisable
+            // if (_playerProgress != null)
+            //     _playerProgress.OnProgressChanged += RefreshAll;
 
-            if (_survival != null)
-                _survival.OnSurvivalStatsChanged += RefreshAll;
+            // if (_survival != null)
+            //     _survival.OnSurvivalStatsChanged += RefreshAll;
         }
 
         private void OnDestroy()
         {
-            if (_playerProgress != null)
-                _playerProgress.OnProgressChanged -= RefreshAll;
+            // if (_playerProgress != null)
+            //     _playerProgress.OnProgressChanged -= RefreshAll;
 
-            if (_survival != null)
-                _survival.OnSurvivalStatsChanged -= RefreshAll;
+            // if (_survival != null)
+            //     _survival.OnSurvivalStatsChanged -= RefreshAll;
+            // Очистка списка, чтобы не было утечек памяти при перезагрузке сцены
+            _hudStats.Clear();
         }
 
         private void CreateHud()
         {
             if (HUDStatPrefab == null) return;
 
+            // Получаем ссылки на системы ТЕКУЩЕГО локального игрока
+            var localPlayer = PlayerController.LocalPlayer;
+            if (localPlayer == null) 
+            {
+                Debug.LogError("[HUDManager] LocalPlayer not found! HUD cannot be created.");
+                return;
+            }
+
+            var progress = localPlayer.GetComponent<PlayerProgress>(); 
+            var survival = localPlayer.GetComponent<PlayerSurvivalSystem>();
+
+            // Очищаем старые строки
             foreach (Transform child in HUDStatContainer.transform)
                 Destroy(child.gameObject);
 
@@ -66,6 +82,8 @@ namespace Assets.Scripts.UI
                 if (obj.TryGetComponent<StatUI>(out var row))
                 {
                     row.statType = stat;
+                    // === ВАЖНО: Инициализируем конкретными системами ===
+                    row.Initialize(progress, survival);
                     _hudStats.Add(row);
                 }
 
@@ -76,6 +94,7 @@ namespace Assets.Scripts.UI
             }
         }
 
+        // Этот метод можно оставить для ручного обновления, если нужно
         private void RefreshAll()
         {
             foreach (var row in _hudStats)

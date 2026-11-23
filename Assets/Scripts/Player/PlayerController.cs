@@ -32,12 +32,19 @@ namespace Assets.Scripts.Player
         [Tooltip("Все канвасы UI сгруппированы в пустом gameobject UI и скрыты на сцене чтобы не мешать, указать этот UI тут")]
         public GameObject UI;
 
-        [Header("Inventory")]
-        // public PlayerInventory playerInventory;
-        public PlayerEquipment equipment;
-        public PlayerBuildMode buildMode;
-        public ItemUsageSystem itemUsageSystem;
-        private PlayerSurvivalSystem _playerSurvivalSystem;
+        // public PlayerEquipment equipment;
+        // public PlayerBuildMode buildMode;
+        // public ItemUsageSystem itemUsageSystem;
+        private PlayerEquipment _equipment;
+        private PlayerBuildMode _buildMode;
+        private ItemUsageSystem _itemUsageSystem;
+        private CameraManager _cameraManager;
+
+        public PlayerEquipment Equipment => _equipment;
+        public PlayerBuildMode BuildMode => _buildMode;
+
+        private PlayerSurvivalSystem _survivalSystem;
+        private PlayerProgress _progress;
         [SerializeField] private PanelsUIController _panelsController;
 
         [Header("Player Transforms")]
@@ -45,12 +52,9 @@ namespace Assets.Scripts.Player
         public Transform Head; // Ссылка на объект головы (должен быть дочерним элементом тела)
         public Transform EyeCenterForCamera;
 
-        [Header("Riding")]
-        [SerializeField] private RidingController _ridingController;
-
-        // Временные заглушки — будут заполнены в Подпункте 2
-        // public RidingController RidingController { get; set; }
+        private RidingController _ridingController;
         public RidingController RidingController => _ridingController;
+
         public Vector2 MoveInput => _input != null ? _input.move : Vector2.zero;
         public Vector2 LookInput => _input != null ? _input.look : Vector2.zero;
         public bool IsMounted { get; private set; } = false;
@@ -153,9 +157,10 @@ namespace Assets.Scripts.Player
 
         // 1. Добавляем статическое свойство для доступа из любой точки кода
         // public static PlayerController Instance { get; private set; }
-
         public static PlayerController LocalPlayer { get; private set; }
         public static readonly List<PlayerController> AllPlayers = new();
+
+
 
         [SerializeField] private string _playerId = "player_001";
         public string PlayerId => _playerId;
@@ -192,17 +197,56 @@ namespace Assets.Scripts.Player
                 Debug.LogError("PlayerInputHandler is missing on Player!", this);
             }
 
+            _cameraManager = GetComponent<CameraManager>();
+            if (_cameraManager == null)
+            {
+                Debug.LogError("CameraManager is missing on Player!", this);
+            }
+
+            _equipment = GetComponent<PlayerEquipment>();
+            if (_equipment == null)
+            {
+                Debug.LogError("PlayerEquipment is missing on Player!", this);
+            }
+
+            _buildMode = GetComponent<PlayerBuildMode>();
+            if (_buildMode == null)
+            {
+                Debug.LogError("PlayerBuildMode is missing on Player!", this);
+            }
+
+            _itemUsageSystem = GetComponent<ItemUsageSystem>();
+            if (_itemUsageSystem == null)
+            {
+                Debug.LogError("ItemUsageSystem is missing on Player!", this);
+            }
+
+            _ridingController = GetComponent<RidingController>();
             if (_ridingController == null)
-                _ridingController = GetComponent<RidingController>();
+            {
+                Debug.LogError("RidingController is missing on Player!", this);
+            }
+
+            _playerInput = GetComponent<PlayerInput>();
+            if (_playerInput == null)
+            {
+                Debug.LogError("PlayerInput is missing on Player!", this);
+            }
+
+            _progress = GetComponent<PlayerProgress>();
+            if (_progress != null)
+            {
+                _progress.RegisterPlayerController(this);
+            }
+            else
+            {
+                Debug.LogError("[PlayerController] PlayerProgress not found on this player!", this);
+            }
 
             if (_mainCamera == null)
             {
                 _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
             }
-
-            _playerInput = GetComponent<PlayerInput>();
-
-            PlayerProgress.Instance?.RegisterPlayerController(this);
         }
 
         private void Start()
@@ -218,10 +262,12 @@ namespace Assets.Scripts.Player
 
             AssignAnimationIDs();
 
-            if (_playerSurvivalSystem == null)
+            _survivalSystem = GetComponent<PlayerSurvivalSystem>();
+            if (_survivalSystem == null)
             {
-                _playerSurvivalSystem = PlayerSurvivalSystem.Instance;
+                Debug.LogError("[PlayerController] PlayerSurvivalSystem not found on this player!", this);
             }
+
 
             _jumpTimeoutDelta = settings.JumpTimeout;
             _fallTimeoutDelta = settings.FallTimeout;
@@ -276,10 +322,10 @@ namespace Assets.Scripts.Player
 
             }
 
-            if (_playerSurvivalSystem != null)
+            if (_survivalSystem != null)
             {
-                _playerSurvivalSystem.IsUnderwater = IsLossingOxygen();
-                _playerSurvivalSystem.CurrentMovementSpeed = _speed;
+                _survivalSystem.IsUnderwater = IsLossingOxygen();
+                _survivalSystem.CurrentMovementSpeed = _speed;
             }
 
 
@@ -314,10 +360,10 @@ namespace Assets.Scripts.Player
             }
 
             // Убирает инструмент из рук
-            if (_input.hideTool && equipment.IsEquipped)
+            if (_input.hideTool && _equipment.IsEquipped)
             {
                 // Debug.Log($"[PlayerController] hideTool СРАБОТАЛ! Снимаем {equipment.GetCurrentItem()?.itemName}. timeScale={Time.timeScale}");
-                equipment.Unequip();
+                _equipment.Unequip();
                 _input.ResetHideTool();
             }
 
@@ -356,9 +402,9 @@ namespace Assets.Scripts.Player
 
         public float GetAttackDamage()
         {
-            if (equipment != null && equipment.IsEquipped)
+            if (_equipment != null && _equipment.IsEquipped)
             {
-                var item = equipment.GetCurrentItem();
+                var item = _equipment.GetCurrentItem();
                 if (item != null)
                 {
                     // Предполагаем, что в классе Item есть поле damage.
@@ -402,9 +448,9 @@ namespace Assets.Scripts.Player
                 {
                     int animToPlay = _animIDAttackFist; // по умолчанию — кулаки
 
-                    if (equipment.IsEquipped && !buildMode.IsActive())
+                    if (_equipment.IsEquipped && !_buildMode.IsActive())
                     {
-                        var currentItem = equipment.GetCurrentItem();
+                        var currentItem = _equipment.GetCurrentItem();
                         switch (currentItem.attackAnimation)
                         {
                             case AttackAnimationType.Axe:
@@ -423,11 +469,11 @@ namespace Assets.Scripts.Player
                         }
 
                         // Вызываем эффект инструмента/оружия
-                        equipment.UseCurrentTool();
+                        _equipment.UseCurrentTool();
                     }
 
                     // if (!_isMoving)
-                    if (!buildMode.IsActive())
+                    if (!_buildMode.IsActive())
                     {
                         _animator.SetTrigger(animToPlay);
                     }
@@ -875,11 +921,11 @@ namespace Assets.Scripts.Player
             // Не вращать камеру, если позиция заблокирована
             if (!Application.isFocused || LockCamera || _isInSelfieMode) return;
             // Не вращать камеру если вращаем фундамент
-            if (buildMode != null && buildMode.IsActive() && buildMode.IsRotatingPreview()) return;
+            if (_buildMode != null && _buildMode.IsActive() && _buildMode.IsRotatingPreview()) return;
             // Не вращать камеру пока загрузочный экран
             if (LoadingScreenManager.Instance != null && LoadingScreenManager.Instance.IsLoading) return;
             // Не вращать камеру при Selfie — этим занимается SelfieCameraOrbit
-            if (CameraManager.Instance != null && CameraManager.Instance.IsSelfie) return;
+            if (_cameraManager != null && _cameraManager.IsSelfie) return;
 
 
             // Поворачиваем тело на _cinemachineTargetYaw (на лестнице тело не поворачиваем)
@@ -1114,17 +1160,12 @@ namespace Assets.Scripts.Player
 
         private void OnDestroy()
         {
-            // if (PlayerProgress.Instance != null && PlayerProgress.Instance.playerController == this)
-            // {
-            //     PlayerProgress.Instance.UnregisterPlayerController();
-            // }
-            // if (Instance == this) Instance = null;
 
             Debug.LogWarning($"[PlayerController] Уничтожается игрок {_playerId}. Стек вызовов:\n{System.Environment.StackTrace}");
 
             AllPlayers.Remove(this);
             if (LocalPlayer == this) LocalPlayer = null;
-            PlayerProgress.Instance?.UnregisterPlayerController();
+            _progress.UnregisterPlayerController();
         }
 
 

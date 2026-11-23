@@ -30,8 +30,8 @@ namespace Assets.Scripts.Player
         public float wallThickness = 0.1f;
         public float ceilingThickness = 0.1f;
 
-        [SerializeField] private PlayerInputHandler _inputHandler;
-        [SerializeField] private InventoryManager _inventoryManager;
+        private PlayerInputHandler _inputHandler;
+        private InventoryManager _inventoryManager;
 
         // === КЭШИРОВАНИЕ ВЫСОТ ===
         private float _cachedFoundationHeight = 0.7f;
@@ -49,9 +49,9 @@ namespace Assets.Scripts.Player
         private GameObject _baseObject = null;     // Объект, на котором находится точка
         private PlayerController _playerController = null;
 
-        public event System.Action OnBuildActive;
-        public event System.Action OnStructurePlaced;
-        public event System.Action OnBuildExit;
+        public event Action OnBuildActive;
+        public event Action OnStructurePlaced;
+        public event Action OnBuildExit;
         public int ActiveBuildSlotIndex { get; private set; } = -1;
 
         private enum PlacementState { Positioning, Rotating, Completed }
@@ -71,20 +71,14 @@ namespace Assets.Scripts.Player
 
         void Awake()
         {
-            // Попытка найти обработчик ввода автоматически, если не назначен в инспекторе
+            _inputHandler = GetComponent<PlayerInputHandler>();
             if (_inputHandler == null)
-            {
-                _inputHandler = FindAnyObjectByType<PlayerInputHandler>();
-                if (_inputHandler == null)
-                {
-                    Debug.LogError("[PlayerBuildMode] PlayerInputHandler not found in scene!");
-                }
+                Debug.LogError($"PlayerBuildMode is missing on {gameObject.name}!", this);
 
-                _inventoryManager = FindAnyObjectByType<InventoryManager>();
-                if (_inventoryManager == null)
-                {
-                    Debug.LogError("[PlayerBuildMode] InventoryManager not found in scene!");
-                }
+            _inventoryManager = FindAnyObjectByType<InventoryManager>();
+            if (_inventoryManager == null)
+            {
+                Debug.LogError("[PlayerBuildMode] InventoryManager not found in scene!");
             }
         }
 

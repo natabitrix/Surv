@@ -11,6 +11,7 @@ using Assets.Scripts.Core;
 using Assets.Scripts.Items;
 using Unity.VisualScripting;
 using Assets.Scripts.UI.Notifications;
+using Assets.Scripts.Player;
 
 namespace Assets.Scripts.Crafting
 {
@@ -24,16 +25,23 @@ namespace Assets.Scripts.Crafting
         private InventoryData _mainInventoryData;
         private InventoryData _hotbarInventoryData;
         private TooltipTrigger _tooltipTrigger;
+        private PlayerProgress _progress;
 
         public void Setup(Recipe recipe)
         {
             _recipe = recipe;
             UnsubscribeFromEvents(); // Отписываемся от старых данных
-            var progress = PlayerProgress.Instance;
-            if (progress != null)
+
+            var localPlayer = PlayerController.LocalPlayer;
+            if (localPlayer != null)
             {
-                _mainInventoryData = progress.mainInventoryData;
-                _hotbarInventoryData = progress.hotbarInventoryData;
+                _progress = localPlayer.GetComponent<PlayerProgress>();
+            }
+            
+            if (_progress != null)
+            {
+                _mainInventoryData = _progress.mainInventoryData;
+                _hotbarInventoryData = _progress.hotbarInventoryData;
 
                 // Подписываемся на ОБА инвентаря — ингредиенты могут быть в любом!
                 _mainInventoryData.OnInventoryChanged += RefreshVisual;
@@ -108,13 +116,13 @@ namespace Assets.Scripts.Crafting
 
         private int CountFreeSlotsForItem(Item item)
         {
-            var progress = PlayerProgress.Instance;
-            if (progress == null) return 0;
+
+            if (_progress == null) return 0;
 
             int freeSlots = 0;
 
             // Считаем в основном инвентаре
-            foreach (var slot in progress.mainInventoryData.slots)
+            foreach (var slot in _progress.mainInventoryData.slots)
             {
                 if (slot.IsEmpty) freeSlots++;
                 else if (slot.item == item && slot.count < item.maxStack)
@@ -122,7 +130,7 @@ namespace Assets.Scripts.Crafting
             }
 
             // Считаем в хотбаре (если предмет не закреплён или закреплён в этом слоте)
-            foreach (var slot in progress.hotbarInventoryData.slots)
+            foreach (var slot in _progress.hotbarInventoryData.slots)
             {
                 if (slot.IsEmpty) freeSlots++;
                 else if (slot.item == item && slot.count < item.maxStack)
@@ -134,12 +142,11 @@ namespace Assets.Scripts.Crafting
 
         void TryCraft()
         {
-            var progress = PlayerProgress.Instance;
-            if (progress == null || _recipe == null) return;
+            if (_progress == null || _recipe == null) return;
 
             // Проверяем наличие ингредиентов в ОБОИХ инвентарях
-            bool hasInMain = progress.mainInventoryData.HasIngredients(_recipe);
-            bool hasInHotbar = progress.hotbarInventoryData.HasIngredients(_recipe);
+            bool hasInMain = _progress.mainInventoryData.HasIngredients(_recipe);
+            bool hasInHotbar = _progress.hotbarInventoryData.HasIngredients(_recipe);
 
             if (!hasInMain && !hasInHotbar)
             {
@@ -164,17 +171,17 @@ namespace Assets.Scripts.Crafting
             // Потребляем ингредиенты — сначала из основного инвентаря
             if (hasInMain)
             {
-                progress.mainInventoryData.ConsumeIngredients(_recipe);
-                progress.mainInventoryData.NotifyChanged();
+                _progress.mainInventoryData.ConsumeIngredients(_recipe);
+                _progress.mainInventoryData.NotifyChanged();
             }
             else if (hasInHotbar)
             {
-                progress.hotbarInventoryData.ConsumeIngredients(_recipe);
-                progress.hotbarInventoryData.NotifyChanged();
+                _progress.hotbarInventoryData.ConsumeIngredients(_recipe);
+                _progress.hotbarInventoryData.NotifyChanged();
             }
 
             // Добавляем результат крафта
-            int added = progress.AddItemToPlayerInventory(_recipe.craftedItem, _recipe.craftedAmount);
+            int added = _progress.AddItemToPlayerInventory(_recipe.craftedItem, _recipe.craftedAmount);
 
             // Уведомления
             NotificationManager.Instance?.Show(
@@ -201,8 +208,8 @@ namespace Assets.Scripts.Crafting
             }
 
             // Опыт за крафт
-            progress.AddExperience(_recipe.experienceReward);
-            progress.Save("CraftingSlotUI.TryCraft");
+            _progress.AddExperience(_recipe.experienceReward);
+            _progress.Save("CraftingSlotUI.TryCraft");
         }
 
         void ShowContextMenu(Vector2 clickPosition)

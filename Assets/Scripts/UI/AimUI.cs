@@ -10,15 +10,26 @@ namespace Assets.Scripts.UI
         [SerializeField] private PanelsUIController _panelsController;
         [SerializeField] private PauseManager _pauseManager;
 
+        private PlayerAimingSystem _aimingSystem;
+
         private bool _subscribed;
         private bool _lastVisible;
+
+        private void Awake()
+        {
+            var pc = PlayerController.LocalPlayer;
+            if (pc != null)
+            {
+                _aimingSystem = pc.GetComponent<PlayerAimingSystem>();
+            }
+        }
 
         private void Update()
         {
             // Ленивая подписка на событие PlayerAimingSystem
-            if (!_subscribed && PlayerAimingSystem.Instance != null)
+            if (!_subscribed && _aimingSystem != null)
             {
-                PlayerAimingSystem.Instance.OnCrosshairVisibilityChanged += OnCrosshairVisibilityChanged;
+                _aimingSystem.OnCrosshairVisibilityChanged += OnCrosshairVisibilityChanged;
                 _subscribed = true;
             }
 
@@ -28,8 +39,8 @@ namespace Assets.Scripts.UI
 
         private void OnDisable()
         {
-            if (_subscribed && PlayerAimingSystem.Instance != null)
-                PlayerAimingSystem.Instance.OnCrosshairVisibilityChanged -= OnCrosshairVisibilityChanged;
+            if (_subscribed && _aimingSystem != null)
+                _aimingSystem.OnCrosshairVisibilityChanged -= OnCrosshairVisibilityChanged;
 
             _subscribed = false;
         }
@@ -42,8 +53,8 @@ namespace Assets.Scripts.UI
 
         private void RefreshVisibility()
         {
-            bool shouldShow = PlayerAimingSystem.Instance != null
-                              && PlayerAimingSystem.Instance.IsCrosshairVisible;
+            bool shouldShow = _aimingSystem != null
+                              && _aimingSystem.IsCrosshairVisible;
 
             if (shouldShow)
             {

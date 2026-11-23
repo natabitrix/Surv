@@ -14,11 +14,10 @@ namespace Assets.Scripts.Player
     /// </summary>
     public class PlayerAimingSystem : MonoBehaviour
     {
-        public static PlayerAimingSystem Instance { get; private set; }
-
         [Header("References")]
-        [SerializeField] private PlayerInputHandler _input;
-        [SerializeField] private PlayerEquipment _equipment;
+        private PlayerInputHandler _input;
+        private PlayerEquipment _equipment;
+        private CameraManager _cameraManager;
         [SerializeField] private PanelsUIController _panelsUIController;
 
         [Header("Cameras (назначить те же, что в CameraManager)")]
@@ -42,8 +41,18 @@ namespace Assets.Scripts.Player
 
         private void Awake()
         {
-            if (Instance != null && Instance != this) { Destroy(gameObject); return; }
-            Instance = this;
+            _input = GetComponent<PlayerInputHandler>();
+            if (_input == null)
+                Debug.LogError($"[PlayerAimingSystem] Нет PlayerInputHandler на {gameObject.name}!");
+
+            _equipment = GetComponent<PlayerEquipment>();
+            if (_equipment == null)
+                Debug.LogError($"[PlayerAimingSystem] Нет PlayerEquipment на {gameObject.name}!");
+
+            _cameraManager = GetComponent<CameraManager>();
+            if (_cameraManager == null)
+                Debug.LogError($"[PlayerAimingSystem] Нет CameraManager на {gameObject.name}!");
+
         }
 
         private void Update()
@@ -58,7 +67,7 @@ namespace Assets.Scripts.Player
         {
             bool shouldShow = false;
 
-            bool isSelfie = CameraManager.Instance != null && CameraManager.Instance.IsSelfie;
+            bool isSelfie = _cameraManager != null && _cameraManager.IsSelfie;
 
             if (!isSelfie && _equipment != null && _equipment.IsEquipped)
             {
@@ -80,7 +89,7 @@ namespace Assets.Scripts.Player
             bool wantAim = _input.rightClick;
 
             // Не прицеливаемся в Selfie
-            if (CameraManager.Instance != null && CameraManager.Instance.IsSelfie)
+            if (_cameraManager != null && _cameraManager.IsSelfie)
                 wantAim = false;
 
             if (_panelsUIController.IsPanelOpened())
@@ -152,9 +161,9 @@ namespace Assets.Scripts.Player
 
         private CinemachineCamera GetActiveCamera()
         {
-            if (CameraManager.Instance == null) return null;
+            if (_cameraManager == null) return null;
 
-            switch (CameraManager.Instance.CurrentMode)
+            switch (_cameraManager.CurrentMode)
             {
                 case CameraManager.CameraMode.FirstPerson: return _firstPersonVcam;
                 case CameraManager.CameraMode.ThirdPerson: return _thirdPersonVcam;

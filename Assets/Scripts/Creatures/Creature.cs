@@ -261,11 +261,9 @@ namespace Assets.Scripts.Creatures
         private void Awake()
         {
 
-            playerProgress = PlayerProgress.Instance;
-            survivalSystem = PlayerSurvivalSystem.Instance;
-
-            if (playerProgress != null && playerProgress.playerController != null)
-                playerController = playerProgress.playerController;
+            var localPlayer = PlayerController.LocalPlayer;
+            playerProgress = localPlayer.GetComponent<PlayerProgress>(); 
+            survivalSystem = localPlayer.GetComponent<PlayerSurvivalSystem>();
 
             animator = GetComponent<Animator>();
             if (animator != null)

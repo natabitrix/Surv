@@ -17,9 +17,11 @@ namespace Assets.Scripts.InventorySystem
     public class ItemUsageRouter : MonoBehaviour
     {
         [Header("Player Context")]
-        [SerializeField] private PlayerEquipment _equipment;
-        [SerializeField] private PlayerBuildMode _buildMode;
-        [SerializeField] private ItemUsageSystem _itemUsageSystem;
+        private PlayerEquipment _equipment;
+        private PlayerBuildMode _buildMode;
+        private ItemUsageSystem _itemUsageSystem;
+        private PlayerProgress _progress;
+
         [SerializeField] private PanelsUIController _panelsController;
 
         private int _accumulatedFoodCount = 0;
@@ -30,7 +32,7 @@ namespace Assets.Scripts.InventorySystem
         /// </summary>
         public void UseItem(InventorySlot slot, SlotOwner owner, int localIndex, InventorySlotUI ui = null)
         {
-            
+
             if (slot == null || slot.IsEmpty || slot.item == null) return;
 
             switch (owner)
@@ -46,11 +48,30 @@ namespace Assets.Scripts.InventorySystem
             }
         }
 
+        private void Awake()
+        {
+            _equipment = GetComponent<PlayerEquipment>();
+            if (_equipment == null)
+                Debug.LogError($"PlayerEquipment is missing on {gameObject.name}!", this);
+
+            _buildMode = GetComponent<PlayerBuildMode>();
+            if (_buildMode == null)
+                Debug.LogError($"PlayerBuildMode is missing on {gameObject.name}!", this);
+
+            _itemUsageSystem = GetComponent<ItemUsageSystem>();
+            if (_itemUsageSystem == null)
+                Debug.LogError($"ItemUsageSystem is missing on {gameObject.name}!", this);
+
+            _progress = GetComponent<PlayerProgress>();
+            if (_progress == null)
+                Debug.LogError($"PlayerProgress is missing on {gameObject.name}!", this);
+        }
+
         // === Игрок: экип / еда / постройка ===
         private void UseFromPlayerInventory(InventorySlot slot, SlotOwner owner, int localIndex, InventorySlotUI ui)
         {
-            var progress = PlayerProgress.Instance;
-            if (progress == null) return;
+            
+            if (_progress == null) return;
 
             var item = slot.item;
             int globalIndex = owner == SlotOwner.Hotbar ? localIndex : localIndex + 10;
@@ -102,7 +123,7 @@ namespace Assets.Scripts.InventorySystem
                     break;
             }
 
-            progress.Save("ItemUsageRouter.UseFromPlayerInventory");
+            _progress.Save("ItemUsageRouter.UseFromPlayerInventory");
         }
 
         // === Чужой инвентарь: пока только существа ===
@@ -171,13 +192,12 @@ namespace Assets.Scripts.InventorySystem
 
         private void RemoveOneFromPlayerSlot(SlotOwner owner, int localIndex)
         {
-            var progress = PlayerProgress.Instance;
-            if (progress == null) return;
+            if (_progress == null) return;
 
             if (owner == SlotOwner.Hotbar)
-                progress.hotbarInventoryData.RemoveItemFromSlot(localIndex, 1);
+                _progress.hotbarInventoryData.RemoveItemFromSlot(localIndex, 1);
             else
-                progress.mainInventoryData.RemoveItemFromSlot(localIndex, 1);
+                _progress.mainInventoryData.RemoveItemFromSlot(localIndex, 1);
         }
     }
 }

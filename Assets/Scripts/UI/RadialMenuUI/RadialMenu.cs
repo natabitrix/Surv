@@ -106,26 +106,28 @@ namespace Assets.Scripts.Interactables
         public string GetMenuButtonLabelByActionId(string actionId)
         {
             RadialMenuConfig config = GetMenuConfig();
-            if (config == null || config.rootEntries == null || config.rootEntries.Length == 0)
-            {
-                return "";
-            }
+            if (config == null || config.rootEntries == null) return "";
 
             foreach (var entry in config.rootEntries)
             {
                 if (entry.actionId == actionId) return entry.label;
 
-                foreach (var child in entry.children)
+                if (entry.children != null)
                 {
-                    if (child.actionId == actionId) return child.label;
-
-                    foreach (var childchild in child.children)
+                    foreach (var sub in entry.children)
                     {
-                        if (childchild.actionId == actionId) return childchild.label;
+                        if (sub.actionId == actionId) return sub.label;
+
+                        if (sub.children != null)
+                        {
+                            foreach (var subsub in sub.children)
+                            {
+                                if (subsub.actionId == actionId) return subsub.label;
+                            }
+                        }
                     }
                 }
             }
-
             return "";
         }
 

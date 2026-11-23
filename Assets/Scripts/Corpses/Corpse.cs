@@ -438,9 +438,14 @@ namespace Assets.Scripts.Corpses
                 return;
             }
 
-            if (PlayerProgress.Instance != null)
+            var localPlayer = PlayerController.LocalPlayer;
+            if (localPlayer != null)
             {
-                PlayerProgress.Instance.AddItemToPlayerInventory(item, amount);
+                var progress = localPlayer.GetComponent<PlayerProgress>();
+                if (progress != null)
+                {
+                    progress.AddItemToPlayerInventory(item, amount);
+                }
             }
         }
 
@@ -692,23 +697,30 @@ namespace Assets.Scripts.Corpses
         {
             if (data.harvestDrops != null && data.harvestDrops.Count > 0)
             {
-                var itemDb = PlayerProgress.Instance?.itemDatabase?.ItemLookup;
-                var newDrops = new List<ResourceDrop>();
-
-                foreach (var dropData in data.harvestDrops)
+                // === Берем базу напрямую из GameAssets ===
+                var itemDb = GameAssets.Instance?.ItemDatabase?.ItemLookup;
+                if (itemDb != null)
                 {
-                    if (itemDb != null && itemDb.TryGetValue(dropData.itemId, out var item))
+                    var newDrops = new List<ResourceDrop>();
+                    foreach (var dropData in data.harvestDrops)
                     {
-                        newDrops.Add(new ResourceDrop
+                        if (itemDb.TryGetValue(dropData.itemId, out var item))
                         {
-                            item = item,
-                            totalAmount = dropData.totalAmount
-                        });
+                            newDrops.Add(new ResourceDrop
+                            {
+                                item = item,
+                                totalAmount = dropData.totalAmount
+                            });
+                        }
                     }
+                    harvestDrops = newDrops.ToArray();
                 }
-
-                harvestDrops = newDrops.ToArray();
+                else
+                {
+                    Debug.LogError("[Corpse] GameAssets.Instance или ItemDatabase не найдены!");
+                }
             }
+
 
             if (data.remainingAmounts != null && data.remainingAmounts.Count > 0)
             {
