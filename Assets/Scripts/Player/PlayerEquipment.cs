@@ -121,7 +121,6 @@ namespace Assets.Scripts.Player
         {
             if (EquippedSlotIndex < 0) return null;
 
-            // var progress = PlayerProgress.Instance;
             var progress = GetComponent<PlayerProgress>();
             if (progress == null) return null;
             if (progress == null)

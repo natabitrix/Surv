@@ -32,6 +32,21 @@ namespace Assets.Scripts.Crafting
             NotifyChanged();
         }
 
+        public void Reset()
+        {
+            if (slots == null) return;
+
+            for (int i = 0; i < slots.Count; i++)
+            {
+                var slot = slots[i];
+                if (slot == null) continue;
+                slot.isUnlocked = false;
+                slot.isAvailable = true;
+            }
+
+            NotifyChanged();
+        }
+
         public void UnlockRecipe(Recipe recipe)
         {
             var slot = slots.Find(s => s.recipe == recipe);
@@ -47,7 +62,8 @@ namespace Assets.Scripts.Crafting
             if (serializable?.slots == null) return;
 
             // Сначала инициализируем все рецепты
-            InitializeFromDatabase(db);
+            if (slots == null || slots.Count == 0)
+                InitializeFromDatabase(db);
 
             // Затем применяем сохранённые состояния
             foreach (var saved in serializable.slots)

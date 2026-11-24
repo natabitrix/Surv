@@ -10,6 +10,7 @@ using Assets.Scripts.Items;
 using System.Collections;
 using UnityEngine.SceneManagement;
 using Assets.Scripts.UI.Notifications;
+using System;
 
 namespace Assets.Scripts.Core
 {
@@ -38,7 +39,6 @@ namespace Assets.Scripts.Core
         [SerializeField] private int _engramPoints = 0;
 
         // Статы: сколько раз улучшали каждый параметр
-        // [SerializeField]
         private Dictionary<StatType, int> _statLevels = new();
 
         public int Level => _level;
@@ -51,13 +51,6 @@ namespace Assets.Scripts.Core
 
         public EngramData engramData;
         private Dictionary<string, int> hotbarSlotMap = new();
-
-        // Ссылки на базы данных
-        // public RecipeDatabase recipeDatabase;
-        // public ItemDatabase itemDatabase;
-        // Приходят из PlayerProgress.Initialize() через GameAssets
-        // public RecipeDatabase recipeDatabase { get; private set; }
-        // public ItemDatabase itemDatabase { get; private set; }
 
         // Начальный набор выдаваемых предметов новому игроку
         public BeginnerItems[] beginnerItems;
@@ -107,42 +100,6 @@ namespace Assets.Scripts.Core
         private Quaternion _lastKnownPlayerRotation;
         private bool _hasLastKnownPosition = false;
 
-        /// <summary>
-        /// Вызывается из GameAssets.CreateGlobalManagers().
-        /// </summary>
-        // public void Initialize(ItemDatabase itemDb, RecipeDatabase recipeDb)
-        // {
-        //     // if (Instance != null && Instance != this)
-        //     // {
-        //     //     Destroy(gameObject);
-        //     //     return;
-        //     // }
-        //     // Instance = this;
-
-        //     itemDatabase = itemDb;
-        //     recipeDatabase = recipeDb;
-
-        //     StatConfigManager.Initialize();
-        //     InitializeLevelTable();
-        //     InitializeStats();
-        //     LoadData();
-        // }
-
-        // private IEnumerator Start()
-        // {
-        //     StatConfigManager.Initialize();
-        //     InitializeLevelTable();
-        //     InitializeStats();
-        //     LoadData();
-
-        //     // Ждем, пока PlayerController зарегистрируется
-        //     while (_playerController == null)
-        //         yield return null;
-
-        //     ShowLevelUpNote(playSound: false);
-        //     OnPlayerLoaded?.Invoke();
-        // }
-
         private void Awake()
         {
             // Инициализируем таблицу и конфиги как можно раньше
@@ -178,7 +135,75 @@ namespace Assets.Scripts.Core
 
         void LoadData()
         {
+            // === ШАГ 1: контейнеры создаются ОДИН РАЗ, дальше — только очистка ===
+            if (hotbarInventoryData == null) hotbarInventoryData = new InventoryData(10);
+            else hotbarInventoryData.Clear(10);
+
+            if (mainInventoryData == null) mainInventoryData = new InventoryData(INVENTORY_SIZE);
+            else mainInventoryData.Clear(INVENTORY_SIZE);
+
+            if (engramData == null)
+            {
+                engramData = new EngramData();
+                engramData.InitializeFromDatabase(GameAssets.Instance?.RecipeDatabase);
+            }
+            else
+            {
+                engramData.Reset();
+            }
+
             string path = Path.Combine(Application.persistentDataPath, SAVE_FILE_NAME);
+
+            if (File.Exists(path))
+            {
+                string json = File.ReadAllText(path);
+                var saveData = JsonConvert.DeserializeObject<PlayerSaveData>(json);
+                _loadedSaveData = saveData;
+
+                _level = saveData.level;
+                _experience = saveData.experience;
+                _engramPoints = saveData.engramPoints;
+                _statLevels = saveData.statLevels ?? new Dictionary<StatType, int>();
+                InitializeStats();
+
+                var itemDb = GameAssets.Instance?.ItemDatabase;
+                var recipeDb = GameAssets.Instance?.RecipeDatabase;
+
+                hotbarInventoryData.FromSerializable(saveData.hotbar, itemDb.ItemLookup);
+                mainInventoryData.FromSerializable(saveData.mainInventory, itemDb.ItemLookup);
+
+                hotbarSlotMap = saveData.hotbarSlotMap ?? new Dictionary<string, int>();
+
+                engramData.FromSerializable(saveData.engrams, recipeDb);
+
+                UpdateEngramAvailability();
+
+                var localPlayer = PlayerController.LocalPlayer;
+                if (localPlayer != null)
+                {
+                    var survival = localPlayer.GetComponent<PlayerSurvivalSystem>();
+                    if (survival != null)
+                        survival.LoadFrom(saveData);
+                }
+            }
+            else
+            {
+                _isNewPlayer = true;
+                hotbarSlotMap = new Dictionary<string, int>();
+                InitializeStats();
+                _engramPoints = 0;
+                UpdateEngramAvailability();
+
+                GiveBeginnerItems();
+                Save("PlayerProgress.LoadData");
+            }
+        }
+
+        void LoadData_OLD()
+        {
+
+            string path = Path.Combine(Application.persistentDataPath, SAVE_FILE_NAME);
+
             if (File.Exists(path))
             {
                 string json = File.ReadAllText(path);
@@ -209,11 +234,6 @@ namespace Assets.Scripts.Core
                 UpdateEngramAvailability();
                 // GiveBeginnerItems(); // Ошибка [PlayerProgress] Save: позиция недоступна! Используется дефолтная.
 
-                // if (PlayerSurvivalSystem.Instance != null)
-                // {
-                //     PlayerSurvivalSystem.Instance.LoadFrom(saveData);
-                // }
-
                 var localPlayer = PlayerController.LocalPlayer;
                 if (localPlayer != null)
                 {
@@ -243,6 +263,7 @@ namespace Assets.Scripts.Core
 
         void ApplyData()
         {
+
             if (_playerController == null)
             {
                 Debug.LogError("[PlayerProgress] ApplyData: _playerController null!");
@@ -252,7 +273,7 @@ namespace Assets.Scripts.Core
             if (_isNewPlayer)
             {
                 _playerController.transform.position = defaultPlayerSpawnPoint;
-                // Debug.Log($"[PlayerProgress] Новый игрок — позиция: {defaultPlayerSpawnPoint}");
+                Debug.Log($"[PlayerProgress] Новый игрок — позиция: {defaultPlayerSpawnPoint}");
             }
             else if (_loadedSaveData != null)
             {
@@ -269,7 +290,11 @@ namespace Assets.Scripts.Core
                     _loadedSaveData.playerRotationZ
                 );
 
-                // Debug.Log($"[PlayerProgress] Позиция загружена: {_playerController.transform.position}");
+                Debug.Log($"[PlayerProgress] Позиция загружена: {_playerController.transform.position}");
+            }
+            else
+            {
+                Debug.LogError($"[PlayerProgress] _loadedSaveData is null!");
             }
 
             if (_inventoryManager != null && _loadedSaveData != null)
@@ -284,6 +309,7 @@ namespace Assets.Scripts.Core
             _isNewPlayer = false;
             _loadedSaveData = null;
             LoadData();
+            OnPlayerLoaded?.Invoke();
         }
 
         /// <summary>
@@ -398,19 +424,6 @@ namespace Assets.Scripts.Core
         {
             return _statLevels.TryGetValue(stat, out int level) ? level : 0;
         }
-
-        // public void AddExperience(int amount)
-        // {
-        //     if (amount <= 0) return;
-
-        //     _experience += amount;
-
-        //     Save("PlayerProgress.AddExperience");
-
-        //     ShowLevelUpNote(playSound: true);
-
-        //     OnProgressChanged?.Invoke();
-        // }
 
         public void AddExperience(int amount)
         {
@@ -648,9 +661,6 @@ namespace Assets.Scripts.Core
             }
 
             // сохранение состояния выживания
-            // if (PlayerSurvivalSystem.Instance != null)
-            //     PlayerSurvivalSystem.Instance.SaveTo(saveData);
-
             var localPlayer = PlayerController.LocalPlayer;
             if (localPlayer != null)
             {
@@ -674,7 +684,7 @@ namespace Assets.Scripts.Core
             File.WriteAllText(path, json);
 
             // Debug.Log($"[PlayerProgress] Сохранено в {path}");
-            // Debug.Log($"Сохранено из [{noteFrom}]");
+            Debug.Log($"Сохранено из [{noteFrom}]");
 
         }
     }

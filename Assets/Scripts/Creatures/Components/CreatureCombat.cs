@@ -241,7 +241,6 @@ namespace Assets.Scripts.Creatures.Components
             }
 
             // Если не верхом, бьем игрока
-            // PlayerSurvivalSystem.Instance?.TakeDamage(_creature.AttackDamage);
             // Получаем ссылки на системы ТЕКУЩЕГО локального игрока
             var localPlayer = PlayerController.LocalPlayer;
             if (localPlayer == null) return; // Или ошибка

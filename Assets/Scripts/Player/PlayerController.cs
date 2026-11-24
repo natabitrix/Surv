@@ -236,7 +236,7 @@ namespace Assets.Scripts.Player
             _progress = GetComponent<PlayerProgress>();
             if (_progress != null)
             {
-                _progress.RegisterPlayerController(this);
+                // _progress.RegisterPlayerController(this);
             }
             else
             {
@@ -278,7 +278,9 @@ namespace Assets.Scripts.Player
             if (Head != null) _initialHeadLocalEulerAngles = Head.localEulerAngles;
             if (UI != null) UI.SetActive(true);
 
-
+            // ✅ Регистрируемся здесь — PlayerProgress.Awake уже гарантированно отработал:
+            if (_progress != null)
+                _progress.RegisterPlayerController(this);
         }
 
         private void Update()
@@ -1161,7 +1163,7 @@ namespace Assets.Scripts.Player
         private void OnDestroy()
         {
 
-            Debug.LogWarning($"[PlayerController] Уничтожается игрок {_playerId}. Стек вызовов:\n{System.Environment.StackTrace}");
+            // Debug.LogWarning($"[PlayerController] Уничтожается игрок {_playerId}. Стек вызовов:\n{System.Environment.StackTrace}");
 
             AllPlayers.Remove(this);
             if (LocalPlayer == this) LocalPlayer = null;

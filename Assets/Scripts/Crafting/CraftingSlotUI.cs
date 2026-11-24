@@ -22,6 +22,7 @@ namespace Assets.Scripts.Crafting
         public TextMeshProUGUI amountText;
 
         private Recipe _recipe;
+        private InventoryManager _inventoryManager;
         private InventoryData _mainInventoryData;
         private InventoryData _hotbarInventoryData;
         private TooltipTrigger _tooltipTrigger;
@@ -36,8 +37,9 @@ namespace Assets.Scripts.Crafting
             if (localPlayer != null)
             {
                 _progress = localPlayer.GetComponent<PlayerProgress>();
+                _inventoryManager = localPlayer.GetComponent<InventoryManager>();
             }
-            
+
             if (_progress != null)
             {
                 _mainInventoryData = _progress.mainInventoryData;
@@ -46,6 +48,10 @@ namespace Assets.Scripts.Crafting
                 // Подписываемся на ОБА инвентаря — ингредиенты могут быть в любом!
                 _mainInventoryData.OnInventoryChanged += RefreshVisual;
                 _hotbarInventoryData.OnInventoryChanged += RefreshVisual;
+            }
+            else
+            {
+                Debug.LogError("[CraftingSlotUI] Не удалось получить PlayerProgress!");
             }
 
             RefreshVisual();
@@ -65,22 +71,18 @@ namespace Assets.Scripts.Crafting
             icon.sprite = _recipe.craftedItem?.icon ?? null;
             icon.enabled = icon.sprite != null;
 
-            icon.sprite = _recipe.craftedItem.icon;
-            icon.enabled = icon.sprite != null;
-
-
             // Проверяем наличие ингредиентов в ОБОИХ инвентарях
             bool hasInMain = _mainInventoryData?.HasIngredients(_recipe) ?? false;
             bool hasInHotbar = _hotbarInventoryData?.HasIngredients(_recipe) ?? false;
             bool canCraft = hasInMain || hasInHotbar;
-            icon.color = canCraft ? Color.white : new Color(0.5f, 0.5f, 0.5f);
+            icon.color = canCraft ? Color.white : new Color(1f, 1f, 1f, 0.1f);
 
             // Tooltip: тоже проверяем
             if (gameObject != null)
             {
                 var ingList = new List<(int amount, Item item)>();
 
-                ingList.Clear(); 
+                ingList.Clear();
 
                 foreach (var ing in _recipe.ingredients)
                 {
@@ -210,6 +212,7 @@ namespace Assets.Scripts.Crafting
             // Опыт за крафт
             _progress.AddExperience(_recipe.experienceReward);
             _progress.Save("CraftingSlotUI.TryCraft");
+            _inventoryManager?.RefreshAllUIs();
         }
 
         void ShowContextMenu(Vector2 clickPosition)

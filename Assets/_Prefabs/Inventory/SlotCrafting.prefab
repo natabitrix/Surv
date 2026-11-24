@@ -346,7 +346,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Crafting.CraftingSlotUI
   icon: {fileID: 3356494854327597609}
-  tooltipTarget: {fileID: 0}
+  nameText: {fileID: 0}
+  amountText: {fileID: 0}
 --- !u!1 &5415950622656602593
 GameObject:
   m_ObjectHideFlags: 0
@@ -405,7 +406,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.6031208, g: 0.6121318, b: 0.67295593, a: 0.7176471}
+  m_Color: {r: 0.17196704, g: 0.29559743, b: 0.20156004, a: 0.7176471}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1

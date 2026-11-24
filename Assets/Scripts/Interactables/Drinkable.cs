@@ -12,8 +12,6 @@ namespace Assets.Scripts.Interactables
         public ChestInventory GetInventory() => null;
         public bool HasInventory() => false;
         public bool ShouldDetachAfterInteract() => false;
-
-        // private PlayerSurvivalSystem _survival => PlayerSurvivalSystem.Instance;
         private PlayerController _localPlayer = PlayerController.LocalPlayer;
 
         public void Interact(InteractContext context)

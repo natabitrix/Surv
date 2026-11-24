@@ -56,8 +56,6 @@ namespace Assets.Scripts.UI
         private void TrySubscribe()
         {
             if (_isSubscribed) return;
-            // var survival = PlayerSurvivalSystem.Instance;
-            // if (survival == null) return;
 
             var localPlayer = PlayerController.LocalPlayer;
             if (localPlayer != null)
@@ -75,12 +73,6 @@ namespace Assets.Scripts.UI
         private void Unsubscribe()
         {
             if (!_isSubscribed) return;
-            // var survival = PlayerSurvivalSystem.Instance;
-            // if (survival != null)
-            // {
-            //     survival.OnPlayerDied -= HandlePlayerDied;
-            //     survival.OnPlayerRespawned -= HandlePlayerRespawned;
-            // }
 
             var localPlayer = PlayerController.LocalPlayer;
             if (localPlayer != null)

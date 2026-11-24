@@ -5,6 +5,7 @@ using Assets.Scripts.Core;
 using TMPro;
 using Assets.Scripts.InventorySystem;
 using Assets.Scripts.Player;
+using System.Collections;
 
 namespace Assets.Scripts.Crafting
 {
@@ -20,33 +21,70 @@ namespace Assets.Scripts.Crafting
         private InventoryManager _inventoryManager;
         private PlayerProgress _progress;
 
-        void Start()
+        // void Start()
+        // {
+        //     // Ищем InventoryManager на этом же игроке (или на LocalPlayer, если UI глобальный)
+        //     var localPlayer = PlayerController.LocalPlayer;
+        //     if (localPlayer != null)
+        //     {
+        //         _inventoryManager = localPlayer.GetComponent<InventoryManager>();
+        //         if (_inventoryManager != null)
+        //         {
+        //             _progress = _inventoryManager.Progress;
+        //         }
+        //     }
+
+        //     if (_progress == null)
+        //     {
+        //         Debug.LogError("[EngramUI] Не удалось получить PlayerProgress!");
+        //     }
+
+        //     if (_progress != null)
+        //     {
+        //         // Берём данные из PlayerProgress
+        //         _engramData = _progress.engramData;
+
+        //         RebuildUI();
+        //         _engramData.OnEngramsChanged += RebuildUI;
+        //     }
+
+        // }
+
+        private IEnumerator Start()
         {
-            // Ищем InventoryManager на этом же игроке (или на LocalPlayer, если UI глобальный)
-            var localPlayer = PlayerController.LocalPlayer;
-            if (localPlayer != null)
-            {
-                _inventoryManager = localPlayer.GetComponent<InventoryManager>();
-                if (_inventoryManager != null)
-                {
-                    _progress = _inventoryManager.Progress;
-                }
-            }
+            while (PlayerController.LocalPlayer == null)
+                yield return null;
+
+            var localPlayer = PlayerController.LocalPlayer;   // читаем ПОСЛЕ цикла
+            _inventoryManager = localPlayer.GetComponent<InventoryManager>();
+            _progress = localPlayer.GetComponent<PlayerProgress>();
 
             if (_progress == null)
             {
                 Debug.LogError("[EngramUI] Не удалось получить PlayerProgress!");
+                yield break;
             }
 
+            _progress.OnPlayerLoaded += RebuildUI;
+
+            _engramData = _progress.engramData;
+            _engramData.OnEngramsChanged += RebuildUI;
+
+            RebuildUI();
+        }
+
+        private void OnEnable()
+        {
             if (_progress != null)
             {
-                // Берём данные из PlayerProgress
-                _engramData = _progress.engramData;
-
+                var data = _progress.engramData;
+                data.OnEngramsChanged += RebuildUI;
                 RebuildUI();
-                _engramData.OnEngramsChanged += RebuildUI;
             }
-
+            else
+            {
+                Debug.LogWarning("[EngramUI] OnEnable: Progress is null.");
+            }
         }
 
         void RebuildUI()
@@ -70,11 +108,6 @@ namespace Assets.Scripts.Crafting
         // Вызывается, когда меняются очки энграмм
         public void OnEngramPointsChanged()
         {
-            // // Например, обновить текст: "Очки: 45"
-            // if (engramPointsText != null)
-            // {
-            //     engramPointsText.text = $"Энграммы: {PlayerProgress.Instance.EngramPoints}";
-            // }
             Debug.Log($"Энграммы: {_progress.EngramPoints}");
         }
 

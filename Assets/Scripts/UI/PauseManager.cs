@@ -127,8 +127,6 @@ namespace Assets.Scripts.UI
             SetRealPause(false);
 
             // 3. Флаг смерти — PlayerSurvivalSystem.Update его поймает
-            // if (PlayerSurvivalSystem.Instance != null)
-            //     PlayerSurvivalSystem.Instance.DieManually = true;
             // Получаем ссылки на системы ТЕКУЩЕГО локального игрока
             var survival = _playerController.GetComponent<PlayerSurvivalSystem>();
             if (survival != null)

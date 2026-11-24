@@ -30,29 +30,13 @@ namespace Assets.Scripts.UI
 
         private void Start()
         {
-            // _playerProgress = PlayerProgress.Instance;
-            // _survival = PlayerSurvivalSystem.Instance;
-
             CreateHud();
 
             if (HUDCanvas != null) HUDCanvas.SetActive(true);
-
-            // Подписка на события больше не нужна здесь, 
-            // так как каждый StatUI подписывается сам в OnEnable/OnDisable
-            // if (_playerProgress != null)
-            //     _playerProgress.OnProgressChanged += RefreshAll;
-
-            // if (_survival != null)
-            //     _survival.OnSurvivalStatsChanged += RefreshAll;
         }
 
         private void OnDestroy()
         {
-            // if (_playerProgress != null)
-            //     _playerProgress.OnProgressChanged -= RefreshAll;
-
-            // if (_survival != null)
-            //     _survival.OnSurvivalStatsChanged -= RefreshAll;
             // Очистка списка, чтобы не было утечек памяти при перезагрузке сцены
             _hudStats.Clear();
         }

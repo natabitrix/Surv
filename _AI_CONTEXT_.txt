@@ -1,45 +1,2660 @@
+--- START OF FILE: Assets\Scripts\Core\GameAssets.cs ---
+```cs
+// Assets/Scripts/Core/GameAssets.cs
+using Assets.Scripts.Crafting;
+using Assets.Scripts.Creatures;
+using Assets.Scripts.Items;
+using Assets.Scripts.UI.Notifications;
+using Assets.Scripts.UI.RadialMenuUI;
+using UnityEngine;
 
-В игре 2 сцены:
-MainMenu:
-	Кнопки 
-        Играть (запускает игру)
-        Настройки (звук, графика, горячие клавиши)
-        Закрыть игру (полный выход)
+namespace Assets.Scripts.Core
+{
+    /// <summary>
+    /// Единая точка доступа к ассетам игры и создатель глобальных менеджеров.
+    /// 
+    /// Лежит на GameObject [GameAssets] в обеих сценах (MainMenu и GameWorld).
+    /// На этом же объекте — LoadingScreenManager, AudioManager, LanguageManager.
+    /// 
+    /// При первом Awake: Instance = this, DontDestroyOnLoad, создаёт
+    /// GameController, PlayerProgress, GameTimeUpdater как дочерние GameObject'ы.
+    /// 
+    /// При повторной загрузке сцены: второй экземпляр видит Instance != null
+    /// и удаляет себя.
+    /// </summary>
+    public class GameAssets : MonoBehaviour
+    {
+        public static GameAssets Instance { get; private set; }
 
-GameWorld: 
-    Основная сцена
+        [Header("Databases")]
+        [SerializeField] private GameSettings _gameSettings;
+        [SerializeField] private ItemDatabase _itemDatabase;
+        [SerializeField] private RecipeDatabase _recipeDatabase;
+        [SerializeField] private CreatureDatabase _creatureDatabase;
+        [SerializeField] private CreatureGlobalConfig _creatureGlobalConfig;
 
-Игрок спавнится в сохраненном с прошлой игры или дефолтном месте. 
-Может ходить, в стороны ходит боком, а не поворачивается, бегать, прыгать (управление WASD, стрелками). 
-Может плавать, лазить по лестнице. 
-У игрока есть статы (перечислить), которые меняются в реальном времени в зависимости от внешнего воздействия 
-(урон, голод - уменьшается здоровье), 
-внутреннего, например, стамина уменьшается от бега, вода/еда уменьшается со временем.
-Кислород уменьшается при нахождении в воде. 
-Не сделано (зависимость от веса, зависимость от температуры)
-Игрок имеет инвентарь (основыне слоты и хотбар), работает перетаскивание, стакание.
-Игрок может собирать собираемые предметы, добывать добываемые с помощью инструментов.
-Игрок может стрелять из лука обычными или отравленными стрелами (для усыпления врага).
-Игрок может крафтить предметы, инструменты.
-Игрок может есть съедобные предметы.
-Игрок получает опыт от крафтинга (не сделано других способов получения опыта)
-В зависимости от кол-ва очков опыта игрок может открыть энграммы(рецепты) для крафтинга
-Игрок может повышать статы в зависимости от очков опыта
-В игре есть предметы, их типы (съедобные, материалы, инструменты, оружие)
-С помощью оружия можно добывать ресурсы, убивать существ.
-Предметы находятся в базе, имеют иконки для инвентаря, имеют прочность, у инструментов например прочность снижается из-за пользования этим инструментом.
-При выбросе предметов или при разборе трупа спавнятся лут-сумки с инвентарем содержащим эти предметы.
-Игрок может чинить инструмент имея необходимые ресурсы для ремонта.
-В игре есть существа, могут иметь агрессивное или дружелюбное поведение. Существа блуждают по карте (NavmeshAgent, AI). Агрессивные могут нападать на игрока или его прирученных существ.
-Игрок может убить существо, разобрать труп на ресурсы, внутри существа может заспавниться лут (труп пы имеют инвентарь)
-Игрок может нокаутировать существо с помощью отравленных стрел, и приручить его положив предпочитаемую еду в инвентарь существа.
-Игрок может оседлать прирученное существо и управлять им (сделано ли управление атакой существа?)
-Существо имеет свои статы, как прирученное так и дикое.
-Прирученное существо надо кормить чтобы не умерло от голода.
-Прирученные существа имеют радиальное меню, где можно назначить ему поведение, отношение к врагу.
-В игре есть сундуки (общее название для всех контейнеров, шкафов и тп), которые имеют свой инвентарь, куда можно сложить вещи
-В игре есть система строительства: игрок может скрафтить части здания (фундамент, стены, потолок и тп) и построить базу. 
-Части здания (структуры) могут снапаться к земле или друг другу. Есть превью структуры, красный цвет превью показывает что нет точки привязки к земле или другой структуре.
-При смерти показывается экран смерти с кнопками Выйти, Возротиться.
-По кнопе Esc открывается меню паузы, в сингле игра становится на паузу, в меню паузы кнопки Вернуться, Выйти, Умереть.
-В игре есть система сохранения - точки спавна игрока, его инвентаря, инвентаря сундуков, сумок, трупов, сохранения самих трупов (игрока и существ), сохранения прирученных существ.
+        [Header("Prefabs")]
+        [SerializeField] private GameObject _playerCorpsePrefab;
+        [SerializeField] private GameObject _lootBagPrefab;
+
+        [Header("Audio")]
+        [SerializeField] private NotificationSoundConfig _notificationSoundConfig;
+
+        [Header("Radial Menu")]
+        [SerializeField] private RadialMenuGlobalConfig _radialMenuGlobalConfig;
+
+        // === Публичный доступ ===
+        public GameSettings GameSettings => _gameSettings;
+        public ItemDatabase ItemDatabase => _itemDatabase;
+        public RecipeDatabase RecipeDatabase => _recipeDatabase;
+        public CreatureDatabase CreatureDatabase => _creatureDatabase;
+        public CreatureGlobalConfig CreatureGlobalConfig => _creatureGlobalConfig;
+        public GameObject PlayerCorpsePrefab => _playerCorpsePrefab;
+        public GameObject LootBagPrefab => _lootBagPrefab;
+        public NotificationSoundConfig NotificationSoundConfig => _notificationSoundConfig;
+        public RadialMenuGlobalConfig RadialMenuGlobalConfig => _radialMenuGlobalConfig;
+        
+
+
+        private bool _isPrimary = false;
+
+        private void Awake()
+        {
+            // Защита от дубликата: если Instance уже есть — этот экземпляр лишний.
+            // Удаляем весь GameObject, включая LoadingScreenManager/AudioManager/LanguageManager.
+            if (Instance != null && Instance != this)
+            {
+                Debug.Log("[GameAssets] Защита от дубликата: если Instance уже есть — этот экземпляр лишний");
+                Destroy(gameObject);
+                return;
+            }
+
+            Instance = this;
+            _isPrimary = true;
+            DontDestroyOnLoad(gameObject);
+
+            ValidateReferences();
+            CreateGlobalManagers();
+        }
+
+        private void ValidateReferences()
+        {
+            if (_gameSettings == null) Debug.LogError("[GameAssets] GameSettings не назначен!");
+            if (_itemDatabase == null) Debug.LogError("[GameAssets] ItemDatabase не назначен!");
+            if (_creatureDatabase == null) Debug.LogError("[GameAssets] CreatureDatabase не назначен!");
+            if (_creatureGlobalConfig == null) Debug.LogError("[GameAssets] CreatureGlobalConfig не назначен!");
+            if (_recipeDatabase == null) Debug.LogError("[GameAssets] RecipeDatabase не назначен!");
+            if (_playerCorpsePrefab == null) Debug.LogError("[GameAssets] PlayerCorpsePrefab не назначен!");
+            if (_lootBagPrefab == null) Debug.LogError("[GameAssets] LootBagPrefab не назначен!");
+            if (_radialMenuGlobalConfig == null) Debug.LogError("[GameAssets] RadialMenuGlobalConfig не назначен!");
+        }
+
+        private void CreateGlobalManagers()
+        {
+            // Debug.Log("[GameAssets] Создание глобальных менеджеров...");
+
+            // LoadingScreenManager, AudioManager, LanguageManager — уже компоненты
+            // на этом GameObject. Их Awake вызовется Unity автоматически.
+            // Не создаём их кодом — иначе будут дубли.
+
+            // Создаём тех, у кого нет UI-ссылок и кто не на этом объекте.
+            CreateChildManager<GameController>("GameController", m =>
+                m.Initialize(_gameSettings));
+
+            // CreateChildManager<PlayerProgress>("PlayerProgress", m =>
+            //     m.Initialize(_itemDatabase, _recipeDatabase));
+
+            CreateChildManager<GameTimeUpdater>("GameTimeUpdater");
+
+            GameTime.Initialize();
+
+            // Debug.Log("[GameAssets] Готово.");
+        }
+
+        private void CreateChildManager<T>(string name, System.Action<T> configure = null)
+            where T : MonoBehaviour
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(transform);
+            // DontDestroyOnLoad НЕ вызываем — родитель (GameAssets) уже DontDestroyOnLoad.
+
+            var manager = go.AddComponent<T>();
+            configure?.Invoke(manager);
+        }
+
+        private void OnDestroy()
+        {
+            // Сбрасываем Instance только если это наш (primary) экземпляр.
+            // Если это был дубликат — Instance не трогаем.
+            if (_isPrimary && Instance == this)
+                Instance = null;
+        }
+    }
+}
+```
+--- END OF FILE: Assets\Scripts\Core\GameAssets.cs ---
+
+--- START OF FILE: Assets\Scripts\Core\GameController.cs ---
+```cs
+// Assets/Scripts/Core/GameController.cs
+using Assets.Scripts.Player;
+using UnityEngine;
+
+namespace Assets.Scripts.Core
+{
+    public class GameController : MonoBehaviour
+    {
+        public static GameController Instance { get; private set; }
+
+        public GameSettings Settings { get; private set; }
+
+        /// <summary>
+        /// Вызывается из GameAssets.CreateGlobalManagers().
+        /// </summary>
+        public void Initialize(GameSettings settings)
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+            Settings = settings;
+
+            if (settings == null)
+                Debug.LogError("[GameController] GameSettings == null! " +
+                               "Все системы, зависящие от него, могут работать некорректно.");
+
+            SessionMode.Initialize(settings);
+        }
+
+        private void OnApplicationQuit()
+        {
+            var localPlayer = PlayerController.LocalPlayer;
+            if (localPlayer != null)
+            {
+                var progress = localPlayer.GetComponent<PlayerProgress>();
+                progress?.Save("GameController.OnApplicationQuit");
+            }
+
+        }
+
+        public void QuitGame()
+        {
+            Application.Quit();
+
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#endif
+        }
+    }
+}
+```
+--- END OF FILE: Assets\Scripts\Core\GameController.cs ---
+
+--- START OF FILE: Assets\Scripts\Core\PlayerProgress.cs ---
+```cs
+using System.Collections.Generic;
+using System.IO;
+using UnityEngine;
+using Assets.Scripts.InventorySystem;
+using Assets.Scripts.Crafting;
+using Assets.Scripts.UI;
+using Newtonsoft.Json;
+using Assets.Scripts.Player;
+using Assets.Scripts.Items;
+using System.Collections;
+using UnityEngine.SceneManagement;
+using Assets.Scripts.UI.Notifications;
+
+namespace Assets.Scripts.Core
+{
+    public enum StatType
+    {
+        Health,
+        Stamina,
+        Oxygen,
+        Food,
+        Water,
+        Weight,
+        MeleeDamage,
+        MovementSpeed,
+        CraftingSpeed,
+        Fortitude,
+        Torpor,
+        XP
+    }
+
+    public class PlayerProgress : MonoBehaviour
+    {
+        // public static PlayerProgress Instance { get; private set; }
+
+        [SerializeField] private int _level = 1;
+        [SerializeField] private float _experience = 0;
+        [SerializeField] private int _engramPoints = 0;
+
+        // Статы: сколько раз улучшали каждый параметр
+        // [SerializeField]
+        private Dictionary<StatType, int> _statLevels = new();
+
+        public int Level => _level;
+        public float Experience => _experience;
+        public int EngramPoints => _engramPoints;
+
+        // Данные систем
+        public InventoryData hotbarInventoryData; // 10 слотов
+        public InventoryData mainInventoryData;   // 100 слотов
+
+        public EngramData engramData;
+        private Dictionary<string, int> hotbarSlotMap = new();
+
+        // Ссылки на базы данных
+        // public RecipeDatabase recipeDatabase;
+        // public ItemDatabase itemDatabase;
+        // Приходят из PlayerProgress.Initialize() через GameAssets
+        // public RecipeDatabase recipeDatabase { get; private set; }
+        // public ItemDatabase itemDatabase { get; private set; }
+
+        // Начальный набор выдаваемых предметов новому игроку
+        public BeginnerItems[] beginnerItems;
+        public bool GiveBeginnerItemsToPlayer = false;
+
+        public Vector3 defaultPlayerSpawnPoint = new(140.740005f, 8.30000019f, -1.15999997f);
+
+        private PlayerController _playerController;
+        private InventoryManager _inventoryManager;
+
+        // Публичные свойства для доступа
+        public PlayerController playerController => _playerController;
+        public InventoryManager inventoryManager => _inventoryManager;
+
+        public System.Action OnProgressChanged; // Событие обновления
+        public System.Action OnPlayerLoaded; // Событие после полной загрузки
+
+        private PlayerSaveData _loadedSaveData;
+        private bool _isNewPlayer = false;
+
+        public int StatPointsAvailable
+        {
+            get
+            {
+                if (_levelTable == null) return 0;
+                float totalXP = _experience;
+                int potentialLevel = 1;
+                for (int i = 0; i < _levelTable.levels.Length; i++)
+                {
+                    if (totalXP >= _levelTable.levels[i].xpToNext)
+                    {
+                        totalXP -= _levelTable.levels[i].xpToNext;
+                        potentialLevel++;
+                    }
+                    else
+                        break;
+                }
+                return potentialLevel - _level;
+            }
+        }
+
+        private const string SAVE_FILE_NAME = "Player.save";
+        public const int INVENTORY_SIZE = 100;
+        public const float RATE = 0.1f;
+        private static LevelTableData _levelTable;
+        private Vector3 _lastKnownPlayerPosition;
+        private Quaternion _lastKnownPlayerRotation;
+        private bool _hasLastKnownPosition = false;
+
+        /// <summary>
+        /// Вызывается из GameAssets.CreateGlobalManagers().
+        /// </summary>
+        // public void Initialize(ItemDatabase itemDb, RecipeDatabase recipeDb)
+        // {
+        //     // if (Instance != null && Instance != this)
+        //     // {
+        //     //     Destroy(gameObject);
+        //     //     return;
+        //     // }
+        //     // Instance = this;
+
+        //     itemDatabase = itemDb;
+        //     recipeDatabase = recipeDb;
+
+        //     StatConfigManager.Initialize();
+        //     InitializeLevelTable();
+        //     InitializeStats();
+        //     LoadData();
+        // }
+
+        // private IEnumerator Start()
+        // {
+        //     StatConfigManager.Initialize();
+        //     InitializeLevelTable();
+        //     InitializeStats();
+        //     LoadData();
+
+        //     // Ждем, пока PlayerController зарегистрируется
+        //     while (_playerController == null)
+        //         yield return null;
+
+        //     ShowLevelUpNote(playSound: false);
+        //     OnPlayerLoaded?.Invoke();
+        // }
+
+        private void Awake()
+        {
+            // Инициализируем таблицу и конфиги как можно раньше
+            StatConfigManager.Initialize();
+            InitializeLevelTable();
+            InitializeStats();
+
+            // Загружаем данные
+            LoadData();
+        }
+
+        private IEnumerator Start()
+        {
+            // Ждем, пока PlayerController зарегистрируется
+            while (_playerController == null)
+                yield return null;
+
+            ShowLevelUpNote(playSound: false);
+            OnPlayerLoaded?.Invoke();
+        }
+
+
+        private void LateUpdate()
+        {
+            // Кэшируем позицию каждый кадр, пока PlayerController существует
+            if (_playerController != null)
+            {
+                _lastKnownPlayerPosition = _playerController.transform.position;
+                _lastKnownPlayerRotation = _playerController.transform.rotation;
+                _hasLastKnownPosition = true;
+            }
+        }
+
+        void LoadData()
+        {
+            string path = Path.Combine(Application.persistentDataPath, SAVE_FILE_NAME);
+            if (File.Exists(path))
+            {
+                string json = File.ReadAllText(path);
+                var saveData = JsonConvert.DeserializeObject<PlayerSaveData>(json);
+                _loadedSaveData = saveData;
+
+                _level = saveData.level;
+                _experience = saveData.experience;
+                _engramPoints = saveData.engramPoints;
+                _statLevels = saveData.statLevels ?? new Dictionary<StatType, int>();
+                InitializeStats();
+
+                var itemDb = GameAssets.Instance?.ItemDatabase;
+                var recipeDb = GameAssets.Instance?.RecipeDatabase;
+
+                hotbarInventoryData = new InventoryData(10);
+                hotbarInventoryData.FromSerializable(saveData.hotbar, itemDb.ItemLookup);
+
+                mainInventoryData = new InventoryData(INVENTORY_SIZE);
+                mainInventoryData.FromSerializable(saveData.mainInventory, itemDb.ItemLookup);
+
+                hotbarSlotMap = saveData.hotbarSlotMap ?? new Dictionary<string, int>();
+
+                engramData = new EngramData();
+                engramData.InitializeFromDatabase(recipeDb);
+                engramData.FromSerializable(saveData.engrams, recipeDb);
+
+                UpdateEngramAvailability();
+                // GiveBeginnerItems(); // Ошибка [PlayerProgress] Save: позиция недоступна! Используется дефолтная.
+
+                var localPlayer = PlayerController.LocalPlayer;
+                if (localPlayer != null)
+                {
+                    var survival = localPlayer.GetComponent<PlayerSurvivalSystem>();
+                    if (survival != null)
+                        survival.LoadFrom(saveData);
+                }
+
+            }
+            else
+            {
+                _isNewPlayer = true;
+                hotbarInventoryData = new InventoryData(10);
+                mainInventoryData = new InventoryData(INVENTORY_SIZE);
+                hotbarSlotMap = new Dictionary<string, int>();
+
+                engramData = new EngramData();
+                engramData.InitializeFromDatabase(GameAssets.Instance?.RecipeDatabase);
+                InitializeStats();
+                _engramPoints = 0;
+                UpdateEngramAvailability();
+
+                GiveBeginnerItems();
+                Save("PlayerProgress.LoadData");
+            }
+        }
+
+        void ApplyData()
+        {
+            if (_playerController == null)
+            {
+                Debug.LogError("[PlayerProgress] ApplyData: _playerController null!");
+                return;
+            }
+
+            if (_isNewPlayer)
+            {
+                _playerController.transform.position = defaultPlayerSpawnPoint;
+                // Debug.Log($"[PlayerProgress] Новый игрок — позиция: {defaultPlayerSpawnPoint}");
+            }
+            else if (_loadedSaveData != null)
+            {
+                _playerController.transform.position = new Vector3(
+                    _loadedSaveData.playerPositionX,
+                    _loadedSaveData.playerPositionY,
+                    _loadedSaveData.playerPositionZ
+                );
+
+                // поворот
+                _playerController.transform.rotation = Quaternion.Euler(
+                    _loadedSaveData.playerRotationX,
+                    _loadedSaveData.playerRotationY,
+                    _loadedSaveData.playerRotationZ
+                );
+
+                // Debug.Log($"[PlayerProgress] Позиция загружена: {_playerController.transform.position}");
+            }
+
+            if (_inventoryManager != null && _loadedSaveData != null)
+            {
+                _inventoryManager.EquipSavedEquippedItem(_loadedSaveData);
+            }
+        }
+
+        public void ReloadFromFile()
+        {
+            // Debug.Log("[PlayerProgress] ReloadFromFile вызван");
+            _isNewPlayer = false;
+            _loadedSaveData = null;
+            LoadData();
+        }
+
+        /// <summary>
+        /// Возвращает последние загруженные данные сохранения.
+        /// Используется PlayerSurvivalSystem для восстановления статов после загрузки GameWorld.
+        /// </summary>
+        public PlayerSaveData GetLoadedSaveData() => _loadedSaveData;
+
+
+        public void RegisterPlayerController(PlayerController pc)
+        {
+            _playerController = pc;
+            ApplyData();
+        }
+
+        public void RegisterInventoryManager(InventoryManager manager)
+        {
+
+            _inventoryManager = manager;
+
+            // Если PlayerController уже готов, а InventoryManager только что зарегистрировался —
+            // доводим ApplyData до конца (экипировка).
+            if (_playerController != null && _loadedSaveData != null)
+            {
+                _inventoryManager.EquipSavedEquippedItem(_loadedSaveData);
+            }
+        }
+
+        public static void InitializeLevelTable()
+        {
+            if (_levelTable != null) return;
+            TextAsset json = Resources.Load<TextAsset>("LevelTable");
+            if (json == null)
+            {
+                Debug.LogError("LevelTable.json не найден в Resources!");
+                return;
+            }
+            _levelTable = JsonUtility.FromJson<LevelTableData>(json.text);
+        }
+
+        private LevelEntry GetLevelEntry(int level)
+        {
+            if (level < 1 || level > _levelTable.levels.Length)
+                return new LevelEntry { xpToNext = 0, engramPoints = 0 };
+            return _levelTable.levels[level - 1];
+        }
+
+        public int GetEngramPointsForLevel(int level)
+        {
+            return GetLevelEntry(level).engramPoints;
+        }
+
+        public float GetTotalXPForLevel(int level)
+        {
+            if (_levelTable == null || _levelTable.levels == null)
+            {
+                Debug.LogWarning("[PlayerProgress] LevelTable еще не загружена!");
+                return 0;
+            }
+
+            if (level <= 1) return 0;
+            float total = 0;
+            for (int i = 0; i < level - 1 && i < _levelTable.levels.Length; i++)
+            {
+                total += _levelTable.levels[i].xpToNext;
+            }
+            return total;
+        }
+
+        public float GetRates()
+        {
+            return RATE;
+        }
+
+        public void ShowLevelUpNote(bool playSound = true)
+        {
+            if (StatPointsAvailable > 0)
+            {
+                NotificationManager.Instance.ShowTopNote(
+                    NotificationType.LevelUp,
+                    "Доступно повышение уровня! Откройте свой инвентарь.",
+                    playSound: playSound
+                );
+            }
+            else
+            {
+                NotificationManager.Instance.HideTopNote();
+            }
+        }
+
+        private void GiveBeginnerItems()
+        {
+            foreach (var addedItem in beginnerItems)
+            {
+                if (addedItem.item != null)
+                {
+                    // Debug.Log("addedItem.item: " + addedItem.item.itemName);
+                    mainInventoryData.AddItemAnywhere(addedItem.item, addedItem.amount);
+                }
+            }
+        }
+
+        private void InitializeStats()
+        {
+            foreach (StatType stat in System.Enum.GetValues(typeof(StatType)))
+            {
+                if (!_statLevels.ContainsKey(stat)) _statLevels[stat] = 0;
+            }
+        }
+
+        public int GetStatLevel(StatType stat)
+        {
+            return _statLevels.TryGetValue(stat, out int level) ? level : 0;
+        }
+
+        // public void AddExperience(int amount)
+        // {
+        //     if (amount <= 0) return;
+
+        //     _experience += amount;
+
+        //     Save("PlayerProgress.AddExperience");
+
+        //     ShowLevelUpNote(playSound: true);
+
+        //     OnProgressChanged?.Invoke();
+        // }
+
+        public void AddExperience(int amount)
+        {
+            if (amount <= 0) return;
+
+            int levelBefore = _level + StatPointsAvailable;   // потенциальный уровень до
+            _experience += amount;
+            int levelAfter = _level + StatPointsAvailable;    // потенциальный уровень после
+
+            Save("PlayerProgress.AddExperience");
+
+            if (levelAfter > levelBefore)
+                ShowLevelUpNote(playSound: true);   // реальное повышение — со звуком
+            else
+                ShowLevelUpNote(playSound: false);  // просто обновить ноту без звука
+
+            OnProgressChanged?.Invoke();
+        }
+
+        public float GetBaseValue(StatType statType)
+        {
+            var config = StatConfigManager.Get(statType);
+            return config.baseValue;
+        }
+
+        public float GetMaxValue(StatType statType)
+        {
+            var config = StatConfigManager.Get(statType);
+            return GetMaxValue(statType, config.baseValue, config.affectsMaxValue);
+        }
+
+        public float GetMaxValue(StatType statType, float baseValue, bool affectsMaxValue)
+        {
+            if (!affectsMaxValue) return baseValue;
+
+            int level = GetStatLevel(statType);
+            float rate = RATE;
+            float maxValue = 0f;
+            if (statType == StatType.Fortitude)
+            {
+                maxValue = level;
+            }
+            else
+            {
+                maxValue = baseValue * (1f + level * rate);
+            }
+            return maxValue;
+        }
+
+        public bool AllocateStatPoint(StatType stat)
+        {
+            if (StatPointsAvailable <= 0) return false;
+
+            _level++;
+            _statLevels[stat]++;
+            _engramPoints += GetEngramPointsForLevel(_level - 1); // ОЭ за предыдущий уровень
+
+            Save("PlayerProgress.AllocateStatPoint");
+
+            NotificationManager.Instance.ShowTopNote(
+                NotificationType.LevelUp,
+                $"Улучшен {stat}. Новый уровень: {_level}, Энграмм: {_engramPoints}",
+                true,
+                10f,
+                playSound: false
+            );
+
+            OnProgressChanged?.Invoke();
+            return true;
+        }
+
+        public bool TrySpendEngramPoints(int cost)
+        {
+            if (_engramPoints >= cost)
+            {
+                _engramPoints -= cost;
+                OnProgressChanged?.Invoke(); // уведомляем UI об изменении
+                return true;
+            }
+            return false;
+        }
+
+        private void UpdateEngramAvailability()
+        {
+            if (engramData?.slots == null) return;
+            foreach (var slot in engramData.slots)
+            {
+                if (slot.recipe != null)
+                {
+                    slot.isAvailable = _level >= slot.recipe.requiredLevel;
+                }
+            }
+            engramData.NotifyChanged();
+        }
+
+        // Возвращает количество реально добавленных предметов (0..amount)
+        public int AddItemToPlayerInventory(Item item, int amount = 1, float durability = -2f)
+        {
+            if (item == null || amount <= 0) return 0;
+
+            // Определяем прочность: если не передали, ставим макс. для инструментов
+            float finalDurability = (durability == -2f) ? (item.hasDurability ? item.maxDurability : -1f) : durability;
+            int remaining = amount;
+
+            // === ШАГ 1: Закреплённый слот в хотбаре ===
+            if (hotbarSlotMap.TryGetValue(item.Id, out int hotbarSlotIndex) &&
+                hotbarSlotIndex >= 0 && hotbarSlotIndex < hotbarInventoryData.slots.Count)
+            {
+                var slot = hotbarInventoryData.slots[hotbarSlotIndex];
+                if (slot.IsEmpty || (slot.item == item && slot.count < item.maxStack))
+                {
+                    int space = item.maxStack - slot.count;
+                    int add = Mathf.Min(space, remaining);
+                    if (add > 0)
+                    {
+                        if (slot.IsEmpty)
+                        {
+                            slot.item = item;
+                            slot.count = add;
+                            slot.currentDurability = finalDurability;
+                        }
+                        else
+                        {
+                            slot.count += add;
+                        }
+                        remaining -= add;
+                        hotbarInventoryData.NotifyChanged();
+                        // Debug.Log($"[AddItem] Добавлено {add}x {item.itemName} в закреплённый слот хотбара {hotbarSlotIndex}");
+                    }
+                }
+            }
+
+            // === ШАГ 2: Остаток — в основной инвентарь ===
+            if (remaining > 0)
+            {
+                int addedToMain = mainInventoryData.AddItemAnywhere(item, remaining, finalDurability);
+                remaining -= addedToMain;
+                if (addedToMain > 0)
+                {
+                    // Debug.Log($"[AddItem] Добавлено {addedToMain}x {item.itemName} в основной инвентарь");
+                }
+            }
+
+            int actuallyAdded = amount - remaining;
+            if (actuallyAdded > 0)
+            {
+                // Save("PlayerProgress.AddItemToPlayerInventory");
+                OnProgressChanged?.Invoke();
+            }
+            else
+            {
+                Debug.LogWarning($"[AddItem] Не удалось добавить {item.itemName} x{amount} — инвентарь полон");
+            }
+
+            return actuallyAdded;
+        }
+
+        public void MarkItemAsHotbarPreferred(Item item, int slotIndex)
+        {
+            if (slotIndex >= 0 && item != null)
+            {
+                if (slotIndex < 10)
+                {
+                    hotbarSlotMap[item.Id] = slotIndex;
+                }
+                else
+                {
+                    hotbarSlotMap.Remove(item.Id);
+                }
+
+                Save("PlayerProgress.MarkItemAsHotbarPreferred");
+            }
+        }
+
+        public void UnmarkItemAsHotbarPreferred(Item item)
+        {
+            hotbarSlotMap.Remove(item.Id);
+            Save("PlayerProgress.UnmarkItemAsHotbarPreferred");
+        }
+
+        public void UnregisterPlayerController()
+        {
+            _playerController = null;
+        }
+
+        public void Save(string noteFrom = "")
+        {
+            var saveData = new PlayerSaveData
+            {
+                level = _level,
+                experience = _experience,
+                engramPoints = _engramPoints,
+                statLevels = new Dictionary<StatType, int>(_statLevels),
+                hotbar = hotbarInventoryData.ToSerializable(10),
+                mainInventory = mainInventoryData.ToSerializable(INVENTORY_SIZE),
+                hotbarSlotMap = new Dictionary<string, int>(hotbarSlotMap),
+                engrams = engramData.ToSerializable(),
+            };
+
+            // === ИСПРАВЛЕНИЕ: проверяем _playerController ===
+            if (_playerController != null)
+            {
+                saveData.playerPositionX = _playerController.transform.position.x;
+                saveData.playerPositionY = _playerController.transform.position.y;
+                saveData.playerPositionZ = _playerController.transform.position.z;
+
+                var euler = _playerController.transform.rotation.eulerAngles;
+                saveData.playerRotationX = euler.x;
+                saveData.playerRotationY = euler.y;
+                saveData.playerRotationZ = euler.z;
+
+                // Debug.Log($"[PlayerProgress] Save: позиция из живого контроллера: {_playerController.transform.position}");
+            }
+            else if (_hasLastKnownPosition)
+            {
+                saveData.playerPositionX = _lastKnownPlayerPosition.x;
+                saveData.playerPositionY = _lastKnownPlayerPosition.y;
+                saveData.playerPositionZ = _lastKnownPlayerPosition.z;
+
+                var euler = _lastKnownPlayerRotation.eulerAngles;
+                saveData.playerRotationX = euler.x;
+                saveData.playerRotationY = euler.y;
+                saveData.playerRotationZ = euler.z;
+
+                // Debug.LogWarning($"[PlayerProgress] Save: _playerController null, используем кэш: {_lastKnownPlayerPosition}");
+            }
+            else
+            {
+                Debug.LogError("[PlayerProgress] Save: позиция недоступна! Используется дефолтная.");
+                // Оставляем дефолтные значения из PlayerSaveData
+                saveData.playerPositionX = defaultPlayerSpawnPoint.x;
+                saveData.playerPositionY = defaultPlayerSpawnPoint.y;
+                saveData.playerPositionZ = defaultPlayerSpawnPoint.z;
+
+            }
+
+            // сохранение состояния выживания
+            var localPlayer = PlayerController.LocalPlayer;
+            if (localPlayer != null)
+            {
+                var survival = localPlayer.GetComponent<PlayerSurvivalSystem>();
+                if (survival != null)
+                    survival.SaveTo(saveData);
+            }
+
+            // сохранение экипированного предмета
+            if (inventoryManager != null)
+            {
+                inventoryManager.SaveEquippedItem(saveData);
+            }
+            else
+            {
+                Debug.LogWarning("[PlayerProgress.Save] inventoryManager is null!");
+            }
+
+            string json = JsonConvert.SerializeObject(saveData, Formatting.Indented);
+            string path = Path.Combine(Application.persistentDataPath, SAVE_FILE_NAME);
+            File.WriteAllText(path, json);
+
+            // Debug.Log($"[PlayerProgress] Сохранено в {path}");
+            // Debug.Log($"Сохранено из [{noteFrom}]");
+
+        }
+    }
+
+    // [System.Serializable]
+    public class PlayerSaveData
+    {
+        public int level = 1;
+        public float experience = 0f;
+        public int engramPoints = 0;
+        public Dictionary<StatType, int> statLevels = new();
+        public Dictionary<string, int> hotbarSlotMap = new();
+        public SerializableInventory hotbar;         // 10 слотов
+        public SerializableInventory mainInventory;  // 100 слотов
+        public SerializableEngramData engrams = new();
+        public Dictionary<StatType, float> survivalStats = new();
+
+        // Для позиции
+        public float playerPositionX = 0f;
+        public float playerPositionY = 0f;
+        public float playerPositionZ = 0f;
+
+        public float playerRotationX = 0f;
+        public float playerRotationY = 0f;
+        public float playerRotationZ = 0f;
+
+        public int equippedSlotIndex = -1;
+        public SlotOwner equippedSlotOwner = SlotOwner.Hotbar;
+
+    }
+
+    [System.Serializable]
+    public class BeginnerItems
+    {
+        public Item item;
+        public int amount;
+    }
+}
+```
+--- END OF FILE: Assets\Scripts\Core\PlayerProgress.cs ---
+
+--- START OF FILE: Assets\Scripts\Core\PlayerSurvivalSystem.cs ---
+```cs
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using Assets.Scripts.Corpses;
+using Assets.Scripts.Creatures;
+using Assets.Scripts.Interactables;
+using Assets.Scripts.InventorySystem;
+using Assets.Scripts.Items;
+using Assets.Scripts.Player;
+using Assets.Scripts.UI;
+using UnityEngine;
+using UnityEngine.InputSystem;
+
+namespace Assets.Scripts.Core
+{
+    public class PlayerSurvivalSystem : MonoBehaviour
+    {
+        // public static PlayerSurvivalSystem Instance { get; private set; }
+        private PlayerProgress _progress;
+
+        // === Текущие значения ===
+        private float _health;
+        private float _stamina;
+        private float _oxygen;
+        private float _food;
+        private float _water;
+        private float _weight;
+        private float _torpor;
+
+        [Header("Consumption Rates")]
+        [SerializeField] private float _foodLossPerSecond = 0.05f;
+        [SerializeField] private float _waterLossPerSecond = 0.07f;
+        [SerializeField] private float _staminaLossPerSecondAtMaxSpeed = 2f;
+        [SerializeField] private float _oxygenLossPerSecondUnderwater = 3f;
+        [SerializeField] private float _healthLossPerSecondWhenCritical = 1f;
+
+        [Header("Recovery")]
+        [SerializeField] private float _staminaRecoveryPerSecond = 20f;
+        [SerializeField] private float _oxygenRecoveryPerSecond = 20f;
+        [SerializeField] private float _healthRecoveryPerSecond = 1f;
+
+        [Header("Death Timing")]
+        [Tooltip("Задержка перед показом экрана смерти (сек). " +
+                 "Даёт ragdoll упасть. Не зависит от Time.timeScale.")]
+        [SerializeField] private float _deathScreenDelay = 2.5f;
+
+        // === Состояния ===
+        public bool IsUnderwater { get; set; } = false;
+        public float CurrentMovementSpeed { get; set; } = 0f;
+        public float MaxMovementSpeed { get; set; } = 6f;
+
+        // === Геттеры ===
+        public float Health => _health;
+        public float Stamina => _stamina;
+        public float Oxygen => _oxygen;
+        public float Food => _food;
+        public float Water => _water;
+        public float Weight => _weight;
+        public float Torpor => _torpor;
+
+        public float MaxHealth => _progress?.GetMaxValue(StatType.Health) ?? 100f;
+        public float MaxStamina => _progress?.GetMaxValue(StatType.Stamina) ?? 100f;
+        public float MaxOxygen => _progress?.GetMaxValue(StatType.Oxygen) ?? 100f;
+        public float MaxFood => _progress?.GetMaxValue(StatType.Food) ?? 100f;
+        public float MaxWater => _progress?.GetMaxValue(StatType.Water) ?? 100f;
+        public float MaxWeight => _progress?.GetMaxValue(StatType.Weight) ?? 100f;
+        public float MaxTorpor => _progress?.GetMaxValue(StatType.Torpor) ?? 100f;
+
+        private bool _isDead = false;
+        public bool DieManually = false;
+
+        // === СОБЫТИЯ ===
+        public event Action OnSurvivalStatsChanged;
+
+        /// <summary>Вызывается при получении урона игроком. Аргумент — величина урона.</summary>
+        public event Action<float> OnPlayerDamaged;
+
+        /// <summary>Вызывается после отключения живых компонентов, создания трупа
+        /// и задержки на падение ragdoll.</summary>
+        public event Action OnPlayerDied;
+
+        /// <summary>Вызывается после восстановления игрока (ReloadFromFile + TogglePlayerActive(true)).</summary>
+        public event Action OnPlayerRespawned;
+
+        private void Awake()
+        {
+            // if (Instance != null && Instance != this)
+            // {
+            //     Destroy(gameObject);
+            //     return;
+            // }
+            // Instance = this;
+            // // Сценовый менеджер — умирает вместе со сценой, DontDestroyOnLoad не нужен.
+            _progress = GetComponent<PlayerProgress>();
+            if (_progress == null)
+            {
+                Debug.LogError("[PlayerSurvivalSystem] PlayerProgress not found on this player!", this);
+            }
+        }
+
+        private void Start()
+        {
+            // Восстанавливаем статы из сохранения (загружено PlayerProgress).
+            // var loadedData = _progress?.GetLoadedSaveData();
+            // if (loadedData != null)
+            // {
+            //     LoadFrom(loadedData);
+            // }
+            // else
+            // {
+            //     Debug.LogWarning("[PlayerSurvivalSystem] loadedData == null, используем дефолт.");
+            //     ResetToDefaults();
+            // }
+
+            // Восстанавливаем статы из сохранения (загружено PlayerProgress).
+            var loadedData = _progress?.GetLoadedSaveData();
+            if (loadedData != null)
+            {
+                LoadFrom(loadedData);
+            }
+            else
+            {
+                Debug.LogWarning("[PlayerSurvivalSystem] loadedData == null, используем дефолт.");
+                ResetToDefaults();
+            }
+            StartCoroutine(UpdateSurvivalStats());
+        }
+
+        private void ResetToDefaults()
+        {
+            _health = MaxHealth;
+            _stamina = MaxStamina;
+            _food = MaxFood;
+            _water = MaxWater;
+            _oxygen = MaxOxygen;
+            _weight = 0f;
+            _torpor = 0f;
+        }
+
+        // ==========================================
+        // === СМЕРТЬ (проверка в Update — работает при timeScale = 0) ===
+        // ==========================================
+
+        private void Update()
+        {
+            if ((DieManually || _health <= 0f) && !_isDead)
+            {
+                _isDead = true;
+                _health = 0f;
+                StartCoroutine(OnPlayerDeathRoutine());
+            }
+        }
+
+        private IEnumerator OnPlayerDeathRoutine()
+        {
+            var pc = PlayerController.LocalPlayer;
+            if (pc == null) yield break;
+
+            // 0. Спешиваемся если были верхом
+            pc?.RidingController?.CurrentMount?.ForceDismount();
+
+            // 1. Снимаем экипировку и выходим из build mode
+            if (pc.Equipment != null && pc.Equipment.IsEquipped)
+                pc.Equipment.Unequip();
+
+            if (pc.BuildMode != null && pc.BuildMode.IsActive())
+                pc.BuildMode.ExitBuildMode();
+
+            // 2. Отключаем управление игроком
+            TogglePlayerActive(pc, false);
+
+            // 3. Создаём труп
+            if (CorpseManager.Instance == null)
+            {
+                Debug.LogError("[PlayerSurvivalSystem] OnPlayerDeath: CorpseManager.Instance == null! Труп не создан.");
+                yield break;
+            }
+
+            GameObject corpseBodyPrefab = CorpseManager.Instance.CorpseBodyPrefab;
+            GameObject playerCorpseGO = Instantiate(corpseBodyPrefab, pc.transform.position, Quaternion.identity);
+
+            if (playerCorpseGO.TryGetComponent<Corpse>(out var corpse))
+            {
+                corpse.enabled = true;
+                corpse.ActivateRagdoll();
+                corpse.StartCoroutine(corpse.StopMovingRagdoll());
+                corpse.InitializeCorpse();
+
+                corpse.CreateCorpseInventory(
+                    "PlayerCorpse",
+                    110
+                );
+
+                corpse.CopyPlayerItemsToCorpse(
+                    _progress.mainInventoryData,
+                    _progress.hotbarInventoryData
+                );
+
+                if (corpse.TryGetComponent<RadialMenu>(out var menu)) menu.enabled = true;
+            }
+
+            // 4. Регистрируем труп
+            CorpseManager.Instance.RegisterCorpse(playerCorpseGO, "player_001");
+
+            // 5. Очищаем инвентарь (существующие InventoryData, без подмены ссылок)
+            ClearInventoryData(_progress.mainInventoryData);
+            ClearInventoryData(_progress.hotbarInventoryData);
+            _progress.Save("PlayerDeath.ClearedInventory");
+
+            // 6. Ждём, пока тело упадёт. WaitForSecondsRealtime — работает при timeScale = 0.
+            yield return new WaitForSecondsRealtime(_deathScreenDelay);
+
+            // 7. Показываем экран смерти
+            OnPlayerDied?.Invoke();
+        }
+
+        public void Respawn()
+        {
+            var playerProgress = _progress;
+            if (playerProgress == null)
+            {
+                Debug.LogError("[PlayerSurvivalSystem] Respawn: PlayerProgress == null!");
+                return;
+            }
+
+            playerProgress.ReloadFromFile();
+
+            var playerController = playerProgress.playerController;
+            if (playerController != null)
+                TogglePlayerActive(playerController, true);
+
+            DieManually = false;
+            _isDead = false;
+            _health = MaxHealth;
+            _stamina = MaxStamina;
+            _oxygen = MaxOxygen;
+            _food = MaxFood;
+            _water = MaxWater;
+            _torpor = 0f;
+
+            OnSurvivalStatsChanged?.Invoke();
+            OnPlayerRespawned?.Invoke();
+
+            // Перезапускаем корутину потребления (её мог остановить OnPlayerDeath)
+            StartCoroutine(UpdateSurvivalStats());
+        }
+
+        /// <summary>
+        /// Полностью очищает слоты инвентаря, сохраняя подписки UI на OnInventoryChanged.
+        /// </summary>
+        private void ClearInventoryData(InventoryData data)
+        {
+            if (data?.slots == null) return;
+
+            for (int i = 0; i < data.slots.Count; i++)
+            {
+                var slot = data.slots[i];
+                slot.item = null;
+                slot.count = 0;
+                slot.currentDurability = -1f;
+            }
+
+            data.NotifyChanged();
+        }
+
+        // ==========================================
+        // === ПОТРЕБЛЕНИЕ СТАТОВ ===
+        // ==========================================
+
+        private IEnumerator UpdateSurvivalStats()
+        {
+            const float updateInterval = 0.1f;
+
+            while (true)
+            {
+                yield return new WaitForSeconds(updateInterval);
+
+                // Если игрок мёртв — прекращаем потребление
+                if (_isDead) yield break;
+
+                _food = Mathf.Max(0f, _food - _foodLossPerSecond * updateInterval);
+                _water = Mathf.Max(0f, _water - _waterLossPerSecond * updateInterval);
+
+                float normalizedSpeed = Mathf.Clamp01(CurrentMovementSpeed / MaxMovementSpeed);
+                float staminaLoss = _staminaLossPerSecondAtMaxSpeed * normalizedSpeed * updateInterval;
+                if (staminaLoss > 0)
+                    _stamina = Mathf.Max(0f, _stamina - staminaLoss);
+                else
+                    _stamina = Mathf.Min(MaxStamina, _stamina + _staminaRecoveryPerSecond * updateInterval);
+
+                if (IsUnderwater)
+                    _oxygen = Mathf.Max(0f, _oxygen - _oxygenLossPerSecondUnderwater * updateInterval);
+                else
+                    _oxygen = Mathf.Min(MaxOxygen, _oxygen + _oxygenRecoveryPerSecond * updateInterval);
+
+                bool isCritical = (_oxygen <= 0f) || (_food <= 0f) || (_water <= 0f)
+                               || (_stamina <= 0f) || (_torpor >= MaxTorpor);
+                if (isCritical)
+                    _health = Mathf.Max(0f, _health - _healthLossPerSecondWhenCritical * updateInterval);
+                else
+                    _health = Mathf.Min(MaxHealth, _health + _healthRecoveryPerSecond * updateInterval);
+
+                OnSurvivalStatsChanged?.Invoke();
+            }
+        }
+
+        // ==========================================
+        // === ЗАГРУЗКА / СОХРАНЕНИЕ ===
+        // ==========================================
+
+        public void SaveTo(PlayerSaveData saveData)
+        {
+            saveData.survivalStats = new Dictionary<StatType, float>
+            {
+                { StatType.Health, _health },
+                { StatType.Stamina, _stamina },
+                { StatType.Oxygen, _oxygen },
+                { StatType.Food, _food },
+                { StatType.Water, _water },
+                { StatType.Weight, _weight },
+                { StatType.Torpor, _torpor }
+            };
+        }
+
+        public void LoadFrom(PlayerSaveData saveData)
+        {
+            var src = saveData.survivalStats ?? new Dictionary<StatType, float>();
+
+            _health = MaxHealth;
+            _stamina = MaxStamina;
+            _oxygen = MaxOxygen;
+            _food = MaxFood;
+            _water = MaxWater;
+            _weight = Get(src, StatType.Weight, 0f);
+            _torpor = 0f;
+
+            OnSurvivalStatsChanged?.Invoke();
+        }
+
+        private float Get(Dictionary<StatType, float> dict, StatType key, float defaultValue)
+        {
+            return dict.TryGetValue(key, out float v) ? v : defaultValue;
+        }
+
+        // ==========================================
+        // === ПУБЛИЧНЫЕ МЕТОДЫ ===
+        // ==========================================
+
+        public void RecoveryHealth(float amount)
+        {
+            _health = Mathf.Min(MaxHealth, _health + amount);
+            OnSurvivalStatsChanged?.Invoke();
+        }
+
+        public void AddFood(float amount)
+        {
+            _food = Mathf.Min(MaxFood, _food + amount);
+            OnSurvivalStatsChanged?.Invoke();
+        }
+
+        public void AddWater()
+        {
+            _water = MaxWater;
+            OnSurvivalStatsChanged?.Invoke();
+        }
+
+        public void AddStamina(float amount)
+        {
+            _stamina = Mathf.Min(MaxStamina, _stamina + amount);
+            OnSurvivalStatsChanged?.Invoke();
+        }
+
+        public void TakeDamage(float damage)
+        {
+            _health = Mathf.Max(0f, _health - damage);
+            OnSurvivalStatsChanged?.Invoke();
+
+            if (damage > 0f)
+                OnPlayerDamaged?.Invoke(damage);
+        }
+
+        public void AddTorpor(float amount)
+        {
+            _torpor = Mathf.Min(MaxTorpor, _torpor + amount);
+            OnSurvivalStatsChanged?.Invoke();
+        }
+
+        public void SetWeight(float weight)
+        {
+            _weight = weight;
+            OnSurvivalStatsChanged?.Invoke();
+        }
+
+        private void TogglePlayerActive(PlayerController pc = null, bool active = true)
+        {
+            if (pc == null) return;
+
+            pc.enabled = active;
+            if (pc.TryGetComponent<PlayerInteraction>(out var interact)) interact.enabled = active;
+            if (pc.TryGetComponent<PlayerEquipment>(out var equipment)) equipment.enabled = active;
+            if (pc.TryGetComponent<PlayerBuildMode>(out var buildMode)) buildMode.enabled = active;
+            if (pc.TryGetComponent<ItemUsageSystem>(out var usage)) usage.enabled = active;
+            if (pc.TryGetComponent<ItemHandler>(out var handler)) handler.enabled = active;
+            if (pc.TryGetComponent<PlayerInput>(out var input)) input.enabled = active;
+            if (pc.TryGetComponent<PlayerInputHandler>(out var inputHandler)) inputHandler.enabled = active;
+            if (pc.TryGetComponent<CharacterController>(out var cc)) cc.enabled = active;
+            pc.gameObject.SetActive(active);
+        }
+    }
+}
+```
+--- END OF FILE: Assets\Scripts\Core\PlayerSurvivalSystem.cs ---
+
+--- START OF FILE: Assets\Scripts\Core\WorldBootstrap.cs ---
+```cs
+// Assets/Scripts/Core/WorldBootstrap.cs
+using System.Collections;
+using UnityEngine;
+using Assets.Scripts.Corpses;
+using Assets.Scripts.Loot;
+using Assets.Scripts.Creatures.Taming;
+using Assets.Scripts.UI;
+using System;
+using Unity.Collections;
+using UnityEngine.UIElements;
+using System.Collections.Generic;
+using Assets.Scripts.Player;
+
+namespace Assets.Scripts.Core
+{
+    /// <summary>
+    /// Лежит на WorldManagers в сцене GameWorld.
+    /// Создаёт сценовые менеджеры и запускает их загрузку через LoadingScreenManager.
+    /// НЕ DontDestroyOnLoad — умирает вместе со сценой.
+    /// </summary>
+    public class WorldBootstrap : MonoBehaviour
+    {
+        [Header("CorpseManager; LootBagManager; TamingManager; WorldManager")]
+        public static WorldBootstrap Instance { get; private set; }
+
+        [Header("WorldManager Settings")]
+        [SerializeField] private int _chunkSize = 32;
+        [SerializeField] private int _loadRadiusInChunks = 2;
+        [SerializeField] private float _saveInterval = 5f;
+
+        [field: Header("Loading Managers for info only")]
+        [field: SerializeField, ReadOnly, TextArea(4, 2)]
+        public string LoadingManagers { get; private set; } = "CorpseManager\nLootBagManager\nTamingManager\nWorldManager";
+
+        public CorpseManager CorpseManager { get; private set; }
+        public LootBagManager LootBagManager { get; private set; }
+        public TamingManager TamingManager { get; private set; }
+        public WorldManager WorldManager { get; private set; }
+
+        private bool _isBootstrapped = false;
+
+        private void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+            // НЕ создаём менеджеры здесь. GameAssets может быть ещё не готов
+            // (порядок Awake в Unity не гарантирован между объектами).
+        }
+
+        private void Start()
+        {
+            if (_isBootstrapped) return;
+            _isBootstrapped = true;
+
+            StartCoroutine(BootstrapRoutine());
+        }
+
+        private IEnumerator BootstrapRoutine()
+        {
+            // Debug.Log("[WorldBootstrap] Старт загрузки GameWorld...");
+
+            // 1. Ждём GameAssets (DontDestroyOnLoad-объект, который мог быть создан
+            //    как до, так и после Awake WorldBootstrap).
+
+            float waitTimer = 0f;
+            while (GameAssets.Instance == null)
+            {
+                waitTimer += Time.unscaledDeltaTime;
+                if (waitTimer > 5f)
+                {
+                    Debug.LogError("[WorldBootstrap] GameAssets не появился за 5 секунд! " +
+                                   "Проверь, что [GameAssets] есть в сцене GameWorld.");
+                    yield break;
+                }
+                yield return null;
+            }
+
+            // Debug.Log("[WorldBootstrap] GameAssets OK.");
+
+            // 2. Создаём сценовые менеджеры — теперь GameAssets гарантированно есть.
+            CreateWorldManagers();
+
+            // 3. Ждём PlayerController — он регистрируется в PlayerProgress из PlayerController.Awake.
+            while (PlayerController.LocalPlayer == null)
+                yield return null;
+
+            var playerController = PlayerController.LocalPlayer;
+            yield return null; // дать PlayerController.Start() выполниться
+
+            // 4. Регистрируем задачи.
+            var lsm = LoadingScreenManager.Instance;
+            if (lsm == null)
+            {
+                Debug.LogError("[WorldBootstrap] LoadingScreenManager == null!");
+                yield break;
+            }
+
+            Vector3 defaultPlayerSpawnPoint = new(140.740005f,8.30000019f,-1.15999997f);
+            var playerPos = playerController != null ? playerController.transform.position : defaultPlayerSpawnPoint;
+
+            lsm.RegisterTask("Загрузка трупов...", CorpseManager.LoadAllCorpsesAsync());
+            lsm.RegisterTask("Загрузка сумок...", LootBagManager.LoadAllLootBagsAsync());
+            lsm.RegisterTask("Загрузка прирученных...", TamingManager.LoadAllTamingCreaturesAsync());
+            lsm.RegisterTask("Загрузка мира...", WorldManager.LoadWorldAsync(playerPos));
+
+            yield return null;
+            lsm.StartLoading();
+        }
+
+        private void CreateWorldManagers()
+        {
+            CorpseManager = gameObject.AddComponent<CorpseManager>();
+            CorpseManager.Initialize();
+
+            LootBagManager = gameObject.AddComponent<LootBagManager>();
+            LootBagManager.Initialize();
+
+            TamingManager = gameObject.AddComponent<TamingManager>();
+            TamingManager.Initialize();
+
+            WorldManager = gameObject.AddComponent<WorldManager>();
+            WorldManager.Initialize(_chunkSize, _loadRadiusInChunks, _saveInterval);
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
+        }
+    }
+}
+```
+--- END OF FILE: Assets\Scripts\Core\WorldBootstrap.cs ---
+
+--- START OF FILE: Assets\Scripts\Player\PlayerController.cs ---
+```cs
+// Assets/Scripts/Player/PlayerController.cs
+using System;
+using System.Collections;
+using Assets.Scripts.Environment;
+using UnityEngine;
+using UnityEngine.InputSystem;
+using Random = UnityEngine.Random;
+using Assets.Scripts.Player.Data;
+using Assets.Scripts.InventorySystem;
+using Assets.Scripts.UI.Tooltip;
+using Assets.Scripts.Utils;
+using Assets.Scripts.Core;
+using Assets.Scripts.UI;
+using Assets.Scripts.Creatures;
+using System.Collections.Generic;
+
+namespace Assets.Scripts.Player
+{
+    public class PlayerController : MonoBehaviour
+    {
+        public PlayerMovementSettings settings; // в инспекторе назначите
+
+        [Tooltip("Для фиксации положения камеры по всем осям")]
+        public bool LockCamera = false;
+        [Tooltip("Для фиксации положения камеры по всем осям")]
+        public bool Grounded = true;
+
+        [Tooltip("Цель, заданная в виртуальной камере Cinemachine, которую будет отслеживать камера.")]
+        public GameObject CinemachineCameraTarget; // Должен быть дочерним элементом тела, или его позиция управляется скриптом
+
+        [Header("UI")]
+        [Tooltip("Все канвасы UI сгруппированы в пустом gameobject UI и скрыты на сцене чтобы не мешать, указать этот UI тут")]
+        public GameObject UI;
+
+        // public PlayerEquipment equipment;
+        // public PlayerBuildMode buildMode;
+        // public ItemUsageSystem itemUsageSystem;
+        private PlayerEquipment _equipment;
+        private PlayerBuildMode _buildMode;
+        private ItemUsageSystem _itemUsageSystem;
+        private CameraManager _cameraManager;
+
+        public PlayerEquipment Equipment => _equipment;
+        public PlayerBuildMode BuildMode => _buildMode;
+
+        private PlayerSurvivalSystem _survivalSystem;
+        private PlayerProgress _progress;
+        [SerializeField] private PanelsUIController _panelsController;
+
+        [Header("Player Transforms")]
+        public GameObject VisualCharacter;
+        public Transform Head; // Ссылка на объект головы (должен быть дочерним элементом тела)
+        public Transform EyeCenterForCamera;
+
+        private RidingController _ridingController;
+        public RidingController RidingController => _ridingController;
+
+        public Vector2 MoveInput => _input != null ? _input.move : Vector2.zero;
+        public Vector2 LookInput => _input != null ? _input.look : Vector2.zero;
+        public bool IsMounted { get; private set; } = false;
+        public bool SprintInput => _input != null ? _input.sprint : false;
+
+        public void SetMounted(bool mounted)
+        {
+            IsMounted = mounted;
+
+            // Отключаем CharacterController — чтобы физика не толкала игрока в седле
+            if (_controller != null)
+                _controller.enabled = !mounted;
+
+            // Управляем анимацией
+            if (_animator != null)
+            {
+                _animator.SetBool(_animIDIsRiding, mounted);
+            }
+
+            // === НОВОЕ: Синхронизация углов камеры при оседлании ===
+            if (mounted)
+            {
+                var mount = _ridingController?.CurrentMount;
+                if (mount != null)
+                {
+                    // Берем текущий угол существа и задаем его как базовый для камеры
+                    _cinemachineTargetYaw = mount.transform.eulerAngles.y;
+                    _cinemachineTargetPitch = 0f; // Сбрасываем взгляд в горизонт (или можно оставить текущий)
+                }
+            }
+        }
+
+        [Header("Visual Effects")]
+        public UnderwaterEffects VisualEffects;
+
+        private float _cinemachineTargetYaw; // Поворот тела/камеры по Y (влево/вправо)
+        private float _cinemachineTargetPitch; // Поворот камеры по X (вверх/вниз) относительно тела
+        private float _speed;
+        private float _animationBlend;
+        private Vector2 _smoothedInput = Vector2.zero;
+        private float _targetRotation = 0.0f; // Целевой поворот тела по Y
+        private float _verticalVelocity;
+        private float _jumpTimeoutDelta;
+        private float _fallTimeoutDelta;
+
+        private int _animIDSpeed;
+        private int _animIDGrounded;
+        private int _animIDJump;
+        private int _animIDFreeFall;
+        private int _animIDIsMoving;
+        private int _animIDIsTurning;
+        private int _animIDTurnSpeed;
+        private int _animIDInputX;
+        private int _animIDInputY;
+        private int _animIDSwimming;
+        private int _animIDOnLadder;
+        private int _animIDCrouch;
+        private int _animIDCrawl;
+        private int _animIDPickup;
+        private int _animIDAttackFist;
+        private int _animIDAttackAxe;
+        private int _animIDAttackSword;
+        private int _animIDAttackBow;
+        private int _animIDIsRiding;
+
+        private PlayerInput _playerInput;
+        [SerializeField] private Animator _animator; // назначен в инспекторе
+        public Animator PlayerAnimator => _animator;
+
+        private CharacterController _controller;
+        public CharacterController CharacterController => _controller;
+
+        private PlayerInputHandler _input;
+        public PlayerInputHandler PlayerInputHandler => _input;
+
+        private GameObject _mainCamera;
+        private bool _isInSelfieMode = false;
+        private Vector3 _initialHeadLocalEulerAngles; // Начальный поворот головы
+        private float _currentTurnSpeed = 0f;
+        private const float _threshold = 0.01f;
+        private bool _hasAnimator;
+        private bool _isMoving;
+        private bool _onLadder = false;
+        private bool _isSwimming = false;
+        private bool _isInWater = false; // касается воды (ногами)
+        private bool _isFullySubmerged = false; // голова под водой → плавать
+        private bool _isFloatingInWater = false; // голова над водой → плавать
+
+        private Vector3 _defaultCenter;
+        private float _defaultHeight;
+        private bool _wasCameraUnderwater = false;
+        private bool _isCrouching = false;
+        private bool _isCrawling = false;
+        private bool _isFreeFall = false;
+
+        private bool IsCurrentDeviceMouse
+        {
+            get { return _playerInput.currentControlScheme == "KeyboardMouse"; }
+        }
+
+        // 1. Добавляем статическое свойство для доступа из любой точки кода
+        // public static PlayerController Instance { get; private set; }
+        public static PlayerController LocalPlayer { get; private set; }
+        public static readonly List<PlayerController> AllPlayers = new();
+
+
+
+        [SerializeField] private string _playerId = "player_001";
+        public string PlayerId => _playerId;
+
+        private void Awake()
+        {
+
+            // // 2. Реализуем паттерн Синглтон
+            // if (Instance != null && Instance != this)
+            // {
+            //     // Если Instance уже существует и это не мы — значит, появился дубликат игрока.
+            //     // Удаляем дубликат, чтобы не ломать игру.
+            //     Destroy(gameObject);
+            //     return;
+            // }
+            // Instance = this; // Сохраняем ссылку на себя
+
+            if (!AllPlayers.Contains(this))
+                AllPlayers.Add(this);
+
+            // Временно, пока нет NGO: LocalPlayer — всегда player_001
+            if (LocalPlayer == null || _playerId == "player_001")
+                LocalPlayer = this;
+
+            _controller = GetComponent<CharacterController>();
+            if (_controller == null)
+            {
+                Debug.LogError("CharacterController is missing on Player!", this);
+            }
+
+            _input = GetComponent<PlayerInputHandler>();
+            if (_input == null)
+            {
+                Debug.LogError("PlayerInputHandler is missing on Player!", this);
+            }
+
+            _cameraManager = GetComponent<CameraManager>();
+            if (_cameraManager == null)
+            {
+                Debug.LogError("CameraManager is missing on Player!", this);
+            }
+
+            _equipment = GetComponent<PlayerEquipment>();
+            if (_equipment == null)
+            {
+                Debug.LogError("PlayerEquipment is missing on Player!", this);
+            }
+
+            _buildMode = GetComponent<PlayerBuildMode>();
+            if (_buildMode == null)
+            {
+                Debug.LogError("PlayerBuildMode is missing on Player!", this);
+            }
+
+            _itemUsageSystem = GetComponent<ItemUsageSystem>();
+            if (_itemUsageSystem == null)
+            {
+                Debug.LogError("ItemUsageSystem is missing on Player!", this);
+            }
+
+            _ridingController = GetComponent<RidingController>();
+            if (_ridingController == null)
+            {
+                Debug.LogError("RidingController is missing on Player!", this);
+            }
+
+            _playerInput = GetComponent<PlayerInput>();
+            if (_playerInput == null)
+            {
+                Debug.LogError("PlayerInput is missing on Player!", this);
+            }
+
+            _progress = GetComponent<PlayerProgress>();
+            if (_progress != null)
+            {
+                _progress.RegisterPlayerController(this);
+            }
+            else
+            {
+                Debug.LogError("[PlayerController] PlayerProgress not found on this player!", this);
+            }
+
+            if (_mainCamera == null)
+            {
+                _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
+            }
+        }
+
+        private void Start()
+        {
+            _cinemachineTargetYaw = transform.eulerAngles.y;
+
+            // Сбрасываем возможный мусор в input'е от Input System
+            // (при инициализации дельта может быть гигантской)
+            _input.look = Vector2.zero;
+            _input.mouseScrollDelta = 0f;
+
+            _hasAnimator = _animator != null;
+
+            AssignAnimationIDs();
+
+            _survivalSystem = GetComponent<PlayerSurvivalSystem>();
+            if (_survivalSystem == null)
+            {
+                Debug.LogError("[PlayerController] PlayerSurvivalSystem not found on this player!", this);
+            }
+
+
+            _jumpTimeoutDelta = settings.JumpTimeout;
+            _fallTimeoutDelta = settings.FallTimeout;
+
+            _defaultCenter = _controller.center;
+            _defaultHeight = _controller.height;
+
+            if (Head != null) _initialHeadLocalEulerAngles = Head.localEulerAngles;
+            if (UI != null) UI.SetActive(true);
+
+
+        }
+
+        private void Update()
+        {
+            if (this != LocalPlayer) return;
+
+            _hasAnimator = _animator != null;
+
+            // === Верхом: физика игрока отключена ===
+            if (IsMounted)
+            {
+                // Обновляем только анимацию (IsMoving = false, Speed = 0)
+                if (_hasAnimator)
+                {
+                    _animator.SetBool(_animIDIsMoving, false);
+                    _animator.SetFloat(_animIDSpeed, 0f);
+                    _animator.SetBool(_animIDIsRiding, true); // ← Включаем позу езды
+                }
+                return;
+            }
+
+            // if (!Application.isFocused || LockCameraOnEsc) return;
+
+            _isMoving = _input.move.sqrMagnitude > 0.01f;
+            _isFullySubmerged = _isInWater && IsHeadUnderWater(); // флаг полного погружения
+            _isFloatingInWater = _isInWater && !Grounded; // флаг в воде, но не на дне
+            _isSwimming = _isFullySubmerged || _isFloatingInWater;
+            _isInSelfieMode = _input.selfieCamera;
+
+            if (_hasAnimator)
+            {
+                _animator.SetBool(_animIDIsMoving, _isMoving);
+            }
+
+            bool isNowUnderwater = IsCameraUnderWater();
+
+            if (isNowUnderwater != _wasCameraUnderwater)
+            {
+                VisualEffects?.SetUnderwater(isNowUnderwater);
+                _wasCameraUnderwater = isNowUnderwater;
+
+            }
+
+            if (_survivalSystem != null)
+            {
+                _survivalSystem.IsUnderwater = IsLossingOxygen();
+                _survivalSystem.CurrentMovementSpeed = _speed;
+            }
+
+
+            GroundedCheck();
+
+            CrouchAndCrawl();
+
+            JumpAndGravity();
+
+            TurnInPlace();
+
+
+            if (_onLadder)
+            {
+                OnLadder();
+            }
+            else if (_isSwimming)
+            {
+                Swim();
+            }
+            else
+            {
+                Move();
+            }
+
+            ChangeCharacterCollider();
+
+            if (!_isSwimming)
+            {
+                _input.ResetCrouch();
+                _input.ResetCrawl();
+            }
+
+            // Убирает инструмент из рук
+            if (_input.hideTool && _equipment.IsEquipped)
+            {
+                // Debug.Log($"[PlayerController] hideTool СРАБОТАЛ! Снимаем {equipment.GetCurrentItem()?.itemName}. timeScale={Time.timeScale}");
+                _equipment.Unequip();
+                _input.ResetHideTool();
+            }
+
+        }
+
+        private void OnEnable()
+        {
+            _input.OnFireTriggered += Attack;
+        }
+
+        private void OnDisable()
+        {
+            _input.OnFireTriggered -= Attack;
+        }
+
+        /// <summary>
+        /// Возвращает текущую горизонтальную скорость игрока.
+        /// CharacterController.velocity включает вертикальную скорость, поэтому берем только XZ.
+        /// </summary>
+        public float CurrentHorizontalSpeed
+        {
+            get
+            {
+                if (_controller != null)
+                {
+                    Vector3 horizontalVelocity = new(_controller.velocity.x, 0f, _controller.velocity.z);
+                    return horizontalVelocity.magnitude;
+                }
+                return 0f;
+            }
+        }
+
+        // Также можно добавить свойство для полной скорости, если нужно:
+        public float CurrentSpeed => _controller != null ? _controller.velocity.magnitude : 0f;
+
+
+        public float GetAttackDamage()
+        {
+            if (_equipment != null && _equipment.IsEquipped)
+            {
+                var item = _equipment.GetCurrentItem();
+                if (item != null)
+                {
+                    // Предполагаем, что в классе Item есть поле damage.
+                    // Если нет, добавьте public float damage; в класс Item.
+                    // Для примера используем заглушку или реальное поле:
+                    float damage = item.damage > 0 ? item.damage : 10f;
+                    // Debug.Log($"[PlayerController] Урон от экипированного предмета ({item.itemName}): {damage}");
+                    return damage;
+                }
+                else
+                {
+                    Debug.Log("[PlayerController] Экипирован предмет, но GetCurrentItem() вернул null");
+                }
+            }
+            else
+            {
+                // Debug.Log("[PlayerController] Оборудование отсутствует или не экипировано, урон кулаками: 10f");
+            }
+            return 10f; // Урон кулаками по умолчанию
+        }
+
+        public void Attack()
+        {
+            bool IsPanelOpened = _panelsController != null && _panelsController.IsPanelOpened();
+
+            if (!LockCamera && !IsPanelOpened)
+            {
+                // Если игрок верхом, атакует существo
+                if (IsMounted && _ridingController != null && _ridingController.CurrentMount != null)
+                {
+                    // Находим компонент Creature на существе и вызываем атаку
+                    var mountCreature = _ridingController.CurrentMount.GetComponent<Creature>();
+                    if (mountCreature != null)
+                    {
+                        mountCreature.Combat.AttackFromRider();
+                    }
+                    return; // Выходим, чтобы игрок не махал кулаками/топором
+                }
+
+                if (_hasAnimator)
+                {
+                    int animToPlay = _animIDAttackFist; // по умолчанию — кулаки
+
+                    if (_equipment.IsEquipped && !_buildMode.IsActive())
+                    {
+                        var currentItem = _equipment.GetCurrentItem();
+                        switch (currentItem.attackAnimation)
+                        {
+                            case AttackAnimationType.Axe:
+                            case AttackAnimationType.Pickaxe:
+                                animToPlay = _animIDAttackAxe;
+                                break;
+                            case AttackAnimationType.Sword:
+                                animToPlay = _animIDAttackSword;
+                                break;
+                            case AttackAnimationType.Bow:
+                                animToPlay = _animIDAttackBow;
+                                break;
+                            default:
+                                animToPlay = _animIDAttackFist;
+                                break;
+                        }
+
+                        // Вызываем эффект инструмента/оружия
+                        _equipment.UseCurrentTool();
+                    }
+
+                    // if (!_isMoving)
+                    if (!_buildMode.IsActive())
+                    {
+                        _animator.SetTrigger(animToPlay);
+                    }
+                }
+                // _input.ResetAttack();
+            }
+        }
+
+        private Vector3 _frozenCameraTargetPos;
+        private Quaternion _frozenCameraTargetRot;
+        private bool _cameraTargetFrozen;
+
+        private void LateUpdate()
+        {
+            if (this != LocalPlayer) return;
+
+            if (LockCamera && CinemachineCameraTarget != null)
+            {
+                if (!_cameraTargetFrozen)
+                {
+                    _frozenCameraTargetPos = CinemachineCameraTarget.transform.position;
+                    _frozenCameraTargetRot = CinemachineCameraTarget.transform.rotation;
+                    _cameraTargetFrozen = true;
+                }
+                CinemachineCameraTarget.transform.position = _frozenCameraTargetPos;
+                CinemachineCameraTarget.transform.rotation = _frozenCameraTargetRot;
+                return;
+            }
+            else
+            {
+                _cameraTargetFrozen = false;
+            }
+
+            CameraRotation();
+            HeadRotation();
+        }
+
+        private void OnLadder()
+        {
+            if (!_onLadder) return;
+
+            // --- Плавное направление ввода ---
+            Vector2 currentInput = _input.move;
+
+            // Плавно интерполируем направление
+            _smoothedInput = Vector2.Lerp(_smoothedInput, currentInput, Time.deltaTime * settings.InputSmoothingRate);
+
+            // Включаем гравитацию, если нажали прыжок — чтобы спрыгнуть
+            if (_input.jump && _jumpTimeoutDelta <= 0.0f)
+            {
+                _onLadder = false;
+                _verticalVelocity = Mathf.Sqrt(settings.JumpHeight * -2f * settings.Gravity); // обычный прыжок вверх
+                if (_hasAnimator)
+                    _animator.SetBool(_animIDJump, true);
+                _jumpTimeoutDelta = settings.JumpTimeout; // сброс таймера прыжка
+            }
+            else
+            {
+                // --- ВЕРТИКАЛЬНОЕ движение ---
+                float verticalInput = _smoothedInput.y;
+                float climbVelocity = verticalInput * settings.LadderClimbSpeed;
+                _verticalVelocity = climbVelocity;
+
+                // --- ГОРИЗОНТАЛЬНОЕ движение ---
+                _targetRotation = _cinemachineTargetYaw;
+                Vector3 horizontalMove = Quaternion.Euler(0.0f, _targetRotation, 0.0f) * new Vector3(_input.move.x, 0.0f, _input.move.y);
+                // Ограничь скорость, если нужно
+                horizontalMove *= settings.MoveSpeed * Time.deltaTime;
+
+                // Применяем и вертикальное, и горизонтальное движение
+                _controller.Move(horizontalMove + Vector3.up * (_verticalVelocity * Time.deltaTime));
+            }
+
+            // Обновляем анимации
+            if (_hasAnimator)
+            {
+                _animator.SetBool(_animIDOnLadder, _onLadder);
+                _animator.SetFloat(_animIDInputX, _smoothedInput.x);
+                _animator.SetFloat(_animIDInputY, _smoothedInput.y);
+                float totalInputMag = Mathf.Abs(_smoothedInput.y) + Mathf.Abs(_smoothedInput.x);
+                _animator.SetFloat(_animIDSpeed, totalInputMag * settings.LadderClimbSpeed);
+            }
+        }
+
+        private void ChangeCharacterCollider()
+        {
+            if (_isFullySubmerged || _isFloatingInWater)
+            {
+                _controller.center = _defaultCenter;
+                _controller.height = _isMoving ? settings.LieCharacterColliderHeight : _defaultHeight;
+            }
+            else if (_isCrawling || _isCrouching)
+            {
+                _controller.center = new(0f, 0.3f, 0f);
+                _controller.height = settings.LieCharacterColliderHeight;
+            }
+            else
+            {
+                _controller.center = _defaultCenter;
+                _controller.height = _defaultHeight;
+            }
+        }
+
+        private void Swim()
+        {
+            // Плавный ввод
+            _smoothedInput = Vector2.Lerp(_smoothedInput, _input.move, Time.deltaTime * settings.InputSmoothingRate);
+            float currentSwimSpeed = _input.sprint ? settings.SwimSprintSpeed : settings.SwimSpeed;
+            _animationBlend = Mathf.Lerp(_animationBlend, currentSwimSpeed, Time.deltaTime * settings.SpeedChangeRate);
+
+            bool isMoving = _smoothedInput.magnitude > 0.1f;
+
+            // Анимация
+            if (_hasAnimator)
+            {
+                _animator.SetBool(_animIDSwimming, true);
+                _animator.SetBool(_animIDIsMoving, false);
+                _animator.SetFloat(_animIDSpeed, _animationBlend);
+                _animator.SetFloat(_animIDInputX, _animationBlend * _smoothedInput.x);
+                _animator.SetFloat(_animIDInputY, _animationBlend * _smoothedInput.y);
+            }
+
+            // Направления
+            Vector3 forward = (_mainCamera ? _mainCamera.transform.forward : transform.forward);
+            Vector3 right = (_mainCamera ? _mainCamera.transform.right : transform.right);
+            forward.y = 0f; right.y = 0f;
+            forward.Normalize(); right.Normalize();
+            Vector3 moveDir = (forward * _smoothedInput.y + right * _smoothedInput.x).normalized;
+
+            float verticalInput = 0f;
+
+            // Разрешенный уровень головы над водой (шеи)
+            float posHead = (Head != null) ? Head.transform.position.y : transform.position.y + _controller.height - 0.1f;
+            // Если в покое, поднимем разрешенный уровень на settings.ShiftIdleAboveWater
+            float posHeadAboveWater = isMoving ? posHead : posHead - settings.ShiftIdleAboveWater;
+
+            float waterSurfaceY = transform.position.y; // fallback
+            bool hasWaterSurface = TryGetWaterSurfaceHeight(out waterSurfaceY);
+
+            // быстрое всплытие
+            if (_input.jump)
+            {
+                if (hasWaterSurface)
+                {
+                    if (posHeadAboveWater < waterSurfaceY)
+                    {
+                        verticalInput = settings.DiveUpJumpSpeed;
+                    }
+                    else
+                    {
+                        _input.ResetJump();
+                        verticalInput = 0f;
+                    }
+                }
+                else
+                {
+                    verticalInput = settings.DiveUpJumpSpeed;
+                }
+
+            }
+            // быстрое погружение
+            else if (_input.crouch)
+            {
+                verticalInput = settings.DiveDownCrouchSpeed;
+
+                if (Grounded)
+                {
+                    _input.ResetCrouch();
+                }
+            }
+            // движение в воде: погружение/всплытие
+            else if (isMoving)
+            {
+                if (hasWaterSurface)
+                {
+                    if (_cinemachineTargetPitch > settings.DiveCinemachineAngleDown)  // вниз
+                    {
+                        verticalInput = settings.DiveDownCrouchSpeed;
+                    }
+                    else if (_cinemachineTargetPitch < settings.DiveCinemachineAngleUp) // вверх
+                    {
+                        if (posHeadAboveWater < waterSurfaceY)
+                        {
+                            verticalInput = settings.DiveUpJumpSpeed;
+                        }
+                        else
+                        {
+                            verticalInput = 0f;
+                        }
+                    }
+                }
+                else
+                {
+                    verticalInput = 0f;
+                }
+            }
+            // Idle в воде: погружение
+            else
+            {
+                // Если находимся выше глубины settings.DepthIdleDownSlow - медленое погружение
+                if (posHeadAboveWater > waterSurfaceY - settings.DepthIdleDownSlow && !_isFreeFall)
+                {
+                    verticalInput = settings.DiveDownIdleSlowSpeed;
+                }
+                // быстрое погружение
+                else
+                {
+                    verticalInput = settings.DiveDownIdleSpeed;
+                }
+            }
+
+            // Debug.Log("verticalInput: " + verticalInput);
+
+            // Итоговое движение
+            Vector3 velocity = moveDir * currentSwimSpeed + Vector3.up * verticalInput * settings.SwimVerticalSpeed;
+            _controller.Move(velocity * Time.deltaTime);
+        }
+
+        private void Move()
+        {
+            if (!Application.isFocused || LockCamera || _onLadder) return;
+            // Сброс анимации плавания при обычном движении
+            if (_hasAnimator)
+            {
+                _animator.SetBool(_animIDSwimming, false);
+            }
+
+            // CharacterColliderLieDown(false);
+
+            // --- Плавное направление ввода ---
+            Vector2 currentInput = _input.move;
+
+            // Плавно интерполируем направление
+            _smoothedInput = Vector2.Lerp(_smoothedInput, currentInput, Time.deltaTime * settings.InputSmoothingRate);
+
+            // Вычисляем величину плавного ввода
+            float inputMagnitude = _smoothedInput.magnitude;
+            float desiredSpeed = _input.sprint ? settings.SprintSpeed : settings.MoveSpeed;
+            float targetSpeed = desiredSpeed * inputMagnitude;
+            float currentHorizontalSpeed = new Vector3(_controller.velocity.x, 0.0f, _controller.velocity.z).magnitude;
+            float speedOffset = 0.1f;
+
+            if (currentHorizontalSpeed < targetSpeed - speedOffset || currentHorizontalSpeed > targetSpeed + speedOffset)
+            {
+                _speed = Mathf.Lerp(currentHorizontalSpeed, targetSpeed, Time.deltaTime * settings.SpeedChangeRate);
+                _speed = Mathf.Round(_speed * 1000f) / 1000f;
+            }
+            else
+            {
+                _speed = targetSpeed;
+            }
+
+            // --- Плавное изменение анимации ---
+            _animationBlend = Mathf.Lerp(_animationBlend, targetSpeed, Time.deltaTime * settings.SpeedChangeRate);
+            if (_animationBlend < 0.01f)
+            {
+                _animationBlend = 0f;
+            }
+
+            // --- Поворот персонажа ---
+            _targetRotation = _cinemachineTargetYaw;
+            Vector3 targetDirection = Quaternion.Euler(0.0f, _targetRotation, 0.0f) * new Vector3(_input.move.x, 0.0f, _input.move.y);
+
+            // --- Движение ---
+            _controller.Move(targetDirection.normalized * (_speed * Time.deltaTime) + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
+
+            // --- Обновление аниматора ---
+            if (_hasAnimator)
+            {
+                _animator.SetBool(_animIDOnLadder, false); // вышли с лестницы — выключаем
+                _animator.SetFloat(_animIDInputX, _animationBlend * _smoothedInput.x);
+                _animator.SetFloat(_animIDInputY, _animationBlend * _smoothedInput.y);
+                _animator.SetFloat(_animIDSpeed, _animationBlend);
+            }
+
+        }
+
+        private void JumpAndGravity()
+        {
+            // Если на лестнице — гравитация отключена (уже управляется в Move)
+            if (_onLadder || _isFullySubmerged) return;
+
+            if (Grounded)
+            {
+                _fallTimeoutDelta = settings.FallTimeout;
+
+                if (_hasAnimator)
+                {
+                    _animator.SetBool(_animIDJump, false);
+                    _animator.SetBool(_animIDFreeFall, false);
+                    _isFreeFall = false;
+                }
+                if (_verticalVelocity < 0.0f)
+                {
+                    _verticalVelocity = -2f;
+                }
+                // Debug.Log("_jumpTimeoutDelta: " + _jumpTimeoutDelta);
+                // Jump
+                if (_input.jump && _jumpTimeoutDelta <= 0.0f)
+                {
+                    _verticalVelocity = Mathf.Sqrt(settings.JumpHeight * -2f * settings.Gravity);
+                    if (_hasAnimator)
+                    {
+                        _animator.SetBool(_animIDJump, true);
+                    }
+
+                    // Сбрасываем crouch и crawl при прыжке
+                    _isCrouching = false;
+                    _isCrawling = false;
+                    if (_hasAnimator)
+                    {
+                        _animator.SetBool(_animIDCrouch, false);
+                        _animator.SetBool(_animIDCrawl, false);
+                    }
+                }
+
+                // jump timeout
+                if (_jumpTimeoutDelta >= 0.0f)
+                {
+                    _jumpTimeoutDelta -= Time.deltaTime;
+                }
+            }
+            else
+            {
+                _jumpTimeoutDelta = settings.JumpTimeout;
+                if (_fallTimeoutDelta >= 0.0f)
+                {
+                    _fallTimeoutDelta -= Time.deltaTime;
+                }
+                else
+                {
+                    if (_hasAnimator)
+                    {
+                        _animator.SetBool(_animIDFreeFall, true);
+                        _isFreeFall = true;
+                    }
+                }
+                _input.jump = false;
+            }
+
+            if (_verticalVelocity < settings.TerminalVelocity)
+            {
+                _verticalVelocity += settings.Gravity * Time.deltaTime;
+            }
+        }
+
+        private void CrouchAndCrawl()
+        {
+            if (!_isInWater && Grounded)
+            {
+                // Если нажали Crouch
+                if (_input.crouch)
+                {
+                    if (_isCrawling)
+                    {
+                        // Выходим из crawl → переходим в crouch
+                        _isCrawling = false;
+                        _isCrouching = true;
+                    }
+                    else
+                    {
+                        // Toggle crouch
+                        _isCrouching = !_isCrouching;
+                    }
+                }
+
+                // Если нажали Crawl
+                if (_input.crawl)
+                {
+                    if (_isCrouching)
+                    {
+                        // Выходим из crouch → переходим в crawl
+                        _isCrouching = false;
+                        _isCrawling = true;
+                    }
+                    else
+                    {
+                        // Toggle crawl
+                        _isCrawling = !_isCrawling;
+                    }
+                }
+            }
+            else
+            {
+                // В воде или в воздухе — нельзя crouch/crawl
+                _isCrouching = false;
+                _isCrawling = false;
+            }
+
+            // Применяем к аниматору
+            if (_hasAnimator)
+            {
+                _animator.SetBool(_animIDCrouch, _isCrouching);
+                _animator.SetBool(_animIDCrawl, _isCrawling);
+            }
+        }
+
+        private void TurnInPlace()
+        {
+            if (!_hasAnimator) return;
+
+            if (_isMoving || LockCamera || _isInSelfieMode)
+            {
+                _currentTurnSpeed = 0f;
+                _animator.SetFloat(_animIDTurnSpeed, 0f);
+                _animator.SetBool(_animIDIsTurning, false);
+                return;
+            }
+            float rotationAmount = settings.KeyboardTurnSpeed * Time.deltaTime;
+            bool turningLeft = _input.GetTurnLeft();
+            bool turningRight = _input.GetTurnRight();
+            float targetTurnSpeed = 0f;
+
+            if (turningRight)
+            {
+                _cinemachineTargetYaw += rotationAmount;
+                targetTurnSpeed = 1f;
+            }
+            else if (turningLeft)
+            {
+                _cinemachineTargetYaw -= rotationAmount;
+                targetTurnSpeed = -1f;
+            }
+            else
+            {
+                targetTurnSpeed = Mathf.Clamp(_input.look.x, -1f, 1f);
+            }
+
+            _currentTurnSpeed = Mathf.MoveTowards(_currentTurnSpeed, targetTurnSpeed, Time.deltaTime * 8f);
+
+            _animator.SetFloat(_animIDTurnSpeed, _currentTurnSpeed);
+            _animator.SetBool(_animIDIsTurning, Mathf.Abs(_currentTurnSpeed) > 0.1f);
+
+        }
+
+        private void GroundedCheck()
+        {
+            Vector3 spherePosition = new Vector3(transform.position.x, transform.position.y - settings.GroundedOffset, transform.position.z);
+            Grounded = Physics.CheckSphere(spherePosition, settings.GroundedRadius, settings.GroundLayers, QueryTriggerInteraction.Ignore);
+            if (_hasAnimator) _animator.SetBool(_animIDGrounded, Grounded);
+        }
+
+        private void CameraRotation()
+        {
+            // Не вращать камеру, если позиция заблокирована
+            if (!Application.isFocused || LockCamera || _isInSelfieMode) return;
+            // Не вращать камеру если вращаем фундамент
+            if (_buildMode != null && _buildMode.IsActive() && _buildMode.IsRotatingPreview()) return;
+            // Не вращать камеру пока загрузочный экран
+            if (LoadingScreenManager.Instance != null && LoadingScreenManager.Instance.IsLoading) return;
+            // Не вращать камеру при Selfie — этим занимается SelfieCameraOrbit
+            if (_cameraManager != null && _cameraManager.IsSelfie) return;
+
+
+            // Поворачиваем тело на _cinemachineTargetYaw (на лестнице тело не поворачиваем)
+            // Верхом тело игрока тоже не поворачиваем — оно в седле.
+            if (!_onLadder && !IsMounted)
+            {
+                transform.rotation = Quaternion.Euler(0.0f, _cinemachineTargetYaw, 0.0f);
+            }
+
+            // Позиция цели камеры = глаза
+            CinemachineCameraTarget.transform.position = EyeCenterForCamera.position;
+
+            if (IsMounted)
+            {
+                if (_input.look.sqrMagnitude >= _threshold)
+                {
+                    float deltaTimeMultiplier = IsCurrentDeviceMouse ? 1.0f : Time.deltaTime;
+                    _cinemachineTargetYaw += _input.look.x * deltaTimeMultiplier;
+                    _cinemachineTargetPitch += _input.look.y * deltaTimeMultiplier;
+                }
+                _input.look = Vector2.zero;
+
+                _cinemachineTargetYaw = PlayerUtils.ClampAngle(_cinemachineTargetYaw, float.MinValue, float.MaxValue);
+                _cinemachineTargetPitch = PlayerUtils.ClampAngle(_cinemachineTargetPitch, settings.BottomClamp, settings.TopClamp);
+
+                CinemachineCameraTarget.transform.rotation = Quaternion.Euler(
+                    _cinemachineTargetPitch + settings.CameraAngleOverride,
+                    _cinemachineTargetYaw,
+                    0.0f
+                );
+                return;
+            }
+
+            // Камера должна следовать глазам, но не должна применяться анимация персонажа к камере, 
+            // поэтому прикрепим ее к EyeCenterForCamera, которую установим посредине глаз
+            CinemachineCameraTarget.transform.position = new Vector3(
+                EyeCenterForCamera.position.x,
+                EyeCenterForCamera.position.y,
+                EyeCenterForCamera.position.z
+            );
+
+            if (_input.look.sqrMagnitude >= _threshold)
+            {
+                float deltaTimeMultiplier = IsCurrentDeviceMouse ? 1.0f : Time.deltaTime;
+                _cinemachineTargetYaw += _input.look.x * deltaTimeMultiplier;
+                _cinemachineTargetPitch += _input.look.y * deltaTimeMultiplier;
+            }
+
+            _input.look = Vector2.zero;
+
+            _cinemachineTargetYaw = PlayerUtils.ClampAngle(_cinemachineTargetYaw, float.MinValue, float.MaxValue);
+            _cinemachineTargetPitch = PlayerUtils.ClampAngle(_cinemachineTargetPitch, settings.BottomClamp, settings.TopClamp);
+
+            // Ограничение поворота камеры на лестнице
+            if (_onLadder)
+            {
+                float bodyYaw = transform.eulerAngles.y;
+                float delta = Mathf.DeltaAngle(bodyYaw, _cinemachineTargetYaw);
+                delta = Mathf.Clamp(delta, -90f, 90f);
+                _cinemachineTargetYaw = bodyYaw + delta;
+            }
+
+            // Поворачиваем тело на _cinemachineTargetYaw (на лестнице тело не поворачиваем)
+            if (!_onLadder)
+            {
+                transform.rotation = Quaternion.Euler(0.0f, _cinemachineTargetYaw, 0.0f);
+            }
+
+            // Камера всегда поворачивается на _cinemachineTargetYaw (теперь уже ограниченный!)
+            CinemachineCameraTarget.transform.rotation = Quaternion.Euler(
+                _cinemachineTargetPitch + settings.CameraAngleOverride,
+                _cinemachineTargetYaw,
+                0.0f
+            );
+
+        }
+
+        private void HeadRotation()
+        {
+            if (Head != null && _isInSelfieMode)
+            {
+                Head.localRotation = Quaternion.Euler(_initialHeadLocalEulerAngles);
+            }
+            if (Head != null && !LockCamera && !_isInSelfieMode)
+            {
+                if (_onLadder)
+                {
+                    // Голова просто повторяет разницу между камерой и телом
+                    float headYawOffset = Mathf.DeltaAngle(transform.eulerAngles.y, _cinemachineTargetYaw);
+                    Head.localRotation = Quaternion.Euler(
+                        _cinemachineTargetPitch + settings.CameraAngleOverride,
+                        headYawOffset,
+                        0f
+                    );
+                }
+                else
+                {
+                    Head.localRotation = Quaternion.Euler(_cinemachineTargetPitch + settings.CameraAngleOverride, 0f, 0f);
+                }
+            }
+
+
+        }
+
+        private bool IsCameraUnderWater()
+        {
+            if (_mainCamera == null) return false;
+            Vector3 cameraPos = _mainCamera.transform.position;
+            float radius = 0.01f;
+            // Проверяем, есть ли вода в точке камеры
+            Collider[] colliders = Physics.OverlapSphere(cameraPos, radius, settings.WaterLayers);
+            foreach (var col in colliders)
+            {
+                // Убедимся, что это именно вода (на всякий случай)
+                if ((settings.WaterLayers & (1 << col.gameObject.layer)) != 0)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private bool IsHeadUnderWater()
+        {
+            if (_mainCamera == null) return false;
+            Vector3 headPos = _mainCamera.transform.position;
+            float radius = 1.0f; //0.5f;
+            return Physics.OverlapSphere(headPos, radius, settings.WaterLayers).Length > 0;
+        }
+
+        private bool IsLossingOxygen()
+        {
+            if (EyeCenterForCamera == null) return false;
+            Vector3 eyesPos = EyeCenterForCamera.position;
+            float radius = 0.0f;
+            return Physics.OverlapSphere(eyesPos, radius, settings.WaterLayers).Length > 0;
+        }
+
+        private bool IsPlayerAboveWater()
+        {
+            Vector3 pos = transform.position;
+            float radius = 0f;
+            return Physics.OverlapSphere(pos, radius, settings.WaterLayers).Length > 0;
+        }
+
+        private bool TryGetWaterSurfaceHeight(out float surfaceY)
+        {
+            surfaceY = float.NegativeInfinity;
+
+            // Ищем ближайший водный коллайдер
+            Collider[] waterColliders = Physics.OverlapSphere(transform.position, 20f, settings.WaterLayers);
+            float highestSurface = float.NegativeInfinity;
+
+            foreach (var col in waterColliders)
+            {
+                // bounds.max.y — верхняя граница водного объёма
+                if (col.bounds.max.y > highestSurface)
+                {
+                    highestSurface = col.bounds.max.y;
+                }
+            }
+
+            if (highestSurface > float.NegativeInfinity)
+            {
+                surfaceY = highestSurface;
+                return true;
+            }
+
+            return false;
+        }
+
+        private void OnTriggerEnter(Collider other)
+        {
+
+            if (other.CompareTag("Ladder"))
+            {
+                _onLadder = true;
+            }
+            else if (settings.WaterLayers != 0 && (settings.WaterLayers & (1 << other.gameObject.layer)) != 0)
+            {
+                _isInWater = true;
+            }
+        }
+
+        private void OnTriggerExit(Collider other)
+        {
+            if (other.CompareTag("Ladder"))
+            {
+                _onLadder = false;
+            }
+            else if (settings.WaterLayers != 0 && (settings.WaterLayers & (1 << other.gameObject.layer)) != 0)
+            {
+                _isInWater = false;
+
+                if (_verticalVelocity > 0)
+                {
+                    _verticalVelocity = 0f; // не даём "выскочить" вверх
+                }
+
+                // Анимация: если выскакиваем — можно проиграть прыжок/приземление
+                if (_hasAnimator && _verticalVelocity < -1f)
+                {
+                    _animator.SetBool(_animIDFreeFall, true);
+                    _isFreeFall = true;
+                }
+            }
+        }
+
+        private void OnDrawGizmosSelected()
+        {
+            Color transparentGreen = new Color(0.0f, 1.0f, 0.0f, 0.35f);
+            Color transparentRed = new Color(1.0f, 0.0f, 0.0f, 0.35f);
+
+            if (Grounded) Gizmos.color = transparentGreen;
+            else Gizmos.color = transparentRed;
+
+            if (settings.ShowCustomGizmo)
+            {
+                // when selected, draw a gizmo in the position of, and matching radius of, the grounded collider
+                Gizmos.DrawSphere(
+                    new Vector3(transform.position.x, transform.position.y - settings.GroundedOffset, transform.position.z),
+                    settings.GroundedRadius);
+
+                // Показать позицию CinemachineCameraTarget
+                if (CinemachineCameraTarget != null)
+                {
+                    Gizmos.color = Color.red;
+                    Gizmos.DrawWireSphere(CinemachineCameraTarget.transform.position, 0.1f);
+                }
+            }
+        }
+
+        private void OnDestroy()
+        {
+
+            Debug.LogWarning($"[PlayerController] Уничтожается игрок {_playerId}. Стек вызовов:\n{System.Environment.StackTrace}");
+
+            AllPlayers.Remove(this);
+            if (LocalPlayer == this) LocalPlayer = null;
+            _progress.UnregisterPlayerController();
+        }
+
+
+
+        private void AssignAnimationIDs()
+        {
+            _animIDSpeed = Animator.StringToHash("Speed");
+            _animIDGrounded = Animator.StringToHash("Grounded");
+            _animIDJump = Animator.StringToHash("Jump");
+            _animIDFreeFall = Animator.StringToHash("FreeFall");
+            _animIDInputX = Animator.StringToHash("inputX");
+            _animIDInputY = Animator.StringToHash("inputY");
+            _animIDCrouch = Animator.StringToHash("Crouch");
+            _animIDCrawl = Animator.StringToHash("Crawl");
+            _animIDIsMoving = Animator.StringToHash("IsMoving");
+            _animIDSwimming = Animator.StringToHash("IsSwimming");
+            _animIDIsTurning = Animator.StringToHash("IsTurning");
+            _animIDOnLadder = Animator.StringToHash("OnLadder");
+            _animIDTurnSpeed = Animator.StringToHash("TurnSpeed");
+            _animIDPickup = Animator.StringToHash("Pickup");
+            _animIDAttackFist = Animator.StringToHash("AttackFist");
+            _animIDAttackAxe = Animator.StringToHash("AttackAxe");
+            _animIDAttackSword = Animator.StringToHash("AttackSword");
+            _animIDAttackBow = Animator.StringToHash("ShootingBow");
+            _animIDIsRiding = Animator.StringToHash("IsRiding");
+        }
+    }
+}
+```
+--- END OF FILE: Assets\Scripts\Player\PlayerController.cs ---

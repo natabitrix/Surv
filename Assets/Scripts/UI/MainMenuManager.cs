@@ -72,17 +72,22 @@ namespace Assets.Scripts.UI
             SetRealPause(false);
             SetCursorVisible(false);
 
-            // Перечитываем файл перед загрузкой сцены
-            // PlayerProgress.Instance?.ReloadFromFile();
-            var playerProgress = PlayerController.LocalPlayer.GetComponent<PlayerProgress>();
-            if (playerProgress != null)
-            {
-                playerProgress.ReloadFromFile();
-            }
-            else
-            {
-                Debug.LogError("[MainMenuManager] PlayerProgress not found!", this);
-            }
+            // // Перечитываем файл перед загрузкой сцены
+            // if(PlayerController.LocalPlayer == null)
+            // {
+            //     Debug.LogError("[MainMenuManager] PlayerController.LocalPlayer is null!", this);
+            //     return;
+            // }
+
+            // var playerProgress = PlayerController.LocalPlayer.GetComponent<PlayerProgress>();
+            // if (playerProgress != null)
+            // {
+            //     playerProgress.ReloadFromFile();
+            // }
+            // else
+            // {
+            //     Debug.LogError("[MainMenuManager] PlayerProgress not found!", this);
+            // }
             
 
             // ✅ Показываем загрузочный экран

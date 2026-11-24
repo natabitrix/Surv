@@ -101,9 +101,6 @@ namespace Assets.Scripts.UI
             SetRealPause(false);
             SetCursorVisible(false);
 
-            // if (PlayerProgress.Instance != null)
-            //     PlayerProgress.Instance.Save("DeathScreen.QuitToMainMenu");
-
            var playerProgress = _playerController.GetComponent<PlayerProgress>();
 
             if (playerProgress != null)

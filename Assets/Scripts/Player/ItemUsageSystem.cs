@@ -9,7 +9,6 @@ namespace Assets.Scripts.Player
 {
     public class ItemUsageSystem : MonoBehaviour
     {
-        // private PlayerSurvivalSystem _survival => PlayerSurvivalSystem.Instance;
         // === НОВОЕ: Локальная ссылка вместо синглтона ===
         private PlayerSurvivalSystem _survivalSystem;
 

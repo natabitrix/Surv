@@ -80,7 +80,25 @@ namespace Assets.Scripts.Crafting
             //     tooltipText = $"Требуется уровень: {_data.recipe.requiredLevel}";
             // }
 
+            string availableText;
+            // string availableText = _data.isAvailable ? "Доступна для изучения" : "Недоступна";
+            // string unlockedText = _data.isUnlocked ? "Изучена" : "Неизучена";
+
             tooltipText = $"{_data.recipe.description}\nОчки энграмм: {_data.recipe.engramPointsCost}\nТребуется уровень: {_data.recipe.requiredLevel}";
+            if (_data.isAvailable)
+            {
+                availableText = "Доступна для изучения";
+                if (_data.isUnlocked)
+                {
+                    availableText = "";
+                }
+            }
+            else
+            {
+                availableText = "Для изучения нехватает очков";
+            }
+
+            tooltipText += $"\n{availableText}";
 
             var ingList = new List<(int amount, Item item)>();
 

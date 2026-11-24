@@ -27,6 +27,29 @@ namespace Assets.Scripts.InventorySystem
             }
         }
 
+        public void Clear(int newSize)
+        {
+            size = newSize;
+
+            if (slots == null || slots.Count != size)
+            {
+                slots = new List<InventorySlot>(size);
+                for (int i = 0; i < size; i++)
+                    slots.Add(new InventorySlot());
+            }
+            else
+            {
+                for (int i = 0; i < slots.Count; i++)
+                {
+                    slots[i].item = null;
+                    slots[i].count = 0;
+                    slots[i].currentDurability = -1f;
+                }
+            }
+
+            NotifyChanged();
+        }
+
         public int AddItemAnywhere(Item item, int amount = 1, float durability = -2f)
         {
             if (item == null || amount <= 0) return 0;
@@ -67,8 +90,16 @@ namespace Assets.Scripts.InventorySystem
                 NotifyChanged();
             }
 
-            var progress = PlayerController.LocalPlayer.GetComponent<PlayerProgress>();
-            progress.Save("InventoryData.AddItemAnywhere");
+            // var progress = PlayerController.LocalPlayer.GetComponent<PlayerProgress>();
+            // progress.Save("InventoryData.AddItemAnywhere");
+
+            var localPlayer = PlayerController.LocalPlayer;
+            if (localPlayer != null)
+            {
+                var progress = localPlayer.GetComponent<PlayerProgress>();
+                if (progress != null)
+                    progress.Save("InventoryData.AddItemAnywhere");
+            }
 
             return added;
         }

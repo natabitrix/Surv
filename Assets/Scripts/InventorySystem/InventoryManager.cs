@@ -871,7 +871,7 @@ namespace Assets.Scripts.InventorySystem
 
 
         // Обновление UI при смене экипировки
-        private void RefreshAllUIs()
+        public void RefreshAllUIs()
         {
             var inventoryUI = FindAnyObjectByType<InventoryUI>();
             var hotbarUI = FindAnyObjectByType<HotbarUI>();

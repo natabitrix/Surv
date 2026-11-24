@@ -78,7 +78,7 @@ namespace Assets.Scripts.InventorySystem
             _progress.OnPlayerLoaded += RefreshUI;
 
             InitializeSlots();
-            RefreshUI();   // ⚠️ обязательно! слоты только что созданы — заполнить их
+            RefreshUI(); 
         }
 
         private void InitializeSlots()
@@ -143,6 +143,7 @@ namespace Assets.Scripts.InventorySystem
                 return;
             }
             Subscribe();
+            RefreshUI();
         }
 
         private IEnumerator SubscribeWhenReady()

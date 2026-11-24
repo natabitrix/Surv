@@ -42,10 +42,6 @@ namespace Assets.Scripts.UI
 
         private StatConfigData _config;
 
-        // // Ленивые свойства — всегда актуальные
-        // private PlayerProgress _playerProgress => PlayerProgress.Instance;
-        // private PlayerSurvivalSystem _survivalSystem => PlayerSurvivalSystem.Instance;
-
         // === НОВОЕ: Локальные ссылки вместо синглтонов ===
         private PlayerProgress _playerProgress;
         private PlayerSurvivalSystem _survivalSystem;
