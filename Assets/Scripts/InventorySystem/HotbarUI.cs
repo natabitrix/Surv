@@ -51,42 +51,25 @@ namespace Assets.Scripts.InventorySystem
 
         private IEnumerator InitializeWhenReady()
         {
-            // 1. Ждём появления LocalPlayer
             while (PlayerController.LocalPlayer == null)
                 yield return null;
 
-            // 2. Биндимся к нему (перечитываем каждый раз — игрок мог пересоздаться)
             TryBindToLocalPlayer();
 
-            // 3. Ждём, пока PlayerProgress создаст InventoryData
             while (_progress == null || _progress.mainInventoryData == null || _progress.hotbarInventoryData == null)
                 yield return null;
 
-            // 4. Ждём InventoryManager и PlayerInputHandler (они на игроке)
             while (_inventoryManager == null || _inputHandler == null)
             {
                 TryBindToLocalPlayer();
                 yield return null;
             }
 
-            // === ДОБАВЛЕНО: подписка на OnPlayerLoaded до первого RefreshUI ===
-            // LoadData() в PlayerProgress заполняет слоты, но может НЕ вызывать
-            // NotifyChanged на hotbarInventoryData. OnPlayerLoaded — гарантированный
-            // сигнал «сейв полностью загружен, InventoryData заполнены».
-            // Подписываемся здесь, чтобы поймать момент, когда слоты уже с данными,
-            // но OnInventoryChanged ещё не сработал.
-            if (_progress != null)
-            {
-                _progress.OnPlayerLoaded -= RefreshUI;   // защита от двойной подписки
-                _progress.OnPlayerLoaded += RefreshUI;
-            }
+            // УДАЛЕНО (Шаг 3.2): подписка на _progress.OnPlayerLoaded (хаб заменит)
 
-            // 5. Создаём слоты и заполняем их
             InitializeSlots();
             RefreshUI();
 
-            // 6. Если объект был активен до готовности — переустановим подписки
-            //    (OnEnable мог отработать вхолостую)
             if (isActiveAndEnabled)
             {
                 Subscribe();
@@ -158,28 +141,15 @@ namespace Assets.Scripts.InventorySystem
         {
             if (_inputHandler != null)
             {
-                _inputHandler.OnHotbarSlotPressed -= HandleHotbarInput;   // защита от двойной
+                _inputHandler.OnHotbarSlotPressed -= HandleHotbarInput;
                 _inputHandler.OnHotbarSlotPressed += HandleHotbarInput;
             }
 
-            if (_progress?.hotbarInventoryData != null)
+            // ИЗМЕНЕНО (Шаг 3.2): подписка на хаб вместо трёх событий данных
+            if (InventoryEventsHub.Instance != null)
             {
-                _progress.hotbarInventoryData.OnInventoryChanged -= RefreshUI;
-                _progress.hotbarInventoryData.OnInventoryChanged += RefreshUI;
-            }
-
-            if (_progress?.mainInventoryData != null)
-            {
-                _progress.mainInventoryData.OnInventoryChanged -= RefreshUI;
-                _progress.mainInventoryData.OnInventoryChanged += RefreshUI;
-            }
-
-            // Если OnEnable сработал раньше загрузки сейва, OnInventoryChanged
-            // мог не прийти. OnPlayerLoaded гарантированно вызывается после LoadData().
-            if (_progress != null)
-            {
-                _progress.OnPlayerLoaded -= RefreshUI;
-                _progress.OnPlayerLoaded += RefreshUI;
+                InventoryEventsHub.Instance.OnChanged -= HandleHubChanged;
+                InventoryEventsHub.Instance.OnChanged += HandleHubChanged;
             }
         }
 
@@ -188,16 +158,19 @@ namespace Assets.Scripts.InventorySystem
             if (_inputHandler != null)
                 _inputHandler.OnHotbarSlotPressed -= HandleHotbarInput;
 
-            // === отписка от hotbarInventoryData (симметрично подписке) ===
-            if (_progress?.hotbarInventoryData != null)
-                _progress.hotbarInventoryData.OnInventoryChanged -= RefreshUI;
+            // ИЗМЕНЕНО (Шаг 3.2): отписка от хаба
+            if (InventoryEventsHub.Instance != null)
+                InventoryEventsHub.Instance.OnChanged -= HandleHubChanged;
+        }
 
-            if (_progress?.mainInventoryData != null)
-                _progress.mainInventoryData.OnInventoryChanged -= RefreshUI;
-
-            // === отписка от OnPlayerLoaded ===
-            if (_progress != null)
-                _progress.OnPlayerLoaded -= RefreshUI;
+        private void HandleHubChanged(InventoryChangeKind kind)
+        {
+            if (kind == InventoryChangeKind.MainInventory
+                || kind == InventoryChangeKind.HotbarInventory
+                || kind == InventoryChangeKind.All)
+            {
+                RefreshUI();
+            }
         }
 
         /// <summary>
@@ -230,18 +203,13 @@ namespace Assets.Scripts.InventorySystem
 
         public void RefreshUI()
         {
-            // === ДОБАВЛЕНО: ленивая привязка перед проверкой ===
-            // Если хотбар включился раньше, чем игрок заспавнился, OnEnable
-            // мог выйти по раннему return. Здесь подтягиваем ссылки.
+            // ДОБАВЛЕНО (Шаг 3.2): хотбар болванчика не обновляем — только LocalPlayer
+            if (PlayerController.LocalPlayer != null && PlayerController.LocalPlayer != _inventoryManager?.PlayerController)
+                return;
+
             if (_progress == null || _inventoryManager == null || _inputHandler == null)
                 TryBindToLocalPlayer();
 
-            // === ДОБАВЛЕНО: снимок полей (snapshot) ===
-            // Фиксируем ссылки на момент начала отрисовки.
-            // Если внутри SetSlot что-то пересоздаст игрока (респавн, смена сцены
-            // из UI-колбэка), локальные переменные останутся валидными,
-            // а _progress / _inventoryManager — могут стать null или указать
-            // на устаревший объект.
             var progress = _progress;
             var invManager = _inventoryManager;
 
@@ -250,11 +218,6 @@ namespace Assets.Scripts.InventorySystem
             if (slotUIs == null || slotUIs.Count == 0)
                 return;
 
-            // удалено: var equipment = _inventoryManager != null ? _inventoryManager.Equipment : null;
-            // удалено: var buildMode = _inventoryManager != null ? _inventoryManager.BuildMode : null;
-            // === ИЗМЕНЕНО: используем локальный снимок invManager, а не поле ===
-            // Это гарантирует, что Equipment/BuildMode берутся у того же
-            // InventoryManager, что был валиден на момент проверки выше.
             var equipment = invManager != null ? invManager.Equipment : null;
             var buildMode = invManager != null ? invManager.BuildMode : null;
 
@@ -276,9 +239,6 @@ namespace Assets.Scripts.InventorySystem
             for (int i = 0; i < count; i++)
             {
                 if (slotUIs[i] == null) continue;
-                // === ИЗМЕНЕНО: используем локальный снимок progress ===
-                // (было: progress.hotbarInventoryData.slots.Count — теперь то же,
-                // но progress — локальная переменная, а не поле)
                 if (i >= progress.hotbarInventoryData.slots.Count) continue;
 
                 slotUIs[i].SetSlot(progress.hotbarInventoryData.slots[i]);

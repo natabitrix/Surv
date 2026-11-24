@@ -24,7 +24,7 @@ namespace Assets.Scripts.Crafting
                         {
                             recipe = recipe,
                             isUnlocked = false, // по умолчанию — не изучена
-                            isAvailable = true
+                            isAvailableByLevel = true
                         });
                     }
                 }
@@ -41,7 +41,7 @@ namespace Assets.Scripts.Crafting
                 var slot = slots[i];
                 if (slot == null) continue;
                 slot.isUnlocked = false;
-                slot.isAvailable = true;
+                slot.isAvailableByLevel = true;
             }
 
             NotifyChanged();

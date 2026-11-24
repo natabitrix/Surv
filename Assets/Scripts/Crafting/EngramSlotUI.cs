@@ -53,52 +53,56 @@ namespace Assets.Scripts.Crafting
             pointsText.text = _data.recipe.engramPointsCost.ToString();
 
             lockedOverlay.SetActive(!_data.isUnlocked);
-            availableOverlay.SetActive(!_data.isAvailable);
+            availableOverlay.SetActive(!_data.isAvailableByLevel);
 
 
-            // string ingText = "Ингридиенты:\n";
-            // foreach (var ing in _data.recipe.ingredients)
-            // {
-            //     ingText += $"{ing.amount}x {ing.item.itemName}\n";
-            // }
+            var recipe = _data.recipe;
 
+            // 1. Базовая информация
             string tooltipName = _data.recipe.craftedItem.itemName;
-            string tooltipText = "";
+            string description = recipe.craftedItem.description;
 
-            // // Изучена
-            // if (_data.isUnlocked)
-            // {
-            //     tooltipText = $"{_data.recipe.description}";
-            // }
-            // // Доступна для изучения
-            // else if (_data.isAvailable)
-            // {
-            //     tooltipText = $"{_data.recipe.description}\n\nОчки энграмм: {_data.recipe.engramPointsCost}";
-            // }
-            // else
-            // {
-            //     tooltipText = $"Требуется уровень: {_data.recipe.requiredLevel}";
-            // }
+            // 2. Требования
+            string requirementsText = $"<color=#FFD700>Требуется уровень:</color> {recipe.requiredLevel}\n" +
+                                      $"<color=#FFD700>Стоимость очков:</color> {recipe.engramPointsCost}";
 
-            string availableText;
-            // string availableText = _data.isAvailable ? "Доступна для изучения" : "Недоступна";
-            // string unlockedText = _data.isUnlocked ? "Изучена" : "Неизучена";
+            // 3. Статус изучения и доступности
+            string statusText;
 
-            tooltipText = $"{_data.recipe.description}\nОчки энграмм: {_data.recipe.engramPointsCost}\nТребуется уровень: {_data.recipe.requiredLevel}";
-            if (_data.isAvailable)
+            if (_data.isUnlocked)
             {
-                availableText = "Доступна для изучения";
-                if (_data.isUnlocked)
-                {
-                    availableText = "";
-                }
+                // Если уже изучено
+                statusText = "<color=#00FF00>Изучено</color>";
             }
             else
             {
-                availableText = "Для изучения нехватает очков";
+                // Если не изучено, проверяем доступность
+                bool hasLevel = _data.isAvailableByLevel;
+                bool hasPoints = _data.isAvailableByPoints;
+
+                if (hasLevel && hasPoints)
+                {
+                    // Доступно для изучения
+                    statusText = "<color=#00FFFF>Доступно для изучения</color>";
+                }
+                else
+                {
+                    // Недоступно + причины в одном блоке, красным, каждая с новой строки
+                    var reasons = new List<string>();
+                    if (!hasLevel) reasons.Add($"Нужен хватает уровня");
+                    if (!hasPoints) reasons.Add("Не хватает очков энграмм");
+
+                    statusText = "<color=#FF4444>Недоступно</color>";
+                    foreach (var r in reasons)
+                        statusText += $"\n<color=#FF4444>{r}</color>";
+                }
             }
 
-            tooltipText += $"\n{availableText}";
+            // 4. Сборка финального текста
+            // Используем \n для переноса строк. 
+            // Можно использовать HTML-теги Unity UI (Rich Text), если они включены в TextMeshPro.
+            string tooltipText = $"{requirementsText}\n\n{statusText}";
+
 
             var ingList = new List<(int amount, Item item)>();
 
@@ -125,7 +129,7 @@ namespace Assets.Scripts.Crafting
 
         public void OnPointerClick(PointerEventData eventData)
         {
-            if (_data == null || _data.recipe == null || !_data.isAvailable) return;
+            if (_data == null || _data.recipe == null || !_data.isAvailableByLevel) return;
 
             // Обрабатываем ТОЛЬКО двойной клик ЛКМ
             if (eventData.button == PointerEventData.InputButton.Left && eventData.clickCount >= 2)
@@ -194,7 +198,7 @@ namespace Assets.Scripts.Crafting
 
             // Уведомление
             NotificationManager.Instance?.Show(
-                $"Изучено: {_data.recipe.recipeName}",
+                $"Изучено: {_data.recipe.craftedItem.itemName}",
                 _data.recipe.craftedItem.icon
             );
 

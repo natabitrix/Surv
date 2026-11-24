@@ -421,11 +421,15 @@ namespace Assets.Scripts.InventorySystem
             {
                 _progress.hotbarInventoryData.RemoveItemFromSlot(_selectedSlotIndex, 1);
                 _progress.hotbarInventoryData.NotifyChanged();
+                // ДОБАВЛЕНО (Шаг 2.3): хотбар изменился
+                InventoryEventsHub.Instance?.Notify(InventoryChangeKind.HotbarInventory);
             }
             else if (_selectedSlotOwner == SlotOwner.Inventory)
             {
                 _progress.mainInventoryData.RemoveItemFromSlot(_selectedSlotIndex, 1);
                 _progress.mainInventoryData.NotifyChanged();
+                // ДОБАВЛЕНО (Шаг 2.3): основной инвентарь изменился
+                InventoryEventsHub.Instance?.Notify(InventoryChangeKind.MainInventory);
             }
 
             _progress.Save("InventoryManager.HandleStructurePlaced");
@@ -439,11 +443,13 @@ namespace Assets.Scripts.InventorySystem
 
             InventorySlot slot = null;
             InventoryData sourceData = null;
+            bool fromHotbar = false;   // ДОБАВЛЕНО (Шаг 2.3): флаг источника
 
             if (owner == SlotOwner.Hotbar && localSlotIndex < _progress.hotbarInventoryData.slots.Count)
             {
                 slot = _progress.hotbarInventoryData.slots[localSlotIndex];
                 sourceData = _progress.hotbarInventoryData;
+                fromHotbar = true;      // ДОБАВЛЕНО (Шаг 2.3)
             }
             else if (owner == SlotOwner.Inventory && localSlotIndex < _progress.mainInventoryData.slots.Count)
             {
@@ -509,6 +515,10 @@ namespace Assets.Scripts.InventorySystem
             }
 
             _progress.Save("InventoryManager.DropItemFromSlot");
+
+            // ДОБАВЛЕНО (Шаг 2.3): уведомить хаб, какой инвентарь изменился
+            if (fromHotbar) InventoryEventsHub.Instance?.Notify(InventoryChangeKind.HotbarInventory);
+            else InventoryEventsHub.Instance?.Notify(InventoryChangeKind.MainInventory);
 
             if (NotificationManager.Instance != null)
             {
@@ -652,6 +662,12 @@ namespace Assets.Scripts.InventorySystem
             }
 
             sourceData.NotifyChanged();
+
+            // ДОБАВЛЕНО (Шаг 2.3): уведомить хаб, какой инвентарь очистился
+            if (ReferenceEquals(sourceData, _progress.hotbarInventoryData))
+                InventoryEventsHub.Instance?.Notify(InventoryChangeKind.HotbarInventory);
+            else if (ReferenceEquals(sourceData, _progress.mainInventoryData))
+                InventoryEventsHub.Instance?.Notify(InventoryChangeKind.MainInventory);
 
             NotificationManager.Instance?.Show($"Выброшено в сумку: {itemsToDrop.Count} стаков", null);
         }
@@ -824,6 +840,8 @@ namespace Assets.Scripts.InventorySystem
                 // 5. Обновляем UI
                 RefreshAllUIs();
                 _progress.Save("InventoryManager.Repair");
+                // ДОБАВЛЕНО (Шаг 2.3): ингредиенты ушли из mainInventory
+                InventoryEventsHub.Instance?.Notify(InventoryChangeKind.MainInventory);
             }
             else
             {

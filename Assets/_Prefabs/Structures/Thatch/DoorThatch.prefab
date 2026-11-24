@@ -137,6 +137,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 15787343cbaefcb4c82a59bf8e7cb694, type: 3}
       insertIndex: -1
       addedObject: {fileID: 7028273129788350680}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 15787343cbaefcb4c82a59bf8e7cb694, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1103546990109287381}
   m_SourcePrefab: {fileID: 100100000, guid: 15787343cbaefcb4c82a59bf8e7cb694, type: 3}
 --- !u!1 &2457779902201808527 stripped
 GameObject:
@@ -193,8 +196,30 @@ MonoBehaviour:
   item: {fileID: 0}
   corpse: {fileID: 0}
   creature: {fileID: 0}
-  corpseMenuConfig: {fileID: 0}
-  structureMenuConfig: {fileID: 11400000, guid: cbd3b435a9ede6d4dacf9b8f2859f735, type: 2}
+  structure: {fileID: 0}
+  chest: {fileID: 0}
+--- !u!114 &1103546990109287381
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2457779902201808527}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45545c713a2edce46b998fff276af9a6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Structures.Structure
+  item: {fileID: 11400000, guid: 938dc7da04b99c241ae2ae136228de68, type: 2}
+  _interactionCollider: {fileID: 8377165408501276779}
+  _inventory: {fileID: 0}
+  health: 0
+  maxHealth: 5000
+  breakEffect: {fileID: 0}
+  shatterer: {fileID: 0}
+  hitDecaler: {fileID: 0}
+  animator: {fileID: 0}
+  _impactType: 3
 --- !u!4 &2976907254007405621 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 15787343cbaefcb4c82a59bf8e7cb694, type: 3}

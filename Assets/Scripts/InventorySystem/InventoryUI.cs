@@ -24,42 +24,6 @@ namespace Assets.Scripts.InventorySystem
         public InventoryManager InventoryManager => _inventoryManager;
         public PlayerProgress PlayerProgress => _progress;
 
-        // void Awake()
-        // {
-        //     InitializeSlots();
-        // }
-
-        // private void Start()
-        // private IEnumerator Start()
-        // {
-        //     var localPlayer = PlayerController.LocalPlayer;
-        //     // Ждем, пока PlayerController зарегистрируется
-        //     while (localPlayer == null)
-        //         yield return null;
-
-        //     // if (localPlayer != null)
-        //     // {
-        //     _inventoryManager = localPlayer.GetComponent<InventoryManager>();
-        //     _progress = localPlayer.GetComponent<PlayerProgress>();
-        //     // if (_inventoryManager != null)
-        //     // {
-        //     //     _progress = _inventoryManager.Progress;
-        //     // }
-        //     // }
-
-        //     if (_progress == null)
-        //     {
-        //         Debug.LogError("[InventoryUI] Не удалось получить PlayerProgress!");
-        //     }
-        //     else
-        //     {
-        //         // === ПОДПИСКА НА ЗАГРУЗКУ ===
-        //         _progress.OnPlayerLoaded += RefreshUI;
-        //     }
-
-        //     InitializeSlots();
-        // }
-
         private IEnumerator Start()
         {
             while (PlayerController.LocalPlayer == null)
@@ -75,10 +39,11 @@ namespace Assets.Scripts.InventorySystem
                 yield break;
             }
 
-            _progress.OnPlayerLoaded += RefreshUI;
+            // УДАЛЕНО (Шаг 3.1): _progress.OnPlayerLoaded += RefreshUI;
+            // (хаб заменит это событие)
 
             InitializeSlots();
-            RefreshUI(); 
+            RefreshUI();
         }
 
         private void InitializeSlots()
@@ -100,49 +65,21 @@ namespace Assets.Scripts.InventorySystem
             isInitialized = true;
         }
 
-
-        // private void OnEnable()
-        // {
-        //     // Подписываемся на события локального инвентаря
-        //     if (_inventoryManager == null || _progress == null)
-        //     {
-        //         var localPlayer = PlayerController.LocalPlayer;
-        //         if (localPlayer != null)
-        //         {
-        //             _inventoryManager = localPlayer.GetComponent<InventoryManager>();
-        //             _progress = localPlayer.GetComponent<PlayerProgress>();
-        //             // if (_inventoryManager != null)
-        //             // {
-        //             //     _progress = _inventoryManager.Progress;
-        //             // }
-        //         }
-        //     }
-
-        //     if (_progress == null)
-        //     {
-        //         Debug.LogError("InventoryUI.OnEnable: PlayerProgress is null!");
-        //         return;
-        //     }
-
-        //     if (_progress.mainInventoryData == null)
-        //     {
-        //         Debug.LogError("InventoryUI.OnEnable: PlayerProgress.mainInventoryData is null!");
-        //         return;
-        //     }
-
-        //     _progress.mainInventoryData.OnInventoryChanged += RefreshUI;
-        //     RefreshUI();
-
-        // }
-
         private void OnEnable()
         {
+            // ИЗМЕНЕНО (Шаг 3.1): подписка на хаб вместо mainInventoryData.OnInventoryChanged
+            if (InventoryEventsHub.Instance != null)
+            {
+                InventoryEventsHub.Instance.OnChanged -= HandleHubChanged;
+                InventoryEventsHub.Instance.OnChanged += HandleHubChanged;
+            }
+
             if (_progress == null || _progress.mainInventoryData == null)
             {
                 StartCoroutine(SubscribeWhenReady());   // вместо return
                 return;
             }
-            Subscribe();
+            // Subscribe();
             RefreshUI();
         }
 
@@ -154,22 +91,25 @@ namespace Assets.Scripts.InventorySystem
             _progress = lp.GetComponent<PlayerProgress>();
             while (_progress == null || _progress.mainInventoryData == null) yield return null;
 
-            Subscribe();
+            // УДАЛЕНО (Шаг 3.1): Subscribe(); — подписка уже в OnEnable
             RefreshUI();
         }
 
-        private void Subscribe()
-        {
-            _progress.mainInventoryData.OnInventoryChanged -= RefreshUI;  // защита от двойной
-            _progress.mainInventoryData.OnInventoryChanged += RefreshUI;
-        }
+        // private void Subscribe()
+        // {
+        //     _progress.mainInventoryData.OnInventoryChanged -= RefreshUI;  // защита от двойной
+        //     _progress.mainInventoryData.OnInventoryChanged += RefreshUI;
+        // }
 
         private void OnDisable()
         {
-            if (_progress != null && _progress.mainInventoryData != null)
-            {
-                _progress.mainInventoryData.OnInventoryChanged -= RefreshUI;
-            }
+            // if (_progress != null && _progress.mainInventoryData != null)
+            // {
+            //     _progress.mainInventoryData.OnInventoryChanged -= RefreshUI;
+            // }
+            // ИЗМЕНЕНО (Шаг 3.1): отписка от хаба
+            if (InventoryEventsHub.Instance != null)
+                InventoryEventsHub.Instance.OnChanged -= HandleHubChanged;
         }
 
         public void RefreshUI()
@@ -215,10 +155,19 @@ namespace Assets.Scripts.InventorySystem
 
         private void OnDestroy()
         {
-            if (_progress != null)
-            {
-                _progress.OnPlayerLoaded -= RefreshUI;
-            }
+            // if (_progress != null)
+            // {
+            //     _progress.OnPlayerLoaded -= RefreshUI;
+            // }
+            // ИЗМЕНЕНО (Шаг 3.1): отписка от хаба (было — от OnPlayerLoaded)
+            if (InventoryEventsHub.Instance != null)
+                InventoryEventsHub.Instance.OnChanged -= HandleHubChanged;
+        }
+
+        private void HandleHubChanged(InventoryChangeKind kind)
+        {
+            if (kind == InventoryChangeKind.MainInventory || kind == InventoryChangeKind.All)
+                RefreshUI();
         }
 
     }

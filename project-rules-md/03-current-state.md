@@ -61,6 +61,8 @@
 - `IInventorySource : IInteractable` — реализуют `Corpse`, `Creature`, `ChestController`, `LootBag`, `Structure`. `OnInventoryOpened/Closed` вызываются менеджером.
 - `ChestUI.Close()` **принудительно** вызывает `SetSlot(null)` для всех слотов. Иначе остаются «призраки» после закрытия.
 - `ChestInventory.IsCorpseInventory()` — определяет по префиксу `saveKey`: `Corpse_`, `PlayerCorpse_`, `CreatureCorpse_`, `TamingCorpse_`, `LootBag_`. Для таких `Save()`/`Load()` — no-op, а `OnDestroy` удаляет `Chest_*.save`, если был.
+- InventoryData/EngramData не пересоздаются при LoadData/ReloadFromFile. Используются Clear(newSize) / Reset() — подписки UI (OnInventoryChanged, OnEngramsChanged) не рвутся.
+- InventoryUI.OnEnable вызывает RefreshUI после Subscribe — иначе при крафте на вкладке «Ремесло» (когда InventoryUI выключен) UI не обновляется до перетаскивания.
 
 **Ловушки:**
 - `ReferenceEquals(CurrentSource, this)` вместо `==` — иначе CS0252 (Unity Object == null).

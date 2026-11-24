@@ -57,16 +57,6 @@ namespace Assets.Scripts.InventorySystem
         private PlayerInputHandler _inputHandler;
         private ItemUsageRouter _itemUsageRouter;
 
-        private void Awake()
-        {
-
-            // _inputHandler = FindAnyObjectByType<PlayerInputHandler>();
-            // _itemUsageRouter = FindAnyObjectByType<ItemUsageRouter>();
-            // _inputHandler = _inventoryManager.InputHandler;
-            // _itemUsageRouter = _inventoryManager.ItemUsageRouter;
-            // _progress = _inventoryManager.Progress;
-        }
-
         // Заменяем ссылки на MonoBehaviour индексами и флагами
         private bool IsChestSlot => owner == SlotOwner.Chest;
         private bool IsHotBarSlot => owner == SlotOwner.Hotbar;
@@ -193,7 +183,7 @@ namespace Assets.Scripts.InventorySystem
         public void SetSlot(InventorySlot slot)
         {
             EnsureReferences();
-            
+
             if (this == null || gameObject == null || icon == null)
                 return;
 
@@ -243,10 +233,15 @@ namespace Assets.Scripts.InventorySystem
                 var ingList = new List<(int amount, Item item)>();
                 ingList.Clear();
 
+                string durabilityText = "";
+
                 if (slot.item.hasDurability)
                 {
                     Recipe recipe = GameAssets.Instance?.RecipeDatabase.GetRecipeForItem(slot.item);
                     var invData = _progress.mainInventoryData;
+
+                    durabilityText = $"\n\nПрочность: {Mathf.RoundToInt(slot.currentDurability)} / {slot.item.maxDurability}";
+
                     float repairMultiplier = invData.GetRepairMultiplier(slot.item.maxDurability, slot.currentDurability);
 
                     foreach (var ing in recipe.ingredients)
@@ -262,9 +257,12 @@ namespace Assets.Scripts.InventorySystem
                     ingList = null;
                 }
 
+
+                string tooltipText = $"{slot.item.description}{durabilityText}";
+
                 _tooltipTrigger = TooltipTrigger.AddTooltip(
                     gameObject,
-                    slot.item.description,
+                    tooltipText,
                     slot.item.itemName,
                     icon.sprite,
                     ingList,
@@ -487,6 +485,12 @@ namespace Assets.Scripts.InventorySystem
             if (!success)
             {
                 ReturnToOriginalSlot();
+                // ДОБАВЛЕНО: если originalSlot не найден (ChestUI закрылся) — принудительно вернуть в DragContext
+                if (GetOriginalSlot() == null && DragContext.draggedItem != null && DragContext.draggedCount > 0)
+                {
+                    // Не смогли вернуть — предмет потерян. Логируем и очищаем.
+                    Debug.LogError($"[InventorySlotUI] Не удалось вернуть {DragContext.draggedItem.itemName} x{DragContext.draggedCount} — оригинальный слот недоступен (источник закрыт?). Предмет потерян.");
+                }
             }
 
             CleanupDragContext();

@@ -197,6 +197,9 @@ namespace Assets.Scripts.Core
                 GiveBeginnerItems();
                 Save("PlayerProgress.LoadData");
             }
+
+            // ДОБАВЛЕНО (Шаг 2.2): загрузка завершена — обновить всё
+            InventoryEventsHub.Instance?.Notify(InventoryChangeKind.All);
         }
 
         void LoadData_OLD()
@@ -310,6 +313,7 @@ namespace Assets.Scripts.Core
             _loadedSaveData = null;
             LoadData();
             OnPlayerLoaded?.Invoke();
+            InventoryEventsHub.Instance?.Notify(InventoryChangeKind.All);
         }
 
         /// <summary>
@@ -441,6 +445,9 @@ namespace Assets.Scripts.Core
                 ShowLevelUpNote(playSound: false);  // просто обновить ноту без звука
 
             OnProgressChanged?.Invoke();
+
+            // уведомить хаб об изменении статов
+            InventoryEventsHub.Instance?.Notify(InventoryChangeKind.Stats);
         }
 
         public float GetBaseValue(StatType statType)
@@ -492,6 +499,9 @@ namespace Assets.Scripts.Core
             );
 
             OnProgressChanged?.Invoke();
+            // статы + очки энграмм изменились
+            InventoryEventsHub.Instance?.Notify(InventoryChangeKind.Stats);
+            InventoryEventsHub.Instance?.Notify(InventoryChangeKind.Engrams);
             return true;
         }
 
@@ -501,6 +511,8 @@ namespace Assets.Scripts.Core
             {
                 _engramPoints -= cost;
                 OnProgressChanged?.Invoke(); // уведомляем UI об изменении
+                // очки энграмм изменились
+                InventoryEventsHub.Instance?.Notify(InventoryChangeKind.Engrams);
                 return true;
             }
             return false;
@@ -513,10 +525,13 @@ namespace Assets.Scripts.Core
             {
                 if (slot.recipe != null)
                 {
-                    slot.isAvailable = _level >= slot.recipe.requiredLevel;
+                    slot.isAvailableByLevel = Level >= slot.recipe.requiredLevel;
+                    slot.isAvailableByPoints = EngramPoints >= slot.recipe.engramPointsCost;
                 }
             }
             engramData.NotifyChanged();
+            // доступность энграмм изменилась (уровень вырос)
+            InventoryEventsHub.Instance?.Notify(InventoryChangeKind.Engrams);
         }
 
         // Возвращает количество реально добавленных предметов (0..amount)
@@ -524,11 +539,11 @@ namespace Assets.Scripts.Core
         {
             if (item == null || amount <= 0) return 0;
 
-            // Определяем прочность: если не передали, ставим макс. для инструментов
             float finalDurability = (durability == -2f) ? (item.hasDurability ? item.maxDurability : -1f) : durability;
             int remaining = amount;
+            bool addedToHotbar = false;
+            bool addedToMain = false;
 
-            // === ШАГ 1: Закреплённый слот в хотбаре ===
             if (hotbarSlotMap.TryGetValue(item.Id, out int hotbarSlotIndex) &&
                 hotbarSlotIndex >= 0 && hotbarSlotIndex < hotbarInventoryData.slots.Count)
             {
@@ -550,28 +565,26 @@ namespace Assets.Scripts.Core
                             slot.count += add;
                         }
                         remaining -= add;
+                        addedToHotbar = true;               // ДОБАВЛЕНО (Шаг 2.2): флаг
                         hotbarInventoryData.NotifyChanged();
-                        // Debug.Log($"[AddItem] Добавлено {add}x {item.itemName} в закреплённый слот хотбара {hotbarSlotIndex}");
                     }
                 }
             }
 
-            // === ШАГ 2: Остаток — в основной инвентарь ===
             if (remaining > 0)
             {
-                int addedToMain = mainInventoryData.AddItemAnywhere(item, remaining, finalDurability);
-                remaining -= addedToMain;
-                if (addedToMain > 0)
-                {
-                    // Debug.Log($"[AddItem] Добавлено {addedToMain}x {item.itemName} в основной инвентарь");
-                }
+                int addedToMainCount = mainInventoryData.AddItemAnywhere(item, remaining, finalDurability);
+                remaining -= addedToMainCount;
+                if (addedToMainCount > 0) addedToMain = true;   // ДОБАВЛЕНО (Шаг 2.2): флаг
             }
 
             int actuallyAdded = amount - remaining;
             if (actuallyAdded > 0)
             {
-                // Save("PlayerProgress.AddItemToPlayerInventory");
                 OnProgressChanged?.Invoke();
+                // ДОБАВЛЕНО (Шаг 2.2): уведомить хаб, куда именно добавилось
+                if (addedToMain) InventoryEventsHub.Instance?.Notify(InventoryChangeKind.MainInventory);
+                if (addedToHotbar) InventoryEventsHub.Instance?.Notify(InventoryChangeKind.HotbarInventory);
             }
             else
             {

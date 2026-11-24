@@ -93,13 +93,13 @@ namespace Assets.Scripts.InventorySystem
             // var progress = PlayerController.LocalPlayer.GetComponent<PlayerProgress>();
             // progress.Save("InventoryData.AddItemAnywhere");
 
-            var localPlayer = PlayerController.LocalPlayer;
-            if (localPlayer != null)
-            {
-                var progress = localPlayer.GetComponent<PlayerProgress>();
-                if (progress != null)
-                    progress.Save("InventoryData.AddItemAnywhere");
-            }
+            // var localPlayer = PlayerController.LocalPlayer;
+            // if (localPlayer != null)
+            // {
+            //     var progress = localPlayer.GetComponent<PlayerProgress>();
+            //     if (progress != null)
+            //         progress.Save("InventoryData.AddItemAnywhere");
+            // }
 
             return added;
         }

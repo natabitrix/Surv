@@ -18,7 +18,10 @@
 ---
 
 ## 🔧 Доработки (мелкие, «пока руки дойдут»)
-
+- [ ] Крафт: ресурсы только в хотбаре → рецепт серый (неактивен) — CraftingSlotUI.RefreshVisual/TryCraft не видят hotbarInventoryData или подписка на hotbarInventoryData.OnInventoryChanged не установлена. Закроется в Шаге 3.4 (CraftingUI на хаб).
+- [ ] Не работает атака на зажатие E - должна повторяться пока зажата.
+- [ ] Drag из сумки (LootBag) в инвентарь — панель закрывается, иконка висит, предмет не добавляется. Repro: открыть сумку → перетащить предмет в инвентарь. Вероятно: ChestUI.Instance уничтожается при ChestUIManager.Close(), GetOriginalSlot() возвращает null, ReturnToOriginalSlot не возвращает. Не связано с Шагом 1/2. Чинить после Шага 3.
+- [ ] «Выбросить всё» из сумки создаёт новую сумку — InventoryManager.DropItemsFromChest → DropAllItemsToBag всегда создаёт сумку. Нужно: если источник — LootBag, просто очистить инвентарь + ForceDespawn (не создавать новую). Недоработка, не баг.
 - [ ] **`CorpseManager.RemoveAliveComponentsFromCreatureCorpse`** — проверить, что при загрузке трупа `Animator` не остаётся включённым (сейчас `Destroy(anim)`, а `HealthMaterialBlender` требует, чтобы кости были в T-позе).
 - [ ] **`PlayerEquipment.Unequip` при поломке инструмента** — сейчас вызывается в `OnAttackInteractFinished` при `durability <= 0`, но `ItemHandler.DestroyItem` может не сработать (нет проверки).
 - [ ] **`LootBag.CreateLootBagFromItems`** — если `items.Count == 0`, лог `Debug.LogWarning` не должен ронять создание. Проверить.
@@ -68,7 +71,7 @@
 ## ✅ Закрыто (архив последних 10)
 
 > Полная история — в git log. Здесь только чтобы помнить контекст.
-
+- [x] Шаг 1 (N-player / события инвентаря): InventoryData.Clear(size), EngramData.Reset(), PlayerProgress.LoadData не пересоздаёт контейнеры, ReloadFromFile → OnPlayerLoaded. InventoryUI.OnEnable → RefreshUI. Закрывает баги 3, 9, 16 (частично).
 - [x] **E на трупе существа не тащил тело** — `CreatureInteractable` оставался `enabled` и перехватывал `OnInteractFinished`. Фикс: `PlayerInteraction.PickPrimaryInteractTarget()` с приоритетом `Corpse`, фильтр в `ProcessHitObject`, `Destroy(CreatureInteractable)` в `CorpseManager.RemoveAliveComponentsFromCreatureCorpse`.
 - [x] **Упрощение создания существ**: `Creature` добавляет все подсистемы через `AddComponent` в `Awake`. На префабе — только `Animator`, `NavMeshAgent`, `Creature`.
 - [x] **Единый источник данных**: `CreatureData` — единственный источник правды для статов, звуков, `impactType`. Дублирующие поля из `Creature` удалены.

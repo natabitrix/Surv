@@ -8,8 +8,8 @@ namespace Assets.Scripts.Crafting
     [CreateAssetMenu(fileName = "New Recipe", menuName = "Crafting/Recipe")]
     public class Recipe : ScriptableObject
     {
-        public string recipeName;
-        public string description;
+        // public string recipeName;
+        // public string description;
         // public Sprite icon;
         
         public Item craftedItem;

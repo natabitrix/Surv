@@ -51,7 +51,7 @@ namespace Assets.Scripts.Core
         public GameObject LootBagPrefab => _lootBagPrefab;
         public NotificationSoundConfig NotificationSoundConfig => _notificationSoundConfig;
         public RadialMenuGlobalConfig RadialMenuGlobalConfig => _radialMenuGlobalConfig;
-        
+
 
 
         private bool _isPrimary = false;
@@ -94,6 +94,9 @@ namespace Assets.Scripts.Core
             // LoadingScreenManager, AudioManager, LanguageManager — уже компоненты
             // на этом GameObject. Их Awake вызовется Unity автоматически.
             // Не создаём их кодом — иначе будут дубли.
+
+            // глобальный хаб событий инвентаря
+            CreateChildManager<InventoryEventsHub>("InventoryEventsHub");
 
             // Создаём тех, у кого нет UI-ссылок и кто не на этом объекте.
             CreateChildManager<GameController>("GameController", m =>

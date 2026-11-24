@@ -21,41 +21,12 @@ namespace Assets.Scripts.Crafting
         private InventoryManager _inventoryManager;
         private PlayerProgress _progress;
 
-        // void Start()
-        // {
-        //     // Ищем InventoryManager на этом же игроке (или на LocalPlayer, если UI глобальный)
-        //     var localPlayer = PlayerController.LocalPlayer;
-        //     if (localPlayer != null)
-        //     {
-        //         _inventoryManager = localPlayer.GetComponent<InventoryManager>();
-        //         if (_inventoryManager != null)
-        //         {
-        //             _progress = _inventoryManager.Progress;
-        //         }
-        //     }
-
-        //     if (_progress == null)
-        //     {
-        //         Debug.LogError("[EngramUI] Не удалось получить PlayerProgress!");
-        //     }
-
-        //     if (_progress != null)
-        //     {
-        //         // Берём данные из PlayerProgress
-        //         _engramData = _progress.engramData;
-
-        //         RebuildUI();
-        //         _engramData.OnEngramsChanged += RebuildUI;
-        //     }
-
-        // }
-
         private IEnumerator Start()
         {
             while (PlayerController.LocalPlayer == null)
                 yield return null;
 
-            var localPlayer = PlayerController.LocalPlayer;   // читаем ПОСЛЕ цикла
+            var localPlayer = PlayerController.LocalPlayer;
             _inventoryManager = localPlayer.GetComponent<InventoryManager>();
             _progress = localPlayer.GetComponent<PlayerProgress>();
 
@@ -65,10 +36,17 @@ namespace Assets.Scripts.Crafting
                 yield break;
             }
 
-            _progress.OnPlayerLoaded += RebuildUI;
-
             _engramData = _progress.engramData;
-            _engramData.OnEngramsChanged += RebuildUI;
+
+            // УДАЛЕНО (Шаг 3.3): _progress.OnPlayerLoaded += RebuildUI;
+            // УДАЛЕНО (Шаг 3.3): _engramData.OnEngramsChanged += RebuildUI;
+
+            // ДОБАВЛЕНО (Шаг 3.3): подписка на хаб
+            if (InventoryEventsHub.Instance != null)
+            {
+                InventoryEventsHub.Instance.OnChanged -= HandleHubChanged;
+                InventoryEventsHub.Instance.OnChanged += HandleHubChanged;
+            }
 
             RebuildUI();
         }
@@ -89,6 +67,10 @@ namespace Assets.Scripts.Crafting
 
         void RebuildUI()
         {
+            // ДОБАВЛЕНО (Шаг 3.3): защита от null и от неготовности
+            if (_engramData == null || slotParent == null || slotPrefab == null)
+                return;
+
             foreach (Transform t in slotParent) Destroy(t.gameObject);
             _slotUIs.Clear();
 
@@ -105,16 +87,40 @@ namespace Assets.Scripts.Crafting
             }
         }
 
+        private void HandleHubChanged(InventoryChangeKind kind)
+        {
+            // ДОБАВЛЕНО (Шаг 3.3): энграммы или полная загрузка/респавн
+            if (kind == InventoryChangeKind.Engrams || kind == InventoryChangeKind.All)
+            {
+                _engramData = _progress != null ? _progress.engramData : null;
+                RebuildUI();
+            }
+
+            if (kind == InventoryChangeKind.Stats || kind == InventoryChangeKind.All)
+                OnEngramPointsChanged();
+        }
+
         // Вызывается, когда меняются очки энграмм
         public void OnEngramPointsChanged()
         {
-            Debug.Log($"Энграммы: {_progress.EngramPoints}");
+            // ИЗМЕНЕНО (Шаг 3.3): обновляем текст, а не только Debug.Log (баг 17)
+            if (engramPointsText != null && _progress != null)
+                engramPointsText.text = _progress.EngramPoints.ToString();
         }
 
         public void UnlockRecipe(Recipe recipe)
         {
             _engramData.UnlockRecipe(recipe);
             _progress.Save("EngramUI.UnlockRecipe");
+            // ДОБАВЛЕНО (Шаг 3.3): уведомить хаб, что энграммы изменились
+            InventoryEventsHub.Instance?.Notify(InventoryChangeKind.Engrams);
+        }
+
+        private void OnDestroy()
+        {
+            // ДОБАВЛЕНО (Шаг 3.3): отписка от хаба
+            if (InventoryEventsHub.Instance != null)
+                InventoryEventsHub.Instance.OnChanged -= HandleHubChanged;
         }
     }
 }

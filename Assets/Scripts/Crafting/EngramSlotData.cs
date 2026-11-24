@@ -7,8 +7,9 @@ namespace Assets.Scripts.Crafting
     public class EngramSlotData
     {
         public Recipe recipe;           // ссылка на рецепт
-        public bool isUnlocked = true;         // изучена ли
-        public bool isAvailable = true; // можно ли изучить (например, по уровню)
+        public bool isUnlocked = false;         // изучена ли
+        public bool isAvailableByLevel = false; // можно ли изучить по уровню
+        public bool isAvailableByPoints = false; // хватает ли кол-ва очков
 
         public bool IsEmpty => recipe == null;
     }
