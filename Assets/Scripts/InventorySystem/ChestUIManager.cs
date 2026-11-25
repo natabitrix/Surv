@@ -89,7 +89,6 @@ namespace Assets.Scripts.InventorySystem
             {
                 PanelsUIController.Instance.OpenOtherInventory();
             }
-            
         }
 
         /// <summary>
@@ -110,6 +109,7 @@ namespace Assets.Scripts.InventorySystem
                 Close();
             else
                 Open(source);
+
         }
 
         /// <summary>

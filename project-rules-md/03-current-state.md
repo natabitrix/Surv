@@ -63,6 +63,9 @@
 - `ChestInventory.IsCorpseInventory()` — определяет по префиксу `saveKey`: `Corpse_`, `PlayerCorpse_`, `CreatureCorpse_`, `TamingCorpse_`, `LootBag_`. Для таких `Save()`/`Load()` — no-op, а `OnDestroy` удаляет `Chest_*.save`, если был.
 - InventoryData/EngramData не пересоздаются при LoadData/ReloadFromFile. Используются Clear(newSize) / Reset() — подписки UI (OnInventoryChanged, OnEngramsChanged) не рвутся.
 - InventoryUI.OnEnable вызывает RefreshUI после Subscribe — иначе при крафте на вкладке «Ремесло» (когда InventoryUI выключен) UI не обновляется до перетаскивания.
+InventoryEventsHub — глобальный хаб ([GameAssets], DontDestroyOnLoad). Notify(kind) из PlayerProgress/InventoryManager/EngramUI.UnlockRecipe. UI подписываются только на хаб (OnChanged), не на InventoryData.OnInventoryChanged напрямую.
+- InventoryUI/HotbarUI/EngramUI/CraftingUI — подписка в OnEnable/Start, отписка в OnDisable/OnDestroy. Реагируют на свой набор InventoryChangeKind.
+- CraftingSlotUI — не подписывается на InventoryData, пересоздаётся CraftingUI.RebuildUI. RefreshVisual берёт актуальные _progress.mainInventoryData/hotbarInventoryData каждый раз.
 
 **Ловушки:**
 - `ReferenceEquals(CurrentSource, this)` вместо `==` — иначе CS0252 (Unity Object == null).

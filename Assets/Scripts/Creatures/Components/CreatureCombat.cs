@@ -241,14 +241,23 @@ namespace Assets.Scripts.Creatures.Components
             }
 
             // Если не верхом, бьем игрока
-            // Получаем ссылки на системы ТЕКУЩЕГО локального игрока
-            var localPlayer = PlayerController.LocalPlayer;
-            if (localPlayer == null) return; // Или ошибка
+            // ИЗМЕНЕНО (Шаг 3.5): бьём цель, которую нашёл AI (_wildTargetTransform), а не LocalPlayer.
+            // Fallback на LocalPlayer — если _wildTargetTransform == null (старое поведение).
+            var targetPlayer = _wildTargetTransform != null
+                ? _wildTargetTransform.GetComponentInParent<PlayerSurvivalSystem>()
+                : null;
 
-            // Сейчас наносится урон только локальному игроку, переделать чтобы любому когда будет сеть
-            var survival = localPlayer.GetComponent<PlayerSurvivalSystem>();
-            survival.TakeDamage(_creature.AttackDamage);
-            
+            if (targetPlayer == null)
+            {
+                // Fallback: LocalPlayer (синглплеер, или AI не нашёл цель)
+                var localPlayer = PlayerController.LocalPlayer;
+                if (localPlayer == null) return;
+                targetPlayer = localPlayer.GetComponent<PlayerSurvivalSystem>();
+            }
+
+            if (targetPlayer != null)
+                targetPlayer.TakeDamage(_creature.AttackDamage);
+
         }
 
         public void ResetAttackState()

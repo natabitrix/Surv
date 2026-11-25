@@ -84,13 +84,6 @@ namespace Assets.Scripts.Core
 
         private void Awake()
         {
-            // if (Instance != null && Instance != this)
-            // {
-            //     Destroy(gameObject);
-            //     return;
-            // }
-            // Instance = this;
-            // // Сценовый менеджер — умирает вместе со сценой, DontDestroyOnLoad не нужен.
             _progress = GetComponent<PlayerProgress>();
             if (_progress == null)
             {
@@ -100,18 +93,6 @@ namespace Assets.Scripts.Core
 
         private void Start()
         {
-            // Восстанавливаем статы из сохранения (загружено PlayerProgress).
-            // var loadedData = _progress?.GetLoadedSaveData();
-            // if (loadedData != null)
-            // {
-            //     LoadFrom(loadedData);
-            // }
-            // else
-            // {
-            //     Debug.LogWarning("[PlayerSurvivalSystem] loadedData == null, используем дефолт.");
-            //     ResetToDefaults();
-            // }
-
             // Восстанавливаем статы из сохранения (загружено PlayerProgress).
             var loadedData = _progress?.GetLoadedSaveData();
             if (loadedData != null)
@@ -153,23 +134,23 @@ namespace Assets.Scripts.Core
 
         private IEnumerator OnPlayerDeathRoutine()
         {
-            var pc = PlayerController.LocalPlayer;
+            var pc = _progress != null ? _progress.playerController : null;
+            // Debug.Log($"[PlayerSurvivalSystem] OnPlayerDeathRoutine: _progress={(_progress != null ? "OK" : "NULL")}, pc={(pc != null ? pc.name : "NULL")}");
+
             if (pc == null) yield break;
 
-            // 0. Спешиваемся если были верхом
             pc?.RidingController?.CurrentMount?.ForceDismount();
 
-            // 1. Снимаем экипировку и выходим из build mode
             if (pc.Equipment != null && pc.Equipment.IsEquipped)
                 pc.Equipment.Unequip();
 
             if (pc.BuildMode != null && pc.BuildMode.IsActive())
                 pc.BuildMode.ExitBuildMode();
 
-            // 2. Отключаем управление игроком
+            // Debug.Log("[PlayerSurvivalSystem] 1. TogglePlayerActive(false)");   // ВРЕМЕННО
             TogglePlayerActive(pc, false);
 
-            // 3. Создаём труп
+            // Debug.Log($"[PlayerSurvivalSystem] 2. CorpseManager={(CorpseManager.Instance != null ? "OK" : "NULL")}");   // ВРЕМЕННО
             if (CorpseManager.Instance == null)
             {
                 Debug.LogError("[PlayerSurvivalSystem] OnPlayerDeath: CorpseManager.Instance == null! Труп не создан.");
@@ -186,31 +167,23 @@ namespace Assets.Scripts.Core
                 corpse.StartCoroutine(corpse.StopMovingRagdoll());
                 corpse.InitializeCorpse();
 
-                corpse.CreateCorpseInventory(
-                    "PlayerCorpse",
-                    110
-                );
-
-                corpse.CopyPlayerItemsToCorpse(
-                    _progress.mainInventoryData,
-                    _progress.hotbarInventoryData
-                );
+                corpse.CreateCorpseInventory("PlayerCorpse", 110);
+                corpse.CopyPlayerItemsToCorpse(_progress.mainInventoryData, _progress.hotbarInventoryData);
 
                 if (corpse.TryGetComponent<RadialMenu>(out var menu)) menu.enabled = true;
             }
 
-            // 4. Регистрируем труп
-            CorpseManager.Instance.RegisterCorpse(playerCorpseGO, "player_001");
+            string playerId = _progress != null ? _progress.PlayerId : "player_001";
+            CorpseManager.Instance.RegisterCorpse(playerCorpseGO, playerId);
 
-            // 5. Очищаем инвентарь (существующие InventoryData, без подмены ссылок)
             ClearInventoryData(_progress.mainInventoryData);
             ClearInventoryData(_progress.hotbarInventoryData);
             _progress.Save("PlayerDeath.ClearedInventory");
 
-            // 6. Ждём, пока тело упадёт. WaitForSecondsRealtime — работает при timeScale = 0.
+            // Debug.Log($"[PlayerSurvivalSystem] 3. Ждём {_deathScreenDelay} сек");   // ВРЕМЕННО
             yield return new WaitForSecondsRealtime(_deathScreenDelay);
 
-            // 7. Показываем экран смерти
+            // Debug.Log("[PlayerSurvivalSystem] 4. OnPlayerDied?.Invoke()");   // ВРЕМЕННО
             OnPlayerDied?.Invoke();
         }
 
@@ -404,7 +377,10 @@ namespace Assets.Scripts.Core
             if (pc.TryGetComponent<PlayerInput>(out var input)) input.enabled = active;
             if (pc.TryGetComponent<PlayerInputHandler>(out var inputHandler)) inputHandler.enabled = active;
             if (pc.TryGetComponent<CharacterController>(out var cc)) cc.enabled = active;
-            pc.gameObject.SetActive(active);
+            // pc.gameObject.SetActive(active);
+            // ДОБАВЛЕНО (Шаг 3.4c): скрываем только визуал, не трогая корутины/системы
+            if (pc.VisualCharacter != null)
+                pc.VisualCharacter.SetActive(active);
         }
     }
 }

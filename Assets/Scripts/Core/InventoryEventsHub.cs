@@ -46,7 +46,6 @@ namespace Assets.Scripts.Core
         public void Notify(InventoryChangeKind kind)
         {
             if (kind == InventoryChangeKind.None) return;
-            Debug.Log($"[InventoryEventsHub] Notify: {kind}");  // ВРЕМЕННО
             OnChanged?.Invoke(kind);
         }
     }

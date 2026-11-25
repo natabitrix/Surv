@@ -19,29 +19,6 @@ namespace Assets.Scripts.InventorySystem
 {
     public class InventoryManager : MonoBehaviour
     {
-        // public static InventoryManager Instance { get; private set; }
-        // [SerializeField] private PlayerInputHandler _inputHandler;
-        // public PlayerEquipment _equipment;
-        // public PlayerBuildMode _buildMode;
-        // public ItemUsageSystem itemUsageSystem;
-
-        // private PlayerController _playerController;
-        // private PlayerInputHandler _inputHandler;
-        // private PlayerProgress _progress;
-        // private PlayerSurvivalSystem _survival;
-        // private PlayerEquipment _equipment;
-        // private PlayerBuildMode _buildMode;
-        // private ItemUsageSystem _itemUsage;
-        // private ItemUsageRouter _itemUsageRouter;
-
-        // public PlayerInputHandler InputHandler => _inputHandler;
-        // public PlayerProgress Progress => _progress;
-        // public PlayerSurvivalSystem Survival =>_survival;
-        // public PlayerEquipment Equipment =>_equipment;
-        // public PlayerBuildMode BuildMode =>_buildMode;
-        // public ItemUsageSystem ItemUsage =>_itemUsage;
-        // public ItemUsageRouter ItemUsageRouter =>_itemUsageRouter;
-
         // === Ленивые ссылки на компоненты игрока ===
         // Позволяют получать компоненты в любой момент, независимо от порядка Awake/Start.
         // GetComponent кэшируется Unity, так что повторные вызовы дешёвые.
@@ -498,7 +475,7 @@ namespace Assets.Scripts.InventorySystem
                 return;
             }
 
-            LootBagManager.Instance.CreateLootBagFromItems(itemsToDrop, dropPosition, "player_001");
+            LootBagManager.Instance.CreateLootBagFromItems(itemsToDrop, dropPosition, _progress.PlayerId);
 
             // === Снимаем экипировку ДО удаления из слота (если предмет был в руках) ===
             if ((itemType == ItemType.Tool || itemType == ItemType.Weapon) &&
@@ -538,7 +515,7 @@ namespace Assets.Scripts.InventorySystem
 
             DropAllItemsToBag(
                 sourceData: progress.mainInventoryData,
-                ownerPlayerId: "player_001",
+                ownerPlayerId: progress.PlayerId,
                 unequipIfFromMainInventory: true
             );
         }
@@ -568,7 +545,7 @@ namespace Assets.Scripts.InventorySystem
 
             DropAllItemsToBag(
                 sourceData: chestUI.Data,
-                ownerPlayerId: "player_001",
+                ownerPlayerId: _progress.PlayerId,
                 unequipIfFromMainInventory: false
             );
 
@@ -577,7 +554,7 @@ namespace Assets.Scripts.InventorySystem
             if (ChestUIManager.Instance.CurrentSource is Creature creature
                 && !string.IsNullOrEmpty(creature.TamingInstanceId))
             {
-                TamingManager.Instance?.UpdateSave(creature.TamingInstanceId, "player_001");
+                TamingManager.Instance?.UpdateSave(creature.TamingInstanceId, _progress.PlayerId);
             }
         }
 

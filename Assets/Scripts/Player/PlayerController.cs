@@ -168,16 +168,6 @@ namespace Assets.Scripts.Player
         private void Awake()
         {
 
-            // // 2. Реализуем паттерн Синглтон
-            // if (Instance != null && Instance != this)
-            // {
-            //     // Если Instance уже существует и это не мы — значит, появился дубликат игрока.
-            //     // Удаляем дубликат, чтобы не ломать игру.
-            //     Destroy(gameObject);
-            //     return;
-            // }
-            // Instance = this; // Сохраняем ссылку на себя
-
             if (!AllPlayers.Contains(this))
                 AllPlayers.Add(this);
 
@@ -246,6 +236,14 @@ namespace Assets.Scripts.Player
             if (_mainCamera == null)
             {
                 _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
+            }
+
+            // ДОБАВЛЕНО (Шаг 3.7b): болванчик (не LocalPlayer) не читает ввод —
+            // иначе второй PlayerInput ловит ту же клавиатуру (E, ЛКМ и т.д.)
+            if (this != LocalPlayer)
+            {
+                if (_playerInput != null) _playerInput.enabled = false;
+                if (_input != null) _input.enabled = false;
             }
         }
 
@@ -373,12 +371,16 @@ namespace Assets.Scripts.Player
 
         private void OnEnable()
         {
-            _input.OnFireTriggered += Attack;
+            // защита от _input == null (порядок Awake/OnEnable не гарантирован)
+            if (_input != null)
+                _input.OnFireTriggered += Attack;
         }
 
         private void OnDisable()
         {
-            _input.OnFireTriggered -= Attack;
+            // защита от _input == null
+            if (_input != null)
+                _input.OnFireTriggered -= Attack;
         }
 
         /// <summary>
@@ -430,6 +432,8 @@ namespace Assets.Scripts.Player
 
         public void Attack()
         {
+            if (this != LocalPlayer) return;
+
             bool IsPanelOpened = _panelsController != null && _panelsController.IsPanelOpened();
 
             if (!LockCamera && !IsPanelOpened)
@@ -1160,17 +1164,30 @@ namespace Assets.Scripts.Player
             }
         }
 
+        // private void OnDestroy()
+        // {
+        //     // Debug.LogWarning($"[PlayerController] Уничтожается игрок {_playerId}. Стек вызовов:\n{System.Environment.StackTrace}");
+        //     AllPlayers.Remove(this);
+        //     if (LocalPlayer == this) LocalPlayer = null;
+        //     _progress.UnregisterPlayerController();
+        // }
+
         private void OnDestroy()
         {
-
-            // Debug.LogWarning($"[PlayerController] Уничтожается игрок {_playerId}. Стек вызовов:\n{System.Environment.StackTrace}");
+            Debug.LogWarning($"[PlayerController] Уничтожается игрок {_playerId}. Стек вызовов:\n{System.Environment.StackTrace}");
 
             AllPlayers.Remove(this);
-            if (LocalPlayer == this) LocalPlayer = null;
+
+            // ИЗМЕНЕНО (Шаг 3.6): не сбрасываем LocalPlayer в null, а выбираем нового из AllPlayers
+            if (LocalPlayer == this)
+            {
+                LocalPlayer = AllPlayers.Count > 0 ? AllPlayers[0] : null;
+                if (LocalPlayer != null)
+                    Debug.Log($"[PlayerController] LocalPlayer переключён на {LocalPlayer.PlayerId}");
+            }
+
             _progress.UnregisterPlayerController();
         }
-
-
 
         private void AssignAnimationIDs()
         {

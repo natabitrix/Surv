@@ -38,6 +38,21 @@ namespace Assets.Scripts.Core
         [SerializeField] private float _experience = 0;
         [SerializeField] private int _engramPoints = 0;
 
+        // ДОБАВЛЕНО (Шаг 3.1): per-player id + реестр прогрессов
+        [SerializeField] private string _playerId = "player_001";
+        public string PlayerId => _playerId;
+
+        private static readonly Dictionary<string, PlayerProgress> _progressByPlayerId = new();
+
+        /// <summary>
+        /// Возвращает прогресс игрока по playerId. null — если не зарегистрирован.
+        /// </summary>
+        public static PlayerProgress GetPlayerProgress(string playerId)
+        {
+            if (string.IsNullOrEmpty(playerId)) return null;
+            return _progressByPlayerId.TryGetValue(playerId, out var p) ? p : null;
+        }
+
         // Статы: сколько раз улучшали каждый параметр
         private Dictionary<StatType, int> _statLevels = new();
 
@@ -92,7 +107,9 @@ namespace Assets.Scripts.Core
             }
         }
 
-        private const string SAVE_FILE_NAME = "Player.save";
+        // УДАЛЕНО (Шаг 3.1): private const string SAVE_FILE_NAME = "Player.save";
+        // ДОБАВЛЕНО (Шаг 3.1): per-player имя файла
+        private string GetSaveFileName() => $"Player_{_playerId}.save";
         public const int INVENTORY_SIZE = 100;
         public const float RATE = 0.1f;
         private static LevelTableData _levelTable;
@@ -102,17 +119,35 @@ namespace Assets.Scripts.Core
 
         private void Awake()
         {
-            // Инициализируем таблицу и конфиги как можно раньше
+            // ДОБАВЛЕНО (Шаг 3.1): регистрация per-player
+            if (_progressByPlayerId.ContainsKey(_playerId))
+            {
+                Debug.LogError($"[PlayerProgress] Дубликат playerId '{_playerId}'! Второй экземпляр будет игнорироваться.");
+            }
+            else
+            {
+                _progressByPlayerId[_playerId] = this;
+            }
+
             StatConfigManager.Initialize();
             InitializeLevelTable();
             InitializeStats();
-
-            // Загружаем данные
             LoadData();
         }
 
         private IEnumerator Start()
         {
+
+            // ДОБАВЛЕНО (Шаг 3.1b): если engramData пуст (GameAssets не был готов в Awake) —
+            // доинициализировать, когда GameAssets точно готов.
+            if (engramData != null && engramData.slots != null && engramData.slots.Count == 0)
+            {
+                engramData.InitializeFromDatabase(GameAssets.Instance?.RecipeDatabase);
+                UpdateEngramAvailability();
+                // уведомить хаб, что энграммы появились
+                InventoryEventsHub.Instance?.Notify(InventoryChangeKind.Engrams);
+            }
+
             // Ждем, пока PlayerController зарегистрируется
             while (_playerController == null)
                 yield return null;
@@ -152,7 +187,8 @@ namespace Assets.Scripts.Core
                 engramData.Reset();
             }
 
-            string path = Path.Combine(Application.persistentDataPath, SAVE_FILE_NAME);
+            // string path = Path.Combine(Application.persistentDataPath, SAVE_FILE_NAME);
+            string path = Path.Combine(Application.persistentDataPath, GetSaveFileName());
 
             if (File.Exists(path))
             {
@@ -178,10 +214,11 @@ namespace Assets.Scripts.Core
 
                 UpdateEngramAvailability();
 
-                var localPlayer = PlayerController.LocalPlayer;
-                if (localPlayer != null)
+                // ИЗМЕНЕНО (Шаг 3.2): берём свой _playerController, а не LocalPlayer
+                var pc = _playerController;
+                if (pc != null)
                 {
-                    var survival = localPlayer.GetComponent<PlayerSurvivalSystem>();
+                    var survival = pc.GetComponent<PlayerSurvivalSystem>();
                     if (survival != null)
                         survival.LoadFrom(saveData);
                 }
@@ -202,68 +239,6 @@ namespace Assets.Scripts.Core
             InventoryEventsHub.Instance?.Notify(InventoryChangeKind.All);
         }
 
-        void LoadData_OLD()
-        {
-
-            string path = Path.Combine(Application.persistentDataPath, SAVE_FILE_NAME);
-
-            if (File.Exists(path))
-            {
-                string json = File.ReadAllText(path);
-                var saveData = JsonConvert.DeserializeObject<PlayerSaveData>(json);
-                _loadedSaveData = saveData;
-
-                _level = saveData.level;
-                _experience = saveData.experience;
-                _engramPoints = saveData.engramPoints;
-                _statLevels = saveData.statLevels ?? new Dictionary<StatType, int>();
-                InitializeStats();
-
-                var itemDb = GameAssets.Instance?.ItemDatabase;
-                var recipeDb = GameAssets.Instance?.RecipeDatabase;
-
-                hotbarInventoryData = new InventoryData(10);
-                hotbarInventoryData.FromSerializable(saveData.hotbar, itemDb.ItemLookup);
-
-                mainInventoryData = new InventoryData(INVENTORY_SIZE);
-                mainInventoryData.FromSerializable(saveData.mainInventory, itemDb.ItemLookup);
-
-                hotbarSlotMap = saveData.hotbarSlotMap ?? new Dictionary<string, int>();
-
-                engramData = new EngramData();
-                engramData.InitializeFromDatabase(recipeDb);
-                engramData.FromSerializable(saveData.engrams, recipeDb);
-
-                UpdateEngramAvailability();
-                // GiveBeginnerItems(); // Ошибка [PlayerProgress] Save: позиция недоступна! Используется дефолтная.
-
-                var localPlayer = PlayerController.LocalPlayer;
-                if (localPlayer != null)
-                {
-                    var survival = localPlayer.GetComponent<PlayerSurvivalSystem>();
-                    if (survival != null)
-                        survival.LoadFrom(saveData);
-                }
-
-            }
-            else
-            {
-                _isNewPlayer = true;
-                hotbarInventoryData = new InventoryData(10);
-                mainInventoryData = new InventoryData(INVENTORY_SIZE);
-                hotbarSlotMap = new Dictionary<string, int>();
-
-                engramData = new EngramData();
-                engramData.InitializeFromDatabase(GameAssets.Instance?.RecipeDatabase);
-                InitializeStats();
-                _engramPoints = 0;
-                UpdateEngramAvailability();
-
-                GiveBeginnerItems();
-                Save("PlayerProgress.LoadData");
-            }
-        }
-
         void ApplyData()
         {
 
@@ -276,7 +251,7 @@ namespace Assets.Scripts.Core
             if (_isNewPlayer)
             {
                 _playerController.transform.position = defaultPlayerSpawnPoint;
-                Debug.Log($"[PlayerProgress] Новый игрок — позиция: {defaultPlayerSpawnPoint}");
+                // Debug.Log($"[PlayerProgress] Новый игрок — позиция: {defaultPlayerSpawnPoint}");
             }
             else if (_loadedSaveData != null)
             {
@@ -293,7 +268,7 @@ namespace Assets.Scripts.Core
                     _loadedSaveData.playerRotationZ
                 );
 
-                Debug.Log($"[PlayerProgress] Позиция загружена: {_playerController.transform.position}");
+                // Debug.Log($"[PlayerProgress] Позиция загружена: {_playerController.transform.position}");
             }
             else
             {
@@ -674,10 +649,11 @@ namespace Assets.Scripts.Core
             }
 
             // сохранение состояния выживания
-            var localPlayer = PlayerController.LocalPlayer;
-            if (localPlayer != null)
+            // ИЗМЕНЕНО (Шаг 3.2): берём свой _playerController, а не LocalPlayer
+            var pc = _playerController;
+            if (pc != null)
             {
-                var survival = localPlayer.GetComponent<PlayerSurvivalSystem>();
+                var survival = pc.GetComponent<PlayerSurvivalSystem>();
                 if (survival != null)
                     survival.SaveTo(saveData);
             }
@@ -693,13 +669,23 @@ namespace Assets.Scripts.Core
             }
 
             string json = JsonConvert.SerializeObject(saveData, Formatting.Indented);
-            string path = Path.Combine(Application.persistentDataPath, SAVE_FILE_NAME);
+            // string path = Path.Combine(Application.persistentDataPath, SAVE_FILE_NAME);
+            string path = Path.Combine(Application.persistentDataPath, GetSaveFileName());
+
             File.WriteAllText(path, json);
 
             // Debug.Log($"[PlayerProgress] Сохранено в {path}");
-            Debug.Log($"Сохранено из [{noteFrom}]");
+            // Debug.Log($"Сохранено из [{noteFrom}]");
 
         }
+
+        private void OnDestroy()
+        {
+            // ДОБАВЛЕНО (Шаг 3.1): снять с реестра
+            if (!string.IsNullOrEmpty(_playerId) && _progressByPlayerId.TryGetValue(_playerId, out var p) && p == this)
+                _progressByPlayerId.Remove(_playerId);
+        }
+
     }
 
     // [System.Serializable]

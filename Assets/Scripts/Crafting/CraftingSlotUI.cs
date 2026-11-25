@@ -132,10 +132,6 @@ namespace Assets.Scripts.Crafting
             bool hasInHotbar = hotbarInv != null && hotbarInv.HasIngredients(_recipe);
             bool hasInMain = mainInv != null && mainInv.HasIngredients(_recipe);
 
-
-            Debug.Log("hasInMain: " + hasInMain);
-            Debug.Log("hasInHotbar: " + hasInHotbar);
-
             if (!hasInMain && !hasInHotbar)
             {
                 NotificationManager.Instance?.Show($"Не хватает ресурсов для: {_recipe.craftedItem.itemName}", null);

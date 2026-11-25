@@ -11,6 +11,7 @@ using Assets.Scripts.Creatures.Taming;
 using Assets.Scripts.Creatures.Components;
 using Assets.Scripts.Player;
 using Assets.Scripts.Corpses;
+using System.Collections;
 
 // === СОЗДАНИЕ СУЩЕСТВА ===
 // 1. Импортировать модель с анимациями и материалами, создать Humanoid или Generic аватар из модели
@@ -99,9 +100,40 @@ namespace Assets.Scripts.Creatures
         protected bool _isDead = false;
 
         // Ссылки на системы (если они нужны в Creature)
+        // protected PlayerController playerController;
+        // protected PlayerProgress playerProgress;
+        // protected PlayerSurvivalSystem survivalSystem;
+
         protected PlayerController playerController;
-        protected PlayerProgress playerProgress;
-        protected PlayerSurvivalSystem survivalSystem;
+
+        // ИЗМЕНЕНО (Шаг 3.5b): ленивые ссылки — Creature.Awake не должен зависеть от LocalPlayer
+        private PlayerProgress _playerProgress;
+        protected PlayerProgress playerProgress
+        {
+            get
+            {
+                if (_playerProgress == null)
+                {
+                    var lp = PlayerController.LocalPlayer;
+                    if (lp != null) _playerProgress = lp.GetComponent<PlayerProgress>();
+                }
+                return _playerProgress;
+            }
+        }
+
+        private PlayerSurvivalSystem _survivalSystem;
+        protected PlayerSurvivalSystem survivalSystem
+        {
+            get
+            {
+                if (_survivalSystem == null)
+                {
+                    var lp = PlayerController.LocalPlayer;
+                    if (lp != null) _survivalSystem = lp.GetComponent<PlayerSurvivalSystem>();
+                }
+                return _survivalSystem;
+            }
+        }
 
         // Аниматор (если он был в базе)
         protected Animator animator;
@@ -260,11 +292,6 @@ namespace Assets.Scripts.Creatures
 
         private void Awake()
         {
-
-            var localPlayer = PlayerController.LocalPlayer;
-            playerProgress = localPlayer.GetComponent<PlayerProgress>(); 
-            survivalSystem = localPlayer.GetComponent<PlayerSurvivalSystem>();
-
             animator = GetComponent<Animator>();
             if (animator != null)
             {
@@ -275,40 +302,21 @@ namespace Assets.Scripts.Creatures
                 animIDDeath = Animator.StringToHash("Death");
             }
 
-            // === Загружаем данные из базы ===
-            var assets = GameAssets.Instance;
-            if (assets == null)
-            {
-                Debug.LogError("[Creature] GameAssets.Instance == null!");
-                return;
-            }
-            _creatureDatabase = assets.CreatureDatabase;
+            _agent = GetComponent<NavMeshAgent>();
 
-            if (_creatureDatabase == null)
+            if (playerController != null)
             {
-                Debug.LogError($"[Creature] _creatureDatabase не назначена на {gameObject.name}!");
-                return;
+                _playerTransform = playerController.transform;
+            }
+            else if (_playerTransform == null)
+            {
+                GameObject player = GameObject.FindGameObjectWithTag("Player");
+                if (player != null) _playerTransform = player.transform;
             }
 
-            if (string.IsNullOrEmpty(creatureId))
-            {
-                Debug.LogError($"[Creature] creatureId не задан на {gameObject.name}!");
-                return;
-            }
-
-            // Пытаемся получить конфиг сразу, если GameAssets уже существует
-            if (GameAssets.Instance != null)
-            {
-                _config = GameAssets.Instance.CreatureGlobalConfig;
-            }
-
-            _data = _creatureDatabase.GetCreature(creatureId);
-            if (_data == null)
-            {
-                Debug.LogError($"[Creature] Существо '{creatureId}' не найдено в базе!");
-                return;
-            }
-
+            // подсистемы создаём в Awake — TamingManager.SpawnFromData
+            // использует creature.Interactable сразу после Instantiate (до Start).
+            // Данные (_data) грузятся в Start, когда GameAssets готов.
             _combat = gameObject.AddComponent<CreatureCombat>();
             _death = gameObject.AddComponent<CreatureDeath>();
             _knockout = gameObject.AddComponent<CreatureKnockout>();
@@ -327,37 +335,69 @@ namespace Assets.Scripts.Creatures
 
             var menu = gameObject.AddComponent<RadialMenu>();
             menu.enabled = false;
+        }
 
-            // === Инициализация звуков ===
+        /// <summary>
+        /// ждём GameAssets и грузим данные существа.
+        /// Awake не может ждать — порядок Awake между объектами не гарантирован.
+        /// </summary>
+        private IEnumerator Start()
+        {
+            float waitTimer = 0f;
+            while (GameAssets.Instance == null)
+            {
+                waitTimer += Time.unscaledDeltaTime;
+                if (waitTimer > 5f)
+                {
+                    Debug.LogError("[Creature] GameAssets.Instance не появился за 5 секунд!");
+                    yield break;
+                }
+                yield return null;
+            }
+
+            var assets = GameAssets.Instance;
+            _creatureDatabase = assets.CreatureDatabase;
+
+            if (_creatureDatabase == null)
+            {
+                Debug.LogError($"[Creature] _creatureDatabase не назначена на {gameObject.name}!");
+                yield break;
+            }
+
+            if (string.IsNullOrEmpty(creatureId))
+            {
+                Debug.LogError($"[Creature] creatureId не задан на {gameObject.name}!");
+                yield break;
+            }
+
+            _config = assets.CreatureGlobalConfig;
+
+            _data = _creatureDatabase.GetCreature(creatureId);
+            if (_data == null)
+            {
+                Debug.LogError($"[Creature] Существо '{creatureId}' не найдено в базе!");
+                yield break;
+            }
+
+            // Инициализация звуков (требует _data)
             _audio.Initialize(_data);
 
-
-            // === Применяем статы здоровья ===
+            // Статы
             maxHealth = _data.baseStats.maxHealth;
             health = maxHealth;
             maxStamina = _data.baseStats.maxStamina;
             stamina = maxStamina;
             maxFood = _data.baseStats.maxFood;
             food = maxFood;
-
-            // === Инициализация компонентов ===
-            _agent = GetComponent<NavMeshAgent>();
-
-            if (playerController != null)
-            {
-                _playerTransform = playerController.transform;
-            }
-            else if (_playerTransform == null)
-            {
-                GameObject player = GameObject.FindGameObjectWithTag("Player");
-                if (player != null) _playerTransform = player.transform;
-            }
         }
 
         void Update()
         {
+            // ДОБАВЛЕНО (Шаг 3.5c): данные ещё не загружены (Start не отработал) — пропускаем кадр
+            if (_data == null || _taming == null) return;
+
             if (!IsAlive()) return;
-            if (IsSinglePlayerLoading()) return;
+            if (IsSinglePlayerLoading()) return; ;
 
             // === Torpor: убывает всегда, даже в нокауте ===
             if (torpor > 0f)

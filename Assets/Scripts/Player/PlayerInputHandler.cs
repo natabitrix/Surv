@@ -72,6 +72,15 @@ namespace Assets.Scripts.Player
         private bool _isPauseOpened;
         private bool _attackPressedThisFrame = false;
 
+        /// <summary>
+        /// ДОБАВЛЕНО (Шаг 3.7c): болванчик (не LocalPlayer) не должен реагировать на ввод.
+        /// </summary>
+        private bool IsLocalPlayer()
+        {
+            var pc = GetComponent<PlayerController>();
+            return pc != null && pc == PlayerController.LocalPlayer;
+        }
+
         private void Awake()
         {
             _hotbarCoroutines = new Coroutine[10];
@@ -144,6 +153,7 @@ namespace Assets.Scripts.Player
 
         private void OnInteractStarted(InputAction.CallbackContext context)
         {
+            if (!IsLocalPlayer()) return;
             OnInteractPressed.Invoke();
             TriggerInteract();
             _repeatInteractCoroutine = StartCoroutine(RepeatInteract());
@@ -152,12 +162,17 @@ namespace Assets.Scripts.Player
 
         private void OnInteractCanceled(InputAction.CallbackContext context)
         {
+            if (!IsLocalPlayer()) return;
             StopRepeatInteract();
             OnInteractStopPressed?.Invoke();
         }
 
         private void OnTargetInventoryStarted(InputAction.CallbackContext context)
         {
+            var pc = GetComponent<PlayerController>();
+
+            if (!IsLocalPlayer()) return;
+
             OnTargetInventoryPressed?.Invoke();
         }
 
@@ -209,13 +224,14 @@ namespace Assets.Scripts.Player
         // === FIRE ===
         private void OnFireStarted(InputAction.CallbackContext context)
         {
+            if (!IsLocalPlayer()) return;
             TriggerFire();
-
             _repeatFireCoroutine = StartCoroutine(RepeatFire());
         }
 
         private void OnFireCanceled(InputAction.CallbackContext context)
         {
+            if (!IsLocalPlayer()) return;
             StopRepeatFire();
             OnFireEnded?.Invoke();
         }
@@ -249,6 +265,8 @@ namespace Assets.Scripts.Player
 
         private void Update()
         {
+            if (!IsLocalPlayer()) return;
+
             _isPanelOpened = _panelsController != null && _panelsController.IsPanelOpened();
             _isPauseOpened = _pauseManager != null && _pauseManager.IsPauseOpened();
             bool isDeathOpened = DeathScreenManager.Instance != null
@@ -335,6 +353,7 @@ namespace Assets.Scripts.Player
 
         private void FireHotbarEvent(int slotIndex)
         {
+            if (!IsLocalPlayer()) return;
             // Вызываем событие. Кто подписан (HotbarUI), тот и реагирует.
             OnHotbarSlotPressed?.Invoke(slotIndex);
         }

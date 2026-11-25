@@ -9,15 +9,26 @@ namespace Assets.Scripts.Player
         private CharacterController _controller;
         private PlayerInteraction _playerInteraction;
         private PlayerRangedCombat _playerRangedCombat;
-        
+
         private void Start()
         {
-            var pc = PlayerController.LocalPlayer;
+            // ИЗМЕНЕНО (Шаг 3.7e): берём СВОЙ PlayerController, а не LocalPlayer.
+            // Иначе Animation Events болванчика проксируют в PlayerInteraction LocalPlayer
+            // и вызывают двойное срабатывание (открытие + закрытие).
+            var pc = GetComponentInParent<PlayerController>();
             if (pc == null)
             {
-                Debug.LogError("PlayerController.LocalPlayer is null!", this);
+                Debug.LogError("[AnimationEvents] PlayerController не найден на этом объекте!", this);
                 return;
             }
+
+            // Болванчик не должен реагировать на анимации
+            if (pc != PlayerController.LocalPlayer)
+            {
+                enabled = false;
+                return;
+            }
+
             _controller = pc.CharacterController;
             _settings = pc.settings;
 

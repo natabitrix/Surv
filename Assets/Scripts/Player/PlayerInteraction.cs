@@ -87,7 +87,6 @@ namespace Assets.Scripts.Player
 
         private void Awake()
         {
-
             _input = GetComponent<PlayerInputHandler>();
             if (_input == null)
                 Debug.LogError($"PlayerInputHandler is missing on {gameObject.name}!", this);
@@ -173,6 +172,8 @@ namespace Assets.Scripts.Player
 
         private void CheckRadialMenuTargetDistance()
         {
+            if (_playerController != GetComponent<PlayerController>()) return;
+
             if (_panelsController == null || !_panelsController.IsRadialMenuOpened()) return;
 
             var target = _panelsController.RadialMenuCurrentTargetGO;
@@ -190,6 +191,8 @@ namespace Assets.Scripts.Player
 
         private void CheckInventoryTargetDistance()
         {
+            if (_playerController != GetComponent<PlayerController>()) return;
+
             if (_panelsController == null || !_panelsController.IsInventoryOpened()) return;
 
             var source = ChestUIManager.Instance?.CurrentSource;
@@ -461,7 +464,6 @@ namespace Assets.Scripts.Player
 
         public void OnOpenInventoryFinished(IInteractable specificTarget = null)
         {
-
             IInteractable target = specificTarget ?? _pendingInteractionTarget;
             _pendingInteractionTarget = null;
             // if (target == null) return;
