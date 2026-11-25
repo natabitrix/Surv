@@ -13,15 +13,11 @@
 
 > Формат: `[ ] <кратко> — файл, репро, статус`
 
-*(пока пусто — заполнить при первой фикс-сессии)*
-
----
-
-## 🔧 Доработки (мелкие, «пока руки дойдут»)
-- [ ] Крафт: ресурсы только в хотбаре → рецепт серый (неактивен) — CraftingSlotUI.RefreshVisual/TryCraft не видят hotbarInventoryData или подписка на hotbarInventoryData.OnInventoryChanged не установлена. Закроется в Шаге 3.4 (CraftingUI на хаб).
-- [ ] Не работает атака на зажатие E - должна повторяться пока зажата.
-- [ ] Drag из сумки (LootBag) в инвентарь — панель закрывается, иконка висит, предмет не добавляется. Repro: открыть сумку → перетащить предмет в инвентарь. Вероятно: ChestUI.Instance уничтожается при ChestUIManager.Close(), GetOriginalSlot() возвращает null, ReturnToOriginalSlot не возвращает. Не связано с Шагом 1/2. Чинить после Шага 3.
-- [ ] «Выбросить всё» из сумки создаёт новую сумку — InventoryManager.DropItemsFromChest → DropAllItemsToBag всегда создаёт сумку. Нужно: если источник — LootBag, просто очистить инвентарь + ForceDespawn (не создавать новую). Недоработка, не баг.
+- [ ] **Drag из сумки (LootBag) в инвентарь** — панель закрывается, иконка висит, предмет не добавляется. Repro: открыть сумку → перетащить предмет в инвентарь. Вероятно: `ChestUI.Instance` уничтожается при `ChestUIManager.Close()`, `GetOriginalSlot()` возвращает `null`, `ReturnToOriginalSlot` не возвращает. Не связано с Шагом 1/2/3. Чинить после.
+- [ ] **Крафт: ресурсы только в хотбаре → рецепт серый (неактивен)** — `CraftingSlotUI.RefreshVisual`/`TryCraft` не видят `hotbarInventoryData` или подписка на `hotbarInventoryData.OnInventoryChanged` не установлена. Закрывается в Шаге 3.4 (CraftingUI на хаб) — **проверить, не закрылся ли уже**.
+- [ ] **Крафт: ресурсы разделены между main и hotbar → рецепт серый** — `HasIngredients` на каждом `InventoryData` отдельно, сумма не проверяется. Нужен `PlayerProgress.HasIngredientsTotal`/`ConsumeIngredientsTotal`. Баг 12b.
+- [ ] **Атака на зажатие E** — должна повторяться, пока зажата. Сейчас `OnAttackInteractFinished` из Animation Event, повтора нет.
+- [ ] **«Выбросить всё» из сумки создаёт новую сумку** — `InventoryManager.DropItemsFromChest` → `DropAllItemsToBag` всегда создаёт сумку. Нужно: если источник — `LootBag`, просто очистить инвентарь + `ForceDespawn` (не создавать новую). Недоработка.
 - [ ] **`CorpseManager.RemoveAliveComponentsFromCreatureCorpse`** — проверить, что при загрузке трупа `Animator` не остаётся включённым (сейчас `Destroy(anim)`, а `HealthMaterialBlender` требует, чтобы кости были в T-позе).
 - [ ] **`PlayerEquipment.Unequip` при поломке инструмента** — сейчас вызывается в `OnAttackInteractFinished` при `durability <= 0`, но `ItemHandler.DestroyItem` может не сработать (нет проверки).
 - [ ] **`LootBag.CreateLootBagFromItems`** — если `items.Count == 0`, лог `Debug.LogWarning` не должен ронять создание. Проверить.
@@ -38,9 +34,15 @@
 
 ---
 
+## 🔧 Доработки (мелкие, «пока руки дойдут»)
+
+*(перенесено в «Открытые баги» — см. выше)*
+
+---
+
 ## 🚧 В работе (текущий спринт)
 
-- [ ] **Фикс-сессия после рефакторинга Creature** — проверить, что все автодобавляемые компоненты получают нужные ссылки из `Creature` (см. «Доработки»). Без этого `CreatureInteractable`, `RagdollController`, `CreatureRiding`, `Corpse` могут работать некорректно.
+- [ ] **Фикс-сессия после рефакторинга Creature** — проверить, что все автодобавляемые компоненты получают нужные ссылки из `Creature` (см. «Открытые баги»). Без этого `CreatureInteractable`, `RagdollController`, `CreatureRiding`, `Corpse` могут работать некорректно.
 - [ ] **`SettingsController`** — единая система настроек (MainMenu + Pause).
   - Префаб UI + скрипт.
   - Хранение в JSON (`persistentDataPath/settings.json`).
@@ -64,19 +66,25 @@
 
 ## 📋 Ближайшее (следующая сессия)
 
-*(перезаполняется перед каждым чатом)*
+- [ ] **Шаг 3.2 (`08-refactor-plan-nplayers.md`)** — `InventoryManager` + `ChestUIManager` per-player (Scoped-состояние). Или сначала закрыть `Creature`-фиксы (см. «В работе»).
 
 ---
 
 ## ✅ Закрыто (архив последних 10)
 
 > Полная история — в git log. Здесь только чтобы помнить контекст.
-- [x] Шаг 1 (N-player / события инвентаря): InventoryData.Clear(size), EngramData.Reset(), PlayerProgress.LoadData не пересоздаёт контейнеры, ReloadFromFile → OnPlayerLoaded. InventoryUI.OnEnable → RefreshUI. Закрывает баги 3, 9, 16 (частично).
+
+- [x] **Шаг 3 (N-player): PlayerProgress per-player.** `PlayerId`, `_progressByPlayerId`, `GetPlayerProgress`, `Player_{playerId}.save`. `PlayerProgress.LoadData`/`Save` — через свой `_playerController`. `InventoryManager` — `playerId` из `_progress.PlayerId`. `PlayerSurvivalSystem.OnPlayerDeathRoutine` — свой `_progress.playerController` + `_progress.PlayerId`. `Creature` — ленивые `playerProgress`/`survivalSystem` + `Start`-корутина ожидания `GameAssets`. `PlayerController.LocalPlayer` переизбирается в `OnDestroy`. `PlayerInputHandler`/`PlayerInteraction`/`AnimationEvents` — фильтр болванчика. `PlayerController.Attack` — только у `LocalPlayer`. `CreatureCombat.DealDamageToTarget` — бьёт `_wildTargetTransform`, fallback на `LocalPlayer`. `Creature.Awake` — `AddComponent` (для `TamingManager`), `Start` — `_data`/статы.
+- [x] **Шаг 3 (N-player): `PlayerSurvivalSystem`.** `TogglePlayerActive` не выключает `gameObject` (иначе корутина смерти умирает), скрывает `VisualCharacter`. `OnPlayerDied` — экран смерти только у LocalPlayer.
+- [x] **Шаг 3 (события инвентаря): `InventoryEventsHub`.** Глобальный хаб, `Notify(kind)` из `PlayerProgress`/`InventoryManager`/`EngramUI.UnlockRecipe`. UI подписываются только на хаб.
+- [x] **Шаг 2 (события инвентаря): `InventoryManager.Notify`.** `HandleStructurePlaced`, `DropItemFromSlot`, `DropAllItemsToBag`, `TryRepairItem`.
+- [x] **Шаг 1 (события инвентаря): `InventoryData`/`EngramData` не пересоздаются.** `Clear(newSize)` / `Reset()`, `ReloadFromFile` → `OnPlayerLoaded`. `InventoryUI.OnEnable` → `RefreshUI`. Закрывает баги 3, 9, 16 (частично).
+- [x] **UI на хаб:** `InventoryUI`, `HotbarUI`, `EngramUI`, `CraftingUI`/`CraftingSlotUI` — подписка на `InventoryEventsHub.OnChanged`, не на `InventoryData`. `CraftingSlotUI` — ленивые `_progress.mainInventoryData`/`hotbarInventoryData`.
 - [x] **E на трупе существа не тащил тело** — `CreatureInteractable` оставался `enabled` и перехватывал `OnInteractFinished`. Фикс: `PlayerInteraction.PickPrimaryInteractTarget()` с приоритетом `Corpse`, фильтр в `ProcessHitObject`, `Destroy(CreatureInteractable)` в `CorpseManager.RemoveAliveComponentsFromCreatureCorpse`.
 - [x] **Упрощение создания существ**: `Creature` добавляет все подсистемы через `AddComponent` в `Awake`. На префабе — только `Animator`, `NavMeshAgent`, `Creature`.
 - [x] **Единый источник данных**: `CreatureData` — единственный источник правды для статов, звуков, `impactType`. Дублирующие поля из `Creature` удалены.
 - [x] **Фикс звука удара**: `PlayerInteraction` ищет `IImpactSoundProvider` на `Creature`, а не на `Corpse`. `Corpse.GetImpactType()` читает из `CreatureData`.
-- [x] **Прокси-методы Animation Events**: `SoundOnAttack`, `SoundOnTakeDamage`, `SoundOnDeath`, `SoundOnFootstep`, `DealDamageToTarget` перенесены в `Creature` (Animation Events ищут методы на GameObject).
+- [x] **Прокси-методы Animation Events**: `SoundOnAttack`, `SoundOnTakeDamage`, `SoundOnDeath`, `SoundOnFootstep`, `DealDamageToTarget` перенесены в `Creature`.
 - [x] Радиальное меню для структур, трупов, сундуков.
 - [x] `ChestUIManager` — единая точка Open/Close.
 - [x] Сброс слотов в `ChestUI.Close`.

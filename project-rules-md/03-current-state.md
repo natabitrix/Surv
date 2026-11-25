@@ -11,20 +11,23 @@
 
 | Уровень | Кто | Где | DontDestroyOnLoad |
 |---|---|---|---|
-| **Глобальные** | `GameController`, `PlayerProgress`, `GameTimeUpdater`, `LoadingScreenManager`, `AudioManager`, `LanguageManager` | `[GameAssets]` (обе сцены) | ✅ (через родителя) |
+| **Глобальные** | `GameController`, `GameTimeUpdater`, `InventoryEventsHub`, `LoadingScreenManager`, `AudioManager`, `LanguageManager` | `[GameAssets]` (обе сцены) | ✅ (через родителя) |
 | **Сценовые (мир)** | `CorpseManager`, `LootBagManager`, `TamingManager`, `WorldManager` | `===WorldManagers===` (GameWorld), создаются `WorldBootstrap` через `AddComponent` | ❌ |
 | **Сценовые (UI/игрок)** | `HUDManager`, `UIManager`, `PauseManager`, `DeathScreenManager`, `ChestUIManager`, `InventoryManager`, `PanelsUIController`, `PlayerSurvivalSystem`, `RadialMenuController` и др. | `===GameManagers===`, `===InventoryManager===`, `===PanelsController===`, `---Player---` | ❌ |
+| **Per-player** | `PlayerProgress`, `PlayerSurvivalSystem`, `InventoryManager`, `PlayerController` | `---Player---` (компоненты на игроке) | ❌ |
 
 **Инварианты:**
 - `[GameAssets]` **есть в обеих сценах**. При загрузке второй — `Destroy(gameObject)` (защита от дубликата). Флаг `_isPrimary` защищает `Instance` в `OnDestroy`.
 - `WorldBootstrap` ждёт `GameAssets.Instance != null` в корутине `Start` — порядок `Awake` между объектами не гарантирован.
-- `PlayerSurvivalSystem` — **сценовый**, в `Start()` берёт `PlayerProgress.GetLoadedSaveData()`.
+- `PlayerSurvivalSystem` — **сценовый (на игроке)**, в `Start()` берёт `PlayerProgress.GetLoadedSaveData()`.
 - `PlayerController` регистрируется в `PlayerProgress` в `Awake`, дерегистрируется в `OnDestroy`.
+- **`PlayerProgress` — per-player**: `PlayerId` (`[SerializeField] _playerId = "player_001"`), реестр `_progressByPlayerId`, `GetPlayerProgress(playerId)`. Файл сейва — `Player_{playerId}.save`.
+- **`InventoryEventsHub`** — глобальный хаб на `[GameAssets]`, `Instance` + `Notify(kind)`. UI подписываются **только** на него, не на `InventoryData.OnInventoryChanged` напрямую.
 
 **Bootstrap-порядок загрузки GameWorld:**
 1. `WorldBootstrap.Start` → ждёт `GameAssets`.
 2. `CreateWorldManagers()` — AddComponent + Initialize для 4 сценовых.
-3. Ждёт `PlayerProgress.playerController`.
+3. Ждёт `PlayerController.LocalPlayer`.
 4. `LoadingScreenManager.RegisterTask(...)` × 4: трупы → сумки → прирученные → мир.
 5. `LoadingScreenManager.StartLoading()`.
 
@@ -53,7 +56,7 @@
 
 **Файлы:** `InventorySystem/*.cs`
 
-**Что делает:** `InventoryData` (слоты) + `InventoryManager` (логика игрока) + `ChestUI` (UI контейнеров) + `ChestUIManager` (singleton-роутер).
+**Что делает:** `InventoryData` (слоты) + `InventoryManager` (логика игрока) + `ChestUI` (UI контейнеров) + `ChestUIManager` (singleton-роутер) + `InventoryEventsHub` (глобальный хаб событий).
 
 **Ключевые инварианты:**
 - **`ChestUIManager` — единственная легальная точка Open/Close инвентарей.** `ChestUI.OpenWith` / `Close` напрямую **не вызывать**.
@@ -61,15 +64,18 @@
 - `IInventorySource : IInteractable` — реализуют `Corpse`, `Creature`, `ChestController`, `LootBag`, `Structure`. `OnInventoryOpened/Closed` вызываются менеджером.
 - `ChestUI.Close()` **принудительно** вызывает `SetSlot(null)` для всех слотов. Иначе остаются «призраки» после закрытия.
 - `ChestInventory.IsCorpseInventory()` — определяет по префиксу `saveKey`: `Corpse_`, `PlayerCorpse_`, `CreatureCorpse_`, `TamingCorpse_`, `LootBag_`. Для таких `Save()`/`Load()` — no-op, а `OnDestroy` удаляет `Chest_*.save`, если был.
-- InventoryData/EngramData не пересоздаются при LoadData/ReloadFromFile. Используются Clear(newSize) / Reset() — подписки UI (OnInventoryChanged, OnEngramsChanged) не рвутся.
-- InventoryUI.OnEnable вызывает RefreshUI после Subscribe — иначе при крафте на вкладке «Ремесло» (когда InventoryUI выключен) UI не обновляется до перетаскивания.
-InventoryEventsHub — глобальный хаб ([GameAssets], DontDestroyOnLoad). Notify(kind) из PlayerProgress/InventoryManager/EngramUI.UnlockRecipe. UI подписываются только на хаб (OnChanged), не на InventoryData.OnInventoryChanged напрямую.
-- InventoryUI/HotbarUI/EngramUI/CraftingUI — подписка в OnEnable/Start, отписка в OnDisable/OnDestroy. Реагируют на свой набор InventoryChangeKind.
-- CraftingSlotUI — не подписывается на InventoryData, пересоздаётся CraftingUI.RebuildUI. RefreshVisual берёт актуальные _progress.mainInventoryData/hotbarInventoryData каждый раз.
+- **`InventoryData`/`EngramData` не пересоздаются** при `LoadData`/`ReloadFromFile`. Используются `Clear(newSize)` / `Reset()` — подписки UI (`OnInventoryChanged`, `OnEngramsChanged`) не рвутся.
+- **`InventoryUI.OnEnable` вызывает `RefreshUI`** после `Subscribe` — иначе при крафте на вкладке «Ремесло» (когда `InventoryUI` выключен) UI не обновляется до перетаскивания.
+- **`InventoryEventsHub`** — глобальный хаб (`[GameAssets]`, DontDestroyOnLoad). `Notify(kind)` из `PlayerProgress`/`InventoryManager`/`EngramUI.UnlockRecipe`. UI подписываются **только** на хаб (`OnChanged`), не на `InventoryData.OnInventoryChanged` напрямую.
+- `InventoryChangeKind`: `MainInventory`, `HotbarInventory`, `Engrams`, `Equipment`, `BuildMode`, `Stats`, `Survival`, `All`.
+- `InventoryUI`/`HotbarUI`/`EngramUI`/`CraftingUI` — подписка в `OnEnable`/`Start`, отписка в `OnDisable`/`OnDestroy`. Реагируют на свой набор `InventoryChangeKind`.
+- `CraftingSlotUI` — **не** подписывается на `InventoryData`, пересоздаётся `CraftingUI.RebuildUI`. `RefreshVisual` берёт **актуальные** `_progress.mainInventoryData`/`hotbarInventoryData` каждый раз.
+- `InventoryData.AddItemAnywhere` — **чистая модель**, `Save` убран (был через `LocalPlayer`). Сохранение — на уровне `PlayerProgress`/`InventoryManager`.
 
 **Ловушки:**
 - `ReferenceEquals(CurrentSource, this)` вместо `==` — иначе CS0252 (Unity Object == null).
 - `IInventorySource` **не дублирует** `GetInventory`/`HasInventory` (они уже в `IInteractable`) — иначе CS0108.
+- `InventoryData.Clear(int newSize)` — **обязательный параметр**, восстанавливает `size`, если Unity-сериализация оставила `size = 0`.
 
 ---
 
@@ -85,10 +91,20 @@ InventoryEventsHub — глобальный хаб ([GameAssets], DontDestroyOnL
 - `GetComponents<IInteractable>()` возвращает и **отключённые** MonoBehaviour — обязательно фильтровать по `.enabled`.
 - `PlayerAimingSystem.IsCrosshairVisible` — независимо от `IsAiming`. Прицел виден всегда, когда экипировано ranged-оружие (не в Selfie, не в панелях, не в паузе, не на экране смерти).
 - `PlayerEquipment` при экипировке лука ищет `ArrowSpawnPoint` в модели и передаёт в `PlayerRangedCombat`.
+- **`PlayerController.LocalPlayer` + `AllPlayers`** — `LocalPlayer` выбирается в `Awake` (`player_001` приоритет), `OnDestroy` переизбирает из `AllPlayers` (не сбрасывает в `null`).
+- **`PlayerProgress` per-player**: `_playerId`, `_progressByPlayerId`, `GetPlayerProgress`. `LoadData`/`Save` используют **свой** `_playerController` (не `LocalPlayer`) для `PlayerSurvivalSystem`.
+- **`PlayerSurvivalSystem.OnPlayerDeathRoutine`** — берёт `_progress.playerController` (свой), `playerId` из `_progress.PlayerId`. `TogglePlayerActive` **не** вызывает `gameObject.SetActive(false)` (иначе корутина смерти умирает) — только `enabled = false` на компонентах + скрывает `VisualCharacter`.
+- **`PlayerInputHandler`** — `IsLocalPlayer()` проверка в колбэках (`OnInteractStarted`, `OnFireStarted`, `OnTargetInventoryStarted`, `FireHotbarEvent`) и в `Update`. Болванчик не реагирует.
+- **`PlayerInteraction`** — в `Start` при `_playerController != GetComponent<PlayerController>()` → `enabled = false`. Иначе `CheckInventoryTargetDistance` болванчика закрывает чужие панели.
+- **`AnimationEvents`** — в `Start` берёт `GetComponentInParent<PlayerController>()` (**свой**), не `LocalPlayer`. Иначе Animation Events болванчика проксируют в `LocalPlayer` → двойное срабатывание (`Open` + `Close`).
+- **`PlayerController.Attack`** — ранний выход `if (this != LocalPlayer) return;`.
+- **`CreatureCombat.DealDamageToTarget`** — бьёт `_wildTargetTransform` (если игрок), fallback на `LocalPlayer`.
 
 **Ловушки:**
 - `PlayerInputHandler` обрабатывает `Cancel` (Esc), `Hotbar1..0`, `Interact` (E), `TargetInventory` (F), `Attack` (ЛКМ), `RightClick` (ПКМ) через события. Хотбар — через `OnHotbarSlotPressed` с удержанием.
 - При открытии панели `E` в инвентаре **не должна** уходить в мир — `PlayerInteraction.HandleInteractStarted/Ended` проверяет `PanelsUIController.IsInventoryOpened()`.
+- Болванчик (`player_002`) — «живой», но не управляется: `PlayerInput.enabled = false`, `PlayerInteraction.enabled = false`, `AnimationEvents.enabled = false`. Статы тикают (`PlayerSurvivalSystem` свой).
+- Если у болванчика `_health <= 0` (форс-смерть через инспектор) — `OnPlayerDeathRoutine` создаёт труп **ему** (свой `_progress.playerController`), но `OnPlayerDied` — экран смерти **только у LocalPlayer** (по дизайну).
 
 ---
 
@@ -122,6 +138,7 @@ InventoryEventsHub — глобальный хаб ([GameAssets], DontDestroyOnL
 - Удаление файла — через `UnregisterLootBag` (в `ForceDespawn`).
 - `ForceDespawn` вызывается при: истечении `_bagDisappearTime`, опустошении инвентаря.
 - `LootBagManager.CreateLootBagFromItems` — единая точка создания сумки из списка предметов.
+- `ownerPlayerId` — из `_progress.PlayerId` (не хардкод `"player_001"`).
 
 ---
 
@@ -142,6 +159,7 @@ InventoryEventsHub — глобальный хаб ([GameAssets], DontDestroyOnL
 
 **Ловушки:**
 - `CreatureCombat.DealDamageToTarget` должен вызывать `target.NotifyAttackedBy(_creature)` **на цели**, а не на себе.
+- `TamingManager.SpawnFromData` использует `creature.Interactable` сразу после `Instantiate`. Поэтому `Creature.Awake` **создаёт подсистемы** (`AddComponent`), а `Creature.Start` (корутина) **грузит `_data`** и статы — после `GameAssets`. `TamingManager` не ждёт `Start`.
 
 ---
 
@@ -193,14 +211,14 @@ InventoryEventsHub — глобальный хаб ([GameAssets], DontDestroyOnL
 - **Множитель зоны урона**: `hitCollider.GetComponent<CreatureHitZone>()?.damageMultiplier ?? 1f`.
 - **Память об атакующем**: `LastAttacker` живет 15 сек (`ATTACKER_MEMORY_DURATION`), потом `null`.
 - **Звук удара (impactType)**: `CreatureInteractable.GetImpactType()` и `Corpse.GetImpactType()` читают из `_creature.Data.impactType`. В `PlayerInteraction.OnAttackInteractFinished` провайдер ищется на `Creature` (а не на `Corpse`), чтобы избежать перехвата звука трупом.
+- **`CreatureCombat.DealDamageToTarget`** — если `_isAttackingPlayer` и `_wildTargetTransform != null` → бьёт `PlayerSurvivalSystem` на этом трансформе. Fallback на `LocalPlayer` — если `_wildTargetTransform == null` (сингл).
+- **`Creature.playerProgress` / `survivalSystem`** — **ленивые свойства** (не поля). `Creature.Awake` не зависит от `LocalPlayer`.
 
 ---
 
-## 8.1. Создание существа (новый раздел)
+## 8.1. Создание существа
 
 **Файлы:** `Creatures/Creature.cs` (инструкция в комментарии в начале файла), `Creatures/CreatureData.cs`.
-
-**Что изменилось:** префаб существа теперь содержит минимум компонентов. Всё остальное добавляется в `Awake` через `AddComponent`.
 
 **На префабе (вручную):**
 - `Animator` (Controller + Avatar)
@@ -211,6 +229,12 @@ InventoryEventsHub — глобальный хаб ([GameAssets], DontDestroyOnL
 - `CreatureCombat`, `CreatureDeath`, `CreatureKnockout`, `CreatureTaming`, `CreatureCommands`, `CreatureAudio`, `CreatureWildAI`, `CreatureTamedAI`, `CreatureRiding`, `CreatureInteractable`
 - `RagdollController`, `HealthMaterialBlender`
 - `Corpse` (disabled), `RadialMenu` (disabled)
+
+**Загружается в `Creature.Start` (корутина):**
+- Ждёт `GameAssets.Instance` (до 5 сек).
+- `_creatureDatabase`, `_config`, `_data` (по `creatureId`).
+- `_audio.Initialize(_data)`.
+- Статы: `maxHealth`, `health`, `maxStamina`, `stamina`, `maxFood`, `food`.
 
 **Данные (в `CreatureData`):**
 - Все статы, лут, звуки, эффекты, `impactType`, `tamable` и т.д.
@@ -226,6 +250,7 @@ InventoryEventsHub — глобальный хаб ([GameAssets], DontDestroyOnL
 - `CreatureDatabase` берётся из `GameAssets.CreatureDatabase` (поле `creatureDatabase` в `Creature` удалено).
 - `InteractionCollider` в `Creature` и `CreatureInteractable._interactionCollider` — это **два разных поля**. В `Creature.Awake` после `AddComponent<CreatureInteractable>()` нужно передать ссылку (публичный сеттер или `Initialize`).
 - Animation Events ищут методы **на GameObject**, поэтому прокси-методы `SoundOn*` и `DealDamageToTarget` живут в `Creature`, а не в `CreatureAudio`/`CreatureCombat`.
+- `Creature.Update` — ранний выход `if (_data == null || _taming == null) return;` (Start ещё не отработал).
 
 ---
 
@@ -278,6 +303,7 @@ InventoryEventsHub — глобальный хаб ([GameAssets], DontDestroyOnL
 - `GameTimeUpdater` тикает только при `timeScale > 0` и `Application.isFocused`.
 - **Все системы сохранений используют `savedAtTime` вместо `creationTimeUtc`.** Трупы, сумки, прирученные.
 - `GameTime.Save()` вызывается раз в 30 сек + на pause/focus/quit.
+- `PlayerProgress` — файл `Player_{playerId}.save`. `_progressByPlayerId` — реестр, `GetPlayerProgress(playerId)` — доступ.
 
 ---
 
