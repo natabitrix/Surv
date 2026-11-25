@@ -18,7 +18,7 @@ namespace Assets.Scripts.Player
             var pc = GetComponentInParent<PlayerController>();
             if (pc == null)
             {
-                Debug.LogError("[AnimationEvents] PlayerController не найден на этом объекте!", this);
+                // Debug.LogError("[AnimationEvents] PlayerController не найден на этом объекте!", this);
                 return;
             }
 

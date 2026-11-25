@@ -1174,7 +1174,7 @@ namespace Assets.Scripts.Player
 
         private void OnDestroy()
         {
-            Debug.LogWarning($"[PlayerController] Уничтожается игрок {_playerId}. Стек вызовов:\n{System.Environment.StackTrace}");
+            // Debug.LogWarning($"[PlayerController] Уничтожается игрок {_playerId}. Стек вызовов:\n{System.Environment.StackTrace}");
 
             AllPlayers.Remove(this);
 

@@ -89,15 +89,26 @@ namespace Assets.Scripts.Crafting
 
         private void HandleHubChanged(InventoryChangeKind kind)
         {
-            // ДОБАВЛЕНО (Шаг 3.3): энграммы или полная загрузка/респавн
-            if (kind == InventoryChangeKind.Engrams || kind == InventoryChangeKind.All)
-            {
-                _engramData = _progress != null ? _progress.engramData : null;
-                RebuildUI();
-            }
+            // // ДОБАВЛЕНО (Шаг 3.3): энграммы или полная загрузка/респавн
+            // if (kind == InventoryChangeKind.Engrams || kind == InventoryChangeKind.All)
+            // {
+            //     _engramData = _progress != null ? _progress.engramData : null;
+            //     RebuildUI();
+            // }
 
             if (kind == InventoryChangeKind.Stats || kind == InventoryChangeKind.All)
                 OnEngramPointsChanged();
+
+            // ИЗМЕНЕНО: Полная перестройка UI при изменении энграмм, статов (уровня) или полной загрузке
+            // Это гарантирует, что замки (оверлеи) и тултипы будут соответствовать текущему уровню и очкам
+            if (kind == InventoryChangeKind.Engrams || 
+                kind == InventoryChangeKind.Stats || 
+                kind == InventoryChangeKind.All)
+            {
+                _engramData = _progress != null ? _progress.engramData : null;
+                RebuildUI();
+                Debug.Log("[EngramUI.HandleHubChanged]");
+            }
         }
 
         // Вызывается, когда меняются очки энграмм

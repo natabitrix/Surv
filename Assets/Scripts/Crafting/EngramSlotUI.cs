@@ -89,7 +89,7 @@ namespace Assets.Scripts.Crafting
                 {
                     // Недоступно + причины в одном блоке, красным, каждая с новой строки
                     var reasons = new List<string>();
-                    if (!hasLevel) reasons.Add($"Нужен хватает уровня");
+                    if (!hasLevel) reasons.Add($"Не хватает уровня");
                     if (!hasPoints) reasons.Add("Не хватает очков энграмм");
 
                     statusText = "<color=#FF4444>Недоступно</color>";
