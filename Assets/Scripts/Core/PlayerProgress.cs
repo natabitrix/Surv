@@ -421,6 +421,10 @@ namespace Assets.Scripts.Core
 
             OnProgressChanged?.Invoke();
 
+            // ДОБАВЛЕНО (Шаг 3.3b): если потенциальный уровень вырос — пересчитать доступность
+            if (levelAfter > levelBefore)
+                UpdateEngramAvailability();
+
             // уведомить хаб об изменении статов
             InventoryEventsHub.Instance?.Notify(InventoryChangeKind.Stats);
         }
@@ -474,9 +478,13 @@ namespace Assets.Scripts.Core
             );
 
             OnProgressChanged?.Invoke();
-            // статы + очки энграмм изменились
+
+            // ДОБАВЛЕНО (Шаг 3.3b): уровень и очки выросли → пересчитать доступность
+            // (UpdateEngramAvailability сам вызовет Notify(Engrams))
+            UpdateEngramAvailability();
+
+            // статы изменились (Notify(Engrams) уже ушёл из UpdateEngramAvailability)
             InventoryEventsHub.Instance?.Notify(InventoryChangeKind.Stats);
-            InventoryEventsHub.Instance?.Notify(InventoryChangeKind.Engrams);
             return true;
         }
 
@@ -486,8 +494,10 @@ namespace Assets.Scripts.Core
             {
                 _engramPoints -= cost;
                 OnProgressChanged?.Invoke(); // уведомляем UI об изменении
-                // очки энграмм изменились
-                InventoryEventsHub.Instance?.Notify(InventoryChangeKind.Engrams);
+
+                // ДОБАВЛЕНО (Шаг 3.3b): очки изменились → пересчитать isAvailableByPoints
+                // (UpdateEngramAvailability сам вызовет Notify(Engrams))
+                UpdateEngramAvailability();
                 return true;
             }
             return false;
