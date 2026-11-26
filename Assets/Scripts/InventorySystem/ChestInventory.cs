@@ -59,11 +59,13 @@ namespace Assets.Scripts.InventorySystem
         /// </summary>
         public void Save(string noteFrom = "")
         {
+            // ДОБАВЛЕНО (Пункт 9): на клиенте в мультиплеере не пишем на диск — только сервер
+            if (SessionMode.IsMultiplayer && !SessionMode.IsServer)
+                return;
+
             // Не сохраняем инвентари трупов
             if (IsCorpseInventory())
-            {
                 return;
-            }
 
             SerializableInventory inventory = Data.ToSerializable(size);
             string json = JsonConvert.SerializeObject(inventory, Formatting.Indented);

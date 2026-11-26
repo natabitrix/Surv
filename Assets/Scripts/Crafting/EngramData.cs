@@ -59,6 +59,13 @@ namespace Assets.Scripts.Crafting
 
         public void FromSerializable(SerializableEngramData serializable, RecipeDatabase db)
         {
+            // ДОБАВЛЕНО (фикс): защита от db == null (GameAssets не готов)
+            if (db == null)
+            {
+                Debug.LogWarning("[EngramData] FromSerializable: db == null — пропускаем.");
+                return;
+            }
+
             if (serializable?.slots == null) return;
 
             // Сначала инициализируем все рецепты

@@ -72,6 +72,10 @@ namespace Assets.Scripts.Loot
             Vector3 position,
             string ownerPlayerId = "world")
         {
+            // ДОБАВЛЕНО (Пункт 10): на клиенте в мультиплеере не создаём сумку — только сервер
+            if (SessionMode.IsMultiplayer && !SessionMode.IsServer)
+                return null;
+
             if (items == null || items.Count == 0)
             {
                 Debug.LogWarning("[LootBagManager] Попытка создать сумку без предметов.");

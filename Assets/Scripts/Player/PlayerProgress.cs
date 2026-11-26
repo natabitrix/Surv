@@ -11,8 +11,9 @@ using System.Collections;
 using UnityEngine.SceneManagement;
 using Assets.Scripts.UI.Notifications;
 using System;
+using Assets.Scripts.Core;
 
-namespace Assets.Scripts.Core
+namespace Assets.Scripts.Player
 {
     public enum StatType
     {
@@ -86,6 +87,10 @@ namespace Assets.Scripts.Core
         private PlayerSaveData _loadedSaveData;
         private bool _isNewPlayer = false;
 
+        // ДОБАВЛЕНО (Пункт 7): защита от повторного вызова AllocateStatPoint в одном кадре
+        private float _lastAllocateTime = -1f;
+        private const float AllocateCooldown = 0.2f;
+
         public int StatPointsAvailable
         {
             get
@@ -148,6 +153,26 @@ namespace Assets.Scripts.Core
                 InventoryEventsHub.Instance?.Notify(InventoryChangeKind.Engrams);
             }
 
+            // ДОБАВЛЕНО (фикс): если инвентарь не загрузился в Awake (itemDb == null) — доинициализировать
+            if (GameAssets.Instance != null && _loadedSaveData != null)
+            {
+                var itemDb = GameAssets.Instance.ItemDatabase;
+                if (itemDb != null)
+                {
+                    // Если слоты пустые, но в сейве были предметы — перезагрузить
+                    bool hotbarEmpty = hotbarInventoryData == null || hotbarInventoryData.slots.TrueForAll(s => s.IsEmpty);
+                    bool mainEmpty = mainInventoryData == null || mainInventoryData.slots.TrueForAll(s => s.IsEmpty);
+                    bool saveHadItems = (_loadedSaveData.hotbar?.slots?.Length > 0) || (_loadedSaveData.mainInventory?.slots?.Length > 0);
+
+                    if ((hotbarEmpty || mainEmpty) && saveHadItems)
+                    {
+                        hotbarInventoryData?.FromSerializable(_loadedSaveData.hotbar, itemDb.ItemLookup);
+                        mainInventoryData?.FromSerializable(_loadedSaveData.mainInventory, itemDb.ItemLookup);
+                        InventoryEventsHub.Instance?.Notify(InventoryChangeKind.All);
+                    }
+                }
+            }
+
             // Ждем, пока PlayerController зарегистрируется
             while (_playerController == null)
                 yield return null;
@@ -205,8 +230,16 @@ namespace Assets.Scripts.Core
                 var itemDb = GameAssets.Instance?.ItemDatabase;
                 var recipeDb = GameAssets.Instance?.RecipeDatabase;
 
-                hotbarInventoryData.FromSerializable(saveData.hotbar, itemDb.ItemLookup);
-                mainInventoryData.FromSerializable(saveData.mainInventory, itemDb.ItemLookup);
+                // ДОБАВЛЕНО (фикс): защита от itemDb/recipeDb == null (GameAssets не готов в Awake болванчика)
+                if (itemDb != null)
+                {
+                    hotbarInventoryData.FromSerializable(saveData.hotbar, itemDb.ItemLookup);
+                    mainInventoryData.FromSerializable(saveData.mainInventory, itemDb.ItemLookup);
+                }
+                else
+                {
+                    Debug.LogWarning("[PlayerProgress] itemDb == null — инвентарь не загружен (GameAssets не готов).");
+                }
 
                 hotbarSlotMap = saveData.hotbarSlotMap ?? new Dictionary<string, int>();
 
@@ -461,11 +494,15 @@ namespace Assets.Scripts.Core
 
         public bool AllocateStatPoint(StatType stat)
         {
+            // ИЗМЕНЕНО (Пункт 7): cooldown 0.2 сек — защита от двойного клика
+            if (Time.unscaledTime - _lastAllocateTime < AllocateCooldown) return false;
+            _lastAllocateTime = Time.unscaledTime;
+
             if (StatPointsAvailable <= 0) return false;
 
             _level++;
             _statLevels[stat]++;
-            _engramPoints += GetEngramPointsForLevel(_level - 1); // ОЭ за предыдущий уровень
+            _engramPoints += GetEngramPointsForLevel(_level - 1);
 
             Save("PlayerProgress.AllocateStatPoint");
 
@@ -479,24 +516,24 @@ namespace Assets.Scripts.Core
 
             OnProgressChanged?.Invoke();
 
-            // ДОБАВЛЕНО (Шаг 3.3b): уровень и очки выросли → пересчитать доступность
-            // (UpdateEngramAvailability сам вызовет Notify(Engrams))
             UpdateEngramAvailability();
 
-            // статы изменились (Notify(Engrams) уже ушёл из UpdateEngramAvailability)
             InventoryEventsHub.Instance?.Notify(InventoryChangeKind.Stats);
             return true;
         }
 
-        public bool TrySpendEngramPoints(int cost)
+        public bool TrySpendEngramPoints(Recipe recipe)
         {
+            // ИЗМЕНЕНО (Пункт 6): cost берётся из recipe, не передаётся снаружи
+            if (recipe == null) return false;
+
+            int cost = recipe.engramPointsCost;
+            if (cost < 0) return false;
+
             if (_engramPoints >= cost)
             {
                 _engramPoints -= cost;
-                OnProgressChanged?.Invoke(); // уведомляем UI об изменении
-
-                // ДОБАВЛЕНО (Шаг 3.3b): очки изменились → пересчитать isAvailableByPoints
-                // (UpdateEngramAvailability сам вызовет Notify(Engrams))
+                OnProgressChanged?.Invoke();
                 UpdateEngramAvailability();
                 return true;
             }
@@ -609,6 +646,10 @@ namespace Assets.Scripts.Core
 
         public void Save(string noteFrom = "")
         {
+            // ДОБАВЛЕНО (Пункт 9): на клиенте в мультиплеере не пишем на диск — только сервер
+            if (SessionMode.IsMultiplayer && !SessionMode.IsServer)
+                return;
+
             var saveData = new PlayerSaveData
             {
                 level = _level,

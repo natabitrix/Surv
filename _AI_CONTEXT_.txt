@@ -1,0 +1,2894 @@
+--- START OF FILE: project-rules-md\00-project-passport.md ---
+```md
+# 00. Паспорт проекта
+
+**ARK Survival Evolved clone на Unity 6.5 (URP, C#)**
+
+> Краткое описание проекта в читаемом виде. Детали — в `01`–`05`.
+> Маркеры: ✅ реализовано · 🟡 частично · ❌ не начато
+
+---
+
+## 1. Общее
+
+- **Жанр:** сурвайвал (выживание), крафт, строительство, приручение динозавров, PvE/PvP.
+- **Режим:** синглплеер сейчас, мультиплеер — в планах.
+- **Платформа:** ПК (Windows).
+- **Движок:** Unity 6000.5.0f1 (Unity 6.5), рендер URP.
+- **Язык:** C# (.NET Standard 2.1).
+- **Стиль:** клон ARK: Survival Evolved — открытый мир, приручение и езда на существах, строительство базы, прогрессия.
+
+---
+
+## 2. Сцены
+
+### MainMenu
+- Кнопки: **Играть** (загрузка GameWorld), **Настройки** (звук, графика, горячие клавиши), **Закрыть игру** (полный выход).
+
+### GameWorld
+Основная сцена игры. Содержит:
+- глобальные менеджеры (`GameAssets` — `GameController`, `PlayerProgress`, `GameTimeUpdater`, `LoadingScreenManager`, `AudioManager`, `LanguageManager`);
+- мир-менеджеры (`CorpseManager`, `LootBagManager`, `TamingManager`, `WorldManager`, создаются `WorldBootstrap`);
+- UI-менеджеры (`HUDManager`, `UIManager`, `PauseManager`, `DeathScreenManager`, `NotificationManager`, `TooltipManager`, `ContextMenuManager`, `EntityInfoPanelManager`, `DamageNumberPool`, `ChestUIManager` и др.);
+- игрока, камеры (TPS/FPS/Selfie), NavMesh, окружение, **CreatureSpawner** (спавн существ).
+
+---
+
+## 3. Игрок
+
+### Движение ✅
+- WASD / стрелки: ходьба, бег, спринт; **стрэйф в стороны** (не поворот), прыжок, приседание, ползание, плавание, лазание по лестнице.
+
+### Статы ✅ (базово)
+- **Health, Stamina, Oxygen, Food, Water, Weight, Torpidity, MeleeDamage, MovementSpeed, CraftingSpeed, Fortitude, XP.**
+- Урон, голод/жажда, стамина от бега, кислород под водой — влияют на здоровье/статы.
+- ❌ Нет зависимости скорости от веса; ❌ нет температуры (гипо/гипертермия).
+- ❌ Влияние MeleeDamage / MovementSpeed / CraftingSpeed / Fortitude на геймплей (пока хардкод).
+
+### Действия ✅
+- Инвентарь: основные слоты + хотбар, перетаскивание, стакание.
+- Сбор предметов; добыча ресурсов инструментами.
+- Стрельба из лука обычными/транквилизаторными (усыпляющими) стрелами.
+- Крафт предметов и инструментов; еда.
+- Получение XP от крафта (другие источники — не сделаны).
+- Трата очков на **энграммы** (рецепты) и **статы**.
+- Починка инструментов при наличии ресурсов.
+- Смерть → экран смерти (Выйти / Возродиться).
+
+### Инвентарь и экипировка ✅
+- Слоты, стаки, прочность, ремонт, hotbar, контекстное меню (Использовать / Выбросить / Ремонтировать), Drag & Drop (ЛКМ / ПКМ / Shift).
+- ❌ Броня (слоты, защита, резисты) — не начато.
+
+---
+
+## 4. Предметы и крафт
+
+### Предметы ✅
+- База предметов: типы — **съедобные, материалы, инструменты, оружие**; иконки, прочность.
+- Оружие/инструменты: добыча ресурсов, убийство существ, снижение прочности при использовании.
+
+### Крафт 🟡
+- ✅ Рецепты (SO), энграммы, крафт из инвентаря.
+- ❌ Верстаки, blueprints/тиры качества, крафт-время и очередь.
+
+---
+
+## 5. Существа 🟡
+
+- ✅ AI: блуждание (NavMeshAgent), агрессивное/дружелюбное поведение; хищники нападают на игрока и его прирученных.
+- ✅ Убийство → труп с инвентарём, разбор на ресурсы, лут.
+- ✅ **Приручение:** нокаут отравленными стрелами → кладём любимую еду в инвентарь существа → приручаем.
+- ✅ **Приручённые:** кормить (иначе умрёт от голода), статы как у диких, **радиальное меню** (поведение, отношение к врагу), **оседлание и управление** (езда, атака).
+- ❌ Разведение, пассивное приручение, пищевая цепочка диких, стайное поведение, территориальность.
+
+---
+
+## 6. Мир, окружение, строительство
+
+### Мир 🟡
+- ✅ Вода (плавание, подводные эффекты).
+- ❌ **День/ночь — не сделано, но в планах** (см. `05-roadmap.md`, v0.3).
+- ❌ Погода, биомы, радиация, болезни.
+
+### Строительство 🟡
+- ✅ Крафт частей (фундамент, стены, потолок, двери, ворота), снапы к земле и друг другу, превью (красный = нет точки привязки), сохранение в чанках.
+- ❌ Structural integrity, электрика, ирригация, ремонт структур.
+
+---
+
+## 7. Контейнеры и лут ✅
+
+- **Сундуки** — контейнеры со своим инвентарём.
+- При выбросе предметов и разборе трупов спавнятся **лут-сумки** с инвентарём.
+
+---
+
+## 8. UI и системы ✅ (базово)
+
+- HUD, уведомления (level up, приручение), инфо-панель существ, цифры урона, прицел.
+- Радиальное меню (существа, трупы, структуры, сундуки).
+- Пауза (Esc): в сингле — пауза; кнопки Вернуться / Выйти / Умереть.
+- **Сохранение:** точка спавна игрока, инвентари (игрок, сундуки, сумки), трупы (игрок и существа), приручённые существа.
+
+---
+
+## 9. Что не сделано (кратко)
+
+- Броня и экипировка.
+- Температура / погода / биомы.
+- **День/ночь (в планах).**
+- Респавн по кроватям (сейчас — дефолтная точка).
+- Разведение, фермерство, племена, боссы.
+- Мультиплеер (сетевой слой Mirror/NGO) — только задел.
+- Влияние статов (Melee, MovementSpeed, CraftingSpeed, Fortitude) на геймплей.
+
+---
+
+## 10. Стек
+
+| Пакет | Назначение |
+|---|---|
+| Input System | Все контролы |
+| Addressables | Загрузка ассетов (задел) |
+| TextMeshPro | UI + world text |
+| Localization | Мультиязычность |
+| Cinemachine | Камеры (TPS/FPS/Selfie) |
+| Newtonsoft.Json | Сериализация сейвов |
+```
+--- END OF FILE: project-rules-md\00-project-passport.md ---
+
+--- START OF FILE: project-rules-md\01-project-overview.md ---
+`````md
+# 01. Project Overview
+
+## Что это
+
+ARK Survival Evolved clone на Unity 6.5. Синглплеер сейчас, мультиплеер — в планах.
+Стиль: сурвайвал, крафт, строительство, приручение динозавров, PvE/PvP.
+
+**Версия Unity:** 6000.5.0f1 (Unity 6.5)
+**Рендер:** URP
+**Язык:** C# (.NET Standard 2.1)
+
+## Стек
+
+| Пакет           | Назначение                                   |
+| --------------- | -------------------------------------------- |
+| Input System    | Все контролы (`MyInputActions.inputactions`) |
+| Addressables    | Загрузка ассетов (задел)                     |
+| TextMeshPro     | UI + world text                              |
+| Localization    | Мультиязычность                              |
+| Cinemachine     | Камеры (TPS/FPS/Selfie)                      |
+| Newtonsoft.Json | Сериализация сейвов                          |
+
+## Структура проекта
+
+Assets/
+├── Animations/
+├── Art/
+├── Audio/
+├── Data/ ← ScriptableObjects (ItemDatabase, CreatureDatabase, RecipeDatabase, GameSettings)
+├── InputSystem/
+├── Localization/
+├── Resources/ ← LevelTable.json, Configs/StatConfig.json
+├── Scenes/ ← MainMenu, GameWorld
+├── Scripts/ ← весь C#
+├── Settings/
+├── Shaders/
+└── TextMesh Pro/
+
+## Ссылки на документацию
+
+**Unity:**
+
+- [Unity 6 Manual](https://docs.unity3d.com/6000.0/Documentation/Manual/)
+- [Scripting API](https://docs.unity3d.com/6000.0/Documentation/ScriptReference/)
+- [URP](https://docs.unity3d.com/Packages/com.unity.render-pipelines.universal@16.0/manual/)
+- [Addressables](https://docs.unity3d.com/Packages/com.unity.addressables@1.21/manual/)
+- [Input System](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.7/manual/)
+- [Localization](https://docs.unity3d.com/Packages/com.unity.localization@1.4/manual/)
+
+**ARK-референс:**
+
+- [ARK Wiki](https://ark.wiki.gg/wiki/ARK_Survival_Evolved_Wiki)
+- [ARK Dev Kit](https://devkit.ark.wiki.gg/)
+
+**Паттерны:**
+
+- [Game Programming Patterns](https://gameprogrammingpatterns.com/)
+- [Unity Best Practices](https://resources.unity.com/games/unity-best-practices-guide-2022-lp)
+
+---
+
+## Структура сцен (верхний уровень)
+
+**MainMenu:**
+
+- GameAssets (глобальные менеджеры)
+- MainMenuManager
+- EventSystem
+- Camera
+- Canvas_MainMenu
+
+**GameWorld:**
+
+- GameAssets (глобальные менеджеры)
+- WorldManagers (сценовые мир-менеджеры)
+- GameManagers (сценовые UI-менеджеры)
+- InventoryManager
+- PanelsController
+- ---Player---
+- Cameras
+- UICanvases
+- EventSystem
+- NavMeshBacker
+- \_Env, Interactables, NPC_1, Robot_George, **CreatureSpawner**
+
+**Архитектурное решение:**
+
+- Глобальные менеджеры (`GameController`, `PlayerProgress`, `GameTimeUpdater`, `LoadingScreenManager`, `AudioManager`, `LanguageManager`) живут на `GameAssets` в обеих сценах, `DontDestroyOnLoad`.
+- Сценовые мир-менеджеры (`CorpseManager`, `LootBagManager`, `TamingManager`, `WorldManager`) — на `WorldManagers`, создаются `WorldBootstrap`'ом через `AddComponent`.
+- Сценовые UI-менеджеры (`HUDManager`, `UIManager`, `PauseManager`, `DeathScreenManager`, `NotificationManager`, `TooltipManager`, `ContextMenuManager`, `CharacterPreviewManager`, `CombatAudioManager`, `ArrowPool`, `AimUI`, `EntityInfoPanelManager`, `DamageNumberPool`) — на `GameManagers`.
+- `ChestUIManager` — на `InventoryManager` (рядом с `InventoryManager`).
+- `PanelsUIController` + `RadialMenuController` — на `PanelsController`.
+- Менеджеры инвентаря/UI, создаваемые в рантайме (`PlayerController`, `PlayerSurvivalSystem`, `InventoryManager`, `ChestUIManager`) — на `---Player---` / `InventoryManager`.
+- **Полная иерархия (с вложенностью и компонентами) — по скриншоту:** `Screenshots/scene-hierarchy.png` (обновляется по необходимости, не входит в `.md`).
+
+**Порядок загрузки GameWorld:**
+`WorldBootstrap.Start` → ждёт `GameAssets` → создаёт 4 сценовых менеджера → ждёт `PlayerProgress.playerController` → `LoadingScreenManager.RegisterTask(...)` × 4 → `StartLoading()`.
+
+## Правила работы в чате + Формат выдачи файлов в чате
+
+**Главное:** не пиши сразу весь код. Обсуждаем → идём по пунктам → после каждого пункта тестируем → чиним баги → только потом дальше.
+
+**Пиши cs-код отформатированным (да и любой друго код)** 
+**Не пиши сразу весь код.** Сначала обсуждаем подход, потом идём по пунктам.
+**Не пиши код (или пиши минимально) в обсуждениях, обсуждай кратко и заостряй внимание только на важных моментах.** Предлагай сразу лучший вариант решения на твой взгяд, если есть другие решения просто скажи о их существовании, и если я захочу о них узнать я спрошу и ты тогда расскажешь. 
+**После каждого пункта — тест.** Подтвердили → идём к следующему. Есть баги — чиним до перехода.
+**Если пришли логи/описание бага — не строй предположения сразу.** Задавай вопросы: в какой ситуации, скриншоты, логи, актуальные файлы.
+**Если правишь мои файлы/методы не удаляй комментарии, тултипы полей, добавляй комментарии правок.** Также добавляй описания классов/полей/методов. То что нужно удалить из кода - не удаляй, а комментируй с пометкой //удалить. 
+**После закрытия пункта — обновления файлов правил проекта и коммит на русском** (краткий) + обновление `03-current-state.md` и `04-todo-bugs.md`.
+**Файлы, которые ассистент должен прикреплять к новому чату:** все 5 файлов в `project-rules-md/rules/` + актуальные `.cs` файлы по теме.
+
+**Формат выдачи `.md`-файла (обязательно):**
+   - Весь файл оборачивается в **четыре бэктика** (`` ````md ``) — это **единственное** место, где используются бэктики. Они обозначают, что это именно `.md`-разметка.
+   - **Внутри файла тройные бэктики не используются вообще** — ни для `md`, ни для `csharp`, ни для чего-либо ещё.
+   - Код внутри файла оформляется **отступом в 4 пробела** — Markdown покажет его как код-блок, а парсер чата не сломается.
+   - Если нужно показать код именно с ` ```csharp ` — это делается **после** закрытия ` ````md `, отдельным блоком в чате, не внутри `.md`.
+   - **Один файл в сообщении** → маркеры `===== НАЧАЛО/КОНЕЦ ФАЙЛА =====` не нужны, достаточно ` ````md ` … ` ```` `.
+   - **Несколько файлов в одном сообщении** → перед каждым файлом обычным текстом писать `Файл 1: <путь>`, `Файл 2: <путь>` и т.д., и каждый оборачивать в свой ` ````md `.
+   - Если файл длинный и разбит на части — в конце каждой части писать `===== ПРОДОЛЖЕНИЕ СЛЕДУЕТ =====`, а в начале следующей — `===== ПРОДОЛЖЕНИЕ ФАЙЛА: <путь> =====`.
+
+`````
+--- END OF FILE: project-rules-md\01-project-overview.md ---
+
+--- START OF FILE: project-rules-md\02-game-design.md ---
+```md
+# 02. Game Design — ARK Clone
+
+> **Это дизайн-документ: что ДОЛЖНО быть в игре.**
+> Не путать с `03-current-state.md` (что уже работает) и `04-todo-bugs.md` (что чинить).
+>
+> Маркеры: ✅ реализовано · 🟡 частично · ❌ не начато
+
+---
+
+## Столпы ARK (базовые системы)
+
+1. **Собирательство / добыча** — ресурсы (дерево, камень, металл, волокно, солома, кремень, обсидиан, кристалл, нефть)
+2. **Крафт** — энграммы, рецепты, тиры качества, blueprints
+3. **Строительство** — снапы, стабильность, электрика, ирригация
+4. **Инвентарь** — вес, стаки, прочность, ремонт, hotbar
+5. **Прогрессия** — XP, уровни, энграммы, распределение статов
+6. **Боевка** — ближний/дальний бой, зоны урона, броня, оружие
+7. **Приручение существ** — knockout / passive, наркотики, кормление
+8. **Использование прирученных** — riding, команды, инвентарь, mounted combat
+9. **Экосистема** — хищники/жертвы, respawn по регионам, пищевая цепочка
+10. **Броня** — сеты, защита, прочность, резисты
+11. **Температура / погода** — гипер/гипотермия, биомы, дождь/снег/туман
+12. **Респавн** — по кроватям/спальным мешкам, точки возрождения
+13. **Статы** — влияние на геймплей (weight, melee, speed, crafting speed, fortitude)
+14. **Биомы + ресурсы по регионам** — пляжи, джунгли, горы, пещеры, болота, снег
+15. **Фермерство** — грядки, семена, урожай, удобрения
+16. **Разведение** — спаривание, инкубация, imprinting, мутации
+17. **Племена** — кланы, ранги, общие структуры/дино
+18. **Боссы** — арены, призывы, лут
+19. **Мультиплеер** — сервер-авторитарный, PvP/PvE
+
+---
+
+## 1. Персонаж ✅ (базово)
+
+### Движение ✅
+- ✅ Walk / Run / Sprint
+- ✅ Crouch (toggle) / Crawl (toggle)
+- ✅ Jump (с таймаутом и fall timeout)
+- ✅ Swim (dive up/down, поверхность)
+- ✅ Ladder (без анимации, только физика)
+- ❌ Crouch-collider height (сейчас меняется только в воде)
+- ❌ Wall-run / mantling
+
+### Камера ✅
+- ✅ TPS ↔ FPS (колесо мыши)
+- ✅ Selfie (K, toggle) с орбитой и зумом
+- ✅ Прицел (только для ranged-оружия)
+- ✅ Зум по ПКМ (`aimFov` из Item)
+- ✅ Тряска при получении урона
+
+### Статы ✅
+Health, Stamina, Oxygen, Food, Water, Weight, Torpidity, MeleeDamage, MovementSpeed, CraftingSpeed, Fortitude, XP.
+- ✅ Распределение очков
+- ✅ Падение food/water/torpor
+- ❌ Влияние MeleeDamage на урон (пока хардкод)
+- ❌ Влияние MovementSpeed на скорость
+- ❌ Влияние CraftingSpeed на крафт
+- ❌ Влияние Fortitude на резисты
+
+### Инвентарь ✅
+- ✅ Hotbar (10) + Main (100)
+- ✅ Drag & Drop (ЛКМ — весь стак, ПКМ — 1 шт, Shift — половина)
+- ✅ Прочность, ремонт
+- ✅ Drop (в сумку)
+- ✅ Контекстное меню (Использовать / Выбросить / Ремонтировать)
+- ✅ Экипировка (Tool/Weapon в руку, Placeable в build mode)
+- ❌ Вес (Weight влияет на скорость — нет)
+
+---
+
+## 2. Крафт 🟡
+
+- ✅ Рецепты (ScriptableObject)
+- ✅ Энграммы (изучение за очки)
+- ✅ Крафт из инвентаря (двойной клик / ПКМ)
+- ❌ Верстаки (Smithy, Fabricator, Chemistry Bench и т.д.)
+- ❌ Blueprints и тиры качества (Primitive → Ascendant)
+- ❌ Крафт-время (сейчас мгновенно)
+- ❌ Очередь крафта
+
+---
+
+## 3. Строительство 🟡
+
+- ✅ Снап-точки (Foundation, Wall, Ceiling, Door, DoorFrame, Gate, GateFrame)
+- ✅ Preview с цветом (valid/invalid)
+- ✅ Вращение фундамента мышью
+- ✅ Сохранение в чанках (WorldManager)
+- ❌ Structural integrity (стабильность — обрушение)
+- ❌ Электрика (генераторы, кабели, розетки, приборы)
+- ❌ Ирригация (трубы, краны, резервуары)
+- ❌ Разрушение структуры → сумка (сейчас DropAllItemsToBag при Die, но проверить)
+- ❌ Ремонт структур
+
+---
+
+## 4. Боевка ✅ (базово)
+
+### Ближний бой ✅
+- ✅ OverlapBox по модели оружия / OverlapSphere вокруг рук
+- ✅ Урон = Item.damage (+ MeleeDamage — TODO)
+- ✅ Прочность оружия (-10/удар)
+- ✅ Звуки по ImpactType (Flesh/Metal/Wood/Stone/...)
+- ✅ Цифры урона
+- ✅ Зоны урона (голова ×2, панцирь ×0.5)
+
+### Дальний бой ✅
+- ✅ Лук + стрелы (пул)
+- ✅ Баллистика (`projectileSpeed`, `projectileGravityScale`)
+- ✅ Torpor-стрелы (транквилизатор)
+- ❌ Арбалет, огнестрел
+
+### Броня ❌
+- Не начато.
+
+---
+
+## 5. Существа 🟡
+
+### Данные ✅
+- ✅ `CreatureData` (ScriptableObject)
+- ✅ Уровень (1–150)
+- ✅ Статы: health / stamina / food / torpor
+- ✅ Food-расход (knockedOut / tamed)
+- ✅ Taming: knockout / passive (флаг)
+- ✅ Loot: инвентарь + harvest drops
+- ✅ Звуки, эффекты
+
+### AI ✅
+- ✅ Дикий: Wander / Chase / Attack (только игрок и прирученные)
+- ✅ Прирученный: Follow / Wander / Idle / Flee / Neutral / AttackOwnerTarget / Aggressive
+- ✅ Память об атакующем (15 сек)
+- ❌ Пищевая цепочка (дикие vs дикие)
+- ❌ Стайное поведение
+- ❌ Территориальность / сон / питьё
+
+### Приручение ✅
+- ✅ Knockout (torpor)
+- ✅ Наркотики (восстановление torpor)
+- ✅ Кормление (tamingFoodPreferences)
+- ✅ Прогресс приручения
+- ✅ Passive (флаг есть, реализации нет)
+- ❌ Пассивное приручение (механика)
+
+### Использование ✅
+- ✅ Riding (mount/dismount, WASD + look)
+- ✅ Команды через RadialMenu
+- ✅ Инвентарь прирученного
+- ❌ Mounted combat (стрельба с седла)
+- ❌ Follow-на-расстоянии (сейчас застревает)
+
+### Разведение ❌
+- Не начато.
+
+---
+
+## 6. Экосистема ❌
+
+- ❌ Хищники vs травоядные
+- ❌ Spawn-регионы с respawn
+- ❌ Популяционный контроль
+
+---
+
+## 7. Мир и окружение 🟡
+
+- ✅ День/ночь (направленный свет)
+- ✅ Вода (океан, плавание, подводные эффекты)
+- 🟡 Погода (нет)
+- ❌ Биомы (нет разделения)
+- ❌ Температура / гипер-гипотермия
+- ❌ Радиация, болезни
+
+---
+
+## 8. Прогрессия ✅
+
+- ✅ Уровни (LevelTable.json)
+- ✅ XP (с крафта, подбора)
+- ✅ Энграмм-очки
+- ✅ Распределение статов
+- ❌ Влияние статов на геймплей (см. «Персонаж → Статы»)
+- ❌ Максимальный уровень (сейчас 100+)
+
+---
+
+## 9. Респавн ❌
+
+- 🟡 Сейчас: респавн в дефолтной точке после смерти
+- ❌ Кровати / спальные мешки
+- ❌ Выбор точки респавна
+- ❌ Респавн по регионам
+
+---
+
+## 10. Фермерство ❌
+Не начато.
+
+## 11. Племена ❌
+Не начато.
+
+## 12. Боссы ❌
+Не начато.
+
+## 13. Мультиплеер ❌
+- Задел: `ownerPlayerId`, `SessionMode.IsMultiplayer`, `GameTime.Now` (Unix timestamp).
+- ❌ Сетевой слой (Mirror / NGO).
+```
+--- END OF FILE: project-rules-md\02-game-design.md ---
+
+--- START OF FILE: project-rules-md\03-current-state.md ---
+```md
+# 03. Current State — что работает и как устроено
+
+> **Карта архитектуры и инвариантов.** Не пересказ кода — только то, что НЕ очевидно из файлов.
+> Обновляется после каждого закрытого пункта.
+
+---
+
+## 0. Архитектура менеджеров
+
+**Три уровня жизни:**
+
+| Уровень | Кто | Где | DontDestroyOnLoad |
+|---|---|---|---|
+| **Глобальные** | `GameController`, `GameTimeUpdater`, `InventoryEventsHub`, `LoadingScreenManager`, `AudioManager`, `LanguageManager` | `[GameAssets]` (обе сцены) | ✅ (через родителя) |
+| **Сценовые (мир)** | `CorpseManager`, `LootBagManager`, `TamingManager`, `WorldManager` | `===WorldManagers===` (GameWorld), создаются `WorldBootstrap` через `AddComponent` | ❌ |
+| **Сценовые (UI/игрок)** | `HUDManager`, `UIManager`, `PauseManager`, `DeathScreenManager`, `ChestUIManager`, `InventoryManager`, `PanelsUIController`, `PlayerSurvivalSystem`, `RadialMenuController` и др. | `===GameManagers===`, `===InventoryManager===`, `===PanelsController===`, `---Player---` | ❌ |
+| **Per-player** | `PlayerProgress`, `PlayerSurvivalSystem`, `InventoryManager`, `PlayerController` | `---Player---` (компоненты на игроке) | ❌ |
+
+**Инварианты:**
+- `[GameAssets]` **есть в обеих сценах**. При загрузке второй — `Destroy(gameObject)` (защита от дубликата). Флаг `_isPrimary` защищает `Instance` в `OnDestroy`.
+- `WorldBootstrap` ждёт `GameAssets.Instance != null` в корутине `Start` — порядок `Awake` между объектами не гарантирован.
+- `PlayerSurvivalSystem` — **сценовый (на игроке)**, в `Start()` берёт `PlayerProgress.GetLoadedSaveData()`.
+- `PlayerController` регистрируется в `PlayerProgress` в `Awake`, дерегистрируется в `OnDestroy`.
+- **`PlayerProgress` — per-player**: `PlayerId` (`[SerializeField] _playerId = "player_001"`), реестр `_progressByPlayerId`, `GetPlayerProgress(playerId)`. Файл сейва — `Player_{playerId}.save`.
+- **`InventoryEventsHub`** — глобальный хаб на `[GameAssets]`, `Instance` + `Notify(kind)`. UI подписываются **только** на него, не на `InventoryData.OnInventoryChanged` напрямую.
+
+**Bootstrap-порядок загрузки GameWorld:**
+1. `WorldBootstrap.Start` → ждёт `GameAssets`.
+2. `CreateWorldManagers()` — AddComponent + Initialize для 4 сценовых.
+3. Ждёт `PlayerController.LocalPlayer`.
+4. `LoadingScreenManager.RegisterTask(...)` × 4: трупы → сумки → прирученные → мир.
+5. `LoadingScreenManager.StartLoading()`.
+
+---
+
+## 1. ScriptableObject базы данных
+
+`Assets/Data/`:
+- `GameSettings` — `isMultiplayer`, `corpseLifetime`, `lootBagLifetime`, `arrowLifetime`, `arrowPickupDelay`, `arrowPoolPrewarm`, `deathScreenFreezesWorld`, `singleplayerPauseTimeScale`.
+- `ItemDatabase` — `allItems[]`, `ItemLookup` (lazy).
+- `RecipeDatabase` — `AllRecipes[]`, `GetRecipeByName`, `GetRecipeForItem`.
+- `CreatureDatabase` — `Lookup` (lazy), `GetCreature(id)`.
+- `NotificationSoundConfig` — `entries[] {type, clip, volume}`.
+- `RadialMenuGlobalConfig` — `tamedMenu`, `knockedOutMenu`, `corpseMenu`, `structureMenu`, `chestMenu`.
+- `PlayerMovementSettings` — все настройки движения.
+- `LevelTable.json` (Resources) — XP и энграмм-очки по уровням.
+- `StatConfig.json` (Resources/Configs) — статы (base, rate, отображение).
+
+**Инварианты:**
+- Все базы — **ассеты**, НЕ MonoBehaviour. Ссылки — в `[GameAssets]`.
+- `Lookup` строится лениво, кэшируется. `#if UNITY_EDITOR OnValidate()` сбрасывает кэш.
+
+---
+
+## 2. Инвентарь и ChestUI
+
+**Файлы:** `InventorySystem/*.cs`
+
+**Что делает:** `InventoryData` (слоты) + `InventoryManager` (логика игрока) + `ChestUI` (UI контейнеров) + `ChestUIManager` (singleton-роутер) + `InventoryEventsHub` (глобальный хаб событий).
+
+**Ключевые инварианты:**
+- **`ChestUIManager` — единственная легальная точка Open/Close инвентарей.** `ChestUI.OpenWith` / `Close` напрямую **не вызывать**.
+- `ChestUIManager.CurrentSource` — единственный источник правды «какой инвентарь открыт». `ChestUI` больше не знает, кто его открыл.
+- `IInventorySource : IInteractable` — реализуют `Corpse`, `Creature`, `ChestController`, `LootBag`, `Structure`. `OnInventoryOpened/Closed` вызываются менеджером.
+- `ChestUI.Close()` **принудительно** вызывает `SetSlot(null)` для всех слотов. Иначе остаются «призраки» после закрытия.
+- `ChestInventory.IsCorpseInventory()` — определяет по префиксу `saveKey`: `Corpse_`, `PlayerCorpse_`, `CreatureCorpse_`, `TamingCorpse_`, `LootBag_`. Для таких `Save()`/`Load()` — no-op, а `OnDestroy` удаляет `Chest_*.save`, если был.
+- **`InventoryData`/`EngramData` не пересоздаются** при `LoadData`/`ReloadFromFile`. Используются `Clear(newSize)` / `Reset()` — подписки UI (`OnInventoryChanged`, `OnEngramsChanged`) не рвутся.
+- **`InventoryUI.OnEnable` вызывает `RefreshUI`** после `Subscribe` — иначе при крафте на вкладке «Ремесло» (когда `InventoryUI` выключен) UI не обновляется до перетаскивания.
+- **`InventoryEventsHub`** — глобальный хаб (`[GameAssets]`, DontDestroyOnLoad). `Notify(kind)` из `PlayerProgress`/`InventoryManager`/`EngramUI.UnlockRecipe`. UI подписываются **только** на хаб (`OnChanged`), не на `InventoryData.OnInventoryChanged` напрямую.
+- `InventoryChangeKind`: `MainInventory`, `HotbarInventory`, `Engrams`, `Equipment`, `BuildMode`, `Stats`, `Survival`, `All`.
+- `InventoryUI`/`HotbarUI`/`EngramUI`/`CraftingUI` — подписка в `OnEnable`/`Start`, отписка в `OnDisable`/`OnDestroy`. Реагируют на свой набор `InventoryChangeKind`.
+- `CraftingSlotUI` — **не** подписывается на `InventoryData`, пересоздаётся `CraftingUI.RebuildUI`. `RefreshVisual` берёт **актуальные** `_progress.mainInventoryData`/`hotbarInventoryData` каждый раз.
+- `InventoryData.AddItemAnywhere` — **чистая модель**, `Save` убран (был через `LocalPlayer`). Сохранение — на уровне `PlayerProgress`/`InventoryManager`.
+
+**Ловушки:**
+- `ReferenceEquals(CurrentSource, this)` вместо `==` — иначе CS0252 (Unity Object == null).
+- `IInventorySource` **не дублирует** `GetInventory`/`HasInventory` (они уже в `IInteractable`) — иначе CS0108.
+- `InventoryData.Clear(int newSize)` — **обязательный параметр**, восстанавливает `size`, если Unity-сериализация оставила `size = 0`.
+
+---
+
+## 3. Игрок
+
+**Файлы:** `Player/*.cs`
+
+**Ключевые инварианты:**
+- **`PlayerController._input.look` обнуляется** после `CameraRotation`. Иначе Input System выдаёт то же значение каждый кадр → yaw/pitch накапливаются бесконечно.
+- `PlayerController.Start` сбрасывает `_input.look` и `mouseScrollDelta` — Input System при инициализации может выдать гигантскую дельту.
+- `IsMounted` → `CharacterController.enabled = false`, физика не толкает игрока в седле. `RidingController.Mount` переприцепляет игрока к `riderAttachPoint` с компенсацией `lossyScale`.
+- `PlayerInteraction.OnAttackInteractFinished` берёт контакт через `OverlapBox` по модели оружия / `OverlapSphere` вокруг рук. Вызывается из Animation Event.
+- `GetComponents<IInteractable>()` возвращает и **отключённые** MonoBehaviour — обязательно фильтровать по `.enabled`.
+- `PlayerAimingSystem.IsCrosshairVisible` — независимо от `IsAiming`. Прицел виден всегда, когда экипировано ranged-оружие (не в Selfie, не в панелях, не в паузе, не на экране смерти).
+- `PlayerEquipment` при экипировке лука ищет `ArrowSpawnPoint` в модели и передаёт в `PlayerRangedCombat`.
+- **`PlayerController.LocalPlayer` + `AllPlayers`** — `LocalPlayer` выбирается в `Awake` (`player_001` приоритет), `OnDestroy` переизбирает из `AllPlayers` (не сбрасывает в `null`).
+- **`PlayerProgress` per-player**: `_playerId`, `_progressByPlayerId`, `GetPlayerProgress`. `LoadData`/`Save` используют **свой** `_playerController` (не `LocalPlayer`) для `PlayerSurvivalSystem`.
+- **`PlayerSurvivalSystem.OnPlayerDeathRoutine`** — берёт `_progress.playerController` (свой), `playerId` из `_progress.PlayerId`. `TogglePlayerActive` **не** вызывает `gameObject.SetActive(false)` (иначе корутина смерти умирает) — только `enabled = false` на компонентах + скрывает `VisualCharacter`.
+- **`PlayerInputHandler`** — `IsLocalPlayer()` проверка в колбэках (`OnInteractStarted`, `OnFireStarted`, `OnTargetInventoryStarted`, `FireHotbarEvent`) и в `Update`. Болванчик не реагирует.
+- **`PlayerInteraction`** — в `Start` при `_playerController != GetComponent<PlayerController>()` → `enabled = false`. Иначе `CheckInventoryTargetDistance` болванчика закрывает чужие панели.
+- **`AnimationEvents`** — в `Start` берёт `GetComponentInParent<PlayerController>()` (**свой**), не `LocalPlayer`. Иначе Animation Events болванчика проксируют в `LocalPlayer` → двойное срабатывание (`Open` + `Close`).
+- **`PlayerController.Attack`** — ранний выход `if (this != LocalPlayer) return;`.
+- **`CreatureCombat.DealDamageToTarget`** — бьёт `_wildTargetTransform` (если игрок), fallback на `LocalPlayer`.
+
+**Ловушки:**
+- `PlayerInputHandler` обрабатывает `Cancel` (Esc), `Hotbar1..0`, `Interact` (E), `TargetInventory` (F), `Attack` (ЛКМ), `RightClick` (ПКМ) через события. Хотбар — через `OnHotbarSlotPressed` с удержанием.
+- При открытии панели `E` в инвентаре **не должна** уходить в мир — `PlayerInteraction.HandleInteractStarted/Ended` проверяет `PanelsUIController.IsInventoryOpened()`.
+- Болванчик (`player_002`) — «живой», но не управляется: `PlayerInput.enabled = false`, `PlayerInteraction.enabled = false`, `AnimationEvents.enabled = false`. Статы тикают (`PlayerSurvivalSystem` свой).
+- Если у болванчика `_health <= 0` (форс-смерть через инспектор) — `OnPlayerDeathRoutine` создаёт труп **ему** (свой `_progress.playerController`), но `OnPlayerDied` — экран смерти **только у LocalPlayer** (по дизайну).
+
+---
+
+## 4. Трупы
+
+**Файлы:** `Corpses/*.cs`
+
+**Инварианты:**
+- **Один префаб = живой + труп.** `Corpse.enabled = false` у живого, `= true` у мёртвого.
+- `Corpse.OnDestroy` → только `ForgetCorpse(instanceId)` (in-memory). **Файл не трогает.**
+- Файл удаляется **только** через `UnregisterCorpse(instanceId)` — при harvest/despawn.
+- При смерти существа `SetLayerRecursively(Corpse)` — иначе `EntityInfoPanel` найдёт труп как живого.
+- `CorpseManager.RemoveAliveComponentsFromCreatureCorpse` выставляет `Creature.Health = 0` — для `HealthMaterialBlender`. Также **удаляет** (Destroy) все живые компоненты (`CreatureCombat`, `CreatureDeath`, `CreatureKnockout`, `CreatureTaming`, `CreatureCommands`, `CreatureAudio`, `CreatureWildAI`, `CreatureTamedAI`, `CreatureRiding`), чтобы они не мешали трупу.
+- `Corpse.ActivateRagdoll` перед `isKinematic = false` сбрасывает позы в T-позу (`ResetPosesToInitial` + `Physics.SyncTransforms`).
+- **E на трупе существа**: `CreatureInteractable` может оставаться `enabled` на трупе (не удаляется в `RemoveAliveComponentsFromCreatureCorpse` по историческим причинам). `PlayerInteraction.PickPrimaryInteractTarget()` всегда отдаёт приоритет `Corpse` над `RadialMenu`/`CreatureInteractable`, иначе `OnInteractFinished` вызовет не тот `IInteractable` и drag не стартует.
+
+**Ловушки:**
+- **`Corpse` бывает двух типов:** «существо» (добавляется через `Creature.Awake`) и «ручной» (например, для трупа игрока). Для ручного типа в инспекторе есть блок `[Header("Заполнять если компонент добавлен вручную")]` — поля `dragRigidbody`, `centerBone`, `interactionCollider`, `interactionAnchor`, `breakEffect`. Они **не используются**, если `_creature != null` (ссылки берутся из `Creature`).
+- В `Corpse.Awake` при наличии `Creature` поля берутся из `_creature.CorpseDragRigidbody`, `_creature.InteractionCollider`, `_creature.DamageEffect`. Поля `centerBone` и `interactionAnchor` сейчас **не используются** (закомментированы).
+- При загрузке из сейва **слой не сохраняется** — `SpawnCorpseFromData` выставляет `Corpse` вручную.
+- `IsQuitting` **удалён** (был утечкой состояния между сценами).
+
+---
+
+## 5. Сумки (LootBag)
+
+**Файлы:** `Loot/LootBag*.cs`
+
+**Инварианты:**
+- `LootBag.OnDestroy` → только `ForgetLootBag(instanceId)`. **Файл не трогает.**
+- Удаление файла — через `UnregisterLootBag` (в `ForceDespawn`).
+- `ForceDespawn` вызывается при: истечении `_bagDisappearTime`, опустошении инвентаря.
+- `LootBagManager.CreateLootBagFromItems` — единая точка создания сумки из списка предметов.
+- `ownerPlayerId` — из `_progress.PlayerId` (не хардкод `"player_001"`).
+
+---
+
+## 6. Приручение (Taming)
+
+**Файлы:** `Creatures/Components/CreatureTaming.cs`, `Creatures/Taming/*.cs`
+
+**Инварианты:**
+- `TamingManager` — сценовый, `DontDestroyOnLoad` убран.
+- Папка `persistentDataPath/Taming/`, файлы `taming_{guid}.save`.
+- `saveKey` инвентаря нокаута — **`TamingCorpse_{instanceId}`** (единый префикс, чтобы `IsCorpseInventory` его распознавал).
+- `TamingInstanceId` создаётся **до** `ChestInventory` — иначе `saveKey` плавает.
+- `OnApplicationQuit/Pause/Focus` → `SaveAll()`.
+- Периодическое сохранение — раз в 10 сек из `CreatureTaming.Tick` (при `knockedOut || tamed`).
+- `LoadAllTamingCreaturesAsync` пересчитывает `torpor` и `food` по `elapsed = GameTime.ElapsedSeconds(savedAt, Now)`. Если нокаутнутый и `torpor <= 0` — файл удаляется, существо не спавнится.
+- При смерти — `UnregisterCreature` (удаляет файл) + `Destroy(ChestInventory)`.
+- `TamingFromLoad` / `KnockOutFromLoad` — восстанавливают состояние без регистрации.
+
+**Ловушки:**
+- `CreatureCombat.DealDamageToTarget` должен вызывать `target.NotifyAttackedBy(_creature)` **на цели**, а не на себе.
+- `TamingManager.SpawnFromData` использует `creature.Interactable` сразу после `Instantiate`. Поэтому `Creature.Awake` **создаёт подсистемы** (`AddComponent`), а `Creature.Start` (корутина) **грузит `_data`** и статы — после `GameAssets`. `TamingManager` не ждёт `Start`.
+
+---
+
+## 7. Радиальное меню
+
+**Файлы:** `UI/RadialMenuUI/*.cs`, `Interactables/RadialMenu.cs`
+
+**Инварианты:**
+- `RadialMenuEntry.children` — `[SerializeReference]` (иначе warning про serialization depth).
+- `MAX_DEPTH = 3` (корень + 2 подменю).
+- `[Назад]` добавляется автоматически на уровнях > 0.
+- Radio → `SetRadioValue` + автовозврат на уровень выше.
+- Action → `ExecuteAction` + `Rebuild` (обновить dynamic labels) + `CloseRadialMenu(setPanelMode = actionId == "open_inventory")`.
+- `RadialMenu.ExecuteAction` делегирует в `Creature` / `Corpse` / `Structure` / `Chest`.
+- `RadialMenuCanvas.sortingOrder = 1`, `HUDCanvas.sortingOrder = 0` — иначе HUD перехватывает raycast.
+- `Panel.Image.RaycastTarget = false` для декоративных фонов.
+
+**Ловушки:**
+- При закрытии меню → `_input.ForceResetInteract()`. Иначе «зажатая E» продолжает дёргать `OnInteractTriggered` → `UseSelectedSlot` в новом UI.
+- Флаг `_interactWasForceReset` защищает от повторного `OnInteractCanceled` при физическом отпускании E.
+
+---
+
+## 8. Боевка существ (CreatureCombat) и Статы
+
+**Файлы:** `Creatures/Components/CreatureCombat.cs`, `Creatures/Creature.cs`, `Creatures/CreatureData.cs`, `Creatures/CreatureGlobalConfig.cs`, `UI/DamageNumber*.cs`
+
+**Архитектура данных:**
+- **`CreatureData`** (SO) — уникальные данные вида. Разбит на блоки:
+  - `BaseStats` (здоровье, стамина, макс. скорость, макс. урон и т.д.).
+  - `CombatProps` (радиус агрессии, дальность, кулдаун).
+  - `RiddenProps` (кулдаун атаки верхом).
+  - `tamable`, `tamableKO`, `tamablePassive` — флаги приручения.
+  - `impactType` — тип звука удара (Flesh, Metal, Wood, ...). **Единственный источник правды** для звука удара (и по живому, и по трупу).
+  - `damageEffect`, звуки (footstep, attack, takeDamage, death).
+- **`CreatureGlobalConfig`** (SO, один на игру) — общие настройки: наркотики, разрешения на добычу инструментами, радиусы блуждания и т.д. Ссылка в `GameAssets`.
+- **`Creature.cs`** — геттеры вычисляют финальные статы (например, `RideSpeed` = `maxSpeed * 3`, `TamedAttackDamage` = `maxDamage * 10`). Это задел на прокачку уровней.
+- **Дублирующие поля удалены.** `Creature` больше не хранит `tamable`, `tamableKO`, `tamablePassive`, `damageEffect`. Вместо них — свойства: `Tamable => _data != null && _data.tamable`, `DamageEffect => _data?.damageEffect` и т.д.
+
+**Ключевые инварианты:**
+- **Атрибуция урона (`CombatMember`)**: Enum `Player`, `Wild`, `Tamed`, `Mounted`, `OtherPlayer`, `OtherTamed` передается в `TakeDamage` и `DamageNumberPool` для определения цвета цифры.
+  - Свой (Игрок, Прирученный, Верхом) по врагу = **Зеленый**.
+  - Дикий по своему (Игроку/Прирученному) = **Желтый**.
+  - Дикий по дикому = **урон не отображается** (скрыт в `DamageNumberPool`).
+- **Атака верхом**: В `DealDamageToTarget` проверяется `if (_creature.tamed && _creature.Riding.IsRidden)`. Если да — используется `OverlapBox` перед мордой и передается `CombatMember.Mounted`.
+- **Поиск целей (Targeting)**: В `FindWildTarget`, `FindNearestEnemy`, `FindEnemyNearPlayer` **обязательно** используется `hit.GetComponentInParent<Creature>()`. 
+  - *Ловушка:* `OverlapSphere` часто задевает коллайдеры костей (головы, ног). `GetComponent<Creature>()` вернет `null`, и ИИ проигнорирует цель.
+- **Ленивая инициализация `CreatureGlobalConfig`**: В `Creature.cs` свойство `Config` пытается получить `GameAssets.Instance.CreatureGlobalConfig` при первом обращении. Это защищает от `NullReferenceException`, если существо заспавнилось раньше, чем `GameAssets` (порядок `Awake` не гарантирован).
+- **Множитель зоны урона**: `hitCollider.GetComponent<CreatureHitZone>()?.damageMultiplier ?? 1f`.
+- **Память об атакующем**: `LastAttacker` живет 15 сек (`ATTACKER_MEMORY_DURATION`), потом `null`.
+- **Звук удара (impactType)**: `CreatureInteractable.GetImpactType()` и `Corpse.GetImpactType()` читают из `_creature.Data.impactType`. В `PlayerInteraction.OnAttackInteractFinished` провайдер ищется на `Creature` (а не на `Corpse`), чтобы избежать перехвата звука трупом.
+- **`CreatureCombat.DealDamageToTarget`** — если `_isAttackingPlayer` и `_wildTargetTransform != null` → бьёт `PlayerSurvivalSystem` на этом трансформе. Fallback на `LocalPlayer` — если `_wildTargetTransform == null` (сингл).
+- **`Creature.playerProgress` / `survivalSystem`** — **ленивые свойства** (не поля). `Creature.Awake` не зависит от `LocalPlayer`.
+
+---
+
+## 8.1. Создание существа
+
+**Файлы:** `Creatures/Creature.cs` (инструкция в комментарии в начале файла), `Creatures/CreatureData.cs`.
+
+**На префабе (вручную):**
+- `Animator` (Controller + Avatar)
+- `NavMeshAgent`
+- `Creature` (с полями: `creatureId`, `CorpseDragRigidbody`, `InteractionCollider`, `CreatureRidingRiderAttachPoint`, `RagdollControllerRagdollSettings`)
+
+**Автодобавляемые (в `Creature.Awake`):**
+- `CreatureCombat`, `CreatureDeath`, `CreatureKnockout`, `CreatureTaming`, `CreatureCommands`, `CreatureAudio`, `CreatureWildAI`, `CreatureTamedAI`, `CreatureRiding`, `CreatureInteractable`
+- `RagdollController`, `HealthMaterialBlender`
+- `Corpse` (disabled), `RadialMenu` (disabled)
+
+**Загружается в `Creature.Start` (корутина):**
+- Ждёт `GameAssets.Instance` (до 5 сек).
+- `_creatureDatabase`, `_config`, `_data` (по `creatureId`).
+- `_audio.Initialize(_data)`.
+- Статы: `maxHealth`, `health`, `maxStamina`, `stamina`, `maxFood`, `food`.
+
+**Данные (в `CreatureData`):**
+- Все статы, лут, звуки, эффекты, `impactType`, `tamable` и т.д.
+
+**Animation Events (на клипах):**
+- Атака: `DealDamageToTarget()`, `SoundOnAttack(AnimationEvent)`
+- Урон: `SoundOnTakeDamage(AnimationEvent)`
+- Смерть: `SoundOnDeath(AnimationEvent)`
+- Шаги: `SoundOnFootstep(AnimationEvent)`
+
+**Ловушки:**
+- `RagdollParts` заполняется в `Creature.RagdollControllerRagdollSettings` (а не в отдельном компоненте `RagdollController`).
+- `CreatureDatabase` берётся из `GameAssets.CreatureDatabase` (поле `creatureDatabase` в `Creature` удалено).
+- `InteractionCollider` в `Creature` и `CreatureInteractable._interactionCollider` — это **два разных поля**. В `Creature.Awake` после `AddComponent<CreatureInteractable>()` нужно передать ссылку (публичный сеттер или `Initialize`).
+- Animation Events ищут методы **на GameObject**, поэтому прокси-методы `SoundOn*` и `DealDamageToTarget` живут в `Creature`, а не в `CreatureAudio`/`CreatureCombat`.
+- `Creature.Update` — ранний выход `if (_data == null || _taming == null) return;` (Start ещё не отработал).
+
+---
+
+## 9. Оседлание (Riding)
+
+**Файлы:** `Creatures/Components/CreatureRiding.cs`, `Player/RidingController.cs`
+
+**Инварианты:**
+- `CreatureRiding.Mount` → `Agent.updateRotation = false` (иначе A/D крутят существо).
+- `RidingController.Mount` переприцепляет игрока к `riderAttachPoint` с компенсацией `lossyScale` (иначе scale дино ломает игрока).
+- `TickRidden` — прямое управление `Agent.velocity`, не `SetDestination`.
+- `ForceDismount` при: `CreatureKnockout`, `CreatureDeath`, `PlayerSurvivalSystem.OnPlayerDeath`, `OnApplicationQuit/Pause/Focus/Destroy` у `RidingController`.
+- В Selfie `look = Vector2.zero` — иначе камера крутит существо.
+
+**Ловушки:**
+- `E` работает **без наведения на цель**, если `IsMounted` или `_currentlyDraggingCorpse`.
+
+---
+
+## 10. Инфо-панель существ
+
+**Файлы:** `UI/EntityInfoPanel*.cs`
+
+**Инварианты:**
+- Raycast из **центра экрана** (`ViewportPointToRay(0.5, 0.5)`), не из курсора.
+- `_holdTime = 0.2` (задержка перед показом), `_lingerTime = 1–2` (держится после ухода).
+- Игнорирует мёртвых и не-нокаутнутых трупов (`!IsAlive && !knockedOut`).
+- Мгновенно переключается на новую цель.
+
+---
+
+## 11. Уведомления (top-note + звуки)
+
+**Файлы:** `UI/Notifications/*.cs`
+
+**Инварианты:**
+- `NotificationType`: `None`, `LevelUp`, `TameComplete`.
+- `NotificationSoundConfig` — ScriptableObject, ссылка в `GameAssets`.
+- `_uiAudioSource` создаётся в `Awake`, если не назначен (2D, `spatialBlend = 0`).
+- Если тип не найден — молчание + warning в редакторе (`#if UNITY_EDITOR`).
+
+---
+
+## 12. Время (GameTime) и сохранения
+
+**Файлы:** `Core/GameTime*.cs`
+
+**Инварианты:**
+- `GameTime.Now` — SinglePlayer: накопленное игровое время. Multiplayer: Unix timestamp UTC.
+- `GameTimeUpdater` тикает только при `timeScale > 0` и `Application.isFocused`.
+- **Все системы сохранений используют `savedAtTime` вместо `creationTimeUtc`.** Трупы, сумки, прирученные.
+- `GameTime.Save()` вызывается раз в 30 сек + на pause/focus/quit.
+- `PlayerProgress` — файл `Player_{playerId}.save`. `_progressByPlayerId` — реестр, `GetPlayerProgress(playerId)` — доступ.
+
+---
+
+## 13. Строительство
+
+**Файлы:** `Player/PlayerBuildMode.cs`, `Core/WorldManager.cs`, `Structures/*.cs`
+
+**Инварианты:**
+- `WorldManager.RegisterStructure(placed, itemId, parentId = null)` — запись в чанк + `StructureIdentity`.
+- Фундамент: два клика (поставить → повернуть мышью → поставить).
+- Стены/потолки/двери: один клик по снапу.
+- `_previewInstance` — временный объект, все коллайдеры и `SnapPoint` удаляются.
+- `_baseObject` — структура, к которой крепимся (для `StructureAttachment`).
+
+**Ловушки:**
+- Тэги структур (`Foundation`, `Wall`, ...) должны быть в Tag Manager.
+- `ClearExistingStructures` удаляет всё по тегам при загрузке мира.
+
+## 14. Сетевая готовность
+
+→ Вынесено в отдельную папку: `network/`. Точка входа — `network/00-network-overview.md`.
+Там: стратегия, метод аудита, глоссарий, аудиты по системам, чеклист «переделать до сети».
+```
+--- END OF FILE: project-rules-md\03-current-state.md ---
+
+--- START OF FILE: project-rules-md\04-todo-bugs.md ---
+```md
+# 04. Todo & Bugs
+
+> Живой трекер. Обновляется после каждого закрытого пункта.
+> Долгосрочный план — в `05-roadmap.md`.
+
+---
+
+## Сетевая гигиена (до подключения NGO)
+
+→ Полный чеклист: `network/07-refactor-checklist.md`.
+
+## 🐛 Открытые баги
+
+> Формат: `[ ] <кратко> — файл, репро, статус`
+
+- [ ] **Drag из сумки (LootBag) в инвентарь** — панель закрывается, иконка висит, предмет не добавляется. Repro: открыть сумку → перетащить предмет в инвентарь. Вероятно: `ChestUI.Instance` уничтожается при `ChestUIManager.Close()`, `GetOriginalSlot()` возвращает `null`, `ReturnToOriginalSlot` не возвращает. Не связано с Шагом 1/2/3. Чинить после.
+- [ ] **Крафт: ресурсы только в хотбаре → рецепт серый (неактивен)** — `CraftingSlotUI.RefreshVisual`/`TryCraft` не видят `hotbarInventoryData` или подписка на `hotbarInventoryData.OnInventoryChanged` не установлена. Закрывается в Шаге 3.4 (CraftingUI на хаб) — **проверить, не закрылся ли уже**.
+- [ ] **Крафт: ресурсы разделены между main и hotbar → рецепт серый** — `HasIngredients` на каждом `InventoryData` отдельно, сумма не проверяется. Нужен `PlayerProgress.HasIngredientsTotal`/`ConsumeIngredientsTotal`. Баг 12b.
+- [ ] **Атака на зажатие E** — должна повторяться, пока зажата. Сейчас `OnAttackInteractFinished` из Animation Event, повтора нет.
+- [ ] **«Выбросить всё» из сумки создаёт новую сумку** — `InventoryManager.DropItemsFromChest` → `DropAllItemsToBag` всегда создаёт сумку. Нужно: если источник — `LootBag`, просто очистить инвентарь + `ForceDespawn` (не создавать новую). Недоработка.
+- [ ] **`CorpseManager.RemoveAliveComponentsFromCreatureCorpse`** — проверить, что при загрузке трупа `Animator` не остаётся включённым (сейчас `Destroy(anim)`, а `HealthMaterialBlender` требует, чтобы кости были в T-позе).
+- [ ] **`PlayerEquipment.Unequip` при поломке инструмента** — сейчас вызывается в `OnAttackInteractFinished` при `durability <= 0`, но `ItemHandler.DestroyItem` может не сработать (нет проверки).
+- [ ] **`LootBag.CreateLootBagFromItems`** — если `items.Count == 0`, лог `Debug.LogWarning` не должен ронять создание. Проверить.
+- [ ] **`InventoryUI.RefreshUI`** — при `inventoryManager.equipment == null` NRE. Добавить проверку.
+- [ ] **`EntityInfoPanel`** — torpor bar скрывается, если `torpor == 0 && !knockedOut` (сейчас всегда активен, если не скрыт вручную).
+- [ ] **`ChestController.OnDestroy`** — проверить, что не удаляет `Chest_*.save` при выходе в MainMenu (должно работать через `IsCorpseInventory`, но `ChestController` — не труп).
+- [ ] **`Structure.Die`** — `DropAllItemsToBag` вызывает `InventoryManager.Instance`, но менеджер может быть `null` при загрузке мира. Защитить.
+- [ ] **`Corpse.Awake` → `_creature` == null** — при ручном добавлении `Corpse` (игрок) `_breakEffect` берётся из инспектора, но в коде `_breakEffect = _creature.DamageEffect;` в блоке `if (_creature != null)`. Проверить, что для игрока `breakEffect` заполняется вручную.
+- [ ] **`Corpse` поля `centerBone` / `interactionAnchor`** — сейчас закомментированы в `Awake`. Если они нужны для стабильного рейкаста/таскания, вернуть логику. Если нет — удалить из класса, чтобы не путали.
+- [ ] **`Creature.Awake` → `AddComponent<Corpse>()`** — передать ссылки из `Creature` в `Corpse` (сейчас `Corpse.Awake` сам берёт `CorpseDragRigidbody` / `InteractionCollider` из `Creature`, но порядок `AddComponent` и `Awake` может сыграть злую шутку). Убедиться, что `_creature` в `Corpse` заполняется до первого использования.
+- [ ] **`Creature.Awake` → `AddComponent<RagdollController>()`** — передать `RagdollControllerRagdollSettings` в `RagdollController.ragdollSettings`. Сейчас поле есть в `Creature`, но `RagdollController` его не получает (остаётся `null`).
+- [ ] **`CreatureRiding`** — `CreatureRidingRiderAttachPoint` и `CreatureRidingDismountOffset` теперь в `Creature`, но `CreatureRiding` их не получает. Нужен `Initialize(Transform attachPoint, Vector3 dismountOffset)`.
+- [ ] **`CreatureInteractable`** — `InteractionCollider` в `Creature` и `CreatureInteractable._interactionCollider` — это **два разных поля**. В `Creature.Awake` после `AddComponent<CreatureInteractable>()` нужно передать ссылку (публичный сеттер или `Initialize`).
+
+---
+
+## 🔧 Доработки (мелкие, «пока руки дойдут»)
+
+*(перенесено в «Открытые баги» — см. выше)*
+
+---
+
+## 🚧 В работе (текущий спринт)
+
+- [ ] **Фикс-сессия после рефакторинга Creature** — проверить, что все автодобавляемые компоненты получают нужные ссылки из `Creature` (см. «Открытые баги»). Без этого `CreatureInteractable`, `RagdollController`, `CreatureRiding`, `Corpse` могут работать некорректно.
+- [ ] **`SettingsController`** — единая система настроек (MainMenu + Pause).
+  - Префаб UI + скрипт.
+  - Хранение в JSON (`persistentDataPath/settings.json`).
+  - Сюда переедет `splitStackKey` (сейчас захардкожен `LeftShift` в `InventorySlotUI`).
+  - Громкость (уже есть `AudioManager.masterVolume`, но UI — только в `SettingsPanelController` в Pause, в MainMenu — нет).
+  - Качество графики, разрешение, язык (частично есть в `LanguageDropdownController`).
+
+---
+
+## 🧊 Отложено
+
+- [ ] **«Кто ударил игрока»** — для `AttackOwnerTarget` (сейчас ищет «враг рядом с игроком»).
+- [ ] **Пищевая цепочка** — дикие бьют диких.
+- [ ] **`Creature.cs`** — рефакторинг (файл раздут ~600 строк; AI/боевка/приручение/анимация смешаны — часть уже вынесена в компоненты, но `Update` ещё толстый).
+- [ ] **`FindWildTarget` каждый кадр** — `OverlapSphere` в `Update`. Оптимизация: раз в 0.2 сек.
+- [ ] **`LootBagManager.CreateLootBagFromItems`** — `bagInventory.Initialize(items.Count, ...)`. Если `items.Count > 12` (стандартный размер сумки), часть предметов не влезет. Проверить/увеличить.
+- [ ] **UI заголовок чужого инвентаря** — показать `OwnerPlayerId` / имя существа в `PanelsUIController`.
+- [ ] **`EntityInfoPanel`** — показывать владельца для `LootBag` и `Corpse`.
+
+---
+
+## 📋 Ближайшее (следующая сессия)
+
+- [ ] **Шаг 3.2 (`08-refactor-plan-nplayers.md`)** — `InventoryManager` + `ChestUIManager` per-player (Scoped-состояние). Или сначала закрыть `Creature`-фиксы (см. «В работе»).
+
+---
+
+## ✅ Закрыто (архив последних 10)
+
+> Полная история — в git log. Здесь только чтобы помнить контекст.
+
+- [x] **Шаг 3 (N-player): PlayerProgress per-player.** `PlayerId`, `_progressByPlayerId`, `GetPlayerProgress`, `Player_{playerId}.save`. `PlayerProgress.LoadData`/`Save` — через свой `_playerController`. `InventoryManager` — `playerId` из `_progress.PlayerId`. `PlayerSurvivalSystem.OnPlayerDeathRoutine` — свой `_progress.playerController` + `_progress.PlayerId`. `Creature` — ленивые `playerProgress`/`survivalSystem` + `Start`-корутина ожидания `GameAssets`. `PlayerController.LocalPlayer` переизбирается в `OnDestroy`. `PlayerInputHandler`/`PlayerInteraction`/`AnimationEvents` — фильтр болванчика. `PlayerController.Attack` — только у `LocalPlayer`. `CreatureCombat.DealDamageToTarget` — бьёт `_wildTargetTransform`, fallback на `LocalPlayer`. `Creature.Awake` — `AddComponent` (для `TamingManager`), `Start` — `_data`/статы.
+- [x] **Шаг 3 (N-player): `PlayerSurvivalSystem`.** `TogglePlayerActive` не выключает `gameObject` (иначе корутина смерти умирает), скрывает `VisualCharacter`. `OnPlayerDied` — экран смерти только у LocalPlayer.
+- [x] **Шаг 3 (события инвентаря): `InventoryEventsHub`.** Глобальный хаб, `Notify(kind)` из `PlayerProgress`/`InventoryManager`/`EngramUI.UnlockRecipe`. UI подписываются только на хаб.
+- [x] **Шаг 2 (события инвентаря): `InventoryManager.Notify`.** `HandleStructurePlaced`, `DropItemFromSlot`, `DropAllItemsToBag`, `TryRepairItem`.
+- [x] **Шаг 1 (события инвентаря): `InventoryData`/`EngramData` не пересоздаются.** `Clear(newSize)` / `Reset()`, `ReloadFromFile` → `OnPlayerLoaded`. `InventoryUI.OnEnable` → `RefreshUI`. Закрывает баги 3, 9, 16 (частично).
+- [x] **UI на хаб:** `InventoryUI`, `HotbarUI`, `EngramUI`, `CraftingUI`/`CraftingSlotUI` — подписка на `InventoryEventsHub.OnChanged`, не на `InventoryData`. `CraftingSlotUI` — ленивые `_progress.mainInventoryData`/`hotbarInventoryData`.
+- [x] **E на трупе существа не тащил тело** — `CreatureInteractable` оставался `enabled` и перехватывал `OnInteractFinished`. Фикс: `PlayerInteraction.PickPrimaryInteractTarget()` с приоритетом `Corpse`, фильтр в `ProcessHitObject`, `Destroy(CreatureInteractable)` в `CorpseManager.RemoveAliveComponentsFromCreatureCorpse`.
+- [x] **Упрощение создания существ**: `Creature` добавляет все подсистемы через `AddComponent` в `Awake`. На префабе — только `Animator`, `NavMeshAgent`, `Creature`.
+- [x] **Единый источник данных**: `CreatureData` — единственный источник правды для статов, звуков, `impactType`. Дублирующие поля из `Creature` удалены.
+- [x] **Фикс звука удара**: `PlayerInteraction` ищет `IImpactSoundProvider` на `Creature`, а не на `Corpse`. `Corpse.GetImpactType()` читает из `CreatureData`.
+- [x] **Прокси-методы Animation Events**: `SoundOnAttack`, `SoundOnTakeDamage`, `SoundOnDeath`, `SoundOnFootstep`, `DealDamageToTarget` перенесены в `Creature`.
+- [x] Радиальное меню для структур, трупов, сундуков.
+- [x] `ChestUIManager` — единая точка Open/Close.
+- [x] Сброс слотов в `ChestUI.Close`.
+- [x] `ForceResetInteract` при закрытии радиального меню.
+- [x] Сортировка канвасов (RadialMenu = 1, HUD = 0).
+- [x] Riding (mount/dismount, TickRidden, ForceDismount).
+- [x] Инфо-панель существ (EntityInfoPanelManager).
+- [x] Damage numbers (pool).
+- [x] CreatureHitZone (крит/броня).
+- [x] PlayerDamageFeedback (тряска + звук + вспышка).
+- [x] Оптимизация рендера: починены LOD-переходы, отключены тени на дальних LOD'ах (скрипт TreeOptimizer.cs), нагрузка на GPU снижена с 10.8ms до 4.0ms.
+```
+--- END OF FILE: project-rules-md\04-todo-bugs.md ---
+
+--- START OF FILE: project-rules-md\05-roadmap.md ---
+```md
+# 05. Roadmap
+
+> Долгосрочный план по столпам ARK. Не путать с `04-todo-bugs.md` (там — конкретные баги/задачи).
+> Обновляется раз в спринт или при смене приоритетов.
+
+---
+
+## v0.1 — Закрыть базовый геймплей (сейчас)
+
+- [x] **Базовый AI прирученных**: режимы Follow, Wander, Aggressive, Protect. Исправлен поиск целей через `GetComponentInParent`.
+- [x] **Mounted Combat (Боевка верхом)**: игрок атакует существом (ЛКМ), свой урон и кулдаун.
+- [x] **Архитектура существ**: `CreatureData` разбит на логические блоки, общие настройки вынесены в `CreatureGlobalConfig`.
+- [x] **Атрибуция урона**: добавлен `CombatMember`, цвета цифр урона (Свой->Дикий = Зеленый, Дикий->Свой = Желтый, Дикий->Дикий = скрыто).
+- [ ] **SettingsController** — единая система настроек (MainMenu + Pause, JSON).
+- [ ] **Фикс-сессия** — собрать все баги из `04-todo-bugs.md`, починить.
+- [ ] **UI заголовок чужого инвентаря** — `OwnerPlayerId` / имя в панели.
+- [ ] **Разрушение сундука → сумка** — `ChestController.OnDestroy` → `LootBagManager`.
+- [ ] **Проверить `Structure.Die`** — выброс содержимого в сумку.
+
+---
+
+## v0.2 — Респавн и кровати
+
+- [ ] Спальный мешок / кровать (Placeable, `RespawnPoint`).
+- [ ] Выбор точки респавна при смерти.
+- [ ] `PlayerProgress` хранит `respawnPointId`.
+- [ ] Проверка: смерть → экран смерти → выбор → респавн у кровати.
+
+---
+
+## v0.3 — Экосистема и биомы
+
+- [ ] Spawn-регионы (`BiomeData`, `SpawnTable`).
+- [ ] Пищевая цепочка (дикие vs дикие).
+- [ ] Популяционный контроль (respawn по регионам, max count).
+- [ ] Биомы: пляж / джунгли / горы / снег / болото. Ресурсы по биомам.
+- [ ] День/ночь с событиями (ночные хищники).
+
+---
+
+## v0.4 — Броня и экипировка
+
+- [ ] `ArmorData` (ScriptableObject): защита, прочность, резисты (физ/огонь/холод).
+- [ ] Слоты брони (шлем, нагрудник, штаны, ботинки, перчатки).
+- [ ] `PlayerEquipment` расширить на броню.
+- [ ] Отображение защиты в HUD.
+
+---
+
+## v0.5 — Температура и погода
+
+- [ ] `TemperatureZone` (biome-based).
+- [ ] Гипер/гипотермия (health damage при выходе за пределы).
+- [ ] Одежда снижает эффект.
+- [ ] Погода: дождь, туман, снег (ParticleSystem + Volume).
+- [ ] Костёр / факел греют.
+
+---
+
+## v0.6 — Разведение
+
+- [ ] `CreatureBreeding` — спаривание (mating toggle в RadialMenu).
+- [ ] Яйца / беременность.
+- [ ] Инкубатор / гнездо.
+- [ ] Imprinting (кормление детёныша игроком).
+- [ ] Мутации (случайные статы).
+
+---
+
+## v0.7 — Фермерство
+
+- [ ] Грядки (`CropPlot`), семена, рост по `GameTime`.
+- [ ] Полив (ирригация).
+- [ ] Удобрения.
+
+---
+
+## v0.8 — Строительство: стабильность и электрика
+
+- [ ] Structural integrity (структура рушится, если нет опоры).
+- [ ] Генератор, кабели, розетки, приборы.
+- [ ] Ирригация (трубы, краны, резервуары).
+
+---
+
+## v0.9 — Крафт: тиры и blueprints
+
+- [ ] Blueprint item (с тиром качества).
+- [ ] Тиры: Primitive → Ramshackle → Apprentice → Journeyman → Mastercraft → Ascendant.
+- [ ] Верстаки (Smithy, Fabricator, Chemistry Bench).
+- [ ] Очередь крафта с временем.
+
+---
+
+## v1.0 — Племена и мультиплеер
+
+- [ ] Сетевой слой (Mirror / NGO).
+- [ ] Племена (кланы, ранги, общие структуры/дино).
+- [ ] PvP / PvE режимы.
+- [ ] Server-authoritative.
+
+---
+
+## v1.1+ — Боссы, энд-гейм
+
+- [ ] Арены, призывы, лут.
+- [ ] Boss-специфичные предметы.
+- [ ] Ascension (переход на новый уровень).
+
+---
+
+## Технический долг (параллельно)
+
+- [ ] **`Creature.cs`** — вынести оставшийся `Update`-оркестратор в компоненты.
+- [ ] **Addressables** — перевести `Resources.Load` на Addressables.
+- [ ] **Object pooling** — расширить на больше типов (сейчас только стрелы и damage numbers).
+- [ ] **`FindObjectOfType`** — вычистить из performance-critical путей.
+- [ ] **Profiler** — регулярный прогон, зафиксировать бюджеты (60 fps на среднем ПК).
+```
+--- END OF FILE: project-rules-md\05-roadmap.md ---
+--- START OF FILE: project-rules-md\network\00-network-overview.md ---
+```md
+# Network — обзор
+
+> Стратегия перехода на мультиплеер. Точка входа. Читать первым.
+> Здесь: цель, фреймворк, метод аудита, глоссарий, порядок систем.
+> Детали по системам — в файлах `0X-audit-*.md`. Сводный чеклист — в `07-refactor-checklist.md`.
+
+---
+
+## 1. Цель и горизонт
+
+- **Сейчас:** синглплеер.
+- **Через 1–2 месяца:** кооп на 2–4 игрока, два клиента видят друг друга в тестовой сцене. Не полноценный кооп — только база.
+- **Потом:** выделенный сервер, PvP, 10–20 игроков.
+- **Платформа:** Steam/PC.
+
+---
+
+## 2. Фреймворк
+
+**Выбран: NGO (Netcode for GameObjects) + Unity Relay (join code)** — для коопа.
+
+- Steam-лобби — позже, когда базовая сеть заработает.
+- Mirror — не выбран: лишние сторонние слои (Mirror + Steamworks.NET + FizzyFacePunch) на новом проекте.
+- FishNet — не выбран: избыточен для 2–4 игроков.
+
+> Финальное решение по фреймворку подтверждается в чате перед подключением. До этого — только «сетевая гигиена» без сети.
+
+---
+
+## 3. Стратегия (три этапа)
+
+1. **Сейчас — «сетевая гигиена» без сети.** Аудит + развязка синглтонов через интерфейсы/события. Никакого NGO-кода, пока аудит не закончен.
+2. **Потом — кооп на NGO.** 2–4 игрока, два клиента видят друг друга, базовая синхронизация (позиция, инвентарь, урон).
+3. **Потом — dedicated / PvP.** Выделенный сервер, 10–20 игроков, Steam-лобби, античит.
+
+**Запрещено до окончания аудита:**
+- Подключать NGO/Relay кодом.
+- Переписывать `PlayerProgress` / `InventoryManager` до разметки.
+- Начинать Steam-интеграцию (только Relay join code, и то после аудита).
+
+---
+
+## 4. Метод аудита (для каждой системы)
+
+Три вопроса:
+
+- **А. Что при одновременном действии двух игроков?** (гонки, lost update, двойной спавн)
+- **Б. Может ли клиент соврать?** (публичные методы, прямые поля, отсутствие валидации)
+- **В. Насколько критична задержка?** (высокая / средняя / низкая)
+
+**Разметка:** сервер-авторитарно / клиент + валидация сервера / косметика (клиентски).
+
+**Правило:** если система даёт преимущество одному игроку (урон, ресурсы, позиция в бою) — сервер-авторитарна; если только для глаз — клиентская.
+
+**Проверка аудита:** «Если запустить два клиента и один начнёт читерить (телепорт, дюп, ваншот), какой мой код это остановит?» Если «никакой» — система должна быть сервер-авторитарной, но не готова → в `07-refactor-checklist.md`.
+
+---
+
+## 5. Глоссарий
+
+| Термин | Значение |
+|---|---|
+| **ServerRpc** | Клиент → сервер. Запрос на действие. Сервер решает, применять ли. |
+| **ClientRpc** | Сервер → клиенты. Рассылка события/эффекта (анимация, цифры, звук). |
+| **NetworkVariable** | Реплицируемое поле. Сервер пишет, клиенты читают. |
+| **NetworkTransform** | Репликация позиции/поворота. |
+| **NetworkAnimator** | Репликация параметров аниматора (Speed, IsMoving, триггеры). |
+| **CombatMember** | Атрибуция урона: `Player`, `Wild`, `Tamed`, `Mounted`, `OtherPlayer`, `OtherTamed`. |
+| **Server-authoritative** | Сервер решает, клиент только просит. |
+| **Client-predicted** | Клиент показывает сразу, сервер корректирует (откат при отказе). |
+| **Косметика** | Только для глаз: цифры урона, партиклы, анимации. Не влияет на состояние мира. |
+| **Гонка (race)** | Два клиента одновременно меняют одно состояние → lost update / двойной эффект. |
+| **Идемпотентность** | Повторный вызов не меняет результат (важно для `Die()`, `KnockOut()`). |
+
+---
+
+## 6. Порядок аудита (и статус)
+
+| # | Система | Файл | Статус |
+|---|---|---|---|
+| 1 | Инвентарь игрока | `01-audit-inventory.md` | ✅ готово |
+| 2 | Урон и смерть | `02-audit-damage.md` | ✅ готово |
+| 3 | Игроки и сессия | `03-audit-players.md` | ✅ готово  |
+| 4 | Позиция и движение | `04-audit-position.md` | ✅ готово  |
+| 5 | Мир и строительство | `05-audit-world.md` | ✅ готово  |
+| 6 | Существа и AI | `06-audit-creatures.md` | ✅ готово |
+
+**Почему такой порядок:**
+- **1–2** — самые частые операции (предметы, урон), дают максимальный эффект от развязки.
+- **3** — фундамент коопа: `PlayerProgress.Instance` → per-player. Без этого остальные системы не развести.
+- **4** — позиция/движение: клиент-предсказание, `NetworkTransform`.
+- **5** — мир/строительство: серверные структуры, снапы.
+- **6** — существа/AI: серверный AI, `NetworkAnimator`, репликация позиций.
+
+---
+
+## 7. Ссылки
+
+- **Сводный чеклист:** `07-refactor-checklist.md`.
+- **Аудиты:** `01-audit-inventory.md`, `02-audit-damage.md`, `03-audit-players.md`, `03-audit-players.md`, `05-audit-world.md`, `05-audit-world.md`,
+- **Текущее состояние проекта:** `../03-current-state.md` (раздел «14. Сетевая готовность» — короткая ссылка сюда).
+- **Текущие баги:** `../04-todo-bugs.md` (раздел «Сетевая гигиена» — ссылка на `07-refactor-checklist.md`).
+```
+--- END OF FILE: project-rules-md\network\00-network-overview.md ---
+
+--- START OF FILE: project-rules-md\network\01-audit-inventory.md ---
+```md
+# Аудит 1: Инвентарь игрока
+
+> Система: инвентарь игрока (hotbar + main), сундуки, трупы, сумки.
+> Файлы: `InventoryData.cs`, `InventoryManager.cs`, `ChestInventory.cs`, `ChestUIManager.cs`, `PlayerProgress.cs`, `PlayerEquipment.cs`.
+> Статус: ✅ аудит завершён.
+
+---
+
+## Цепочка владения
+PlayerProgress (глобальный, DontDestroyOnLoad)
+├── hotbarInventoryData : InventoryData (10)
+├── mainInventoryData : InventoryData (100)
+└── AddItemToPlayerInventory(item, amount, durability) ← «входная точка» пополнения
+├── hotbarSlotMap[item.Id] → закреплённый слот хотбара
+└── mainInventoryData.AddItemAnywhere(...) ← но AddItemAnywhere сам зовёт PlayerProgress.Instance.Save()
+
+InventoryManager (сценовый)
+├── DropItemFromSlot / DropAllItemsToBag → LootBagManager.Instance.CreateLootBagFromItems(...)
+├── MoveAllToChest / MoveAllToPlayer
+├── TryRepairItem → PlayerProgress.Instance.mainInventoryData
+└── EquipSavedEquippedItem / SaveEquippedItem
+
+ChestUIManager (сценовый) — CurrentSource (IInventorySource), Open/Close/Toggle
+ChestInventory (на сундуках/трупах/существах)
+└── Data : InventoryData; Save()/Load() для не-corpse; OnDestroy → Save()
+
+InventoryData (чистые данные, НЕ MonoBehaviour)
+├── AddItemAnywhere → PlayerProgress.Instance.Save(...) ← ЛОВУШКА
+├── RemoveItemFromSlot / ClearSlot / NotifyChanged
+├── TransferAllTo / ConsumeIngredients / ConsumeRepairIngredients
+└── ToSerializable / FromSerializable
+
+
+**Главная особенность:** данные инвентаря — это чистый C# (`InventoryData`), но `AddItemAnywhere` сам вызывает `PlayerProgress.Instance.Save(...)` и `NotifyChanged()`. То есть мутация данных неотделима от сохранения на диск и от UI-уведомления.
+
+---
+
+## Вопрос А. Что при одновременном действии двух игроков?
+
+| Сценарий | Что произойдёт в текущем коде |
+|---|---|
+| Два игрока дропают предмет в один сундук одновременно | `ChestInventory.Data` — один объект. `AddItemAnywhere` не атомарен: два вызова подряд в одном кадре дадут корректную сумму, но если между ними `Save()` — возможна перезапись файла. В коопе с разными клиентами — классический lost update. |
+| Один игрок дропает, другой подбирает с земли | `DropItemFromSlot` создаёт `LootBag` через `LootBagManager.Instance` (singleton). Подбор идёт через `PlayerInteraction` → в `InventoryData.AddItemAnywhere`. Два клиента могут «подобрать» один и тот же стак. |
+| Два игрока чинят один предмет в общем сундуке | `TryRepairItem` читает `slot.currentDurability`, потребляет ресурсы, пишет `maxDurability`. Между чтением и записью — окно для дюпа/потери ресурсов. |
+| Один игрок перекладывает из сундука, другой — в тот же сундук | `TransferAllTo` итерируется по `sourceData.slots` и вызывает `target.AddItemAnywhere` в цикле. Не транзакционно. |
+| Один игрок экипирует предмет, другой в это время дропает его из общего сундука | `PlayerEquipment.Equip` не связан с источником слота. Если предмет «экипирован», а слот очищен — `GetCurrentEquippedSlot()` вернёт слот, где уже `null`. |
+
+**Вывод:** данные инвентаря не рассчитаны на конкурентный доступ. Все операции read-modify-write.
+
+---
+
+## Вопрос Б. Может ли клиент соврать?
+
+Сейчас клиент = единственный авторитет. Все проверки — «доверяющие»:
+
+| Действие | Где проверка | Можно ли соврать |
+|---|---|---|
+| Добавить предмет | `PlayerProgress.AddItemToPlayerInventory(item, amount)` — публичный метод, любой код может звать с любым `Item` и `amount` | Да, тривиально: `PlayerProgress.Instance.AddItemToPlayerInventory(item, 9999)` |
+| Изменить прочность | `InventorySlot.currentDurability` — публичное поле (`InventorySlot` не показан, но `slot.currentDurability = ...` пишется напрямую в `ChestUI`, `TryRepairItem`, `HandleStructurePlaced`) | Да, прямое присваивание |
+| Очистить слот | `InventoryData.ClearSlot(index)` — публичный, без контекста «кто и почему» | Да |
+| Забрать из сундука | `ChestUI.MoveAllToPlayer()` → `chestUI.MoveAllToPlayer()` → `target.AddItemAnywhere` | Да, нет проверки дистанции/владельца |
+| Экипировать | `PlayerEquipment.Equip(item, slotIndex)` — публичный, не проверяет, что `slotIndex` соответствует слоту, где реально лежит `item` | Да: можно экипировать предмет, которого нет в инвентаре (просто передать `Item` из базы) |
+| Скрафтить | `InventoryData.ConsumeIngredients(recipe)` вызывается из UI (не показан) | Да, если UI-код вызывает напрямую, минуя проверку уровня/энграмм |
+| Изучить энграмму | `PlayerProgress.TrySpendEngramPoints(cost)` — публичный, не проверяет, что `cost` соответствует реальной энграмме | Да, можно передать `cost = 0` |
+| Распределить стат | `PlayerProgress.AllocateStatPoint(stat)` — проверяет только `StatPointsAvailable > 0` | Частично: нельзя накрутить очки, но можно накликать, если UI не заблокирован (в коде нет блокировки от повторного вызова в одном кадре) |
+| Добавить XP | `PlayerProgress.AddExperience(amount)` — публичный | Да |
+
+**Вывод:** клиент полностью авторитетен. Для сети нужен серверный слой, который валидирует: наличие предмета, дистанцию до сундука, владельца слота, уровень для крафта, реальный `cost` энграммы.
+
+---
+
+## Вопрос В. Насколько критична задержка?
+
+| Операция | Критичность задержки | Комментарий |
+|---|---|---|
+| Показ предмета в UI (иконка/стак) | Низкая | Можно клиентски, но с серверной коррекцией |
+| Перекладывание предметов drag&drop | Средняя | Нужен «оптимистичный» локальный показ + серверный откат при отказе |
+| Скрафт | Средняя | Время крафта пока нет (мгновенно), при сети — серверное подтверждение обязательно |
+| Дроп предмета | Средняя | Спавн `LootBag` — серверный, клиент только просит |
+| Экипировка | Низкая | Локально можно мгновенно, сервер проверяет владение |
+| Ремонт | Низкая | Редко, можно ждать подтверждения |
+| Смерть/потеря инвентаря | Высокая | Сервер решает, что выпало и куда |
+
+**Вывод:** большинство операций инвентаря терпимы к задержке, но требуют серверной валидации перед применением.
+
+---
+
+## Таблица разметки
+
+| Система | Кто авторитетен | Почему | Что переделать |
+|---|---|---|---|
+| Инвентарь: добавление | Сервер | Клиент не решает, сколько у него предметов | `PlayerProgress.AddItemToPlayerInventory` → ServerRpc; убрать `Save()` из `AddItemAnywhere` |
+| Инвентарь: удаление/очистка | Сервер | Удаление без валидации = дюп | `RemoveItemFromSlot` / `ClearSlot` → private; клиент шлёт Request |
+| Инвентарь: перенос | Сервер + клиентский оптимизм | Конкурентный доступ к сундукам | Серверный `MoveItem(from, fromSlot, to, toSlot, count)` |
+| Инвентарь: дроп | Сервер | Спавн LootBag — мир | `CreateLootBagFromItems` только на сервере |
+| Инвентарь: экипировка | Клиент + валидация | Визуал локально, владение — сервер | `Equip` → локально + `ServerRpc EquipRequest(slotIndex)` |
+| Инвентарь: ремонт | Сервер | Потребление ресурсов + прочность | `RequestRepair(slotIndex, owner)` на сервере |
+| Крафт | Сервер | `TrySpendEngramPoints(cost)` без валидации | `RequestCraft(recipeId)` на сервере |
+| Сохранение на диск | Сервер/хост | Клиент не пишет в файлы мира | `Save` → no-op на клиенте; убрать `Save()` из `AddItemAnywhere` |
+| Прочность | Сервер | Публичное поле | `currentDurability` → `private set` + серверный сеттер |
+| Уведомления UI | Клиент (косметика) | Только для глаз | Вынести `NotificationManager` из `InventoryData` |
+
+---
+
+## Переделать до сети
+
+- [ ] `InventoryData.AddItemAnywhere` — убрать `PlayerProgress.Instance.Save()` (ответственность вызывающего).
+- [ ] `InventoryData.RemoveItemFromSlot` / `ClearSlot` — `internal`, доступ через `InventoryManager`.
+- [ ] `PlayerProgress.AddItemToPlayerInventory` — сделать `[ServerRpc]`-совместимым (пока — `internal` + флаг `SessionMode.IsMultiplayer`).
+- [ ] `InventorySlot.currentDurability` — `private set` + сеттер в `InventoryData`.
+- [ ] `PlayerEquipment.Equip` — валидировать `slotIndex` ↔ `item`.
+- [ ] `PlayerProgress.TrySpendEngramPoints` — валидировать `cost` по рецепту.
+- [ ] `PlayerProgress.AllocateStatPoint` — защита от повторного вызова в одном кадре (флаг `_isAllocating`).
+- [ ] `NotificationManager.Instance.Show(...)` из `InventoryData` / `InventoryManager` — заменить на события.
+- [ ] `ChestInventory.Save()` / `PlayerProgress.Save()` — no-op при `SessionMode.IsMultiplayer && !IsServer`.
+- [ ] `LootBagManager.Instance.CreateLootBagFromItems` — вызывать только на сервере (флаг `SessionMode.IsMultiplayer`).
+- [ ] `InventoryUI` / `HotbarUI` — подписать на `InventoryData.OnInventoryChanged`, а не на прямые вызовы `RefreshAllUIs` из `InventoryManager`.
+- [ ] `ChestUIManager.CurrentSource` — при сети должен быть локальным состоянием клиента (какой сундук открыт у меня), но данные — серверные.
+```
+--- END OF FILE: project-rules-md\network\01-audit-inventory.md ---
+
+--- START OF FILE: project-rules-md\network\02-audit-damage.md ---
+```md
+# Аудит 2: Урон и смерть существа
+
+> Система: получение урона существом, torpor, нокаут, смерть, атрибуция урона, память об атакующем.
+> Файлы: `Creature.cs`, `CreatureCombat.cs`, `CreatureDeath.cs`, `CreatureKnockout.cs`, `CreatureHitZone.cs`, `PlayerSurvivalSystem.cs`, `DamageNumberPool.cs`.
+> Статус: ✅ аудит завершён.
+
+---
+
+## Цепочка владения
+PlayerInteraction.OnAttackInteractFinished ← Animation Event игрока (ближний бой)
+└── OverlapBox по модели оружия
+└── target.TakeDamage(damage, torpor, pi, hit, point, CombatMember.Player)
+└── Creature.TakeDamage(...) ← прокси
+└── CreatureCombat.TakeDamage(...) ← вся логика
+├── _creature.GetDamageMultiplier(col) ← зона урона (×2 голова, ×0.5 панцирь)
+├── _creature.ReduceHealth(finalDamage) ← МУТАЦИЯ HP
+├── DamageNumberPool.Instance?.ShowDamage(...) ← КОСМЕТИКА
+├── _creature.AddTorpor(torporAmount) ← МУТАЦИЯ TORPOR
+├── animator.SetTrigger(TakeDamage) ← АНИМАЦИЯ
+├── PlayDamageEffect(...) ← КОСМЕТИКА
+└── if (_creature.IsHealthBelowZero()) _creature.RequestDeath()
+└── Creature.Die() → CreatureDeath.Die() ← МУТАЦИЯ МИРА (труп, лут, сейв)
+
+CreatureCombat.DealDamageToTarget ← Animation Event существа (атака)
+├── верхом: OverlapBox → target.TakeDamage(..., CombatMember.Mounted)
+├── AI по цели: _currentAttackTarget.Combat.NotifyAttackedBy(_creature) → target.TakeDamage(..., Tamed/Wild)
+└── AI по игроку: PlayerSurvivalSystem.Instance?.TakeDamage(_creature.AttackDamage) ← СИНГЛТОН
+
+
+**Ключевое наблюдение:** `CreatureCombat.TakeDamage` — это одна точка, через которую проходят все виды урона (игрок, дикий AI, прирученный AI, верхом). Это хорошо для сети: одну функцию развести на сервер проще, чем десять. Но внутри неё смешаны: мутация HP, мутация torpor, анимация, косметика (цифры, эффекты) и смерть, которая тянет за собой труп + лут + сейв.
+
+---
+
+## Вопрос А. Что при одновременном действии двух игроков?
+
+| Сценарий | Что произойдёт в текущем коде |
+|---|---|
+| Два игрока бьют одно существо одновременно | `CreatureCombat.TakeDamage` не атомарен: `ReduceHealth` + `IsHealthBelowZero` + `RequestDeath`. Два клиента могут оба увидеть `health <= 0` и оба вызвать `Die()`. `CreatureDeath.Die()` создаёт труп + дропает лут → двойной труп / двойной лут. |
+| Игрок добивает существо, которое в этот момент нокаутирует другой | `TakeDamage` проверяет `!IsAlive()` в начале, но между `ReduceHealth` и `RequestDeath` — окно. Один клиент видит «жив», второй уже «мёртв». |
+| Два прирученных существа атакуют одну цель | `DealDamageToTarget` у каждого читает `_currentAttackTarget` — у каждого свой. Урон суммируется корректно (каждый вызов `TakeDamage` независим), но `NotifyAttackedBy` перезаписывает `_lastAttacker` — последний атакующий выигрывает память, первый теряется. |
+| Игрок верхом + пеший игрок бьют одно существо | Верхом — `OverlapBox` перед мордой, пеший — `OverlapBox` по оружию. Оба зовут `TakeDamage`. Суммируется. Но `CombatMember.Mounted` vs `Player` — в `DamageNumberPool` разные цвета, ок. |
+| Существо умирает, пока игрок его нокаутирует (torpor) | `TakeDamage` сначала `ReduceHealth`, потом `AddTorpor`. Если HP ушло в 0 — `RequestDeath()`, но `AddTorpor` уже мог сработать. Труп с torpor > 0. |
+| Смерть + `RidingController.ForceDismount` | `CreatureDeath.Die()` (по инвариантам) дёргает `ForceDismount`. Если двое верхом (не должно быть, но) — не проверяется. |
+
+**Вывод:** критическая гонка — смерть. `TakeDamage` не имеет флага «уже умирает», `Die()` не идемпотентен на уровне кода (полагается на `_isDead`, но проверка `IsHealthBelowZero` → `RequestDeath` может пройти дважды до установки `_isDead`).
+
+---
+
+## Вопрос Б. Может ли клиент соврать?
+
+| Действие | Где проверка | Можно ли соврать |
+|---|---|---|
+| Нанести урон существу | `Creature.TakeDamage(damage, ...)` — публичный, любой код может звать с любым `damage` | Да, тривиально: `creature.TakeDamage(99999, 0, null, null, null, CombatMember.Player)` |
+| Нанести урон игроку | `PlayerSurvivalSystem.Instance?.TakeDamage(_creature.AttackDamage)` — публичный singleton | Да, но это урон «от существа», клиент не инициирует напрямую... пока |
+| Изменить `CombatMember` | Передаётся параметром. `CombatMember.Player` / `Tamed` / `Mounted` — клиент решает, как атрибутировать урон | Да: клиент может назваться `Mounted`, чтобы получить другой цвет цифры (косметика, но всё же) |
+| Убить существо | `RequestDeath()` / `Die()` — публичные | Да, можно убить любое существо |
+| Нокаутировать (torpor) | `TakeDamage(..., torporAmount, ...)` → `AddTorpor` — публичный через `Creature.AddTorpor` | Да, можно накинуть torpor |
+| `NotifyAttackedBy` | Публичный, зовётся из `DealDamageToTarget` | Да, можно подставить любого атакующего |
+| `LastAttacker` | Геттер с таймаутом 15 сек | Читается AI для ответной агрессии — клиент может влиять, кого AI запомнит |
+
+**Вывод:** клиент полностью авторитетен по урону. Нет ни одной проверки дистанции, кулдауна (кулдаун есть, но клиентский `_lastAttackTime`), валидности цели (можно бить сквозь стену, если `OverlapBox` задел), зоны урона (клиент передаёт `hitCollider` — может подставить голову для ×2).
+
+**Отдельно:** `Creature.GetDamageMultiplier(col)` читает `CreatureHitZone.damageMultiplier` с переданного клиентом коллайдера. Клиент может передать коллайдер головы, даже если попал в ногу.
+
+---
+
+## Вопрос В. Насколько критична задержка?
+
+| Операция | Критичность | Комментарий |
+|---|---|---|
+| Нанесение урона (HP) | Высокая | В бою задержка 100–200 мс уже ощутима. Нужен клиентский «предсказанный» урон + серверная коррекция (или хотя бы мгновенный локальный отклик цифры). |
+| Смерть существа | Высокая | Труп + лут — изменение мира. Клиент не должен решать. Но визуально смерть должна быть мгновенной (анимация), а лут — по серверному подтверждению. |
+| Цифры урона | Низкая (косметика) | Можно клиентски, но цвет зависит от `CombatMember` — лучше с сервера, чтобы не расходилось. |
+| Партиклы урона | Низкая | Клиентски. |
+| Анимация `TakeDamage` | Низкая | Клиентски (триггер). |
+| Torpor | Высокая | Нокаут = приручение. Клиент не должен накидывать torpor. |
+| `LastAttacker` | Средняя | Влияет на AI. При сети — серверный. |
+| `ForceDismount` при смерти | Высокая | Если существо умерло под игроком — сервер должен телепортировать игрока. |
+
+**Вывод:** урон и смерть критичны к задержке, но требуют серверной валидации. Идеал: клиент шлёт `RequestAttack(targetId, hitPoint, hitColliderId)`, сервер считает урон (с учётом зоны, дистанции, кулдауна) и рассылает результат. Клиент показывает предсказанную цифру сразу, сервер корректирует.
+
+---
+
+## Таблица разметки
+
+| Система | Кто авторитетен | Почему | Что переделать |
+|---|---|---|---|
+| Урон: расчёт | Сервер | Клиент передаёт damage/hitCollider/CombatMember — всё подделываемо | `TakeDamage` → `ServerRpc RequestAttack(targetId, hitPoint, hitZoneId)`; сервер считает damage сам |
+| Урон: HP | Сервер | Прямая мутация HP | `Health` → `NetworkVariable`; `ReduceHealth` → internal |
+| Смерть | Сервер | Труп + лут + сейв | `RequestDeath` → ServerRpc; `Die()` → internal; флаг `_isDying` |
+| Torpor | Сервер | Нокаут = приручение | `AddTorpor` → серверный; `torpor` → NetworkVariable |
+| Нокаут | Сервер | Меняет поведение | `KnockOut` → ServerRpc |
+| Зона урона | Сервер | Клиент может подставить голову | Сервер сам делает Overlap по hitPoint |
+| Атрибуция (CombatMember) | Сервер | Клиент не решает, кто он | Сервер по connectionId + IsRidden |
+| LastAttacker | Сервер | Влияет на AI | Только серверный NotifyAttackedBy |
+| Урон игроку | Сервер | HP игрока — серверное | `PlayerSurvivalSystem.TakeDamage` → серверный; Health → NetworkVariable |
+| Анимация TakeDamage | Клиент (триггер сервером) | Косметика | ClientRpc или NetworkAnimator |
+| Цифры урона | Клиент (косметика) | Только для глаз | ClientRpc ShowDamage(amount, pos, attacker, receiver) |
+| Партиклы урона | Клиент | Косметика | ClientRpc |
+| Кулдаун атаки | Сервер | Клиент может спамить | Серверный _lastAttackTime per-creature |
+| Атака верхом | Сервер | OverlapBox — серверный расчёт | ServerRpc RequestMountedAttack |
+| AI (поиск целей) | Сервер | Иначе клиенты видят разное | Полностью серверный AI; позиции через NetworkTransform |
+
+---
+
+## Ключевые выводы
+
+1. **`CreatureCombat.TakeDamage` — «бутылочное горлышко».** Через неё проходит весь урон. Развести её на серверную часть (расчёт + HP + torpor + смерть) и клиентскую (анимация + цифры + партиклы) — самый дешёвый путь к сети. Не надо трогать 10 мест, достаточно одной функции.
+2. **Смерть — самая опасная гонка.** `Die()` не идемпотентен. В синглплеере это не видно (один вызов), в коопе два клиента могут добить одновременно. Флаг `_isDying` обязателен до сети, иначе двойной лут.
+3. **`CombatMember` уже есть** — это хороший задел. Но сейчас клиент его передаёт. При сети сервер должен сам определять `CombatMember` по `connectionId` + `IsRidden`. Enum оставить, но вычисление — серверное.
+4. **`DamageNumberPool.ShowDamage` уже принимает `attacker`/`receiver`** — это значит, архитектура уже готова к тому, чтобы цифры показывались по серверному событию. Достаточно заменить прямой вызов из `TakeDamage` на событие `OnDamageDealt` → клиентский подписчик → `ShowDamage`.
+5. **AI (`CreatureWildAI.Tick`, `CreatureTamedAI.Tick`, `ChaseAndAttack`)** — полностью серверный. Клиент не должен тикать AI, иначе рассинхрон позиций и целей. Это большой блок, но он не требует переписывания логики — только флаг `if (!IsServer) return;` в начале `Tick`.
+6. **`Creature.UpdateAnimation`** — при сети заменяется на `NetworkAnimator`. Сейчас `Speed`/`IsMoving` пишутся локально из `_agent.velocity` — при сети каждый клиент увидит свою скорость. `NetworkAnimator` решает это.
+7. **`PlayerSurvivalSystem.Instance?.TakeDamage`** — прямой вызов из `CreatureCombat.DealDamageToTarget`. При сети — серверный метод на игроке-цели. Синглтон `Instance` — проблема (какой игрок?), но это уже пункт «позиция/игроки», не урон.
+
+---
+
+## Переделать до сети
+
+- [ ] `Creature.TakeDamage` — сделать `internal`, вход только через серверный `RequestAttack`.
+- [ ] `Creature.ReduceHealth` — `internal`; `Health` setter → серверный.
+- [ ] `Creature.RequestDeath` / `Creature.Die` — `RequestDeath` → ServerRpc; `Die()` → `internal`.
+- [ ] `CreatureDeath.Die` — добавить флаг `_isDying` (идемпотентность); сейчас двойной вызов возможен.
+- [ ] `CreatureCombat.TakeDamage` — разделить на: (1) серверный расчёт (damage + зона + HP), (2) клиентские эффекты (анимация, цифры, партиклы) через события.
+- [ ] `CreatureCombat.TakeDamage` — убрать `PlayDamageEffect` (Instantiate) из общей функции; вынести в клиентский обработчик.
+- [ ] `DamageNumberPool.Instance.ShowDamage` — вызывать из клиентского обработчика события, а не из `TakeDamage`.
+- [ ] `Creature.GetDamageMultiplier(col)` — при сети клиент не передаёт `col`; сервер сам ищет зону по `hitPoint`.
+- [ ] `Creature.AddTorpor` — `internal`; `torpor` → `NetworkVariable` (или серверный сеттер + репликация).
+- [ ] `CreatureKnockout.KnockOut` — `internal`; вход через `ServerRpc`.
+- [ ] `CreatureCombat.NotifyAttackedBy` — `internal`; только сервер.
+- [ ] `CreatureCombat.LastAttacker` — серверный геттер; клиенту не нужен.
+- [ ] `CreatureCombat._lastAttackTime` — серверный; клиентский кулдаун только для анимации.
+- [ ] `PlayerSurvivalSystem.TakeDamage` — `internal`; вход через серверный метод; `Health` → `NetworkVariable`.
+- [ ] `CreatureCombat.DealDamageToTarget` — верхом: `OverlapBox` на сервере; клиент — только анимация.
+- [ ] `CreatureCombat.FindWildTarget` / `FindNearestEnemy` / `FindEnemyNearPlayer` — только сервер (AI).
+- [ ] `CreatureCombat.PerformAttack` / `AttackFromRider` — серверный триггер анимации через `ClientRpc` / `NetworkAnimator`.
+- [ ] `Creature.UpdateAnimation` — при сети заменить на `NetworkAnimator` (параметры Speed/IsMoving реплицируются).
+- [ ] `Creature._wildAI.Tick` / `_tamedAI.Tick` — только на сервере (флаг `if (!IsServer) return;`).
+- [ ] `CreatureCombat._isAttackingPlayer` — серверное состояние; клиент не должен влиять.
+- [ ] `CreatureCombat.ChaseAndAttack` — только сервер (управляет `NavMeshAgent`).
+- [ ] `CreatureCombat.UpdateCurrentEnemy` / `ClearTargets` — только сервер.
+```
+--- END OF FILE: project-rules-md\network\02-audit-damage.md ---
+
+--- START OF FILE: project-rules-md\network\03-audit-players.md ---
+```md
+# Аудит 3: Игроки и сессия
+
+> Система: игроки (`PlayerController`, `PlayerSurvivalSystem`), прогресс (`PlayerProgress`), сессия (`SessionMode`, `GameTime`), глобальные менеджеры (`GameAssets`).
+> Файлы: `PlayerController.cs`, `PlayerSurvivalSystem.cs`, `PlayerProgress.cs`, `GameAssets.cs`, `SessionMode.cs`, `GameTime.cs`.
+> Статус: ✅ аудит завершён.
+
+---
+
+## Цепочка владения
+GameAssets (глобальный, DontDestroyOnLoad)
+├── Awake: Instance = this, DontDestroyOnLoad, CreateGlobalManagers()
+├── GameController, PlayerProgress, GameTimeUpdater — дочерние GameObject'ы
+└── GameTime.Initialize() ← SessionMode внутри GameTime
+
+PlayerProgress (глобальный, DontDestroyOnLoad, ОДИН на игру)
+├── _level, _experience, _engramPoints, _statLevels
+├── hotbarInventoryData, mainInventoryData
+├── _playerController : PlayerController ← ОДНА ссылка
+├── _inventoryManager : InventoryManager ← ОДНА ссылка
+├── Initialize(itemDb, recipeDb) → LoadData()
+├── RegisterPlayerController(controller)
+├── RegisterInventoryManager(manager)
+├── Save() / LoadData() / ReloadFromFile()
+└── Instance — статический
+
+PlayerController (сценовый, ===Player===, ОДИН)
+├── Awake: Instance = this (синглтон, Destroy дубликата)
+├── Awake: PlayerProgress.Instance?.RegisterPlayerController(this)
+├── _playerSurvivalSystem = PlayerSurvivalSystem.Instance
+├── _input, _animator, _controller
+└── IsMounted, MoveInput, LookInput, SprintInput — геттеры из _input
+
+PlayerSurvivalSystem (сценовый, Instance — статический, ОДИН)
+├── Awake: Instance = this (Destroy дубликата)
+├── Start: LoadFrom(PlayerProgress.Instance.GetLoadedSaveData())
+├── Update: смерть (DieManually || health <= 0)
+├── TakeDamage, AddFood, AddWater, RecoveryHealth
+├── SaveTo(saveData) / LoadFrom(saveData)
+├── OnPlayerDeathRoutine: создаёт труп через CorpseManager.Instance
+└── TogglePlayerActive(pc) — отключает компоненты игрока
+
+SessionMode (статический)
+├── IsMultiplayer => _settings.isMultiplayer
+└── Initialize(GameSettings) — вызывается из GameAssets?
+
+
+**Ключевое наблюдение:** всё — синглтоны. `PlayerProgress.Instance`, `PlayerController.Instance`, `PlayerSurvivalSystem.Instance`, `InventoryManager.Instance`, `ChestUIManager.Instance`. При коопе 2–4 игроков эти `Instance` должны стать per-player, иначе второй игрок перезапишет первого.
+
+---
+
+## Вопрос А. Что при одновременном действии двух игроков?
+
+| Сценарий | Что произойдёт в текущем коде |
+|---|---|
+| Два игрока в одной сцене | `PlayerController.Awake` второго игрока: `Instance != null && Instance != this` → **`Destroy(gameObject)`**. Второй игрок **удаляется**. Кооп невозможен в принципе. |
+| Два игрока регистрируются в `PlayerProgress` | `RegisterPlayerController` перезаписывает `_playerController`. Первый игрок «теряется». `PlayerProgress.LateUpdate` кэширует позицию **последнего** контроллера. |
+| Два игрока имеют `PlayerSurvivalSystem` | `Awake` второго: `Instance != null` → **`Destroy(gameObject)`**. Второй игрок без выживания. |
+| Два игрока открывают инвентарь | `InventoryManager.Instance` — один. `_selectedSlotIndex` — один. Второй игрок перезаписывает выбор первого. `ChestUIManager.CurrentSource` — один. |
+| Один игрок умирает, другой — нет | `PlayerSurvivalSystem.OnPlayerDeathRoutine` вызывает `PlayerProgress.Instance.ReloadFromFile()` — это **глобальный** прогресс. Второй игрок потеряет свой прогресс. |
+| `PlayerProgress.Save()` | `Save()` пишет **один** файл `Player.save`. Второй игрок перезапишет файл первого. |
+| `GameAssets.CreateGlobalManagers` | Создаёт **один** `PlayerProgress`. Второй игрок должен получить свой — но `CreateChildManager<PlayerProgress>` вызывается один раз. |
+| `GameTime.Now` | Один на игру. При коопе — должен быть серверным временем, но `GameTimeUpdater` тикает локально у каждого. |
+
+**Вывод:** текущая архитектура физически не поддерживает N игроков. Не «есть гонки», а «второй игрок удаляется при Awake». Это блокер №1 для коопа.
+
+---
+
+## Вопрос Б. Может ли клиент соврать?
+
+| Действие | Где проверка | Можно ли соврать |
+|---|---|---|
+| Двигать себя | `PlayerController` двигает `transform` локально (CharacterController) | Да, клиент полностью авторитетен по своей позиции |
+| Наносить урон | `PlayerController.Attack` → `equipment.UseCurrentTool` → `PlayerInteraction.OnAttackInteractFinished` → `Creature.TakeDamage` | Да, клиент решает, попал ли он (OverlapBox локально) |
+| Получать урон | `PlayerSurvivalSystem.TakeDamage` — публичный | Да, клиент может «не получить» урон (не вызвать метод) |
+| Умирать | `PlayerSurvivalSystem.Update` проверяет `_health <= 0` | Да, клиент решает, умер ли он (может не допустить `_health <= 0`) |
+| Сохранять прогресс | `PlayerProgress.Save()` пишет локальный файл | Да, клиент может подделать файл |
+| Распределять статы | `PlayerProgress.AllocateStatPoint` — публичный | Да (см. аудит 1) |
+| `SessionMode.IsMultiplayer` | Читается из `GameSettings.isMultiplayer` — ScriptableObject, локальный ассет | Да, клиент может выставить `isMultiplayer = false` и играть «в синглплеере» на сервере |
+| `GameTime.Now` | SinglePlayer: локальное накопленное время; Multiplayer: `DateTimeOffset.UtcNow` | В мультиплеере — клиентское UTC, не серверное. Рассинхрон времени между клиентами. |
+
+**Вывод:** клиент полностью авторитетен по всему: позиция, урон, смерть, прогресс, время. Для коопа нужен серверный слой, который:
+1. Валидирует позицию (скорость, телепорт).
+2. Валидирует урон (дистанция, кулдаун, попадание).
+3. Решает смерть (серверное HP).
+4. Хранит прогресс (серверный сейв).
+5. Даёт серверное время.
+
+---
+
+## Вопрос В. Насколько критична задержка?
+
+| Операция | Критичность | Комментарий |
+|---|---|---|
+| Движение игрока | Высокая | 100 мс задержки = «резиновый» персонаж. Нужен client-side prediction + server reconciliation. |
+| Поворот камеры | Низкая | Локально, не реплицируется (только для наблюдателей) |
+| Атака (анимация) | Низкая | Локально, но урон — по серверу |
+| Получение урона | Высокая | Если клиент «не знает» об уроне, он не проиграет анимацию. Сервер должен присылать `ClientRpc TakeDamage` |
+| Смерть | Высокая | Сервер решает, клиент показывает экран смерти по `ClientRpc` |
+| Прогресс (XP, уровень) | Средняя | Можно показывать локально, сервер корректирует |
+| Инвентарь | Средняя | См. аудит 1 |
+| Время (`GameTime.Now`) | Средняя | Должно быть серверным; клиент синхронизирует часы |
+
+**Вывод:** движение и урон критичны к задержке, но требуют серверной валидации. Идеал: client-side prediction для движения (клиент двигает локально, сервер корректирует), server-authoritative для урона/смерти.
+
+---
+
+## Таблица разметки
+
+| Система | Кто авторитетен | Почему | Что переделать |
+|---|---|---|---|
+| Игроки: количество (`PlayerController.Instance`, `PlayerSurvivalSystem.Instance`) | Сервер (спавн) + клиент (свой игрок) | Сейчас `Awake` удаляет второго игрока. Кооп невозможен | Убрать синглтон-паттерн из `PlayerController` / `PlayerSurvivalSystem`. Каждый игрок — свой экземпляр. `Instance` → `LocalPlayer` (только свой) + `AllPlayers` (список на сервере). |
+| Прогресс игрока (`PlayerProgress.Instance`) | Сервер | Один `PlayerProgress` на игру. Второй игрок перезапишет первого | `PlayerProgress` → per-player (по `connectionId` / `playerId`). `Instance` → `GetPlayerProgress(playerId)`. Сейв — per-player файл. |
+| Инвентарь игрока (`InventoryManager.Instance`) | Сервер | Один `InventoryManager`. Второй игрок перезапишет выбор первого | `InventoryManager` → per-player. `Instance` → `GetInventoryManager(playerId)`. |
+| Выживание (`PlayerSurvivalSystem.Instance`) | Сервер | Один `PlayerSurvivalSystem`. Второй игрок удаляется | Per-player. `Health` → `NetworkVariable`. `TakeDamage` → серверный. |
+| Позиция игрока (`PlayerController.transform`) | Клиент + валидация сервера | Client-side prediction для отзывчивости, сервер проверяет скорость/телепорт | `NetworkTransform` (клиент-авторитарный) + серверная проверка `maxSpeed`. CharacterController — локально. |
+| Камера / ввод (`PlayerInputHandler`, `_input`) | Клиент | Только для своего игрока | Не реплицируется. `PlayerInput` — только на локальном игроке. |
+| Атака игрока (`PlayerController.Attack` → `PlayerInteraction`) | Сервер (расчёт) + клиент (анимация) | Клиент решает, попал ли (OverlapBox локально) | `ServerRpc RequestAttack(targetId, hitPoint)`. Сервер считает урон (см. аудит 2). |
+| Смерть игрока (`PlayerSurvivalSystem.OnPlayerDeathRoutine`) | Сервер | Создаёт труп, чистит инвентарь, `ReloadFromFile` | Серверный `Die()`. `ClientRpc OnPlayerDied`. `ReloadFromFile` → только на сервере. |
+| Сохранение (`PlayerProgress.Save`) | Сервер/хост | Один файл `Player.save` | Per-player файл. На клиенте — no-op. |
+| Время (`GameTime.Now`, `GameTimeUpdater`) | Сервер | Клиентское UTC рассинхронизировано | `GameTime.Now` → серверное время (синхронизация часов). `GameTimeUpdater` — только на сервере. |
+| Режим сессии (`SessionMode.IsMultiplayer`) | Сервер | `GameSettings.isMultiplayer` — локальный ассет, клиент может подделать | `SessionMode` → серверный флаг. `GameSettings` — только для дефолтов. |
+| Глобальные менеджеры (`GameAssets.CreateGlobalManagers`) | Сервер (создание) | Один `PlayerProgress` на игру | Развести: глобальные (GameController, GameTime) — на сервере; per-player (PlayerProgress, InventoryManager) — на каждого. |
+
+---
+
+## Ключевые выводы
+
+1. **Синглтон-паттерн — главный блокер.** `PlayerController.Instance`, `PlayerSurvivalSystem.Instance`, `PlayerProgress.Instance`, `InventoryManager.Instance` — все удаляют второй экземпляр. До коопа нужно убрать `Destroy(gameObject)` в `Awake` и заменить `Instance` на `LocalPlayer` + `AllPlayers`.
+
+2. **`PlayerProgress` — один на игру.** Второй игрок перезапишет прогресс первого. Нужен per-player прогресс с ключом по `playerId`.
+
+3. **`PlayerProgress.Save()` пишет один файл.** Второй игрок перезапишет сейв первого. Нужен per-player файл (`Player_{playerId}.save`).
+
+4. **`PlayerSurvivalSystem.OnPlayerDeathRoutine` вызывает `PlayerProgress.Instance.ReloadFromFile()`** — глобальный откат. Второй игрок потеряет прогресс. При сети — только серверный откат для умершего игрока.
+
+5. **`GameTime.Now` в мультиплеере использует `DateTimeOffset.UtcNow`** — клиентское время, не серверное. Рассинхрон между клиентами. Нужна синхронизация часов с сервером.
+
+6. **`SessionMode.IsMultiplayer` читает `GameSettings.isMultiplayer`** — локальный ScriptableObject. Клиент может подделать. Нужен серверный флаг.
+
+7. **`GameAssets.CreateGlobalManagers` создаёт одного `PlayerProgress`** — нужен per-player для коопа. Глобальные (GameController, GameTime) — на сервере; per-player (PlayerProgress, InventoryManager) — на каждого.
+
+8. **`PlayerController.Awake` регистрируется в `PlayerProgress.Instance`** — при N игроках нужна регистрация по `playerId`.
+
+---
+
+## Переделать до сети
+
+- [ ] `PlayerController.Awake` — убрать `Destroy(gameObject)` для дубликата; `Instance` → `LocalPlayer` (только свой) + `AllPlayers` (список).
+- [ ] `PlayerSurvivalSystem.Awake` — убрать `Destroy(gameObject)`; `Instance` → per-player.
+- [ ] `PlayerProgress.Instance` — per-player: `GetPlayerProgress(playerId)`. Сейв — `Player_{playerId}.save`.
+- [ ] `InventoryManager.Instance` — per-player: `GetInventoryManager(playerId)`.
+- [ ] `PlayerProgress.RegisterPlayerController` — регистрация по `playerId`, не по singleton.
+- [ ] `PlayerProgress.RegisterInventoryManager` — то же.
+- [ ] `PlayerSurvivalSystem.OnPlayerDeathRoutine` — `ReloadFromFile` только для умершего игрока (серверный).
+- [ ] `PlayerProgress.Save` — no-op на клиенте; per-player файл на сервере.
+- [ ] `GameTime.Now` — серверное время; синхронизация часов с сервером.
+- [ ] `GameTimeUpdater` — только на сервере.
+- [ ] `SessionMode.IsMultiplayer` — серверный флаг; `GameSettings.isMultiplayer` — только дефолт.
+- [ ] `GameAssets.CreateGlobalManagers` — развести: глобальные (GameController, GameTime) на сервере; per-player (PlayerProgress, InventoryManager) на каждого.
+- [ ] `PlayerController.transform` — client-side prediction + `NetworkTransform` + серверная валидация скорости.
+- [ ] `PlayerController.Attack` — `ServerRpc RequestAttack(targetId, hitPoint)`; сервер считает урон.
+- [ ] `PlayerSurvivalSystem.TakeDamage` — `internal`, вход через серверный метод; `Health` → `NetworkVariable`.
+- [ ] `PlayerSurvivalSystem.Update` — проверка смерти только на сервере.
+- [ ] `PlayerInputHandler` / `PlayerInput` — только на локальном игроке (не на сервере).
+- [ ] `PlayerProgress.AllocateStatPoint` / `TrySpendEngramPoints` — серверные (см. аудит 1).
+```
+--- END OF FILE: project-rules-md\network\03-audit-players.md ---
+
+--- START OF FILE: project-rules-md\network\04-audit-position.md ---
+```md
+# Аудит 4: Позиция и движение
+
+> Система: движение игрока, поворот, прыжок/гравитация, плавание, лестница, оседлание, движение верхом, сохранение позиции, время.
+> Файлы: `PlayerController.cs`, `RidingController.cs`, `GameTimeUpdater.cs`, `PlayerProgress.cs`, `CreatureRiding.cs` (частично).
+> Статус: ✅ аудит завершён.
+
+---
+
+## Цепочка владения
+PlayerController (сценовый, синглтон)
+├── Update: Move() / Swim() / OnLadder()
+│ └── _controller.Move(targetDirection.normalized * (_speed * Time.deltaTime) + ...)
+│ └── CharacterController.Move(...) ← ЛОКАЛЬНОЕ движение
+├── LateUpdate: CameraRotation() / HeadRotation()
+│ ├── _cinemachineTargetYaw += _input.look.x
+│ ├── _cinemachineTargetPitch += _input.look.y
+│ ├── transform.rotation = Quaternion.Euler(0, _cinemachineTargetYaw, 0) ← ЛОКАЛЬНЫЙ поворот
+│ └── CinemachineCameraTarget.transform.rotation = ...
+├── JumpAndGravity() → _verticalVelocity += Gravity * Time.deltaTime
+├── GroundedCheck() → Physics.CheckSphere(...)
+└── SetMounted(bool) → _controller.enabled = !mounted
+
+RidingController (на игроке)
+├── Mount(CreatureRiding mount) → transform.SetParent(mount.RiderAttachPoint)
+│ ├── _playerController.SetMounted(true)
+│ └── компенсация lossyScale
+├── Dismount(CreatureRiding mount) → transform.SetParent(_savedParent)
+│ ├── transform.position = FindDismountPosition(mount)
+│ └── NavMesh.SamplePosition(...)
+├── OnApplicationQuit / OnDestroy → ForceDismountIfMounted()
+└── CurrentMount : CreatureRiding
+
+CreatureRiding (на существе)
+├── Mount(PlayerController) → Agent.updateRotation = false
+├── TickRidden(move, look, sprint, ...) → Agent.velocity = ... ← прямое управление
+└── ForceDismount()
+
+PlayerProgress (глобальный)
+├── LateUpdate: _lastKnownPlayerPosition = _playerController.transform.position
+└── Save(): сохраняет playerPositionX/Y/Z, playerRotationX/Y/Z
+
+GameTimeUpdater (глобальный)
+├── Update: GameTime.AddTime(Time.unscaledDeltaTime) ← только при timeScale > 0 и focused
+└── OnApplicationPause/Focus/Quit → GameTime.Save()
+
+
+**Ключевое наблюдение:** движение полностью клиентское — `CharacterController.Move` локально. Позиция сохраняется в `PlayerProgress.Save()` в один файл. При коопе каждый клиент будет двигать своего игрока и писать в один файл.
+
+---
+
+## Вопрос А. Что при одновременном действии двух игроков?
+
+| Сценарий | Что произойдёт в текущем коде |
+|---|---|
+| Два игрока двигаются | Оба `PlayerController` — но второй удалён при `Awake` (см. аудит 3). Даже если убрать `Destroy`, `PlayerProgress.LateUpdate` кэширует позицию последнего контроллера. При сохранении — позиция одного игрока. |
+| Два игрока в одном месте | `CharacterController` не сталкиваются с другими `CharacterController` (только с коллайдерами мира). Игроки проходят друг сквозь друга. |
+| Один игрок верхом, другой — пеший | `RidingController.Mount` переприцепляет игрока к `RiderAttachPoint`. `SetMounted(true)` отключает `CharacterController`. Второй игрок этого не видит (нет репликации `IsMounted`). |
+| Один игрок спешивается, другой — садится на то же существо | `CreatureRiding` — один на существо. Два `Mount` подряд: второй перезапишет `_currentMount`. Первый игрок останется «в воздухе» (его `transform` всё ещё прицеплен к `RiderAttachPoint`, но `CreatureRiding` уже указывает на второго). |
+| Один игрок умер, другой — двигается | `PlayerSurvivalSystem.TogglePlayerActive(pc, false)` отключает `PlayerController` только у умершего. Но `PlayerController.Instance` — один, и если он указывает на мёртвого, второй игрок не сможет двигаться (если бы он был). |
+| `GameTimeUpdater` тикает у каждого клиента | `GameTime.AddTime` — статический, глобальный. Два клиента копят разное время (каждый в своём процессе). При сохранении — рассинхрон. |
+| Один игрок телепортируется (читы) | `PlayerController.transform.position = ...` — публичное. `CharacterController.Move` не проверяет скорость. Сервер не валидирует. |
+
+**Вывод:** движение полностью локальное, без валидации. При коопе каждый клиент авторитетен по своей позиции, но нет механизма синхронизации и нет валидации (телепорт, скорость, прохождение сквозь стены).
+
+---
+
+## Вопрос Б. Может ли клиент соврать?
+
+| Действие | Где проверка | Можно ли соврать |
+|---|---|---|
+| Двигать себя | `CharacterController.Move(...)` — публичный, локальный | Да, клиент полностью авторитетен: `transform.position = ...` напрямую |
+| Телепортироваться | `transform.position = ...` — публичное | Да, тривиально |
+| Летать | `_verticalVelocity` — приватное, но `CharacterController.Move` не проверяет гравитацию | Да, можно вызвать `Move(Vector3.up * 100)` |
+| Проходить сквозь стены | `CharacterController` сталкивается с коллайдерами, но `transform.position = ...` — нет | Да, прямой установкой позиции |
+| Садиться на существо | `RidingController.Mount(mount)` — публичный | Да, можно «сесть» на любое существо (нет проверки дистанции/владельца) |
+| Спешиваться | `RidingController.Dismount(mount)` — публичный | Да |
+| Сохранять позицию | `PlayerProgress.Save()` — пишет `_playerController.transform.position` | Да, клиент может подделать файл |
+| `_lastKnownPlayerPosition` | `LateUpdate` кэширует локальную позицию | Да, при сохранении пишется локальная |
+| `GameTime.Now` | См. аудит 3 — клиентское время | Да |
+| `Mount` без `RiderAttachPoint` | Проверка есть (`RiderAttachPoint == null` → error) | Нет, но это не защита от читов |
+
+**Вывод:** клиент полностью авторитетен по позиции и оседланию. Нет ни одной проверки: дистанции до существа, владельца существа, скорости движения, телепорта, прохождения сквозь стены.
+
+---
+
+## Вопрос В. Насколько критична задержка?
+
+| Операция | Критичность | Комментарий |
+|---|---|---|
+| Движение игрока | Высокая | 100 мс задержки = «резиновый» персонаж. Нужен client-side prediction + server reconciliation. |
+| Поворот камеры | Низкая | Локально, не реплицируется (только для наблюдателей) |
+| Прыжок / гравитация | Высокая | `_verticalVelocity` — локально. При сети — предсказание + коррекция. |
+| Оседлание (Mount) | Средняя | Визуально — мгновенно, но сервер должен подтвердить (владелец, дистанция). |
+| Спешивание (Dismount) | Средняя | Позиция спешивания — серверная (NavMesh.SamplePosition). |
+| `TickRidden` (движение верхом) | Высокая | Прямое управление `Agent.velocity` — серверное. Клиент шлёт ввод, сервер двигает. |
+| `GameTime` | Средняя | Должно быть серверным; клиент синхронизирует часы. |
+| `_lastKnownPlayerPosition` | Низкая | Только для сохранения. Серверная позиция — авторитет. |
+
+**Вывод:** движение критично к задержке. Идеал: client-side prediction (клиент двигает локально, предсказывает) + server reconciliation (сервер присылает коррекцию). Оседлание — серверное подтверждение.
+
+---
+
+## Таблица разметки
+
+| Система | Кто авторитетен | Почему | Что переделать |
+|---|---|---|---|
+| Движение игрока (`PlayerController.Move`, `CharacterController.Move`) | Клиент + валидация сервера | Client-side prediction для отзывчивости; сервер проверяет скорость/телепорт | `NetworkTransform` (клиент-авторитарный) + серверная проверка `maxSpeed`. `CharacterController` — локально. При рассинхроне — `ServerRpc ReconcilePosition`. |
+| Поворот игрока (`transform.rotation = Quaternion.Euler(0, _cinemachineTargetYaw, 0)`) | Клиент | Только для своего игрока; наблюдатели видят через `NetworkTransform` | Не реплицируется напрямую; `NetworkTransform` шлёт rotation. |
+| Прыжок / гравитация (`JumpAndGravity`, `_verticalVelocity`) | Клиент + валидация сервера | Предсказание для отзывчивости; сервер проверяет `Grounded` | `_verticalVelocity` — локально; сервер проверяет, что игрок не «летает». |
+| Плавание (`Swim`) | Клиент + валидация сервера | Предсказание; сервер проверяет `_isInWater` | `_isInWater` — локально (OverlapSphere); сервер валидирует. |
+| Лестница (`OnLadder`) | Клиент + валидация сервера | Предсказание; сервер проверяет тег `Ladder` | `_onLadder` — локально; сервер валидирует. |
+| Оседлание (`RidingController.Mount`) | Сервер | Владелец существа, дистанция — серверные | `ServerRpc RequestMount(creatureId)`. Сервер проверяет: существо приручено, игрок владелец, дистанция ≤ X. |
+| Спешивание (`RidingController.Dismount`) | Сервер | Позиция спешивания — `NavMesh.SamplePosition` | `ServerRpc RequestDismount`. Сервер находит позицию и телепортирует игрока. |
+| Движение верхом (`CreatureRiding.TickRidden`) | Сервер | Прямое управление `Agent.velocity` | Клиент шлёт `ServerRpc SendRideInput(move, look, sprint)`. Сервер двигает `Agent`. |
+| `_lastKnownPlayerPosition` (`PlayerProgress.LateUpdate`) | Сервер | Только для сохранения; серверная позиция — авторитет | `_lastKnownPlayerPosition` — серверная. `LateUpdate` — только на сервере. |
+| `GameTime` (`GameTime.Now`, `GameTimeUpdater`) | Сервер | Клиентское время рассинхронизировано | `GameTime.Now` → серверное время. `GameTimeUpdater` — только на сервере. Синхронизация часов с клиентом. |
+| Сохранение позиции (`PlayerProgress.Save`) | Сервер | Один файл `Player.save` | Per-player файл. На клиенте — no-op. |
+| `ForceDismount` при выходе (`RidingController.OnApplicationQuit/OnDestroy`) | Сервер | Смерть/выход — серверное | `ServerRpc ForceDismount` при выходе; сервер телепортирует игрока. |
+
+---
+
+## Ключевые выводы
+
+1. **Движение полностью локальное, без валидации.** `CharacterController.Move` + `transform.position = ...` — клиент может телепортироваться, летать, проходить сквозь стены. При коопе нужен `NetworkTransform` (клиент-авторитарный) + серверная проверка `maxSpeed` и `Grounded`.
+
+2. **Client-side prediction обязателен.** 100 мс задержки = «резиновый» персонаж. Идеал: клиент двигает локально, сервер присылает коррекцию (`ServerRpc ReconcilePosition`). NGO имеет встроенный `NetworkTransform` с интерполяцией, но prediction нужно писать самим.
+
+3. **Оседлание — серверное.** `RidingController.Mount` публичный, без проверки дистанции/владельца. При сети: `ServerRpc RequestMount(creatureId)`, сервер проверяет: существо приручено, игрок владелец, дистанция ≤ X.
+
+4. **`TickRidden` — серверный.** Прямое управление `Agent.velocity` — это серверная операция. Клиент шлёт ввод, сервер двигает существо.
+
+5. **`_lastKnownPlayerPosition` — серверная.** Сейчас кэшируется локально в `LateUpdate`. При сети — только на сервере.
+
+6. **`GameTime` — серверное.** `GameTimeUpdater` тикает у каждого клиента, `GameTime.Now` в мультиплеере — клиентское UTC. Рассинхрон. Нужна синхронизация часов с сервером.
+
+7. **`ForceDismount` при выходе** — при сети: `ServerRpc ForceDismount` при выходе; сервер телепортирует игрока, чтобы он не остался «в воздухе».
+
+8. **`PlayerProgress.Save` пишет один файл** — при N игроках per-player файл. См. аудит 3.
+
+9. **`PlayerController.SetMounted` отключает `CharacterController`** — при сети это локальная операция, но `IsMounted` должен реплицироваться, чтобы другие клиенты видели игрока в седле.
+
+10. **`RidingController` не проверяет, что игрок — владелец существа.** Любой может сесть на любое прирученное существо. При сети — серверная проверка `ownerPlayerId`.
+
+---
+
+## Переделать до сети
+
+- [ ] `PlayerController.transform` — client-side prediction + `NetworkTransform` (клиент-авторитарный).
+- [ ] `PlayerController.Move` / `Swim` / `OnLadder` — локально, но сервер валидирует `maxSpeed`, `Grounded`, `_isInWater`, `_onLadder`.
+- [ ] `PlayerController._verticalVelocity` — предсказание; сервер проверяет, что игрок не «летает».
+- [ ] `PlayerController.SetMounted` — `IsMounted` реплицируется (другие клиенты видят игрока в седле).
+- [ ] `RidingController.Mount` — `ServerRpc RequestMount(creatureId)`; сервер проверяет: приручено, владелец, дистанция.
+- [ ] `RidingController.Dismount` — `ServerRpc RequestDismount`; сервер находит позицию через `NavMesh.SamplePosition` и телепортирует.
+- [ ] `RidingController.OnApplicationQuit` / `OnDestroy` — `ServerRpc ForceDismount`; сервер телепортирует игрока.
+- [ ] `CreatureRiding.TickRidden` — только сервер; клиент шлёт `ServerRpc SendRideInput(move, look, sprint)`.
+- [ ] `PlayerProgress.LateUpdate` (`_lastKnownPlayerPosition`) — только на сервере.
+- [ ] `PlayerProgress.Save` — per-player файл; на клиенте no-op (см. аудит 3).
+- [ ] `GameTime.Now` — серверное время; синхронизация часов с клиентом.
+- [ ] `GameTimeUpdater` — только на сервере (см. аудит 3).
+- [ ] `PlayerController.transform.position` — серверная валидация телепорта (максимальное смещение за тик).
+- [ ] `RidingController._currentMount` — серверное состояние; клиент только отображает.
+
+```
+--- END OF FILE: project-rules-md\network\04-audit-position.md ---
+
+--- START OF FILE: project-rules-md\network\05-audit-world.md ---
+```md
+# Аудит 5: Мир и строительство
+
+> Система: чанковое сохранение мира, регистрация/удаление структур, размещение построек, разрушение структур, сундуки как структуры.
+> Файлы: `WorldManager.cs`, `PlayerBuildMode.cs`, `Structure.cs`, `ChestController.cs`.
+> Статус: ✅ аудит завершён.
+
+---
+
+## Цепочка владения
+WorldManager (сценовый, синглтон, создаётся WorldBootstrap)
+├── _chunks : Dictionary<Vector2Int, List<SerializableStructure>>
+├── _instanceMap : Dictionary<string, GameObject> ← instanceId → GameObject
+├── _dirtyChunks : HashSet<Vector2Int>
+├── Update: автосохранение грязных чанков (saveInterval = 5 сек)
+├── OnApplicationQuit: SaveAllChunks()
+├── RegisterStructure(structure, itemId, parentId, ownerId)
+│ ├── Guid.NewGuid() → instanceId
+│ ├── structure.AddComponent<StructureIdentity>()
+│ ├── _chunks[chunkKey].Add(new SerializableStructure(...))
+│ ├── _instanceMap[instanceId] = structure
+│ ├── _dirtyChunks.Add(chunkKey)
+│ └── SaveDirtyChunks() ← МГНОВЕННОЕ СОХРАНЕНИЕ
+├── UnregisterStructure(structure) → удаление из чанка + dirty
+├── LoadWorldAsync(playerPosition) → читает файлы чанков → InstantiateLoadedChunks()
+└── ClearExistingStructures() → Destroy по тегам
+
+PlayerBuildMode (на игроке)
+├── Update: CalculatePreviewPlacement() → EnsurePreviewExists() → UpdatePreviewTransform()
+├── HandleInput(): ЛКМ → PlaceStructure() / ПКМ → ExitBuildMode()
+├── PlaceStructure():
+│ ├── Instantiate(prefab, position, rotation)
+│ ├── StructureAttachment (если _baseObject != null)
+│ └── WorldManager.Instance.RegisterStructure(placed, itemId, parentId)
+└── StartBuildMode(blueprint, slotIndex) / ExitBuildMode()
+
+Structure (на каждом объекте структуры)
+├── Awake: playerController = PlayerController.Instance
+├── Interact(context):
+│ ├── isTargetInventory → OpenInventory() → ChestUIManager.Toggle(this)
+│ └── IsAttack → TakeDamage(playerInteraction)
+├── TakeDamage(playerInteraction):
+│ ├── damage = playerController.GetAttackDamage()
+│ ├── health -= damage
+│ ├── DamageNumberPool.ShowDamage(...)
+│ └── if (health <= 0) Die()
+└── Die():
+├── ChestUIManager.Close() если открыт
+├── animator.SetTrigger("BreakLast")
+├── InventoryManager.Instance.DropAllItemsToBag(_inventory.Data, structureId, false)
+├── Destroy(gameObject, 0.5f)
+└── OnDeath?.Invoke(this)
+
+ChestController (на сундуке)
+├── Awake: _inventory = GetComponent<ChestInventory>()
+├── Interact(context): isTargetInventory → Open() → ChestUIManager.Toggle(this)
+└── OnDestroy: если открыт — ChestUIManager.Close()
+
+
+**Ключевое наблюдение:** `WorldManager` уже имеет задел под мультиплеер — поле `ownerPlayerId` в `SerializableStructure`, но `ownerId = "player_001"` хардкод. Сохранение — **мгновенное** при каждой постройке (`SaveDirtyChunks` в `RegisterStructure`), это блокер для сети: каждый клиент будет писать файлы.
+
+---
+
+## Вопрос А. Что при одновременном действии двух игроков?
+
+| Сценарий | Что произойдёт в текущем коде |
+|---|---|
+| Два игрока строят в одном чанке одновременно | Оба вызывают `RegisterStructure`. `_chunks[chunkKey].Add(...)` — не потокобезопасно. `SaveDirtyChunks()` вызывается **дважды** (мгновенно при каждой постройке). Второй `SaveDirtyChunks` может перезаписать файл первого. Lost update. |
+| Два игрока строят на одном месте | `IsPositionValid` проверяет `OverlapBox` локально у каждого клиента. Оба видят «свободно» (потому что второй объект ещё не заспавнен у первого). Оба ставят структуру → **две структуры в одной точке**. |
+| Один игрок ломает структуру, другой — строит рядом | `Structure.TakeDamage` → `health -= damage` → `Die()` → `Destroy(gameObject)`. Второй игрок может поставить структуру на освободившееся место, но `WorldManager` ещё не знает об удалении (если `UnregisterStructure` не вызван). |
+| Один игрок ломает структуру с лутом | `Structure.Die()` → `InventoryManager.Instance.DropAllItemsToBag(...)` — создаёт `LootBag`. Второй клиент может «подобрать» лут дважды (см. аудит 1). |
+| Один игрок открывает сундук, другой — ломает его | `ChestController.OnInventoryOpened` → `_isOpen = true`. `Structure.Die()` → `ChestUIManager.Close()`. Но `ChestUIManager.CurrentSource` — глобальный (см. аудит 1). Второй игрок может «открыть» тот же сундук. |
+| `WorldManager.Update` автосохранение | Тикает у каждого клиента. Два клиента пишут файлы чанков → конфликт. |
+| `LoadWorldAsync` при входе | `ClearExistingStructures()` — `Destroy` по тегам. Второй клиент при загрузке удалит структуры первого (если они в одной сцене). |
+
+**Вывод:** мир и строительство **полностью локальные**. Нет ни одного механизма синхронизации. При коопе два клиента будут строить в разных реальностях, а `WorldManager` будет писать конфликтующие файлы.
+
+---
+
+## Вопрос Б. Может ли клиент соврать?
+
+| Действие | Где проверка | Можно ли соврать |
+|---|---|---|
+| Поставить структуру | `PlayerBuildMode.PlaceStructure` → `WorldManager.RegisterStructure` — публичный | Да, можно поставить любую структуру в любом месте (нет проверки ресурсов, дистанции, владельца) |
+| Ломать структуру | `Structure.TakeDamage(playerInteraction)` — публичный, `damage = playerController.GetAttackDamage()` | Да, можно нанести любой урон (передав другой `PlayerInteraction` или подделав `Item.damage`) |
+| Удалить структуру | `WorldManager.UnregisterStructure(structure)` — публичный | Да, можно удалить любую структуру |
+| Открыть сундук | `ChestController.Open()` → `ChestUIManager.Toggle(this)` — публичный | Да, можно открыть любой сундук (нет проверки дистанции) |
+| Забрать из сундука | `ChestUI.MoveAllToPlayer` (см. аудит 1) | Да |
+| `ownerPlayerId` | Хардкод `"player_001"` в `RegisterStructure` и `Structure.Die` | Нет смысла, но и не защита |
+| `instanceId` | `Guid.NewGuid()` на клиенте | Да, можно подделать, если перехватить |
+| `WorldManager.Save` | Пишет локальные файлы | Да, клиент может подделать файл чанка |
+| `LoadWorldAsync` | Читает локальные файлы | Да, клиент может подделать |
+
+**Вывод:** клиент полностью авторитетен по миру. Нет ни одной проверки: ресурсов на постройку, дистанции до структуры, владельца, возможности ломать чужие структуры.
+
+---
+
+## Вопрос В. Насколько критична задержка?
+
+| Операция | Критичность | Комментарий |
+|---|---|---|
+| Постановка структуры | Средняя | Визуально — мгновенно (превью), но сервер должен подтвердить (ресурсы, позиция). |
+| Разрушение структуры | Средняя | Анимация — локально, но `health` и `Die()` — серверные. |
+| Открытие сундука | Низкая | Локально, но данные — серверные (см. аудит 1). |
+| Дроп лута из структуры | Высокая | Спавн `LootBag` — мир. Серверный. |
+| `WorldManager.Save` | Низкая | Не критично к задержке, но должно быть серверным. |
+| `LoadWorldAsync` | Высокая | При входе в мир — серверная загрузка. Клиент не должен грузить чанки сам. |
+| `ClearExistingStructures` | Высокая | При загрузке — серверное. Клиент не должен удалять структуры. |
+
+**Вывод:** строительство терпимо к задержке, но требует серверной валидации. Загрузка мира — серверная.
+
+---
+
+## Таблица разметки
+
+| Система | Кто авторитетен | Почему | Что переделать |
+|---|---|---|---|
+| Постановка структуры (`PlayerBuildMode.PlaceStructure` → `WorldManager.RegisterStructure`) | Сервер | Клиент не решает, что построено. Нет проверки ресурсов/дистанции | `ServerRpc RequestPlaceStructure(itemId, position, rotation, parentId)`. Сервер проверяет: ресурсы, дистанция, `IsPositionValid` (серверный OverlapBox), владелец. |
+| Регистрация структуры (`WorldManager.RegisterStructure`) | Сервер | Пишет в `_chunks` + `SaveDirtyChunks()` мгновенно | `RegisterStructure` → `internal`, только на сервере. `SaveDirtyChunks` — по таймеру на сервере, не мгновенно. |
+| Удаление структуры (`WorldManager.UnregisterStructure`) | Сервер | Удаление без валидации = потеря | `internal`, только на сервере. Клиент шлёт `ServerRpc RequestDestroyStructure(instanceId)`. |
+| Разрушение структуры (`Structure.TakeDamage`) | Сервер | `health -= damage` — клиентское. `playerController.GetAttackDamage()` — клиентское | `TakeDamage` → `internal`; `ServerRpc RequestAttackStructure(instanceId, hitPoint)`. Сервер считает урон (см. аудит 2). |
+| Смерть структуры (`Structure.Die`) | Сервер | `DropAllItemsToBag`, `Destroy(gameObject)` — мир | `Die()` → `internal`, только на сервере. `ClientRpc OnStructureDestroyed` для анимации/эффектов. |
+| Дроп лута (`InventoryManager.DropAllItemsToBag`) | Сервер | Спавн `LootBag` — мир | `internal`, только на сервере (см. аудит 1). |
+| Открытие сундука (`ChestController.Open` → `ChestUIManager.Toggle`) | Клиент (локально) + сервер (данные) | Какой сундук открыт — локально; содержимое — серверное | `ChestUIManager.CurrentSource` — локальный. Данные (`ChestInventory.Data`) — серверные (см. аудит 1). |
+| `ownerPlayerId` | Сервер | Хардкод `"player_001"` | Серверный `playerId` из `connectionId`. |
+| `instanceId` (`Guid.NewGuid()`) | Сервер | Клиент не должен генерировать ID | Сервер генерирует `instanceId` и рассылает клиентам. |
+| Сохранение мира (`WorldManager.SaveDirtyChunks`, `OnApplicationQuit`) | Сервер/хост | Клиент не пишет файлы мира | `Save` → no-op на клиенте. Только на сервере. |
+| Загрузка мира (`WorldManager.LoadWorldAsync`, `ClearExistingStructures`) | Сервер | Клиент не грузит чанки сам | Сервер загружает чанки и рассылает `ClientRpc SpawnStructure(...)`. |
+| `WorldManager.Update` (автосохранение) | Сервер | Тикает у каждого клиента | `if (!IsServer) return;` |
+| `PlayerBuildMode` (превью, снапы) | Клиент | Только для глаз | Превью — локально. Серверная валидация при `RequestPlaceStructure`. |
+| `PlayerBuildMode.IsPositionValid` | Клиент + сервер | Клиент для превью, сервер для финальной проверки | Клиентский `IsPositionValid` — для цвета превью. Серверный — авторитетный. |
+| `StructureAttachment` | Сервер | Связь структура ↔ база | Серверное состояние; клиент получает через `ClientRpc`. |
+
+---
+
+## Ключевые выводы
+
+1. **`WorldManager` — полностью локальный, пишет файлы мгновенно.** `RegisterStructure` вызывает `SaveDirtyChunks()` сразу. При коопе каждый клиент будет писать конфликтующие файлы. Нужно: `RegisterStructure` → `internal`, `SaveDirtyChunks` — по таймеру на сервере.
+
+2. **`PlayerBuildMode` не проверяет ресурсы.** `PlaceStructure` просто `Instantiate` + `RegisterStructure`. Нет проверки, что у игрока есть предмет, нет проверки дистанции. При сети — серверный `RequestPlaceStructure` с проверкой.
+
+3. **`PlayerBuildMode.IsPositionValid` — клиентский.** `OverlapBox` локально. При коопе два клиента могут поставить структуру в одну точку. Серверный `IsPositionValid` — авторитетный.
+
+4. **`Structure.TakeDamage` — клиентский.** `playerController.GetAttackDamage()` — локальный. `health -= damage` — локально. При сети — серверный `RequestAttackStructure`, сервер считает урон (см. аудит 2).
+
+5. **`Structure.Die` — клиентский.** `DropAllItemsToBag` + `Destroy(gameObject)`. При сети — серверный `Die()`, `ClientRpc` для анимации.
+
+6. **`ownerPlayerId` — хардкод `"player_001"`.** В `RegisterStructure` и `Structure.Die`. При сети — серверный `playerId`.
+
+7. **`instanceId` — `Guid.NewGuid()` на клиенте.** При сети — сервер генерирует и рассылает.
+
+8. **`ClearExistingStructures` — `Destroy` по тегам при загрузке.** Второй клиент удалит структуры первого. При сети — только сервер, `ClientRpc` для клиентов.
+
+9. **`ChestController` — публичный `Open()`.** Нет проверки дистанции/владельца. При сети — `ServerRpc RequestOpenChest(instanceId)`, сервер проверяет дистанцию.
+
+10. **`WorldManager.Update` (автосохранение) тикает у каждого клиента.** При сети — только на сервере (`if (!IsServer) return;`).
+
+11. **`LoadWorldAsync` — клиентский.** При сети — сервер загружает и рассылает `SpawnStructure` клиентам.
+
+12. **`StructureAttachment` — связь структура ↔ база.** При сети — серверное состояние; клиент получает через `ClientRpc`.
+
+---
+
+## Переделать до сети
+
+- [ ] `WorldManager.RegisterStructure` — `internal`, только на сервере. `SaveDirtyChunks` — не мгновенно, по таймеру.
+- [ ] `WorldManager.UnregisterStructure` — `internal`, только на сервере.
+- [ ] `WorldManager.Update` (автосохранение) — `if (!IsServer) return;`.
+- [ ] `WorldManager.OnApplicationQuit` → `SaveAllChunks` — только на сервере.
+- [ ] `WorldManager.LoadWorldAsync` / `ClearExistingStructures` — только на сервере; клиенты получают `ClientRpc SpawnStructure`.
+- [ ] `WorldManager.RegisterStructure` — `ownerId` не хардкод, а серверный `playerId`.
+- [ ] `WorldManager.RegisterStructure` — `instanceId` генерирует сервер, не клиент.
+- [ ] `PlayerBuildMode.PlaceStructure` — `ServerRpc RequestPlaceStructure(itemId, position, rotation, parentId)`. Сервер проверяет ресурсы, дистанцию, `IsPositionValid`.
+- [ ] `PlayerBuildMode.IsPositionValid` — клиентский для превью; серверный — авторитетный.
+- [ ] `Structure.TakeDamage` — `internal`; `ServerRpc RequestAttackStructure(instanceId, hitPoint)`. Сервер считает урон.
+- [ ] `Structure.Die` — `internal`, только на сервере. `ClientRpc OnStructureDestroyed` для анимации/эффектов.
+- [ ] `Structure.Die` — `DropAllItemsToBag` только на сервере (см. аудит 1).
+- [ ] `ChestController.Open` — `ServerRpc RequestOpenChest(instanceId)`. Сервер проверяет дистанцию.
+- [ ] `ChestController.OnInventoryOpened/Closed` — локальное состояние клиента; данные — серверные (см. аудит 1).
+- [ ] `StructureAttachment` — серверное состояние; клиент получает через `ClientRpc`.
+- [ ] `WorldManager._chunks` / `_instanceMap` / `_dirtyChunks` — только на сервере. Клиент хранит только визуальные объекты.
+
+
+```
+--- END OF FILE: project-rules-md\network\05-audit-world.md ---
+
+--- START OF FILE: project-rules-md\network\06-audit-creatures.md ---
+```md
+# Аудит 6: Существа и AI
+
+> Система: спавн существ, AI (дикий/прирученный), смерть, нокаут, трупы, приручение, сохранение существ.
+> Файлы: `Creature.cs`, `CreatureCombat.cs` (см. аудит 2), `CreatureDeath.cs`, `CreatureKnockout.cs`, `CreatureWildAI.cs`, `CreatureTamedAI.cs`, `TamingManager.cs`, `CorpseManager.cs`.
+> Статус: ✅ аудит завершён.
+
+---
+
+## Цепочка владения
+Creature (на каждом существе)
+├── Awake: playerProgress = PlayerProgress.Instance
+│ ├── playerController = playerProgress.playerController
+│ ├── _data = CreatureDatabase.GetCreature(creatureId)
+│ ├── AddComponent<CreatureCombat/Death/Knockout/Taming/Commands/Audio/WildAI/TamedAI/Riding/Interactable>
+│ ├── AddComponent<Corpse>(disabled) + RadialMenu(disabled)
+│ └── health = maxHealth, food = maxFood, stamina = maxStamina
+├── Update:
+│ ├── torpor -= Data.torporRecoveryRate * dt ← ЛОКАЛЬНО
+│ ├── _taming.Tick() ← food + save каждые 10 сек
+│ ├── if (knockedOut) → return
+│ ├── if (tamed) → _tamedAI.Tick() / TickRidden()
+│ └── else → _wildAI.Tick()
+└── UpdateAnimation() → animator.SetFloat/SetBool ← ЛОКАЛЬНО
+
+CreatureWildAI (на диком)
+├── Tick: FindWildTarget() → Chase/Attack
+│ ├── Agent.SetDestination(target.position) ← ЛОКАЛЬНО
+│ └── Combat.PerformAttack() → animator.SetTrigger("Attack")
+└── HandleWandering → Agent.SetDestination(random) ← ЛОКАЛЬНО
+
+CreatureTamedAI (на прирученном)
+├── Tick: HandleTamedState()
+│ ├── Flee / Neutral / AttackOwnerTarget / Aggressive
+│ ├── FollowOwner → Agent.SetDestination(player.position) ← ЛОКАЛЬНО
+│ └── WanderTamed → Agent.SetDestination(random) ← ЛОКАЛЬНО
+└── LateUpdate: _isWandering = false (если дошли)
+
+CreatureDeath (на существе)
+├── Die():
+│ ├── Riding.ForceDismount()
+│ ├── SetDead() → _isDead = true, health = 0
+│ ├── ChestUIManager.Close()
+│ ├── TamingManager.UnregisterCreature() → УДАЛЯЕТ ФАЙЛ
+│ ├── Destroy(inventory)
+│ ├── CreateCorpse() → CorpseManager.RegisterCorpse() → ПИШЕТ ФАЙЛ
+│ └── SetBodyRagdoll()
+└── CreateCorpse: CorpseManager.RemoveAliveComponentsFromCreatureCorpse()
+
+CreatureKnockout (на существе)
+├── KnockOut():
+│ ├── Riding.ForceDismount()
+│ ├── knockedOut = true
+│ ├── SetBodyRagdoll()
+│ ├── AddComponent<ChestInventory>() + Initialize
+│ ├── TamingManager.RegisterCreature() → ПИШЕТ ФАЙЛ
+│ └── TamingInstanceId = instanceId
+├── KnockOutFromLoad: knockedOut = true, SetBodyRagdoll()
+└── ExitKnockoutState: knockedOut = false, torpor = 0, TamingManager.UnregisterCreature()
+
+TamingManager (сценовый, синглтон, создаётся WorldBootstrap)
+├── Initialize: creatureDatabase = GameAssets.CreatureDatabase
+├── RegisterCreature(go, ownerPlayerId) → Guid.NewGuid() → SaveToDisk() ← ПИШЕТ ФАЙЛ
+├── UpdateSave(instanceId, ownerPlayerId) → SaveToDisk()
+├── UnregisterCreature(instanceId) → File.Delete() ← УДАЛЯЕТ ФАЙЛ
+├── LoadAllTamingCreaturesAsync() → читает taming_*.save → SpawnFromData
+├── SaveAll() → сохраняет все _loadedCreatures
+└── OnApplicationQuit/Pause/Focus → SaveAll()
+
+CorpseManager (сценовый, синглтон, создаётся WorldBootstrap)
+├── Initialize: _corpseBodyPrefab = GameAssets.PlayerCorpsePrefab
+├── RegisterCorpse(go, ownerPlayerId, creatureId) → Guid.NewGuid() → SaveCorpseToDisk() ← ПИШЕТ ФАЙЛ
+├── ForgetCorpse(instanceId) → только loadedCorpses.Remove
+├── UnregisterCorpse(instanceId) → File.Delete() ← УДАЛЯЕТ ФАЙЛ
+├── LoadAllCorpsesAsync() → читает corpse*.save → SpawnCorpseFromData
+└── RemoveAliveComponentsFromCreatureCorpse() → Destroy компонентов
+
+
+**Ключевое наблюдение:** каждое существо — это `MonoBehaviour` с локальным `Update`. AI тикает локально у каждого клиента. Смерть/нокаут/приручение пишут файлы на диск. При коопе каждый клиент будет тикать свой AI, писать свои файлы и создавать свои трупы.
+
+---
+
+## Вопрос А. Что при одновременном действии двух игроков?
+
+| Сценарий | Что произойдёт в текущем коде |
+|---|---|
+| Два клиента видят одно существо | Каждый клиент имеет **свой экземпляр** `Creature` (спавн из сцены/сейва). AI тикает у каждого независимо → **разные позиции**, разные цели, разное поведение. Рассинхрон. |
+| Два игрока бьют одно существо | `CreatureCombat.TakeDamage` — локально у каждого. HP разное. Смерть может наступить у одного, но не у другого. См. аудит 2. |
+| Один игрок нокаутирует, другой — добивает | `CreatureKnockout.KnockOut` → `TamingManager.RegisterCreature` → **пишет файл**. `CreatureDeath.Die` → `TamingManager.UnregisterCreature` → **удаляет файл**. Гонка: файл может остаться «висящим» или удалиться дважды. |
+| Один игрок приручает, другой — видит | `tamed = true` — локально. Второй клиент не знает. `TamedFromLoad` не вызывается. |
+| Два игрока видят труп | Каждый клиент создаёт **свой** труп через `CorpseManager.RegisterCorpse` → **два файла** `corpse_*.save` для одного существа. При загрузке — **два трупа**. |
+| Один игрок подбирает лут из трупа, другой — тоже | `ChestInventory` трупа — локальный у каждого. Оба «подбирают» одни и те же предметы (см. аудит 1). |
+| Один игрок садится на существо, другой — тоже | `CreatureRiding.Mount` — локально. См. аудит 4. |
+| `TamingManager.SaveAll` на выходе | Тикает у каждого клиента. Два клиента пишут `taming_*.save` → конфликт. |
+| `CorpseManager.LoadAllCorpsesAsync` при входе | Каждый клиент загружает все трупы → **дубликаты** в сцене. |
+| `Creature.Update` → `torpor -= ...` | Тикает у каждого клиента. Torpor разный. Нокаут наступает в разное время. |
+| `Creature.Update` → `_taming.Tick()` (save каждые 10 сек) | Тикает у каждого клиента. Два клиента пишут `taming_*.save` → конфликт. |
+
+**Вывод:** существа и AI **полностью локальные**. При коопе каждый клиент — свой мир существ. Нет ни синхронизации позиций, ни синхронизации HP/torpor, ни единого источника правды для смерти/нокаута/приручения.
+
+---
+
+## Вопрос Б. Может ли клиент соврать?
+
+| Действие | Где проверка | Можно ли соврать |
+|---|---|---|
+| Спавн существа | `Instantiate(prefab)` — публичный | Да, можно заспавнить любое существо в любом месте |
+| Двигать существо | `Agent.SetDestination(...)` — публичный | Да, можно телепортировать через `transform.position` |
+| Нанести урон | `Creature.TakeDamage(...)` — публичный (см. аудит 2) | Да |
+| Убить существо | `Creature.RequestDeath()` / `Die()` — публичные | Да |
+| Нокаутировать | `Creature.KnockOut()` — публичный | Да |
+| Приручить | `Creature.tamed = true` — публичное поле; `TamedFromLoad()` — публичный | Да, можно «приручить» любое существо |
+| Изменить torpor | `Creature.AddTorpor(...)` — публичный | Да |
+| Изменить поведение | `Creature.tamedBehavior = ...` — публичное | Да |
+| Зарегистрировать труп | `CorpseManager.RegisterCorpse(...)` — публичный | Да, можно создать труп из ничего |
+| Зарегистрировать приручение | `TamingManager.RegisterCreature(...)` — публичный | Да |
+| Сохранить существо | `TamingManager.SaveAll()` — публичный | Да, клиент может подделать файл |
+
+**Вывод:** клиент полностью авторитетен по существам. Нет ни одной проверки: кто заспавнил, кто убил, кто приручил, кто владелец. Любой клиент может делать с любым существом что угодно.
+
+---
+
+## Вопрос В. Насколько критична задержка?
+
+| Операция | Критичность | Комментарий |
+|---|---|---|
+| Движение существа (AI) | **Высокая** | AI должен быть серверным; клиенты видят позиции через `NetworkTransform`. Иначе рассинхрон. |
+| Анимация существа | Низкая (косметика) | `NetworkAnimator` решает. |
+| Атака существа | Высокая | Урон — серверный (см. аудит 2). Анимация — `ClientRpc`. |
+| Смерть существа | **Высокая** | Труп + лут — мир. Серверное. |
+| Нокаут | **Высокая** | Меняет поведение, открывает инвентарь. Серверное. |
+| Приручение | **Высокая** | Меняет владельца, поведение. Серверное. |
+| Torpor | Высокая | Нокаут = приручение. Серверное. |
+| Food | Средняя | Падение food — серверное; клиент видит через репликацию. |
+| Спавн/деспавн | **Высокая** | Мир. Серверное. |
+| Загрузка существ | **Высокая** | При входе — серверная. Клиент не грузит сам. |
+| `Creature.UpdateAnimation` | Низкая | `NetworkAnimator`. |
+
+**Вывод:** существа и AI **критичны** — и к задержке (движение), и к авторитетности (смерть/нокаут/приручение). AI должен быть полностью серверным.
+
+---
+
+## Таблица разметки
+
+| Система | Кто авторитетен | Почему | Что переделать |
+|---|---|---|---|
+| Спавн существа (`Creature.Awake`, `Instantiate(prefab)`) | Сервер | Клиент не решает, какие существа есть в мире | Серверный `SpawnCreature(creatureId, position, rotation)`. Клиенты получают `ClientRpc OnCreatureSpawned(netId, creatureId, pos, rot)`. |
+| AI дикий (`CreatureWildAI.Tick`) | Сервер | Иначе клиенты видят разное поведение | `if (!IsServer) return;` в начале `Tick`. Позиция — через `NetworkTransform`. |
+| AI прирученный (`CreatureTamedAI.Tick`) | Сервер | То же | `if (!IsServer) return;` в начале `Tick`. |
+| Движение существа (`Agent.SetDestination`) | Сервер | `NavMeshAgent` — серверный | Только на сервере. Клиенты видят через `NetworkTransform`. |
+| Анимация (`UpdateAnimation`, `animator.SetTrigger`) | Клиент (триггер сервером) | Косметика | `NetworkAnimator` или `ClientRpc PlayAnim(animId)`. |
+| Урон (`CreatureCombat.TakeDamage`) | Сервер | См. аудит 2 | См. аудит 2. |
+| Смерть (`CreatureDeath.Die`) | Сервер | Труп + лут | `Die()` → `internal`, только на сервере. `ClientRpc OnCreatureDied` для анимации. |
+| Создание трупа (`CorpseManager.RegisterCorpse`) | Сервер | Пишет файл, создаёт объект мира | `internal`, только на сервере. `ClientRpc SpawnCorpse(netId, ...)`. |
+| Нокаут (`CreatureKnockout.KnockOut`) | Сервер | Меняет поведение, открывает инвентарь | `KnockOut()` → `internal`, только на сервере. `ClientRpc OnCreatureKnockedOut(netId)`. |
+| Приручение (`Creature.tamed = true`, `TamedFromLoad`) | Сервер | Меняет владельца | Серверный `TameCreature(netId, playerId)`. Клиент получает `ClientRpc OnCreatureTamed(netId, playerId)`. |
+| Torpor (`Creature.AddTorpor`, `torpor -= ...`) | Сервер | Нокаут = приручение | `torpor` → `NetworkVariable`. `Update` — только на сервере. |
+| Food (`Creature.Update` → `_taming.Tick`) | Сервер | Падение food | `food` → `NetworkVariable`. `Tick` — только на сервере. |
+| `Creature.Update` (главный цикл) | Сервер | Тикает AI, torpor, food | `if (!IsServer) return;` в начале `Update`. Клиент только отображает. |
+| `TamingManager.RegisterCreature` / `UpdateSave` / `UnregisterCreature` | Сервер | Пишет/удаляет файлы | `internal`, только на сервере. |
+| `TamingManager.SaveAll` / `OnApplicationQuit/Pause/Focus` | Сервер/хост | Пишет файлы | Только на сервере. На клиенте — no-op. |
+| `TamingManager.LoadAllTamingCreaturesAsync` | Сервер | Загружает существ | Только на сервере. Клиенты получают `ClientRpc OnCreatureSpawned`. |
+| `CorpseManager.RegisterCorpse` / `UnregisterCorpse` | Сервер | Пишет/удаляет файлы | `internal`, только на сервере. |
+| `CorpseManager.LoadAllCorpsesAsync` | Сервер | Загружает трупы | Только на сервере. Клиенты получают `ClientRpc SpawnCorpse`. |
+| `CorpseManager.RemoveAliveComponentsFromCreatureCorpse` | Сервер | `Destroy` компонентов | Только на сервере. Клиенты получают `ClientRpc OnCreatureDied`. |
+| `CreatureRiding.TickRidden` | Сервер | Прямое управление `Agent` | См. аудит 4. |
+| `CreatureRiding.Mount` / `ForceDismount` | Сервер | Владелец, дистанция | См. аудит 4. |
+| `CreatureInteractable` (открытие инвентаря) | Клиент (локально) + сервер (данные) | Какой инвентарь открыт — локально; данные — серверные | См. аудит 1. |
+| `CreatureCommands` (радиальное меню) | Сервер | Меняет поведение | `ServerRpc ExecuteCommand(netId, actionId)`. |
+| `Creature.Health` / `SetHealth` / `ReduceHealth` | Сервер | HP — серверное | `Health` → `NetworkVariable` (см. аудит 2). |
+| `Creature.SetDead` / `IsDead` | Сервер | Смерть — серверная | `internal`, только на сервере. |
+| `Creature.SetCreatureLayer` | Сервер (при спавне) | Слой — серверный | Только на сервере. |
+| `Creature.PlayerTransform` | Сервер | AI ищет игрока | Серверный `PlayerTransform` (ближайший игрок / владелец). |
+
+---
+
+## Ключевые выводы
+
+1. **AI полностью локальный.** `CreatureWildAI.Tick` и `CreatureTamedAI.Tick` тикают у каждого клиента. При коопе каждый клиент видит своё поведение. Нужно: `if (!IsServer) return;` в начале `Tick`, позиция — через `NetworkTransform`.
+
+2. **`Creature.Update` — главный цикл, тикает у каждого.** Torpor, food, AI, анимация — всё локально. При сети: `if (!IsServer) return;` в начале `Update`. Клиент только отображает (через `NetworkVariable` / `NetworkTransform` / `NetworkAnimator`).
+
+3. **Смерть (`CreatureDeath.Die`) — локальная.** Создаёт труп, пишет файл, удаляет сейв приручения. При коопе два клиента создадут два трупа и два файла. Нужно: серверный `Die()`, `ClientRpc OnCreatureDied`.
+
+4. **Нокаут (`CreatureKnockout.KnockOut`) — локальный.** Пишет файл `taming_*.save`. При коопе — конфликт. Нужно: серверный `KnockOut()`, `ClientRpc OnCreatureKnockedOut`.
+
+5. **Приручение (`tamed = true`, `TamedFromLoad`) — локальное.** Публичное поле. При коопе: серверный `TameCreature(netId, playerId)`, `ClientRpc OnCreatureTamed`.
+
+6. **`TamingManager` — сценовый синглтон, пишет файлы.** `RegisterCreature`, `UpdateSave`, `UnregisterCreature`, `SaveAll` — всё на клиенте. При коопе: только на сервере. Клиенты получают события через `ClientRpc`.
+
+7. **`CorpseManager` — сценовый синглтон, пишет файлы.** `RegisterCorpse`, `UnregisterCorpse`, `LoadAllCorpsesAsync` — всё на клиенте. При коопе: только на сервере. Клиенты получают `ClientRpc SpawnCorpse`.
+
+8. **`CorpseManager.LoadAllCorpsesAsync` при входе загружает все трупы.** Два клиента загрузят дубликаты. При сети: только сервер загружает, клиенты получают `ClientRpc`.
+
+9. **`TamingManager.LoadAllTamingCreaturesAsync` при входе загружает всех существ.** То же — дубликаты. При сети: только сервер.
+
+10. **`Creature.PlayerTransform` — один на всех.** В `Creature.Awake` берётся из `PlayerProgress.Instance.playerController`. При N игроках — нужен ближайший игрок или владелец (для прирученных).
+
+11. **`Creature.UpdateAnimation` — локальный.** `animator.SetFloat/SetBool` — при коопе каждый клиент видит свою скорость. `NetworkAnimator` решает.
+
+12. **`CreatureRiding.TickRidden` — локальный.** Прямое управление `Agent.velocity`. При сети — только на сервере (см. аудит 4).
+
+13. **`CreatureCommands` — локальные.** Радиальное меню меняет поведение локально. При сети — `ServerRpc ExecuteCommand(netId, actionId)`.
+
+14. **`Creature.SetDead` / `IsDead` — публичные.** Клиент может «убить» существо локально. При сети — `internal`, только на сервере.
+
+15. **`Creature.SetCreatureLayer` — публичный.** Меняет слой при спавне/смерти. При сети — только на сервере.
+
+---
+
+## Переделать до сети
+
+- [ ] `Creature.Update` — `if (!IsServer) return;` в начале. Клиент только отображает.
+- [ ] `Creature.UpdateAnimation` — заменить на `NetworkAnimator` (параметры Speed/IsMoving/Attack/TakeDamage/Death).
+- [ ] `Creature.torpor` — `NetworkVariable<float>`; `torpor -= ...` — только на сервере.
+- [ ] `Creature.food` — `NetworkVariable<float>`; `_taming.Tick()` — только на сервере.
+- [ ] `Creature.Health` — `NetworkVariable<float>` (см. аудит 2).
+- [ ] `Creature.SetHealth` / `SetFood` / `SetStamina` / `ReduceHealth` / `SetDead` — `internal`; только на сервере.
+- [ ] `Creature.tamed` / `knockedOut` — `NetworkVariable<bool>`; изменение — только на сервере.
+- [ ] `Creature.tamingProgress` — `NetworkVariable<float>`.
+- [ ] `Creature.tamedBehavior` / `tamedFollowDistance` / `isFollowing` / `isWandering` / `isMating` — `NetworkVariable`; изменение — через `ServerRpc ExecuteCommand`.
+- [ ] `Creature.AddTorpor` / `AddFood` / `AddTamingProgress` / `ConsumeFood` / `Unclaim` — `internal`; только на сервере.
+- [ ] `Creature.KnockOut` / `KnockOutFromLoad` / `RecoverFromKnockout` — `internal`; только на сервере.
+- [ ] `Creature.Die` / `RequestDeath` — `internal`; только на сервере.
+- [ ] `Creature.PlayerTransform` — серверный (ближайший игрок / владелец).
+- [ ] `Creature.SetCreatureLayer` — только на сервере.
+- [ ] `CreatureWildAI.Tick` — `if (!IsServer) return;` в начале.
+- [ ] `CreatureTamedAI.Tick` — `if (!IsServer) return;` в начале.
+- [ ] `CreatureWildAI.LateUpdate` / `CreatureTamedAI.LateUpdate` — `if (!IsServer) return;` (или убрать, если не нужно).
+- [ ] `Agent.SetDestination` / `Agent.isStopped` / `Agent.speed` — только на сервере (внутри AI).
+- [ ] `CreatureDeath.Die` — `internal`; только на сервере. `ClientRpc OnCreatureDied(netId)` для анимации.
+- [ ] `CreatureDeath.CreateCorpse` — только на сервере. `CorpseManager.RegisterCorpse` — `internal`.
+- [ ] `CreatureDeath.SetBodyRagdoll` — только на сервере (или `ClientRpc` для визуала).
+- [ ] `CreatureKnockout.KnockOut` — `internal`; только на сервере. `ClientRpc OnCreatureKnockedOut(netId)`.
+- [ ] `CreatureKnockout.KnockOutFromLoad` / `ExitKnockoutState` — только на сервере.
+- [ ] `CreatureKnockout.SetBodyRagdoll` — только на сервере (или `ClientRpc`).
+- [ ] `TamingManager.RegisterCreature` / `UpdateSave` / `UnregisterCreature` — `internal`; только на сервере.
+- [ ] `TamingManager.SaveAll` / `OnApplicationQuit/Pause/Focus` — только на сервере.
+- [ ] `TamingManager.LoadAllTamingCreaturesAsync` — только на сервере. Клиенты получают `ClientRpc OnCreatureSpawned`.
+- [ ] `TamingManager.SpawnFromData` — только на сервере.
+- [ ] `CorpseManager.RegisterCorpse` / `UnregisterCorpse` — `internal`; только на сервере.
+- [ ] `CorpseManager.LoadAllCorpsesAsync` — только на сервере. Клиенты получают `ClientRpc SpawnCorpse`.
+- [ ] `CorpseManager.SpawnCorpseFromData` — только на сервере.
+- [ ] `CorpseManager.RemoveAliveComponentsFromCreatureCorpse` — только на сервере.
+- [ ] `CorpseManager.ForgetCorpse` — только на сервере (или `ClientRpc` для визуала).
+- [ ] `CreatureCommands.ExecuteRadialAction` / `SetRadialRadioValue` — `ServerRpc ExecuteCommand(netId, actionId)`.
+- [ ] `CreatureInteractable` — открытие инвентаря: локально у клиента, данные — серверные (см. аудит 1).
+- [ ] `CreatureRiding.TickRidden` / `Mount` / `ForceDismount` — только на сервере (см. аудит 4).
+- [ ] Спавн существ — серверный `SpawnCreature(creatureId, position, rotation)`. Клиенты получают `ClientRpc OnCreatureSpawned(netId, ...)`.
+- [ ] `Creature.Awake` — `if (!IsServer) return;` для `_data`-инициализации? Нет, `_data` нужен всем (для отображения). Но `AddComponent` живых компонентов — только на сервере? Нет, компоненты нужны всем (для отображения HP, инвентаря). Правило: **компоненты создаются у всех**, но **тикают только на сервере**.
+
+```
+--- END OF FILE: project-rules-md\network\06-audit-creatures.md ---
+
+--- START OF FILE: project-rules-md\network\07-refactor-checklist.md ---
+```md
+# Чеклист «переделать до сети»
+
+> Сводный список. Собирается из аудитов (`0X-audit-*.md`).
+> Приоритет 1 — блокеры для коопа. Приоритет 2 — важно, но не блокер первого коопа. Приоритет 3 — можно после первого коопа.
+> Формат: `- [ ]` — не сделано, `- [x]` — сделано.
+>
+> **Обновлено после N-player рефакторинга (Шаги 1–3 + PlayerProgress/InventoryManager/PlayerSurvivalSystem per-player).**
+> Закрытые пункты — `[x]`, с пометкой что именно сделано.
+
+---
+
+## Приоритет 1 — блокеры коопа
+
+### Инвентарь (из `01-audit-inventory.md`)
+
+- [x] `InventoryData.AddItemAnywhere` — убрать `PlayerProgress.Instance.Save()` (ответственность вызывающего). **Сделано:** `Save` убран, `Notify` — на уровне `PlayerProgress`/`InventoryManager`.
+- [ ] `InventoryData.RemoveItemFromSlot` / `ClearSlot` — `internal`, доступ через `InventoryManager`.
+- [ ] `PlayerProgress.AddItemToPlayerInventory` — сделать `[ServerRpc]`-совместимым (пока — `internal` + флаг `SessionMode.IsMultiplayer`).
+- [ ] `InventorySlot.currentDurability` — `private set` + сеттер в `InventoryData`.
+- [ ] `PlayerEquipment.Equip` — валидировать `slotIndex` ↔ `item` (сейчас можно экипировать предмет, которого нет в слоте).
+- [ ] `PlayerProgress.TrySpendEngramPoints` — валидировать `cost` по рецепту (сейчас можно передать `cost = 0`).
+- [ ] `PlayerProgress.AllocateStatPoint` — защита от повторного вызова в одном кадре (флаг `_isAllocating`).
+- [ ] `NotificationManager.Instance.Show(...)` из `InventoryData` / `InventoryManager` — заменить на события (данные не должны звать UI). **Частично:** `InventoryManager` всё ещё зовёт `NotificationManager` напрямую.
+- [ ] `ChestInventory.Save()` / `PlayerProgress.Save()` — no-op при `SessionMode.IsMultiplayer && !IsServer`.
+- [ ] `LootBagManager.Instance.CreateLootBagFromItems` — вызывать только на сервере (флаг `SessionMode.IsMultiplayer`).
+- [x] `InventoryUI` / `HotbarUI` — подписать на `InventoryData.OnInventoryChanged`, а не на прямые вызовы `RefreshAllUIs` из `InventoryManager`. **Сделано:** подписаны на `InventoryEventsHub.OnChanged` (глобальный хаб).
+- [ ] `ChestUIManager.CurrentSource` — при сети должен быть локальным состоянием клиента (какой сундук открыт у меня), но данные — серверные. **Сейчас:** `CurrentSource` один на клиента, не per-player.
+
+### Урон и смерть (из `02-audit-damage.md`)
+
+- [ ] `Creature.TakeDamage` — сделать `internal`, вход только через серверный `RequestAttack`.
+- [ ] `Creature.ReduceHealth` — `internal`; `Health` setter → серверный.
+- [ ] `Creature.RequestDeath` / `Creature.Die` — `RequestDeath` → ServerRpc; `Die()` → `internal`.
+- [ ] `CreatureDeath.Die` — добавить флаг `_isDying` (идемпотентность); сейчас двойной вызов возможен.
+- [ ] `CreatureCombat.TakeDamage` — разделить на: (1) серверный расчёт (damage + зона + HP), (2) клиентские эффекты (анимация, цифры, партиклы) через события.
+- [ ] `CreatureCombat.TakeDamage` — убрать `PlayDamageEffect` (Instantiate) из общей функции; вынести в клиентский обработчик.
+- [ ] `DamageNumberPool.Instance.ShowDamage` — вызывать из клиентского обработчика события, а не из `TakeDamage`.
+- [ ] `Creature.GetDamageMultiplier(col)` — при сети клиент не передаёт `col`; сервер сам ищет зону по `hitPoint`.
+- [ ] `Creature.AddTorpor` — `internal`; `torpor` → `NetworkVariable` (или серверный сеттер + репликация).
+- [ ] `CreatureKnockout.KnockOut` — `internal`; вход через `ServerRpc`.
+- [ ] `CreatureCombat.NotifyAttackedBy` — `internal`; только сервер.
+- [ ] `CreatureCombat.LastAttacker` — серверный геттер; клиенту не нужен.
+- [ ] `CreatureCombat._lastAttackTime` — серверный; клиентский кулдаун только для анимации.
+- [ ] `PlayerSurvivalSystem.TakeDamage` — `internal`; вход через серверный метод; `Health` → `NetworkVariable`.
+- [x] `CreatureCombat.DealDamageToTarget` — верхом: `OverlapBox` на сервере; клиент — только анимация. **Частично:** бьёт `_wildTargetTransform` (не `LocalPlayer`), fallback на `LocalPlayer`. Для сети — `_wildTargetTransform` должен быть `NetworkObject`.
+- [ ] `CreatureCombat.FindWildTarget` / `FindNearestEnemy` / `FindEnemyNearPlayer` — только сервер (AI).
+- [ ] `CreatureCombat.PerformAttack` / `AttackFromRider` — серверный триггер анимации через `ClientRpc` / `NetworkAnimator`.
+- [ ] `Creature.UpdateAnimation` — при сети заменить на `NetworkAnimator` (параметры Speed/IsMoving реплицируются).
+- [ ] `Creature._wildAI.Tick` / `_tamedAI.Tick` — только на сервере (флаг `if (!IsServer) return;`).
+- [ ] `CreatureCombat._isAttackingPlayer` — серверное состояние; клиент не должен влиять.
+- [ ] `CreatureCombat.ChaseAndAttack` — только сервер (управляет `NavMeshAgent`).
+- [ ] `CreatureCombat.UpdateCurrentEnemy` / `ClearTargets` — только сервер.
+
+### Игроки и сессия (из `03-audit-players.md`)
+
+- [x] `PlayerController.Awake` — убрать `Destroy(gameObject)` для дубликата; `Instance` → `LocalPlayer` (только свой) + `AllPlayers` (список). **Сделано:** `LocalPlayer` + `AllPlayers`, `Destroy` убран, `LocalPlayer` переизбирается в `OnDestroy`.
+- [x] `PlayerSurvivalSystem.Awake` — убрать `Destroy(gameObject)`; `Instance` → per-player. **Сделано:** `_progress = GetComponent<PlayerProgress>()`, `Destroy` убран.
+- [x] `PlayerProgress.Instance` — per-player: `GetPlayerProgress(playerId)`. Сейв — `Player_{playerId}.save`. **Сделано:** `_progressByPlayerId`, `GetPlayerProgress`, `Player_{playerId}.save`.
+- [x] `InventoryManager.Instance` — per-player: `GetInventoryManager(playerId)`. **Сделано:** `Instance` убран, компонент на игроке, `_progress` через `GetComponent`.
+- [x] `PlayerProgress.RegisterPlayerController` — регистрация по `playerId`, не по singleton. **Сделано:** `_playerController` — свой, `RegisterPlayerController(this)`.
+- [x] `PlayerProgress.RegisterInventoryManager` — то же. **Сделано:** `RegisterInventoryManager(this)`.
+- [x] `PlayerSurvivalSystem.OnPlayerDeathRoutine` — `ReloadFromFile` только для умершего игрока (серверный). **Сделано:** `_progress.playerController` (свой), `_progress.PlayerId`.
+- [x] `PlayerProgress.Save` — no-op на клиенте; per-player файл на сервере. **Сделано:** per-player файл. **No-op на клиенте** — ещё нет (см. ниже).
+- [ ] `GameTime.Now` — серверное время; синхронизация часов с сервером.
+- [ ] `GameTimeUpdater` — только на сервере.
+- [ ] `SessionMode.IsMultiplayer` — серверный флаг; `GameSettings.isMultiplayer` — только дефолт.
+- [x] `GameAssets.CreateGlobalManagers` — развести: глобальные (GameController, GameTime) на сервере; per-player (PlayerProgress, InventoryManager) на каждого. **Сделано:** `PlayerProgress` не создаётся в `GameAssets` (компонент на игроке).
+- [ ] `PlayerController.transform` — client-side prediction + `NetworkTransform` + серверная валидация скорости.
+- [ ] `PlayerController.Attack` — `ServerRpc RequestAttack(targetId, hitPoint)`; сервер считает урон.
+- [ ] `PlayerSurvivalSystem.TakeDamage` — `internal`, вход через серверный метод; `Health` → `NetworkVariable`.
+- [ ] `PlayerSurvivalSystem.Update` — проверка смерти только на сервере.
+- [x] `PlayerInputHandler` / `PlayerInput` — только на локальном игроке (не на сервере). **Сделано:** болванчик отфильтрован (`IsLocalPlayer()`, `PlayerInput.enabled = false`).
+- [ ] `PlayerProgress.AllocateStatPoint` / `TrySpendEngramPoints` — серверные (см. аудит 1). **Частично:** `UpdateEngramAvailability` вызывается в `AllocateStatPoint`/`TrySpendEngramPoints`, но `ServerRpc` — нет.
+
+### Позиция и движение (из `04-audit-position.md`)
+
+- [ ] `PlayerController.transform` — client-side prediction + `NetworkTransform` (клиент-авторитарный).
+- [ ] `PlayerController.Move` / `Swim` / `OnLadder` — локально, но сервер валидирует `maxSpeed`, `Grounded`, `_isInWater`, `_onLadder`.
+- [ ] `PlayerController._verticalVelocity` — предсказание; сервер проверяет, что игрок не «летает».
+- [ ] `PlayerController.SetMounted` — `IsMounted` реплицируется (другие клиенты видят игрока в седле).
+- [ ] `RidingController.Mount` — `ServerRpc RequestMount(creatureId)`; сервер проверяет: приручено, владелец, дистанция.
+- [ ] `RidingController.Dismount` — `ServerRpc RequestDismount`; сервер находит позицию через `NavMesh.SamplePosition` и телепортирует.
+- [ ] `RidingController.OnApplicationQuit` / `OnDestroy` — `ServerRpc ForceDismount`; сервер телепортирует игрока.
+- [ ] `CreatureRiding.TickRidden` — только сервер; клиент шлёт `ServerRpc SendRideInput(move, look, sprint)`.
+- [x] `PlayerProgress.LateUpdate` (`_lastKnownPlayerPosition`) — только на сервере. **Сделано:** per-player `_lastKnownPlayerPosition` на `PlayerProgress` (своём).
+- [ ] `PlayerProgress.Save` — per-player файл; на клиенте no-op (см. аудит 3).
+- [ ] `GameTime.Now` — серверное время; синхронизация часов с клиентом.
+- [ ] `GameTimeUpdater` — только на сервере (см. аудит 3).
+- [ ] `PlayerController.transform.position` — серверная валидация телепорта (максимальное смещение за тик).
+- [ ] `RidingController._currentMount` — серверное состояние; клиент только отображает.
+
+### Мир и строительство (из `05-audit-world.md`)
+
+- [ ] `WorldManager.RegisterStructure` — `internal`, только на сервере. `SaveDirtyChunks` — не мгновенно, по таймеру.
+- [ ] `WorldManager.UnregisterStructure` — `internal`, только на сервере.
+- [ ] `WorldManager.Update` (автосохранение) — `if (!IsServer) return;`.
+- [ ] `WorldManager.OnApplicationQuit` → `SaveAllChunks` — только на сервере.
+- [ ] `WorldManager.LoadWorldAsync` / `ClearExistingStructures` — только на сервере; клиенты получают `ClientRpc SpawnStructure`.
+- [ ] `WorldManager.RegisterStructure` — `ownerId` не хардкод, а серверный `playerId`.
+- [ ] `WorldManager.RegisterStructure` — `instanceId` генерирует сервер, не клиент.
+- [ ] `PlayerBuildMode.PlaceStructure` — `ServerRpc RequestPlaceStructure(itemId, position, rotation, parentId)`. Сервер проверяет ресурсы, дистанцию, `IsPositionValid`.
+- [ ] `PlayerBuildMode.IsPositionValid` — клиентский для превью; серверный — авторитетный.
+- [ ] `Structure.TakeDamage` — `internal`; `ServerRpc RequestAttackStructure(instanceId, hitPoint)`. Сервер считает урон.
+- [ ] `Structure.Die` — `internal`, только на сервере. `ClientRpc OnStructureDestroyed` для анимации/эффектов.
+- [ ] `Structure.Die` — `DropAllItemsToBag` только на сервере (см. аудит 1).
+- [ ] `ChestController.Open` — `ServerRpc RequestOpenChest(instanceId)`. Сервер проверяет дистанцию.
+- [ ] `ChestController.OnInventoryOpened/Closed` — локальное состояние клиента; данные — серверные (см. аудит 1).
+- [ ] `StructureAttachment` — серверное состояние; клиент получает через `ClientRpc`.
+- [ ] `WorldManager._chunks` / `_instanceMap` / `_dirtyChunks` — только на сервере. Клиент хранит только визуальные объекты.
+
+### Существа и AI (из `06-audit-creatures.md`)
+
+- [ ] `Creature.Update` — `if (!IsServer) return;` в начале. Клиент только отображает. **Частично:** есть `if (_data == null || _taming == null) return;`, но `!IsServer` — нет.
+- [ ] `Creature.UpdateAnimation` — заменить на `NetworkAnimator` (параметры Speed/IsMoving/Attack/TakeDamage/Death).
+- [ ] `Creature.torpor` — `NetworkVariable<float>`; `torpor -= ...` — только на сервере.
+- [ ] `Creature.food` — `NetworkVariable<float>`; `_taming.Tick()` — только на сервере.
+- [ ] `Creature.Health` — `NetworkVariable<float>` (см. аудит 2).
+- [ ] `Creature.SetHealth` / `SetFood` / `SetStamina` / `ReduceHealth` / `SetDead` — `internal`; только на сервере.
+- [ ] `Creature.tamed` / `knockedOut` — `NetworkVariable<bool>`; изменение — только на сервере.
+- [ ] `Creature.tamingProgress` — `NetworkVariable<float>`.
+- [ ] `Creature.tamedBehavior` / `tamedFollowDistance` / `isFollowing` / `isWandering` / `isMating` — `NetworkVariable`; изменение — через `ServerRpc ExecuteCommand`.
+- [ ] `Creature.AddTorpor` / `AddFood` / `AddTamingProgress` / `ConsumeFood` / `Unclaim` — `internal`; только на сервере.
+- [ ] `Creature.KnockOut` / `KnockOutFromLoad` / `RecoverFromKnockout` — `internal`; только на сервере.
+- [ ] `Creature.Die` / `RequestDeath` — `internal`; только на сервере.
+- [ ] `Creature.PlayerTransform` — серверный (ближайший игрок / владелец).
+- [ ] `Creature.SetCreatureLayer` — только на сервере.
+- [ ] `CreatureWildAI.Tick` — `if (!IsServer) return;` в начале.
+- [ ] `CreatureTamedAI.Tick` — `if (!IsServer) return;` в начале.
+- [ ] `CreatureWildAI.LateUpdate` / `CreatureTamedAI.LateUpdate` — `if (!IsServer) return;` (или убрать, если не нужно).
+- [ ] `Agent.SetDestination` / `Agent.isStopped` / `Agent.speed` — только на сервере (внутри AI).
+- [ ] `CreatureDeath.Die` — `internal`; только на сервере. `ClientRpc OnCreatureDied(netId)` для анимации.
+- [ ] `CreatureDeath.CreateCorpse` — только на сервере. `CorpseManager.RegisterCorpse` — `internal`.
+- [ ] `CreatureDeath.SetBodyRagdoll` — только на сервере (или `ClientRpc` для визуала).
+- [ ] `CreatureKnockout.KnockOut` — `internal`; только на сервере. `ClientRpc OnCreatureKnockedOut(netId)`.
+- [ ] `CreatureKnockout.KnockOutFromLoad` / `ExitKnockoutState` — только на сервере.
+- [ ] `CreatureKnockout.SetBodyRagdoll` — только на сервере (или `ClientRpc`).
+- [ ] `TamingManager.RegisterCreature` / `UpdateSave` / `UnregisterCreature` — `internal`; только на сервере.
+- [ ] `TamingManager.SaveAll` / `OnApplicationQuit/Pause/Focus` — только на сервере.
+- [ ] `TamingManager.LoadAllTamingCreaturesAsync` — только на сервере. Клиенты получают `ClientRpc OnCreatureSpawned`.
+- [ ] `TamingManager.SpawnFromData` — только на сервере.
+- [ ] `CorpseManager.RegisterCorpse` / `UnregisterCorpse` — `internal`; только на сервере.
+- [ ] `CorpseManager.LoadAllCorpsesAsync` — только на сервере. Клиенты получают `ClientRpc SpawnCorpse`.
+- [ ] `CorpseManager.SpawnCorpseFromData` — только на сервере.
+- [ ] `CorpseManager.RemoveAliveComponentsFromCreatureCorpse` — только на сервере.
+- [ ] `CorpseManager.ForgetCorpse` — только на сервере (или `ClientRpc` для визуала).
+- [ ] `CreatureCommands.ExecuteRadialAction` / `SetRadialRadioValue` — `ServerRpc ExecuteCommand(netId, actionId)`.
+- [ ] `CreatureInteractable` — открытие инвентаря: локально у клиента, данные — серверные (см. аудит 1).
+- [ ] `CreatureRiding.TickRidden` / `Mount` / `ForceDismount` — только на сервере (см. аудит 4).
+- [ ] Спавн существ — серверный `SpawnCreature(creatureId, position, rotation)`. Клиенты получают `ClientRpc OnCreatureSpawned(netId, ...)`.
+
+---
+
+## Приоритет 2 — важно, но не блокер первого коопа
+
+> Эти системы не мешают «двум клиентам увидеть друг друга», но нужны для полноценного коопа. Делать после Приоритета 1.
+
+- [ ] Синхронизация `LootBag` (спавн/подбор/деспавн) — серверная.
+- [ ] Синхронизация `Corpse` (harvest, drag, despawn) — серверная.
+- [ ] Синхронизация `ChestInventory` (открытие/закрытие/содержимое) — серверная.
+- [ ] Синхронизация `RadialMenu` (открытие, действия) — серверная.
+- [ ] Синхронизация `EntityInfoPanel` (какая цель у какого игрока) — локальная.
+- [ ] Синхронизация `DamageNumberPool` (цифры урона) — `ClientRpc`.
+- [ ] Синхронизация `NotificationManager` (уведомления) — локальная.
+- [ ] Синхронизация погоды/времени суток (если будет) — серверная.
+
+---
+
+## Приоритет 3 — можно после первого коопа
+
+- [ ] Сетевой слой (NGO + Relay) — подключение.
+- [ ] Steam-лобби.
+- [ ] Dedicated server.
+- [ ] PvP-режим.
+- [ ] Античит (серверная валидация скорости, дистанции, кулдаунов).
+- [ ] Синхронизация `TamingManager` (прогресс приручения в реальном времени).
+- [ ] Синхронизация `WorldManager` (чанки, загрузка/выгрузка по расстоянию).
+- [ ] Синхронизация `CreatureRiding` (верхом, mounted combat).
+- [ ] Синхронизация `PlayerBuildMode` (превью у других игроков).
+
+---
+
+## Как пользоваться
+
+1. Перед началом работы над системой — открыть её аудит (`0X-audit-*.md`) и этот чеклист.
+2. Делать пункты сверху вниз (Приоритет 1 → 2 → 3).
+3. После закрытия пункта — `- [x]` + коммит на русском + обновить `../03-current-state.md`.
+4. Если пункт оказался не нужен — зачеркнуть `~~...~~` и написать причину.
+5. Новые пункты — добавлять в конец соответствующего блока (не менять порядок выше).
+```
+--- END OF FILE: project-rules-md\network\07-refactor-checklist.md ---
+
+--- START OF FILE: project-rules-md\network\08-refactor-plan-nplayers.md ---
+```md
+# План рефакторинга под N игроков (Путь B)
+
+> Цель: убрать синглтоны из per-player менеджеров, сделать `LocalPlayer` + `AllPlayers`, per-player сейвы. Без сети.
+> Тестируется в синглплеере: два префаба игрока в тестовой сцене.
+> Правило: после каждого шага — тест → коммит на русском → обновить `03-current-state.md`. Есть баги — чиним до перехода.
+
+---
+
+## Общая картина: что меняем и почему
+
+| Файл | Сейчас | Станет | Зачем |
+|---|---|---|---|
+| `PlayerController` | `Instance` (синглтон, `Destroy` дубликата) | `LocalPlayer` (свой) + `AllPlayers` (список) | Второй игрок не удаляется |
+| `PlayerSurvivalSystem` | `Instance` (синглтон, `Destroy` дубликата) | per-player (компонент на игроке) | У каждого свой Health/Stamina |
+| `PlayerProgress` | `Instance` (один на игру, один файл) | `GetPlayerProgress(playerId)`, `Player_{playerId}.save` | Разные уровни/инвентари/позиции |
+| `InventoryManager` | `Instance` (синглтон) | per-player (компонент на игроке) | Разные инвентари |
+| `ChestUIManager` | `Instance` (синглтон) | `LocalPlayer`-scoped (какой сундук открыт у меня) | Не открывать чужой сундук |
+| `GameAssets` | Создаёт один `PlayerProgress` | Разводит глобальные и per-player | Глобальные — одни, per-player — на каждого |
+
+**Ключевая идея:** `Instance` → два разных понятия:
+- **`LocalPlayer`** — «мой игрок» (для UI, ввода, камеры). Один на клиента.
+- **`AllPlayers`** — «все игроки в мире» (для AI, репликации). Список на сервере/хосте.
+
+В синглплеере `LocalPlayer == AllPlayers[0]`. В коопе — `LocalPlayer` у каждого свой, `AllPlayers` — общий список.
+
+---
+
+## Принятые решения (по 4 вопросам)
+
+1. **`_playerId`** — сериализованное поле `[SerializeField] private string _playerId = "player_001";`. В синглплеере — один игрок. В коопе — сервер назначит при спавне.
+2. **`LocalPlayer`** — первый в `Awake` (`if (LocalPlayer == null) LocalPlayer = this;`). Временно, до NGO. Потом — явная регистрация из `WorldBootstrap` / при спавне своего игрока.
+3. **`AllPlayers`** — `List<PlayerController>`. 2–4 игрока, O(n) — не проблема. Порядок сохраняется.
+4. **Ввод** — только `LocalPlayer` (`if (this != LocalPlayer) return;` в `Update`). Второй игрок в синглплеере — «болванчик» (живой, но без ввода).
+
+---
+
+## Шаг 0. Подготовка (без изменений кода)
+
+**Что делаем:**
+1. Создать тестовую сцену `TestScene_TwoPlayers` (или использовать `GameWorld` с двумя префабами).
+2. Создать два префаба игрока (или один префаб, два экземпляра в сцене).
+3. Убедиться, что оба спавнятся (сейчас — нет, второй удаляется).
+
+**Тест:** запустить сцену, увидеть в консоли `[PlayerController] Destroy(gameObject)` для второго. Это подтверждение бага, а не ошибка.
+
+**Коммит:** не нужен (только тестовая сцена, не в git или в `.gitignore`).
+
+---
+
+## Шаг 1. `PlayerController` — убрать `Destroy`, `LocalPlayer` + `AllPlayers`
+
+**Файл:** `Assets/Scripts/Player/PlayerController.cs`
+
+**Что меняем:**
+
+Было:
+
+    public static PlayerController Instance { get; private set; }
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+        // ...
+        PlayerProgress.Instance?.RegisterPlayerController(this);
+    }
+
+    private void OnDestroy()
+    {
+        if (PlayerProgress.Instance != null && PlayerProgress.Instance.playerController == this)
+            PlayerProgress.Instance.UnregisterPlayerController();
+        if (Instance == this) Instance = null;
+    }
+
+Стало:
+
+    public static PlayerController LocalPlayer { get; private set; }
+    public static readonly List<PlayerController> AllPlayers = new();
+
+    [SerializeField] private string _playerId = "player_001";
+    public string PlayerId => _playerId;
+
+    private void Awake()
+    {
+        if (!AllPlayers.Contains(this))
+            AllPlayers.Add(this);
+
+        if (LocalPlayer == null)
+            LocalPlayer = this;
+
+        // ... остальная инициализация ...
+        PlayerProgress.Instance?.RegisterPlayerController(this); // временно, Шаг 3 заменит
+    }
+
+    private void OnDestroy()
+    {
+        AllPlayers.Remove(this);
+        if (LocalPlayer == this) LocalPlayer = null;
+        PlayerProgress.Instance?.UnregisterPlayerController();
+    }
+
+**Важно:**
+- `Instance` больше нет. Все, кто использовал `PlayerController.Instance`, должны использовать `LocalPlayer` (UI/ввод) или `AllPlayers` (AI/репликация).
+- `PlayerProgress.Instance` — временно (Шаг 3 заменит на `GetPlayerProgress(_playerId)`).
+
+**Что сломается:** все `PlayerController.Instance` в проекте. Поиск: `grep -rn "PlayerController.Instance" Assets/Scripts/`. Заменить:
+- UI/ввод/камера → `LocalPlayer`
+- AI/мир/«ближайший игрок» → `AllPlayers` (или `FindClosestPlayer()`)
+
+**Тест:**
+1. Два префаба в сцене — оба живы, не удаляются.
+2. `AllPlayers.Count == 2`, `LocalPlayer != null`.
+3. Управление работает только у `LocalPlayer` (второй — без ввода, но живой).
+
+**Коммит:** `Шаг 1: PlayerController — LocalPlayer + AllPlayers, убран Destroy`
+
+---
+
+## Шаг 2. `PlayerSurvivalSystem` — убрать `Destroy`, per-player
+
+**Файл:** `Assets/Scripts/Core/PlayerSurvivalSystem.cs`
+
+**Что меняем:**
+
+Было:
+
+    public static PlayerSurvivalSystem Instance { get; private set; }
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+    }
+
+Стало:
+
+    // Instance больше нет — компонент на каждом игроке
+    // Доступ: playerController.GetComponent<PlayerSurvivalSystem>()
+
+    private void Awake()
+    {
+        // НЕ удаляем — каждый игрок со своим выживанием
+    }
+
+**Важно:**
+- `PlayerSurvivalSystem` — компонент на игроке, не глобальный менеджер.
+- Все, кто использовал `PlayerSurvivalSystem.Instance`, должны получать его через `PlayerController`:
+  - `LocalPlayer.GetComponent<PlayerSurvivalSystem>()` — для UI
+  - `playerController.GetComponent<PlayerSurvivalSystem>()` — для урона
+
+**Поиск:** `grep -rn "PlayerSurvivalSystem.Instance" Assets/Scripts/`
+
+**Тест:**
+1. У каждого игрока свой `Health`, `Food`, `Water`.
+2. Урон одному не меняет `Health` другого.
+3. Смерть одного не вызывает `ReloadFromFile` у другого.
+
+**Коммит:** `Шаг 2: PlayerSurvivalSystem — per-player, убран Instance`
+
+---
+
+## Шаг 3. `PlayerProgress` — per-player (`playerId` → прогресс)
+
+**Файл:** `Assets/Scripts/Core/PlayerProgress.cs`
+
+**Что меняем:**
+
+Было:
+
+    public static PlayerProgress Instance { get; private set; }
+
+    public void Initialize(ItemDatabase itemDb, RecipeDatabase recipeDb)
+    {
+        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
+        Instance = this;
+        // ...
+    }
+
+Стало:
+
+    private static readonly Dictionary<string, PlayerProgress> _progressByPlayerId = new();
+    public static PlayerProgress GetPlayerProgress(string playerId)
+        => _progressByPlayerId.TryGetValue(playerId, out var p) ? p : null;
+
+    public string PlayerId { get; private set; }
+
+    public void Initialize(ItemDatabase itemDb, RecipeDatabase recipeDb, string playerId)
+    {
+        PlayerId = playerId;
+        if (_progressByPlayerId.ContainsKey(playerId))
+        {
+            Debug.LogError($"[PlayerProgress] Дубликат playerId '{playerId}'!");
+            return;
+        }
+        _progressByPlayerId[playerId] = this;
+        // ...
+    }
+
+    private void OnDestroy()
+    {
+        if (!string.IsNullOrEmpty(PlayerId))
+            _progressByPlayerId.Remove(PlayerId);
+    }
+
+**Сейв:**
+
+Было:
+
+    private const string SAVE_FILE_NAME = "Player.save";
+
+Стало:
+
+    private string GetSaveFileName() => $"Player_{PlayerId}.save";
+
+**`GameAssets.CreateGlobalManagers`:**
+
+Было:
+
+    CreateChildManager<PlayerProgress>("PlayerProgress", m =>
+        m.Initialize(_itemDatabase, _recipeDatabase));
+
+Стало:
+
+    // PlayerProgress больше НЕ создаётся в GameAssets (он per-player).
+    // Создаётся на каждом игроке в сцене (или при спавне игрока).
+
+**Важно:**
+- `PlayerProgress` теперь не глобальный менеджер, а per-player.
+- `GameAssets` больше не создаёт `PlayerProgress`. Он создаётся на игроке (или при спавне).
+- `PlayerController.Awake` регистрируется в `GetPlayerProgress(_playerId)` (Шаг 1).
+
+**Поиск:** `grep -rn "PlayerProgress.Instance" Assets/Scripts/`
+
+**Тест:**
+1. Два игрока — разные `PlayerProgress`, разные уровни/энграммы.
+2. Сейв одного — `Player_player_001.save`, другого — `Player_player_002.save`.
+3. Загрузка — каждый берёт свой файл.
+4. `PlayerProgress.GetPlayerProgress("player_001")` возвращает правильный.
+
+**Коммит:** `Шаг 3: PlayerProgress — per-player, Player_{playerId}.save`
+
+---
+
+## Шаг 4. `InventoryManager` — per-player
+
+**Файл:** `Assets/Scripts/InventorySystem/InventoryManager.cs`
+
+**Что меняем:**
+
+Было:
+
+    public static InventoryManager Instance { get; private set; }
+
+    private void Awake() { if (Instance != null && Instance != this) { Destroy(gameObject); return; } Instance = this; }
+
+Стало:
+
+    // Instance больше нет — компонент на каждом игроке
+    // Доступ: playerController.GetComponent<InventoryManager>()
+
+    private PlayerProgress _playerProgress;
+    public PlayerProgress PlayerProgress => _playerProgress;
+
+    private void Awake()
+    {
+        // НЕ удаляем — каждый игрок со своим инвентарём
+    }
+
+    private IEnumerator Start()
+    {
+        _playerProgress = PlayerProgress.GetPlayerProgress(GetComponent<PlayerController>().PlayerId);
+        while (_playerProgress == null) yield return null;
+        _playerProgress.RegisterInventoryManager(this);
+        // ...
+    }
+
+**Важно:**
+- `InventoryManager` — компонент на игроке, не глобальный.
+- `PlayerProgress.Instance` → `_playerProgress` (свой).
+- `ChestUIManager` — пока оставляем синглтоном (Шаг 6), но `CurrentSource` должен быть per-player.
+
+**Поиск:** `grep -rn "InventoryManager.Instance" Assets/Scripts/`
+
+**Тест:**
+1. Два игрока — разные инвентари.
+2. Добавление предмета одному не меняет инвентарь другого.
+3. Сейв — per-player (через `PlayerProgress`).
+
+**Коммит:** `Шаг 4: InventoryManager — per-player, убран Instance`
+
+---
+
+## Шаг 5. `GameAssets` — развести глобальные и per-player
+
+**Файл:** `Assets/Scripts/Core/GameAssets.cs`
+
+**Что меняем:**
+
+Было:
+
+    private void CreateGlobalManagers()
+    {
+        CreateChildManager<GameController>("GameController", m => m.Initialize(_gameSettings));
+        CreateChildManager<PlayerProgress>("PlayerProgress", m => m.Initialize(_itemDatabase, _recipeDatabase));  // убрать
+        CreateChildManager<GameTimeUpdater>("GameTimeUpdater");
+        GameTime.Initialize();
+    }
+
+Стало:
+
+    private void CreateGlobalManagers()
+    {
+        // Глобальные (одни на игру/сервер)
+        CreateChildManager<GameController>("GameController", m => m.Initialize(_gameSettings));
+        CreateChildManager<GameTimeUpdater>("GameTimeUpdater");
+        GameTime.Initialize();
+
+        // Per-player (PlayerProgress, InventoryManager) — создаются на игроках, не здесь
+    }
+
+**Важно:**
+- `GameAssets` — только глобальные.
+- `PlayerProgress` / `InventoryManager` — на игроках.
+- `WorldBootstrap` (загрузка GameWorld) — должен создавать `PlayerProgress` для `LocalPlayer` при спавне (или `PlayerController` сам создаёт).
+
+**Тест:**
+1. Запуск `GameWorld` — `GameAssets` создаёт только глобальные.
+2. `LocalPlayer` — имеет свой `PlayerProgress`.
+3. Второй игрок — свой `PlayerProgress`.
+
+**Коммит:** `Шаг 5: GameAssets — разведены глобальные и per-player менеджеры`
+
+---
+
+## Шаг 6. `ChestUIManager` — `LocalPlayer`-scoped
+
+**Файл:** `Assets/Scripts/InventorySystem/ChestUIManager.cs`
+
+**Что меняем:**
+
+Было:
+
+    public static ChestUIManager Instance { get; private set; }
+    public IInventorySource CurrentSource { get; private set; }
+
+Стало:
+
+    // Instance остаётся (UI один на клиента), но CurrentSource — per-player
+    public IInventorySource CurrentSource { get; private set; }
+    // Источник открыт только для LocalPlayer. Другие игроки не видят.
+
+**Важно:**
+- `ChestUIManager` — один на клиента (UI один). Но `CurrentSource` — «какой сундук открыт у меня».
+- Данные сундука — серверные (см. аудит 1). Пока — локальные (синглплеер).
+
+**Тест:**
+1. Два игрока — каждый может открыть свой сундук.
+2. Открытие сундука одним не открывает его у другого.
+
+**Коммит:** `Шаг 6: ChestUIManager — CurrentSource per-player (локально)`
+
+---
+
+## Шаг 7. Финальный тест «два игрока в одной сцене»
+
+**Что проверяем:**
+1. Два префаба игрока в сцене — оба живы.
+2. `LocalPlayer` — один (свой), `AllPlayers.Count == 2`.
+3. У каждого свой `Health`, `Food`, `Water` — урон не перекидывается.
+4. У каждого свой `PlayerProgress` — разные уровни, разные сейвы.
+5. У каждого свой `InventoryManager` — разные инвентари.
+6. `ChestUIManager.CurrentSource` — у каждого свой.
+7. AI (если есть) видит обоих игроков (через `AllPlayers`).
+
+**Если всё работает — Шаг 7 закрыт. Дальше — сеть (NGO + Relay).**
+
+**Коммит:** `Шаг 7: два игрока в одной сцене — тест пройден`
+
+---
+
+## Риски и что делать, если сломалось
+
+| Риск | Что делать |
+|---|---|
+| `PlayerController.Instance` используется в 50 местах | Найти все `grep`, заменить на `LocalPlayer` (UI/ввод) или `AllPlayers` (AI). Не торопиться, идти по файлам. |
+| `PlayerProgress.Instance` в `InventoryData.AddItemAnywhere` | Убрать `Save()` из `AddItemAnywhere` (см. аудит 1). `Save()` — на `PlayerProgress` (per-player). |
+| `PlayerSurvivalSystem.Instance` в `CreatureCombat.DealDamageToTarget` | Заменить на `target.GetComponent<PlayerSurvivalSystem>()`. Урон — по цели, не по синглтону. |
+| `PlayerProgress.Save()` пишет один файл | Per-player `Player_{playerId}.save` (Шаг 3). |
+| `GameTimeUpdater` тикает у каждого | Пока оставить (синглплеер). При сети — только на сервере (аудит 3). |
+| `ChestUIManager.CurrentSource` — глобальный | `LocalPlayer`-scoped (Шаг 6). |
+| Два игрока не сталкиваются | `CharacterController` не сталкивается с `CharacterController`. Это нормально для синглплеера; в коопе — `NetworkTransform` + серверная физика. |
+
+---
+
+## Порядок работ (сводка)
+
+    Шаг 0: Тестовая сцена (два префаба) — подтвердить баг
+    Шаг 1: PlayerController — LocalPlayer + AllPlayers
+    Шаг 2: PlayerSurvivalSystem — per-player
+    Шаг 3: PlayerProgress — per-player, Player_{playerId}.save
+    Шаг 4: InventoryManager — per-player
+    Шаг 5: GameAssets — развести глобальные и per-player
+    Шаг 6: ChestUIManager — CurrentSource per-player
+    Шаг 7: Финальный тест «два игрока»
+
+**После каждого шага:** тест → коммит на русском → обновить `03-current-state.md`.
+```
+--- END OF FILE: project-rules-md\network\08-refactor-plan-nplayers.md ---
+--- START OF FILE: project-rules-md\Scene_GameWorld_Hierarchy_AI_Context.md ---
+```md
+# Scene: GameWorld (max_depth=2)
+- 📦GameAssets (GameAssets, LoadingScreenManager, AudioManager, LanguageManager)
+  - LoadingScreenCanvas [OFF] (Canvas, CanvasScaler, GraphicRaycaster, CanvasRenderer)
+    - LoadingScreenBackground [OFF] (CanvasRenderer, Image)
+    - LoadingScreenProggressBar [OFF] (CanvasRenderer, Image, LayoutElement)
+- 🏁WorldBootstrap (WorldManagers) (WorldBootstrap)
+- 🕹️GameManagers (HUDManager, UIManager, PauseManager, DeathScreenManager, NotificationManager, TooltipManager, ContextMenuManager, CharacterPreviewManager, CombatAudioManager, ArrowPool, AimUI, EntityInfoPanelManager, DamageNumberPool, ChestUIManager)
+- 📟PanelsController (PanelsUIController, RadialMenuController)
+- 📽️Cameras
+  - Directional Light (Light, UniversalAdditionalLightData)
+  - MainCamera (Camera, AudioListener, CinemachineBrain, UniversalAdditionalCameraData, UnderwaterEffects)
+  - ThirdPersonPlayerFollowCamera (CinemachineCamera, CinemachineFollow, CinemachineRotateWithFollowTarget, CinemachineDeoccluder, CinemachineImpulseListener)
+  - FirstPersonCamera (CinemachineCamera, CinemachineFollow, CinemachineRotateWithFollowTarget, CinemachineDeoccluder, CinemachineImpulseListener)
+  - SelfieCamera (CinemachineCamera, CinemachineImpulseListener, SelfieCameraOrbit)
+  - PostProcessingDefaultVolume (Volume)
+  - UnderWaterVolume (Volume)
+  - PlayerHurtVolume (Volume)
+  - CharacterPreviewCamera [OFF] (Camera, UniversalAdditionalCameraData)
+- 🖼️UICanvases
+  - HUDCanvas [OFF] (Canvas, CanvasScaler, GraphicRaycaster)
+    - Container [OFF] (VerticalLayoutGroup, CanvasRenderer)
+  - InteractionCanvas (Canvas, CanvasScaler, GraphicRaycaster)
+    - InteractionUI [OFF]
+  - ➕AimCanvas (Canvas, CanvasScaler, GraphicRaycaster)
+    - AimCrosshair [OFF] (CanvasRenderer, Image)
+  - 🦖EntityInfoCanvas (Canvas, CanvasScaler, GraphicRaycaster)
+    - EntityInfoPanel [OFF] (VerticalLayoutGroup, EntityInfoPanel, ContentSizeFitter)
+  - DamageNumberCanvas (Canvas, CanvasScaler, GraphicRaycaster)
+  - DamageVignetteCanvas (Canvas, CanvasScaler, GraphicRaycaster)
+    - DamageVignette (CanvasRenderer, Image)
+  - 🎒InventoryCanvas (Canvas, CanvasScaler, GraphicRaycaster)
+    - TopButtons [OFF] (CanvasRenderer, HorizontalLayoutGroup[off])
+    - EngramsPanel [OFF] (CanvasRenderer)
+    - InventoryPanel [OFF] (HorizontalLayoutGroup, CanvasRenderer)
+    - HotbarUI--Hotbar (CanvasRenderer, Image[off], GridLayoutGroup, HotbarUI)
+    - DragLayer (CanvasRenderer)
+    - ChestUI (ChestUI)
+  - NotificationTopCanvas (Canvas, CanvasScaler, GraphicRaycaster, CanvasRenderer)
+    - NoteTopUI [OFF] (CanvasRenderer)
+  - NotificationLeftCanvas (Canvas, CanvasScaler, GraphicRaycaster, CanvasRenderer, VerticalLayoutGroup)
+  - ContextMenuCanvas [OFF] (Canvas, CanvasScaler, GraphicRaycaster, CanvasRenderer)
+    - FullOverlay [OFF] (CanvasRenderer, Image, CloseOnOutsideClick)
+  - ⚪RadialMenuCanvas [OFF] (Canvas, CanvasScaler, GraphicRaycaster)
+    - Panel [OFF] (CanvasRenderer, Image)
+  - ⏸️PauseCanvas [OFF] (Canvas, CanvasScaler, GraphicRaycaster, CanvasRenderer)
+    - FullOverlay [OFF] (CanvasRenderer, Image)
+    - PausePanel [OFF] (CanvasRenderer, ContentSizeFitter, LayoutElement, VerticalLayoutGroup)
+    - SettingsPanel [OFF] (CanvasRenderer, VerticalLayoutGroup)
+  - 🪦DeathScreenCanvas [OFF] (Canvas, CanvasScaler, GraphicRaycaster, CanvasRenderer)
+    - FullOverlay [OFF] (CanvasRenderer, Image)
+- EventSystem (EventSystem, InputSystemUIInputModule)
+- NavMeshBacker (NavMeshSurface)
+- --------------------
+- 🦸‍♀️---Player--- (PlayerController, CharacterController, CapsuleCollider, BasicRigidBodyPush, PlayerInput, PlayerInputHandler, CameraManager, PlayerEquipment, PlayerRangedCombat, PlayerBuildMode, ItemUsageSystem, ItemHandler, PlayerInteraction, PlayerAimingSystem, CinemachineImpulseSource, PlayerDamageFeedback, ItemUsageRouter, RidingController, PlayerSurvivalSystem, InventoryManager, PlayerProgress)
+  - PlayerCameraRoot
+  - Character (Animator, AnimationEvents)
+    - Mesh (SkinnedMeshRenderer)
+    - metarig.004
+  - Directional Light (Light, UniversalAdditionalLightData)
+- 🦸‍♀️---Player--- (1) (PlayerController, CharacterController, CapsuleCollider, BasicRigidBodyPush, PlayerInput[off], PlayerInputHandler, CameraManager, PlayerEquipment, PlayerRangedCombat, PlayerBuildMode, ItemUsageSystem, ItemHandler, PlayerInteraction, PlayerAimingSystem, CinemachineImpulseSource, PlayerDamageFeedback, ItemUsageRouter, RidingController, PlayerSurvivalSystem, InventoryManager, PlayerProgress)
+  - PlayerCameraRoot
+  - Character (Animator, AnimationEvents)
+    - Mesh (SkinnedMeshRenderer)
+    - metarig.004
+  - Directional Light (Light, UniversalAdditionalLightData)
+- George (Animator, NavMeshAgent, Creature)
+  - George (SkinnedMeshRenderer)
+  - RobotArmature
+    - Body (BoxCollider, Rigidbody)
+
+```
+--- END OF FILE: project-rules-md\Scene_GameWorld_Hierarchy_AI_Context.md ---
+
+--- START OF FILE: project-rules-md\Scene_MainMenu_Hierarchy_AI_Context.md ---
+```md
+# Scene: MainMenu (max_depth=2)
+- 📦GameAssets (GameAssets, LoadingScreenManager, AudioManager, LanguageManager)
+  - LoadingScreenCanvas [OFF] (Canvas, CanvasScaler, GraphicRaycaster, CanvasRenderer)
+    - LoadingScreenBackground [OFF] (CanvasRenderer, Image)
+    - LoadingScreenProggressBar [OFF] (CanvasRenderer, Image, LayoutElement)
+- MainMenuManager (MainMenuManager, SettingsPanelController)
+- MainMenuCanvas (Canvas, CanvasScaler, GraphicRaycaster, CanvasRenderer)
+  - FullOverlay (CanvasRenderer, Image)
+    - MainMenuPanel (CanvasRenderer, ContentSizeFitter, LayoutElement, VerticalLayoutGroup)
+    - SettingsPanel [OFF] (CanvasRenderer, VerticalLayoutGroup)
+- Main Camera (Camera, AudioListener, UniversalAdditionalCameraData)
+- Directional Light (Light, UniversalAdditionalLightData)
+- EventSystem (EventSystem, InputSystemUIInputModule)
+
+```
+--- END OF FILE: project-rules-md\Scene_MainMenu_Hierarchy_AI_Context.md ---

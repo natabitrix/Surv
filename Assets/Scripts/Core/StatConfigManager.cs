@@ -1,6 +1,7 @@
 // Assets/Scripts/Core/StatConfigManager.cs
 using System;
 using System.Collections.Generic;
+using Assets.Scripts.Player;
 using UnityEngine;
 
 namespace Assets.Scripts.Core

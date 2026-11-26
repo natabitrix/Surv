@@ -179,7 +179,7 @@ namespace Assets.Scripts.Crafting
             }
 
             // 3. Тратим очки через безопасный метод
-            if (!progress.TrySpendEngramPoints(_data.recipe.engramPointsCost))
+            if (!progress.TrySpendEngramPoints(_data.recipe))
             {
                 // На всякий случай (не должно случиться, если проверка выше верна)
                 NotificationManager.Instance?.Show("Не хватает очков энграмм!", null);

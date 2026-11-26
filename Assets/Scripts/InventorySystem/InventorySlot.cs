@@ -8,7 +8,8 @@ namespace Assets.Scripts.InventorySystem
     {
         public Item item;
         public int count;
-        public float currentDurability = -1f; // -1 значит "нет прочности"
+        // public float currentDurability = -1f; // -1 значит "нет прочности"
+        public float currentDurability { get; internal set; } = -1f; // -1 значит "нет прочности"
 
         public bool IsEmpty => item == null;
 

@@ -11,7 +11,7 @@ using Assets.Scripts.UI;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace Assets.Scripts.Core
+namespace Assets.Scripts.Player
 {
     public class PlayerSurvivalSystem : MonoBehaviour
     {

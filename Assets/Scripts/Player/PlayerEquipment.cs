@@ -49,6 +49,38 @@ namespace Assets.Scripts.Player
             // Если уже экипирован — снимаем
             // Если навели и нажал Е на другой снимаем этот и экипируем другой 
 
+            // ДОБАВЛЕНО (Пункт 5): валидация slotIndex ↔ item.
+            // slotIndex == -1 — снятие (Unequip), валидация не нужна.
+            // slotIndex >= 0 — предмет ДОЛЖЕН быть в этом слоте.
+            if (slotIndex >= 0)
+            {
+                var progress = GetComponent<PlayerProgress>();
+                if (progress == null)
+                {
+                    Debug.LogError("[PlayerEquipment.Equip] PlayerProgress not found — нельзя валидировать slotIndex!", this);
+                    return;
+                }
+
+                InventorySlot slot = null;
+                if (slotIndex < 10)
+                {
+                    if (progress.hotbarInventoryData != null && slotIndex < progress.hotbarInventoryData.slots.Count)
+                        slot = progress.hotbarInventoryData.slots[slotIndex];
+                }
+                else
+                {
+                    int mainIndex = slotIndex - 10;
+                    if (progress.mainInventoryData != null && mainIndex < progress.mainInventoryData.slots.Count)
+                        slot = progress.mainInventoryData.slots[mainIndex];
+                }
+
+                if (slot == null || slot.IsEmpty || slot.item != item)
+                {
+                    Debug.LogWarning($"[PlayerEquipment.Equip] slotIndex={slotIndex} не содержит '{item?.itemName}' — экипировка отменена.");
+                    return;
+                }
+            }
+
             // Если экипируем тот же предмет — ничего не делаем
             if (_currentItem == item) return;
 

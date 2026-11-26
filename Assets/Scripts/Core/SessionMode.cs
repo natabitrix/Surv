@@ -24,6 +24,11 @@ namespace Assets.Scripts.Core
         public static bool IsMultiplayer => _settings != null && _settings.isMultiplayer;
 
         /// <summary>
+        /// ДОБАВЛЕНО (Пункт 9): в сингле всегда сервер. При NGO — NetworkManager.Singleton.IsServer.
+        /// </summary>
+        public static bool IsServer => !IsMultiplayer || true; // TODO: заменить на NGO
+
+        /// <summary>
         /// true — если пауза должна останавливать Time.timeScale.
         /// В мультиплеере всегда false.
         /// </summary>

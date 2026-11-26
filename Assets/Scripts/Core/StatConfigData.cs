@@ -1,5 +1,6 @@
 // Assets/Scripts/Core/StatConfigData.cs
 using System;
+using Assets.Scripts.Player;
 using UnityEngine;
 
 namespace Assets.Scripts.Core

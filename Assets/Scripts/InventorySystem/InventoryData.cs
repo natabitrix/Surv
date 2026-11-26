@@ -105,7 +105,7 @@ namespace Assets.Scripts.InventorySystem
         }
 
 
-        public void ClearSlot(int index)
+        internal void ClearSlot(int index)
         {
             var slot = slots[index];
             slot.item = null;
@@ -114,7 +114,7 @@ namespace Assets.Scripts.InventorySystem
         }
 
         // Выбрасывает все из слота
-        public void RemoveItemFromSlot(int index)
+        internal void RemoveItemFromSlot(int index)
         {
             if (index >= 0 && index < slots.Count)
             {
@@ -130,7 +130,7 @@ namespace Assets.Scripts.InventorySystem
         }
 
         //overload: Выбрасывает указанное кол-во из слота
-        public void RemoveItemFromSlot(int index, int count)
+        internal void RemoveItemFromSlot(int index, int count)
         {
             if (index < 0 || index >= slots.Count) return;
             var slot = slots[index];
