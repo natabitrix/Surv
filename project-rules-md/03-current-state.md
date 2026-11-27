@@ -71,6 +71,10 @@
 - `InventoryUI`/`HotbarUI`/`EngramUI`/`CraftingUI` — подписка в `OnEnable`/`Start`, отписка в `OnDisable`/`OnDestroy`. Реагируют на свой набор `InventoryChangeKind`.
 - `CraftingSlotUI` — **не** подписывается на `InventoryData`, пересоздаётся `CraftingUI.RebuildUI`. `RefreshVisual` берёт **актуальные** `_progress.mainInventoryData`/`hotbarInventoryData` каждый раз.
 - `InventoryData.AddItemAnywhere` — **чистая модель**, `Save` убран (был через `LocalPlayer`). Сохранение — на уровне `PlayerProgress`/`InventoryManager`.
+- **`ChestUIManager.CurrentSource` = «что открыто у LocalPlayer»**, а не «глобально открытый сундук». Один менеджер на процесс = один клиент, реестр по игрокам не нужен. Данные сундука (`ChestInventory.Data`) — общие, UI у каждого свой.
+- **Две разные операции закрытия:** `Close()` — «закрыть у меня» (Esc, клавиша, дистанция), требует `LocalPlayer != null`. `CloseForDestroyedSource(source)` — «источник исчез из мира» (`OnDestroy`/`Die`/`ForceDespawn`), работает даже если `LocalPlayer == null` (смерть/респавн). `ForceCloseIfSource` оставлен как обёртка для совместимости.
+- **Сравнение источников — только через `ReferenceEquals`** (`IsSameSource`), проверка живости — через приведение к `UnityEngine.Object` (`IsSourceAlive`). Причина: `IInventorySource` — интерфейс, `==` разрешается в `object.==` и не ловит уничтоженные MonoBehaviour. По `saveKey` сравнивать нельзя — у сумок он может совпадать (`"LootBox"`).
+- **`CloseInternal` сбрасывает `CurrentSource` ДО вызовов наружу.** `PanelsUIController.CloseAllPanels()` зовёт `ChestUIManager.Close()` обратно — раньше рекурсию гасил только порядок присваиваний.
 
 **Ловушки:**
 - `ReferenceEquals(CurrentSource, this)` вместо `==` — иначе CS0252 (Unity Object == null).

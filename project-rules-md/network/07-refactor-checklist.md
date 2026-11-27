@@ -24,7 +24,7 @@
 - [x] `ChestInventory.Save()` / `PlayerProgress.Save()` — no-op при `SessionMode.IsMultiplayer && !IsServer`. **Сделано (Пункт 9):** `SessionMode.IsServer` + проверка в начале `Save`.
 - [x] `LootBagManager.Instance.CreateLootBagFromItems` — вызывать только на сервере. **Сделано (Пункт 10):** `if (SessionMode.IsMultiplayer && !SessionMode.IsServer) return null;`.
 - [x] `InventoryUI` / `HotbarUI` — подписать на `InventoryData.OnInventoryChanged`, а не на прямые вызовы `RefreshAllUIs` из `InventoryManager`. **Сделано:** подписаны на `InventoryEventsHub.OnChanged` (глобальный хаб).
-- [ ] `ChestUIManager.CurrentSource` — при сети должен быть локальным состоянием клиента (какой сундук открыт у меня), но данные — серверные. **Сейчас:** `CurrentSource` один на клиента, не per-player. **Следующий пункт (11).**
+- [x] `ChestUIManager.CurrentSource` — при сети должен быть локальным состоянием клиента (какой сундук открыт у меня), но данные — серверные. **Сделано (Пункт 11a):** инвариант зафиксирован — `CurrentSource` = «что открыто у LocalPlayer», один менеджер на процесс. Guard `CanLocalPlayerOperate()` в `Open`/`Close`. Разделены `Close()` (у меня) и `CloseForDestroyedSource(source)` (источник исчез). `IsSourceAlive` учитывает Unity-destroyed (интерфейс → `object.==` не ловил уничтоженные MonoBehaviour, `IsOpened` залипал). Мёртвый toggle-блок в `Open` убран. `CloseInternal` сбрасывает `CurrentSource` до вызовов наружу (защита от рекурсии с `PanelsUIController`). **Осталось (11b):** перевести вызывающих на `CloseForDestroyedSource`, разорвать рекурсию `CloseAllPanels ↔ Close`.
 
 ### Урон и смерть (из `02-audit-damage.md`)
 
