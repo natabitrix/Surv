@@ -187,11 +187,11 @@ namespace Assets.Scripts.InventorySystem
 
             // === ForceSetChest: страховка ===
             _currentChest = chest;
-            if (_currentChest != chest)
-            {
-                Debug.LogError("[ChestUI.OpenWith] _currentChest не установился! Принудительно.");
-                _currentChest = chest;
-            }
+            // if (_currentChest != chest)
+            // {
+            //     Debug.LogError("[ChestUI.OpenWith] _currentChest не установился! Принудительно.");
+            //     _currentChest = chest;
+            // }
 
             SourceInteractable = source;
 
@@ -233,16 +233,23 @@ namespace Assets.Scripts.InventorySystem
             SourceInteractable = null;
         }
 
+        /// <summary>
+        /// Обновить визуал слотов из текущих данных сундука.
+        /// ПРАВКА (фикс A+B+C): метод больше НЕ закрывает окно и НЕ сохраняет на диск.
+        /// Закрытие — ответственность ChestUIManager (инвариант из 03-current-state).
+        /// Сохранение — на уровне мутаций/таймера, иначе посреди drag на диск
+        /// пишется состояние без перетаскиваемого предмета.
+        /// </summary>
         public void RefreshUI()
         {
-            // Проверяем, что текущий инвентарь все еще действителен
+            // Проверяем, что текущий инвентарь все еще действителен.
+            // было: Close(); — рефреш не имеет права закрывать панель
             if (_currentChest == null || _currentChest.gameObject == null || slotUIs == null)
-            {
-                Close();
-                return;
-            }
+                return; //удалить: Close();
 
-            var slots = _currentChest.Data.slots;
+            var slots = _currentChest.Data?.slots;
+            if (slots == null) return;
+
             int count = Mathf.Min(slots.Count, slotUIs.Count);
 
             for (int i = 0; i < count; i++)
@@ -250,7 +257,8 @@ namespace Assets.Scripts.InventorySystem
                 slotUIs[i].SetSlot(slots[i]);
             }
 
-            _currentChest.Save("ChestUI.RefreshUI");
+            //удалить: _currentChest.Save("ChestUI.RefreshUI");
+            // Save убран: вызывается посреди drag&drop и пишет на диск "дырявое" состояние.
         }
 
         void OnDestroy()

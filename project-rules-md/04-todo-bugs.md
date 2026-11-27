@@ -13,7 +13,10 @@
 
 > Формат: `[ ] <кратко> — файл, репро, статус`
 
-- [ ] **Drag из сумки (LootBag) в инвентарь** — панель закрывается, иконка висит, предмет не добавляется. Repro: открыть сумку → перетащить предмет в инвентарь. Вероятно: `ChestUI.Instance` уничтожается при `ChestUIManager.Close()`, `GetOriginalSlot()` возвращает `null`, `ReturnToOriginalSlot` не возвращает. Не связано с Шагом 1/2/3. Чинить после.
+- [ ] **Прямые мутации слотов в drag&drop** — `InventorySlotUI.MoveItemToSlot` пишет в `targetSlot.item/count/currentDurability` напрямую, минуя `InventoryData` → `OnInventoryChanged` не срабатывает. Сейчас компенсируется костылём `RefreshAllUIs()` (три UI конкретного слота). При N игроках второй игрок изменений не увидит. Пункт 11e.
+- [ ] **Сохранение по событию вместо таймера** — `ChestInventory.Save()` вызывается на каждое изменение (в т.ч. от чужого действия). В коопе хост пишет файл при каждом чихе. Нужен dirty-флаг + автосейв по таймеру.
+- [ ] **`InventorySlot.SyncDurability` vs `InitializeDurability`** — первый ставит `item.maxDurability`, второй хардкод `100f`. Разные значения при разных путях создания предмета.
+- [x] **Drag из сумки (LootBag) в инвентарь** — панель закрывается, иконка висит, предмет не добавляется. Repro: открыть сумку → перетащить предмет в инвентарь. Вероятно: `ChestUI.Instance` уничтожается при `ChestUIManager.Close()`, `GetOriginalSlot()` возвращает `null`, `ReturnToOriginalSlot` не возвращает. Не связано с Шагом 1/2/3. Чинить после.
 - [ ] **Крафт: ресурсы только в хотбаре → рецепт серый (неактивен)** — `CraftingSlotUI.RefreshVisual`/`TryCraft` не видят `hotbarInventoryData` или подписка на `hotbarInventoryData.OnInventoryChanged` не установлена. Закрывается в Шаге 3.4 (CraftingUI на хаб) — **проверить, не закрылся ли уже**.
 - [ ] **Крафт: ресурсы разделены между main и hotbar → рецепт серый** — `HasIngredients` на каждом `InventoryData` отдельно, сумма не проверяется. Нужен `PlayerProgress.HasIngredientsTotal`/`ConsumeIngredientsTotal`. Баг 12b.
 - [ ] **Атака на зажатие E** — должна повторяться, пока зажата. Сейчас `OnAttackInteractFinished` из Animation Event, повтора нет.

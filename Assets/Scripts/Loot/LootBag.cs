@@ -31,6 +31,8 @@ namespace Assets.Scripts.Loot
         private Coroutine _despawnCoroutine;
         private bool _isDespawning = false;
         private bool _hasSettled = false; // Флаг: сумка уже упала и стала "призрачной"
+        // ДОБАВЛЕНО (фикс drag): сумка опустела, но despawn отложен до конца перетаскивания
+        private bool _despawnPending = false;
 
         [Header("Physics")]
         [SerializeField] private float _settlingThreshold = 0.1f; // Порог скорости, считаем что упала
@@ -145,13 +147,55 @@ namespace Assets.Scripts.Loot
             }
         }
 
+        /// <summary>
+        /// ДОБАВЛЕНО (фикс drag): дожидаемся окончания перетаскивания и убираем сумку.
+        /// Срабатывает и когда драг завершился успешно, и когда предмет вернули обратно
+        /// (во втором случае сумка снова не пуста — despawn отменяется).
+        /// </summary>
+        private void Update()
+        {
+            if (!_despawnPending || _isDespawning) return;
+
+            if (IsDragInProgressFromThisBag()) return;
+
+            _despawnPending = false;
+
+            if (IsInventoryEmpty())
+                ForceDespawn();
+        }
+
+        /// <summary>
+        /// Реакция на изменение содержимого сумки.
+        /// ПРАВКА (фикс drag): если из сумки прямо сейчас тащат предмет —
+        /// despawn откладывается. Иначе GameObject уничтожается внутри OnBeginDrag,
+        /// EndDrag не приходит, иконка зависает, а ChestUI закрывается посреди операции.
+        /// </summary>
         private void OnInventoryChanged()
         {
-            if (IsInventoryEmpty())
+            if (!IsInventoryEmpty()) return;
+
+            // ДОБАВЛЕНО: не убираем сумку, пока из неё идёт перетаскивание
+            if (IsDragInProgressFromThisBag())
             {
-                // Debug.Log($"[LootBag] Инвентарь пуст! Исчезаем.");
-                ForceDespawn();
+                _despawnPending = true;
+                return;
             }
+
+            ForceDespawn();
+        }
+
+        /// <summary>
+        /// Тащат ли сейчас предмет именно из этой сумки.
+        /// DragContext глобальный (один на процесс), поэтому дополнительно
+        /// сверяем источник через ChestUIManager.CurrentSource.
+        /// </summary>
+        private bool IsDragInProgressFromThisBag()
+        {
+            if (DragContext.draggedItem == null || DragContext.draggedCount <= 0) return false;
+            if (!DragContext.isDragFromChest) return false;
+
+            var mgr = ChestUIManager.Instance;
+            return mgr != null && ReferenceEquals(mgr.CurrentSource, this);
         }
 
         /// <summary>
@@ -248,12 +292,26 @@ namespace Assets.Scripts.Loot
             {
                 if (IsInventoryEmpty())
                 {
+                    // ДОБАВЛЕНО (фикс drag): откладываем, если идёт перетаскивание
+                    if (IsDragInProgressFromThisBag())
+                    {
+                        _despawnPending = true;
+                        yield break; // Update добьёт, когда драг закончится
+                    }
+
                     ForceDespawn();
                     yield break;
                 }
 
                 yield return new WaitForSeconds(1f);
                 elapsed += 1f;
+            }
+
+            // ДОБАВЛЕНО (фикс drag): время вышло, но игрок тащит предмет — не рвём драг
+            if (IsDragInProgressFromThisBag())
+            {
+                _despawnPending = true;
+                yield break;
             }
 
             ForceDespawn();

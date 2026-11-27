@@ -139,6 +139,9 @@
 - `ForceDespawn` вызывается при: истечении `_bagDisappearTime`, опустошении инвентаря.
 - `LootBagManager.CreateLootBagFromItems` — единая точка создания сумки из списка предметов.
 - `ownerPlayerId` — из `_progress.PlayerId` (не хардкод `"player_001"`).
+- **`LootBag` не деспавнится во время drag&drop.** `OnInventoryChanged`/`DespawnAfterTime` при пустом инвентаре проверяют `IsDragInProgressFromThisBag()` и ставят `_despawnPending`; добивает `Update`, когда драг завершён. Иначе `Destroy` внутри `OnBeginDrag` → `EndDrag` не приходит → иконка зависает, предмет теряется.
+- **`ChestUI.RefreshUI` не закрывает окно и не сохраняет.** Закрытие — только через `ChestUIManager`, сохранение — на уровне мутаций.
+- **`InventorySlotUI.GetOriginalSlot`** берёт **свой** `chestUI` (сохранённый в `_dragSourceChestUI` на `OnBeginDrag`), не `ChestUI.Instance`.
 
 ---
 

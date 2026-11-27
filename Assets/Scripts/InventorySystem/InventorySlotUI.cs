@@ -50,6 +50,12 @@ namespace Assets.Scripts.InventorySystem
         private GameObject dragIcon;
         private RectTransform dragRT;
 
+        // ДОБАВЛЕНО (фикс A): ссылка на ChestUI, ИЗ которого начали тащить.
+        // Раньше GetOriginalSlot() лез в глобальный ChestUI.Instance — если тот уже
+        // закрыт/переключён на другой источник, оригинальный слот не находился
+        // и предмет терялся. Теперь слот знает только свой UI.
+        private ChestUI _dragSourceChestUI;
+
         // External services inventoryUI
         private PlayerProgress _progress;
         private InventoryManager _inventoryManager;
@@ -111,7 +117,34 @@ namespace Assets.Scripts.InventorySystem
             }
         }
 
+        /// <summary>
+        /// ДОБАВЛЕНО (фикс drag): страховка от "осиротевшего" драга.
+        /// Если GameObject источника уничтожен (сумка опустела/задеспавнилась),
+        /// Unity не присылает OnEndDrag — иконка висит вечно, предмет теряется.
+        /// Здесь ловим этот случай сами.
+        /// </summary>
+        private void Update()
+        {
+            if (dragIcon == null) return;
 
+            // Драг ещё жив: наш объект цел и мы всё ещё считаемся перетаскиваемым
+            bool sourceAlive = this != null && gameObject != null && isActiveAndEnabled;
+            bool dragContextAlive = DragContext.draggedItem != null && DragContext.draggedCount > 0;
+
+            if (sourceAlive && dragContextAlive) return;
+
+            Debug.LogWarning("[InventorySlotUI] Драг оборван (источник уничтожен?) — возвращаем предмет и убираем иконку.");
+
+            Destroy(dragIcon);
+            dragIcon = null;
+
+            if (dragContextAlive)
+                ReturnToOriginalSlot();
+
+            CleanupDragContext();
+            RefreshAllUIs();
+        }
+        
         private void EnsureReferences()
         {
             if (_inventoryManager == null)
@@ -318,6 +351,9 @@ namespace Assets.Scripts.InventorySystem
             DragContext.fromOwner = owner;
             DragContext.fromSlotIndex = index;
 
+            // ДОБАВЛЕНО (фикс A): запоминаем свой ChestUI как источник драга
+            _dragSourceChestUI = IsChestSlot ? chestUI : null;
+
             // Удаляем из исходного слота
             slot.count -= amount;
             if (slot.count <= 0)
@@ -491,13 +527,22 @@ namespace Assets.Scripts.InventorySystem
                     // Не смогли вернуть — предмет потерян. Логируем и очищаем.
                     Debug.LogError($"[InventorySlotUI] Не удалось вернуть {DragContext.draggedItem.itemName} x{DragContext.draggedCount} — оригинальный слот недоступен (источник закрыт?). Предмет потерян.");
                 }
+                // ДОБАВЛЕНО (фикс C): остаток, который не влез обратно в стак
+                else if (DragContext.draggedCount > 0)
+                {
+                    Debug.LogError($"[InventorySlotUI] Не удалось вернуть полностью: {DragContext.draggedItem?.itemName} x{DragContext.draggedCount} — в исходном слоте нет места.");
+                }
             }
 
             CleanupDragContext();
             RefreshAllUIs();
 
-            var progress = _progress;
-            progress.Save("InventorySlotUI.OnDrop");
+            // ПРАВКА (Пункт 9): на клиенте в мультиплеере не пишем на диск
+            if (!(SessionMode.IsMultiplayer && !SessionMode.IsServer))
+            {
+                var progress = _progress;
+                progress?.Save("InventorySlotUI.OnDrop"); // ДОБАВЛЕНО: ?. вместо безусловного вызова
+            }
 
         }
 
@@ -556,15 +601,21 @@ namespace Assets.Scripts.InventorySystem
             }
         }
 
+        /// <summary>
+        /// Найти слот, из которого начали перетаскивание.
+        /// ПРАВКА (фикс A): для chest-дропа используется сохранённая ссылка на свой ChestUI,
+        /// а не глобальный ChestUI.Instance.
+        /// </summary>
         private InventorySlot GetOriginalSlot()
         {
             try
             {
                 if (DragContext.isDragFromChest)
                 {
-                    var chestUI = ChestUI.Instance;
-                    if (chestUI != null)
-                        return chestUI.GetSlot(DragContext.fromSlotIndex);
+                    // было: var chestUI = ChestUI.Instance;
+                    var sourceUI = _dragSourceChestUI != null ? _dragSourceChestUI : chestUI; //удалить: ChestUI.Instance
+                    if (sourceUI != null)
+                        return sourceUI.GetSlot(DragContext.fromSlotIndex);
                 }
                 else
                 {
@@ -592,6 +643,11 @@ namespace Assets.Scripts.InventorySystem
             return null;
         }
 
+        /// <summary>
+        /// Вернуть перетаскиваемый предмет в исходный слот (дроп не состоялся).
+        /// ПРАВКА (фикс C): возвращается и прочность; невозвращённый остаток
+        /// остаётся в DragContext и логируется вызывающим, а не исчезает молча.
+        /// </summary>
         private void ReturnToOriginalSlot()
         {
             var originalSlot = GetOriginalSlot();
@@ -601,12 +657,19 @@ namespace Assets.Scripts.InventorySystem
             {
                 originalSlot.item = DragContext.draggedItem;
                 originalSlot.count = DragContext.draggedCount;
+                // ДОБАВЛЕНО: прочность раньше терялась при возврате
+                originalSlot.currentDurability = DragContext.draggedDurability;
+
+                DragContext.draggedCount = 0;
             }
             else if (originalSlot.item == DragContext.draggedItem)
             {
                 int space = originalSlot.item.maxStack - originalSlot.count;
                 int add = Mathf.Min(space, DragContext.draggedCount);
                 originalSlot.count += add;
+
+                // ДОБАВЛЕНО: вычитаем возвращённое, остаток не теряем молча
+                DragContext.draggedCount -= add;
             }
         }
 
@@ -618,6 +681,9 @@ namespace Assets.Scripts.InventorySystem
             DragContext.isDragFromChest = false;
             DragContext.fromOwner = default;
             DragContext.fromSlotIndex = -1;
+
+            // ДОБАВЛЕНО (фикс A): не держим ссылку на чужой UI между драгами
+            _dragSourceChestUI = null;
         }
 
         // end region === DRAG & DROP ===

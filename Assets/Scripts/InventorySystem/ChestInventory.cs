@@ -39,6 +39,8 @@ namespace Assets.Scripts.InventorySystem
 
         /// <summary>
         /// метод для создания инвентаря трупа (без загрузки сохранения)
+        /// ПРАВКА: Data не пересоздаётся (Clear вместо new) — иначе рвутся подписки
+        /// ChestUI.RefreshUI на OnInventoryChanged и открытое окно "замерзает".
         /// </summary>
         public void Initialize(int newSize, string newSaveKey = null)
         {
@@ -49,8 +51,11 @@ namespace Assets.Scripts.InventorySystem
             }
 
             // Пересоздаём Data с новым размером
-            Data = new InventoryData(size);
-
+            //удалить: Data = new InventoryData(size);
+            if (Data == null)
+                Data = new InventoryData(size);   // страховка, если Awake ещё не отработал
+            else
+                Data.Clear(size);                 // подписки UI сохраняются
         }
 
         /// <summary>
