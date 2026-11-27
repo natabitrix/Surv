@@ -2,10 +2,10 @@
 
 > Сводный список. Собирается из аудитов (`0X-audit-*.md`).
 > Приоритет 1 — блокеры для коопа. Приоритет 2 — важно, но не блокер первого коопа. Приоритет 3 — можно после первого коопа.
-> Формат: `- [ ]` — не сделано, `- [x]` — сделано.
+> Формат: `- [ ]` — не сделано, `- [x]` — сделано, `- [~]` — отложено.
 >
-> **Обновлено после N-player рефакторинга (Шаги 1–3 + PlayerProgress/InventoryManager/PlayerSurvivalSystem per-player).**
-> Закрытые пункты — `[x]`, с пометкой что именно сделано.
+> **Обновлено после N-player рефакторинга (Шаги 1–3) и пунктов 2, 4, 5, 6, 7, 9, 10.**
+> Закрытые пункты — `[x]` с пометкой что именно сделано. Отложенные — `[~]` с причиной.
 
 ---
 
@@ -14,17 +14,17 @@
 ### Инвентарь (из `01-audit-inventory.md`)
 
 - [x] `InventoryData.AddItemAnywhere` — убрать `PlayerProgress.Instance.Save()` (ответственность вызывающего). **Сделано:** `Save` убран, `Notify` — на уровне `PlayerProgress`/`InventoryManager`.
-- [ ] `InventoryData.RemoveItemFromSlot` / `ClearSlot` — `internal`, доступ через `InventoryManager`.
+- [x] `InventoryData.RemoveItemFromSlot` / `ClearSlot` — `internal`, доступ через `InventoryManager`. **Сделано (Пункт 2):** методы `internal`.
 - [ ] `PlayerProgress.AddItemToPlayerInventory` — сделать `[ServerRpc]`-совместимым (пока — `internal` + флаг `SessionMode.IsMultiplayer`).
-- [ ] `InventorySlot.currentDurability` — `private set` + сеттер в `InventoryData`.
-- [ ] `PlayerEquipment.Equip` — валидировать `slotIndex` ↔ `item` (сейчас можно экипировать предмет, которого нет в слоте).
-- [ ] `PlayerProgress.TrySpendEngramPoints` — валидировать `cost` по рецепту (сейчас можно передать `cost = 0`).
-- [ ] `PlayerProgress.AllocateStatPoint` — защита от повторного вызова в одном кадре (флаг `_isAllocating`).
-- [ ] `NotificationManager.Instance.Show(...)` из `InventoryData` / `InventoryManager` — заменить на события (данные не должны звать UI). **Частично:** `InventoryManager` всё ещё зовёт `NotificationManager` напрямую.
-- [ ] `ChestInventory.Save()` / `PlayerProgress.Save()` — no-op при `SessionMode.IsMultiplayer && !IsServer`.
-- [ ] `LootBagManager.Instance.CreateLootBagFromItems` — вызывать только на сервере (флаг `SessionMode.IsMultiplayer`).
+- [x] `InventorySlot.currentDurability` — `private set` + сеттер в `InventoryData`. **Сделано (Пункт 4):** `public get; internal set;`.
+- [x] `PlayerEquipment.Equip` — валидировать `slotIndex` ↔ `item`. **Сделано (Пункт 5):** проверка слота перед экипировкой, `slotIndex == -1` (Unequip) — без проверки.
+- [x] `PlayerProgress.TrySpendEngramPoints` — валидировать `cost` по рецепту. **Сделано (Пункт 6):** сигнатура `TrySpendEngramPoints(Recipe)`, `cost` из `recipe.engramPointsCost`.
+- [x] `PlayerProgress.AllocateStatPoint` — защита от повторного вызова в одном кадре. **Сделано (Пункт 7):** cooldown 0.2 сек (`_lastAllocateTime`).
+- [~] `NotificationManager.Instance.Show(...)` из `InventoryData` / `InventoryManager` — заменить на события (данные не должны звать UI). **Отложено (Пункт 8):** не блокер коопа, `NotificationManager` локальный. На сервере — не критично.
+- [x] `ChestInventory.Save()` / `PlayerProgress.Save()` — no-op при `SessionMode.IsMultiplayer && !IsServer`. **Сделано (Пункт 9):** `SessionMode.IsServer` + проверка в начале `Save`.
+- [x] `LootBagManager.Instance.CreateLootBagFromItems` — вызывать только на сервере. **Сделано (Пункт 10):** `if (SessionMode.IsMultiplayer && !SessionMode.IsServer) return null;`.
 - [x] `InventoryUI` / `HotbarUI` — подписать на `InventoryData.OnInventoryChanged`, а не на прямые вызовы `RefreshAllUIs` из `InventoryManager`. **Сделано:** подписаны на `InventoryEventsHub.OnChanged` (глобальный хаб).
-- [ ] `ChestUIManager.CurrentSource` — при сети должен быть локальным состоянием клиента (какой сундук открыт у меня), но данные — серверные. **Сейчас:** `CurrentSource` один на клиента, не per-player.
+- [ ] `ChestUIManager.CurrentSource` — при сети должен быть локальным состоянием клиента (какой сундук открыт у меня), но данные — серверные. **Сейчас:** `CurrentSource` один на клиента, не per-player. **Следующий пункт (11).**
 
 ### Урон и смерть (из `02-audit-damage.md`)
 
@@ -60,7 +60,7 @@
 - [x] `PlayerProgress.RegisterPlayerController` — регистрация по `playerId`, не по singleton. **Сделано:** `_playerController` — свой, `RegisterPlayerController(this)`.
 - [x] `PlayerProgress.RegisterInventoryManager` — то же. **Сделано:** `RegisterInventoryManager(this)`.
 - [x] `PlayerSurvivalSystem.OnPlayerDeathRoutine` — `ReloadFromFile` только для умершего игрока (серверный). **Сделано:** `_progress.playerController` (свой), `_progress.PlayerId`.
-- [x] `PlayerProgress.Save` — no-op на клиенте; per-player файл на сервере. **Сделано:** per-player файл. **No-op на клиенте** — ещё нет (см. ниже).
+- [x] `PlayerProgress.Save` — no-op на клиенте; per-player файл на сервере. **Сделано:** per-player файл + no-op на клиенте (Пункт 9).
 - [ ] `GameTime.Now` — серверное время; синхронизация часов с сервером.
 - [ ] `GameTimeUpdater` — только на сервере.
 - [ ] `SessionMode.IsMultiplayer` — серверный флаг; `GameSettings.isMultiplayer` — только дефолт.
@@ -70,7 +70,7 @@
 - [ ] `PlayerSurvivalSystem.TakeDamage` — `internal`, вход через серверный метод; `Health` → `NetworkVariable`.
 - [ ] `PlayerSurvivalSystem.Update` — проверка смерти только на сервере.
 - [x] `PlayerInputHandler` / `PlayerInput` — только на локальном игроке (не на сервере). **Сделано:** болванчик отфильтрован (`IsLocalPlayer()`, `PlayerInput.enabled = false`).
-- [ ] `PlayerProgress.AllocateStatPoint` / `TrySpendEngramPoints` — серверные (см. аудит 1). **Частично:** `UpdateEngramAvailability` вызывается в `AllocateStatPoint`/`TrySpendEngramPoints`, но `ServerRpc` — нет.
+- [ ] `PlayerProgress.AllocateStatPoint` / `TrySpendEngramPoints` — серверные (см. аудит 1). **Частично:** `UpdateEngramAvailability` вызывается, но `ServerRpc` — нет.
 
 ### Позиция и движение (из `04-audit-position.md`)
 
@@ -83,7 +83,7 @@
 - [ ] `RidingController.OnApplicationQuit` / `OnDestroy` — `ServerRpc ForceDismount`; сервер телепортирует игрока.
 - [ ] `CreatureRiding.TickRidden` — только сервер; клиент шлёт `ServerRpc SendRideInput(move, look, sprint)`.
 - [x] `PlayerProgress.LateUpdate` (`_lastKnownPlayerPosition`) — только на сервере. **Сделано:** per-player `_lastKnownPlayerPosition` на `PlayerProgress` (своём).
-- [ ] `PlayerProgress.Save` — per-player файл; на клиенте no-op (см. аудит 3).
+- [ ] `PlayerProgress.Save` — per-player файл; на клиенте no-op (см. аудит 3). **Сделано (Пункт 9):** no-op на клиенте.
 - [ ] `GameTime.Now` — серверное время; синхронизация часов с клиентом.
 - [ ] `GameTimeUpdater` — только на сервере (см. аудит 3).
 - [ ] `PlayerController.transform.position` — серверная валидация телепорта (максимальное смещение за тик).
